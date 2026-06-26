@@ -174,8 +174,13 @@ export default function TMF360() {
     setUploading(true); setUploadProgress("Uploading file...");
     const ext = file.name.split(".").pop();
     const path = `${user.id}/${activeStudy.study_id}/${Date.now()}_${file.name}`;
-    const {error: upErr} = await supabase.storage.from("documents").upload(path, file);
-    if (upErr) { setUploadProgress("Upload failed: " + upErr.message); setUploading(false); return; }
+    const {data: upData, error: upErr} = await supabase.storage.from("documents").upload(path, file);
+if (upErr) { 
+  setUploadProgress("Upload failed: " + upErr.message + " | " + JSON.stringify(upErr));
+  setUploading(false); 
+  return; 
+}
+console.log("Upload success:", upData);
     setUploadProgress("File uploaded! Saving record...");
     setSelectedFile(file);
     setUploadProgress(`✓ ${file.name} ready to attach`);
