@@ -140,7 +140,7 @@ export default function TMF360() {
   }
 
   async function loadDocs(studyId: string, uid: string) {
-    const {data} = await supabase.from("documents").select("*").eq("study_id", studyId).eq("user_id", uid).order("created_at", {ascending:false});
+    const {data} = await supabase.from("Documents").select("*").eq("study_id", studyId).eq("user_id", uid).order("created_at", {ascending:false});
     if (data) setDocs(data);
   }
 
@@ -174,7 +174,7 @@ export default function TMF360() {
     setUploading(true); setUploadProgress("Uploading file...");
     const ext = file.name.split(".").pop();
     const path = `${user.id}/${activeStudy.study_id}/${Date.now()}_${file.name}`;
-    const {data: upData, error: upErr} = await supabase.storage.from("documents").upload(path, file);
+    const {data: upData, error: upErr} = await supabase.storage.from("Documents").upload(path, file);
 if (upErr) { 
   setUploadProgress("Upload failed: " + upErr.message + " | " + JSON.stringify(upErr));
   setUploading(false); 
@@ -205,7 +205,7 @@ console.log("Upload success:", upData);
       file_type: (window as any)._pendingFileType || "",
       file_size: (window as any)._pendingFileSize || 0,
     };
-    const {data,error} = await supabase.from("documents").insert([d]).select();
+    const {data,error} = await supabase.from("Documents").insert([d]).select();
     if (!error && data) setDocs(prev=>[data[0],...prev]);
     setShowDocModal(false); setSelectedFile(null); setFVersion(""); setFOwner(""); setFEff(""); setFExp("");
     (window as any)._pendingFilePath = null; (window as any)._pendingFileName = null;
@@ -213,7 +213,7 @@ console.log("Upload success:", upData);
 
   function openPreview(doc: Doc) {
     if (!doc.file_path) return;
-    const {data} = supabase.storage.from("documents").getPublicUrl(doc.file_path);
+    const {data} = supabase.storage.from("Documents").getPublicUrl(doc.file_path);
     setPreviewUrl(data.publicUrl);
     setPreviewName(doc.file_name || doc.artifact_name);
   }
@@ -337,7 +337,7 @@ console.log("Upload success:", upData);
           {navItem("dashboard","📊 Dashboard")}
           {navItem("studies","🧪 Studies")}
           <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider px-3 pt-3 pb-1">TMF</p>
-          {navItem("documents","📁 Documents")}
+          {navItem("Documents","📁 Documents")}
           {navItem("artifacts","🗂 Artifact browser")}
           {navItem("gap","✅ Gap analysis")}
           <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider px-3 pt-3 pb-1">Intelligence</p>
@@ -426,7 +426,7 @@ console.log("Upload success:", upData);
           )}
 
           {/* DOCUMENTS */}
-          {panel==="documents" && (
+          {panel==="Documents" && (
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <h1 className="text-sm font-semibold">Documents — {activeStudy?.study_id||"No study selected"}</h1>
@@ -466,7 +466,7 @@ console.log("Upload success:", upData);
                             canPreview(d.file_name||"")?(
                               <button onClick={()=>openPreview(d)} className="text-[10px] px-2 py-0.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100">Preview</button>
                             ):(
-                              <a href={supabase.storage.from("documents").getPublicUrl(d.file_path).data.publicUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] px-2 py-0.5 bg-gray-50 text-gray-600 rounded hover:bg-gray-100">Download</a>
+                              <a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] px-2 py-0.5 bg-gray-50 text-gray-600 rounded hover:bg-gray-100">Download</a>
                             )
                           )}
                         </td>
