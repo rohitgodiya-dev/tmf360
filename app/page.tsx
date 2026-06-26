@@ -86,6 +86,8 @@ export default function TMF360(){
   const [showStudyModal,setShowStudyModal]=useState(false);
   const [showDocModal,setShowDocModal]=useState(false);
   const [showApproveModal,setShowApproveModal]=useState(false);
+  const [showSubmitModal,setShowSubmitModal]=useState(false);
+  const [submissionReason,setSubmissionReason]=useState("");
   const [showCommentModal,setShowCommentModal]=useState(false);
   const [selectedDoc,setSelectedDoc]=useState<Doc|null>(null);
   const [previewUrl,setPreviewUrl]=useState<string|null>(null);
@@ -483,6 +485,171 @@ export default function TMF360(){
       <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>← Back</button>
       <h1 style={{fontSize:"14px",fontWeight:"500"}}>Not approved — {activeStudy?.study_id}</h1>
     </div>
+    <div style={{background:"#FEF2F2",border:"0.5px solid #FECACA",borderRadius:"10px",padding:"10px 14px",fontSize:"11px",color:"#991B1B"}}>
+      These documents were rejected. Review the rejection reason and appeal if needed.
+    </div>
+    {studyDocs.filter(d=>d.status==="Draft"&&d.rejection_reason).length===0?(
+      <div style={{textAlign:"center",padding:"2rem",color:P.textTert,fontSize:"12px"}}>No rejected documents.</div>
+    ):studyDocs.filter(d=>d.status==="Draft"&&(d as any).rejection_reason).map((d,i)=>(
+      <div key={i} style={{background:P.bg,border:`0.5px solid #FECACA`,borderRadius:"10px",padding:"14px",display:"flex",flexDirection:"column",gap:"10px"}}>
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"10px"}}>
+          <div style={{flex:1}}>
+            <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"4px"}}>
+              <span style={{fontFamily:"monospace",fontSize:"9px",color:P.textTert}}>{d.artifact_num}</span>
+              <span style={{fontSize:"12px",fontWeight:"500"}}>{d.artifact_name}</span>
+              {statusBadge(d.status)}
+            </div>
+            <div style={{fontSize:"10px",color:P.textTert}}>Zone {d.zone} · {d.owner||"—"} · v{d.version||"—"}</div>
+          </div>
+          {d.file_path&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"10px",padding:"4px 10px",background:P.bgTert,color:P.textSec,borderRadius:"6px",textDecoration:"none",flexShrink:0}}>⬇ Download</a>}
+        </div>
+        <div style={{background:"#FEF2F2",borderRadius:"8px",padding:"10px 12px"}}>
+          <div style={{fontSize:"10px",fontWeight:"500",color:"#991B1B",marginBottom:"3px"}}>❌ Rejected by {(d as any).rejected_by} · {(d as any).rejected_at?new Date((d as any).rejected_at).toLocaleString():""}</div>
+          <div style={{fontSize:"11px",color:"#7F1D1D"}}>{(d as any).rejection_reason}</div>
+        </div>
+        {(d as any).appeal_reason&&(
+          <div style={{background:P.primaryLight,borderRadius:"8px",padding:"10px 12px"}}>
+            <div style={{fontSize:"10px",fontWeight:"500",color:P.primary,marginBottom:"3px"}}>📤 Appeal submitted</div>
+            <div style={{fontSize:"11px",color:"#3730A3"}}>{(d as any).appeal_reason}</div>
+          </div>
+        )}
+        {!(d as any).appeal_reason&&(
+          <div style={{display:"flex",gap:"8px",alignItems:"flex-end"}}>
+            <div style={{flex:1}}>
+              <label style={{fontSize:"10px",color:P.textSec,display:"block",marginBottom:"3px"}}>Appeal reason — explain why this should be approved</label>
+              <textarea id={`appeal-${d.id}`} placeholder="Provide justification for approval..." rows={2} style={{width:"100%",fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"6px 10px",resize:"vertical" as const}}/>
+            </div>
+            <button onClick={async()=>{
+              const ta=document.getElementById(`appeal-${d.id}`) as HTMLTextAreaElement;
+              if(!ta?.value.trim())return;
+              const{error}=await supabase.from("documents").update({status:"Under Review",appeal_reason:ta.value.trim()}).eq("id",d.id);
+              if(!error){
+                await supabase.from("audit_trail").insert([{user_id:user.id,user_email:user.email,action:"Appeal submitted",document_id:d.id,study_id:activeStudy?.study_id,field_changed:"status",old_value:"Draft",new_value:"Under Review",signature_reason:ta.value.trim(),created_at:new Date().toISOString()}]);
+                setDocs(prev=>prev.map(doc=>doc.id===d.id?{...doc,status:"Under Review",appeal_reason:ta.value.trim()}:doc));
+              }
+            }} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",flexShrink:0,marginBottom:"1px"}}>Submit appeal</button>
+          </div>
+        )}
+      </div>
+    ))}
+  </div>
+)}
+{(panel==="notapproved-detail-OLD")&&(
+  <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+    <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
+      <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>← Back</button>
+      <h1 style={{fontSize:"14px",fontWeight:"500"}}>Not approved — {activeStudy?.study_id}</h1>
+    </div>
+    <div style={{background:"#FEF2F2",border:"0.5px solid #FECACA",borderRadius:"10px",padding:"10px 14px",fontSize:"11px",color:"#991B1B"}}>
+      These documents were rejected. Review the rejection reason and appeal if needed.
+    </div>
+    {studyDocs.filter(d=>d.status==="Draft"&&d.rejection_reason).length===0?(
+      <div style={{textAlign:"center",padding:"2rem",color:P.textTert,fontSize:"12px"}}>No rejected documents.</div>
+    ):studyDocs.filter(d=>d.status==="Draft"&&(d as any).rejection_reason).map((d,i)=>(
+      <div key={i} style={{background:P.bg,border:`0.5px solid #FECACA`,borderRadius:"10px",padding:"14px",display:"flex",flexDirection:"column",gap:"10px"}}>
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"10px"}}>
+          <div style={{flex:1}}>
+            <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"4px"}}>
+              <span style={{fontFamily:"monospace",fontSize:"9px",color:P.textTert}}>{d.artifact_num}</span>
+              <span style={{fontSize:"12px",fontWeight:"500"}}>{d.artifact_name}</span>
+              {statusBadge(d.status)}
+            </div>
+            <div style={{fontSize:"10px",color:P.textTert}}>Zone {d.zone} · {d.owner||"—"} · v{d.version||"—"}</div>
+          </div>
+          {d.file_path&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"10px",padding:"4px 10px",background:P.bgTert,color:P.textSec,borderRadius:"6px",textDecoration:"none",flexShrink:0}}>⬇ Download</a>}
+        </div>
+        <div style={{background:"#FEF2F2",borderRadius:"8px",padding:"10px 12px"}}>
+          <div style={{fontSize:"10px",fontWeight:"500",color:"#991B1B",marginBottom:"3px"}}>❌ Rejected by {(d as any).rejected_by} · {(d as any).rejected_at?new Date((d as any).rejected_at).toLocaleString():""}</div>
+          <div style={{fontSize:"11px",color:"#7F1D1D"}}>{(d as any).rejection_reason}</div>
+        </div>
+        {(d as any).appeal_reason&&(
+          <div style={{background:P.primaryLight,borderRadius:"8px",padding:"10px 12px"}}>
+            <div style={{fontSize:"10px",fontWeight:"500",color:P.primary,marginBottom:"3px"}}>📤 Appeal submitted</div>
+            <div style={{fontSize:"11px",color:"#3730A3"}}>{(d as any).appeal_reason}</div>
+          </div>
+        )}
+        {!(d as any).appeal_reason&&(
+          <div style={{display:"flex",gap:"8px",alignItems:"flex-end"}}>
+            <div style={{flex:1}}>
+              <label style={{fontSize:"10px",color:P.textSec,display:"block",marginBottom:"3px"}}>Appeal reason — explain why this should be approved</label>
+              <textarea id={`appeal-${d.id}`} placeholder="Provide justification for approval..." rows={2} style={{width:"100%",fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"6px 10px",resize:"vertical" as const}}/>
+            </div>
+            <button onClick={async()=>{
+              const ta=document.getElementById(`appeal-${d.id}`) as HTMLTextAreaElement;
+              if(!ta?.value.trim())return;
+              const{error}=await supabase.from("documents").update({status:"Under Review",appeal_reason:ta.value.trim()}).eq("id",d.id);
+              if(!error){
+                await supabase.from("audit_trail").insert([{user_id:user.id,user_email:user.email,action:"Appeal submitted",document_id:d.id,study_id:activeStudy?.study_id,field_changed:"status",old_value:"Draft",new_value:"Under Review",signature_reason:ta.value.trim(),created_at:new Date().toISOString()}]);
+                setDocs(prev=>prev.map(doc=>doc.id===d.id?{...doc,status:"Under Review",appeal_reason:ta.value.trim()}:doc));
+              }
+            }} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",flexShrink:0,marginBottom:"1px"}}>Submit appeal</button>
+          </div>
+        )}
+      </div>
+    ))}
+  </div>
+)}
+{(panel==="notapproved-detail-OLD")&&(
+  <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+    <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
+      <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>← Back</button>
+      <h1 style={{fontSize:"14px",fontWeight:"500"}}>Not approved — {activeStudy?.study_id}</h1>
+    </div>
+    <div style={{background:"#FEF2F2",border:"0.5px solid #FECACA",borderRadius:"10px",padding:"10px 14px",fontSize:"11px",color:"#991B1B"}}>
+      These documents were rejected. Review the rejection reason and appeal if needed.
+    </div>
+    {studyDocs.filter(d=>d.status==="Draft"&&d.rejection_reason).length===0?(
+      <div style={{textAlign:"center",padding:"2rem",color:P.textTert,fontSize:"12px"}}>No rejected documents.</div>
+    ):studyDocs.filter(d=>d.status==="Draft"&&(d as any).rejection_reason).map((d,i)=>(
+      <div key={i} style={{background:P.bg,border:`0.5px solid #FECACA`,borderRadius:"10px",padding:"14px",display:"flex",flexDirection:"column",gap:"10px"}}>
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"10px"}}>
+          <div style={{flex:1}}>
+            <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"4px"}}>
+              <span style={{fontFamily:"monospace",fontSize:"9px",color:P.textTert}}>{d.artifact_num}</span>
+              <span style={{fontSize:"12px",fontWeight:"500"}}>{d.artifact_name}</span>
+              {statusBadge(d.status)}
+            </div>
+            <div style={{fontSize:"10px",color:P.textTert}}>Zone {d.zone} · {d.owner||"—"} · v{d.version||"—"}</div>
+          </div>
+          {d.file_path&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"10px",padding:"4px 10px",background:P.bgTert,color:P.textSec,borderRadius:"6px",textDecoration:"none",flexShrink:0}}>⬇ Download</a>}
+        </div>
+        <div style={{background:"#FEF2F2",borderRadius:"8px",padding:"10px 12px"}}>
+          <div style={{fontSize:"10px",fontWeight:"500",color:"#991B1B",marginBottom:"3px"}}>❌ Rejected by {(d as any).rejected_by} · {(d as any).rejected_at?new Date((d as any).rejected_at).toLocaleString():""}</div>
+          <div style={{fontSize:"11px",color:"#7F1D1D"}}>{(d as any).rejection_reason}</div>
+        </div>
+        {(d as any).appeal_reason&&(
+          <div style={{background:P.primaryLight,borderRadius:"8px",padding:"10px 12px"}}>
+            <div style={{fontSize:"10px",fontWeight:"500",color:P.primary,marginBottom:"3px"}}>📤 Appeal submitted</div>
+            <div style={{fontSize:"11px",color:"#3730A3"}}>{(d as any).appeal_reason}</div>
+          </div>
+        )}
+        {!(d as any).appeal_reason&&(
+          <div style={{display:"flex",gap:"8px",alignItems:"flex-end"}}>
+            <div style={{flex:1}}>
+              <label style={{fontSize:"10px",color:P.textSec,display:"block",marginBottom:"3px"}}>Appeal reason — explain why this should be approved</label>
+              <textarea id={`appeal-${d.id}`} placeholder="Provide justification for approval..." rows={2} style={{width:"100%",fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"6px 10px",resize:"vertical" as const}}/>
+            </div>
+            <button onClick={async()=>{
+              const ta=document.getElementById(`appeal-${d.id}`) as HTMLTextAreaElement;
+              if(!ta?.value.trim())return;
+              const{error}=await supabase.from("documents").update({status:"Under Review",appeal_reason:ta.value.trim()}).eq("id",d.id);
+              if(!error){
+                await supabase.from("audit_trail").insert([{user_id:user.id,user_email:user.email,action:"Appeal submitted",document_id:d.id,study_id:activeStudy?.study_id,field_changed:"status",old_value:"Draft",new_value:"Under Review",signature_reason:ta.value.trim(),created_at:new Date().toISOString()}]);
+                setDocs(prev=>prev.map(doc=>doc.id===d.id?{...doc,status:"Under Review",appeal_reason:ta.value.trim()}:doc));
+              }
+            }} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",flexShrink:0,marginBottom:"1px"}}>Submit appeal</button>
+          </div>
+        )}
+      </div>
+    ))}
+  </div>
+)}
+{(panel==="notapproved-detail-OLD")&&(
+  <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+    <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
+      <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>← Back</button>
+      <h1 style={{fontSize:"14px",fontWeight:"500"}}>Not approved — {activeStudy?.study_id}</h1>
+    </div>
     <div style={{background:"#FFFBEB",border:"0.5px solid #FDE68A",borderRadius:"10px",padding:"10px 14px",fontSize:"11px",color:"#92400E"}}>
       Documents filed but not yet approved. Use the Approve button to add an electronic signature (21 CFR Part 11).
     </div>
@@ -546,25 +713,74 @@ export default function TMF360(){
       <h1 style={{fontSize:"14px",fontWeight:"500"}}>Pending review — {activeStudy?.study_id}</h1>
     </div>
     <div style={{background:P.primaryLight,border:`0.5px solid #C7D2FE`,borderRadius:"10px",padding:"10px 14px",fontSize:"11px",color:"#3730A3"}}>
-      Documents in Draft or Under Review status waiting for approval.
+      Review submitted documents. Approve with electronic signature or reject with a reason.
     </div>
-    {studyDocs.filter(d=>["Draft","Under Review"].includes(d.status)).length===0?(
-      <div style={{textAlign:"center",padding:"2rem",color:P.textTert,fontSize:"12px"}}>No documents pending review.</div>
-    ):studyDocs.filter(d=>["Draft","Under Review"].includes(d.status)).map((d,i)=>(
-      <div key={i} style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"10px",padding:"12px 14px",display:"flex",alignItems:"center",gap:"10px"}}>
-        <div style={{flex:1}}>
-          <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"3px"}}>
-            <span style={{fontFamily:"monospace",fontSize:"9px",color:P.textTert}}>{d.artifact_num}</span>
-            <span style={{fontSize:"12px",fontWeight:"500"}}>{d.artifact_name}</span>
-            {statusBadge(d.status)}
+    {studyDocs.filter(d=>d.status==="Under Review").length===0?(
+      <div style={{textAlign:"center",padding:"2rem",color:P.textTert,fontSize:"12px"}}>No documents pending review. Uploaders must submit documents for review first.</div>
+    ):studyDocs.filter(d=>d.status==="Under Review").map((d,i)=>(
+      <div key={i} style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"14px",display:"flex",flexDirection:"column",gap:"10px"}}>
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"10px"}}>
+          <div style={{flex:1}}>
+            <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"4px"}}>
+              <span style={{fontFamily:"monospace",fontSize:"9px",color:P.textTert}}>{d.artifact_num}</span>
+              <span style={{fontSize:"13px",fontWeight:"500"}}>{d.artifact_name}</span>
+              {statusBadge(d.status)}
+            </div>
+            <div style={{fontSize:"10px",color:P.textTert}}>Zone {d.zone} · Owner: {d.owner||"—"} · v{d.version||"—"} · Effective: {d.effective_date||"—"}</div>
+            {d.custom_file_name&&<div style={{fontSize:"10px",color:P.textSec,marginTop:"2px"}}>📄 {d.custom_file_name}{d.file_size?` (${formatSize(d.file_size)})`:""}</div>}
           </div>
-          <div style={{fontSize:"10px",color:P.textTert}}>Zone {d.zone} · Owner: {d.owner||"—"} · v{d.version||"—"} · Effective: {d.effective_date||"—"}</div>
-          {d.custom_file_name&&<div style={{fontSize:"10px",color:P.textSec,marginTop:"2px"}}>📄 {d.custom_file_name}</div>}
-          {d.comments&&<div style={{fontSize:"10px",color:P.textTert,marginTop:"2px"}}>💬 {d.comments.split("\n").length} comment{d.comments.split("\n").length!==1?"s":""}</div>}
+          <div style={{display:"flex",gap:"6px",flexShrink:0}}>
+            {d.file_path&&canPreview(d.file_name||"")&&<button onClick={()=>openPreview(d)} style={{fontSize:"10px",padding:"5px 10px",background:"#EFF6FF",color:"#1E40AF",border:"none",borderRadius:"6px",cursor:"pointer"}}>Preview</button>}
+            {d.file_path&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"10px",padding:"5px 10px",background:P.bgTert,color:P.textSec,borderRadius:"6px",textDecoration:"none"}}>⬇ Download</a>}
+          </div>
         </div>
-        <div style={{display:"flex",gap:"6px",flexShrink:0}}>
-          {d.file_path&&canPreview(d.file_name||"")&&<button onClick={()=>openPreview(d)} style={{fontSize:"10px",padding:"5px 10px",background:"#EFF6FF",color:"#1E40AF",border:"none",borderRadius:"6px",cursor:"pointer"}}>Preview</button>}
-          <button onClick={()=>{setSelectedDoc(d);setShowApproveModal(true);}} style={{fontSize:"10px",padding:"5px 10px",background:P.successLight,color:"#065F46",border:"0.5px solid #6EE7B7",borderRadius:"6px",cursor:"pointer"}}>Approve</button>
+        {(d as any).submission_reason&&(
+          <div style={{background:"#EFF6FF",borderRadius:"8px",padding:"10px 12px"}}>
+            <div style={{fontSize:"10px",fontWeight:"500",color:"#1E40AF",marginBottom:"3px"}}>📤 Submitted by {d.owner} for review</div>
+            <div style={{fontSize:"11px",color:"#1E3A5F"}}>{(d as any).submission_reason}</div>
+          </div>
+        )}
+        {(d as any).appeal_reason&&(
+          <div style={{background:P.primaryLight,borderRadius:"8px",padding:"10px 12px"}}>
+            <div style={{fontSize:"10px",fontWeight:"500",color:P.primary,marginBottom:"3px"}}>🔄 Appeal from uploader</div>
+            <div style={{fontSize:"11px",color:"#3730A3"}}>{(d as any).appeal_reason}</div>
+          </div>
+        )}
+        {d.comments&&(
+          <div style={{background:P.bgSec,borderRadius:"8px",padding:"10px 12px",maxHeight:"100px",overflowY:"auto"}}>
+            <div style={{fontSize:"10px",fontWeight:"500",color:P.textSec,marginBottom:"4px"}}>💬 Comments</div>
+            {d.comments.split("\n").map((c,ci)=><div key={ci} style={{fontSize:"11px",color:P.textSec,marginBottom:"2px"}}>{c}</div>)}
+          </div>
+        )}
+        <div style={{display:"flex",gap:"8px",alignItems:"flex-end",borderTop:`0.5px solid ${P.border}`,paddingTop:"10px"}}>
+          <div style={{flex:1}}>
+            <label style={{fontSize:"10px",color:P.textSec,display:"block",marginBottom:"3px"}}>Reviewer comment (optional)</label>
+            <textarea id={`review-comment-${d.id}`} placeholder="Add review notes before approving or rejecting..." rows={2} style={{width:"100%",fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"6px 10px",resize:"vertical" as const}}/>
+          </div>
+          <div style={{display:"flex",flexDirection:"column" as const,gap:"6px",flexShrink:0}}>
+            <button onClick={async()=>{
+              const ta=document.getElementById(`review-comment-${d.id}`) as HTMLTextAreaElement;
+              if(ta?.value.trim()){
+                const existing=d.comments||"";
+                const newComment=`${existing}${existing?"\n":""}[${new Date().toLocaleString()} - ${user.email} (Reviewer)]: ${ta.value.trim()}`;
+                await supabase.from("documents").update({comments:newComment}).eq("id",d.id);
+                setDocs(prev=>prev.map(doc=>doc.id===d.id?{...doc,comments:newComment}:doc));
+                ta.value="";
+              }
+              setSelectedDoc(d);setShowApproveModal(true);
+            }} style={{fontSize:"11px",padding:"7px 14px",background:P.success,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",fontWeight:"500"}}>✓ Approve</button>
+            <button onClick={async()=>{
+              const ta=document.getElementById(`review-comment-${d.id}`) as HTMLTextAreaElement;
+              const reason=ta?.value.trim();
+              if(!reason){alert("Please add a rejection reason before rejecting.");return;}
+              const now=new Date().toISOString();
+              const{error}=await supabase.from("documents").update({status:"Draft",rejection_reason:reason,rejected_by:user.email,rejected_at:now,appeal_reason:""}).eq("id",d.id);
+              if(!error){
+                await supabase.from("audit_trail").insert([{user_id:user.id,user_email:user.email,action:"Document rejected",document_id:d.id,study_id:activeStudy?.study_id,field_changed:"status",old_value:"Under Review",new_value:"Draft",signature_reason:reason,created_at:now}]);
+                setDocs(prev=>prev.map(doc=>doc.id===d.id?{...doc,status:"Draft",rejection_reason:reason,rejected_by:user.email,rejected_at:now,appeal_reason:""}:doc));
+              }
+            }} style={{fontSize:"11px",padding:"7px 14px",background:"#FEF2F2",color:"#991B1B",border:"0.5px solid #FECACA",borderRadius:"8px",cursor:"pointer",fontWeight:"500"}}>✕ Reject</button>
+          </div>
         </div>
       </div>
     ))}
@@ -700,7 +916,10 @@ export default function TMF360(){
                             {d.file_path&&(
                               <a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none"}}>Download</a>
                             )}
-                            {d.status!=="Approved"&&(
+                            {d.status==="Draft"&&(
+                              <button onClick={()=>{setSelectedDoc(d);setShowSubmitModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:"#EFF6FF",color:"#1E40AF",border:"none",borderRadius:"4px",cursor:"pointer"}}>Submit</button>
+                            )}
+{d.status==="Under Review"&&(
                               <button onClick={()=>{setSelectedDoc(d);setShowApproveModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:P.successLight,color:"#065F46",border:"none",borderRadius:"4px",cursor:"pointer"}}>Approve</button>
                             )}
                             <button onClick={()=>{setSelectedDoc(d);setCommentText("");setShowCommentModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:P.primaryLight,color:P.primary,border:"none",borderRadius:"4px",cursor:"pointer"}}>Comment</button>
@@ -964,6 +1183,32 @@ export default function TMF360(){
             <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
               <button onClick={()=>{setShowDocModal(false);setSelectedFile(null);setPendingFilePath("");}} style={{fontSize:"11px",padding:"6px 14px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>Cancel</button>
               <button onClick={addDocument} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Add document</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Submit for Review Modal */}
+      {showSubmitModal&&selectedDoc&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
+          <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"420px",border:`0.5px solid ${P.border}`}}>
+            <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"4px"}}>Submit for review</h2>
+            <p style={{fontSize:"11px",color:P.textSec,marginBottom:"1rem"}}>{selectedDoc.artifact_name}</p>
+            <div style={{marginBottom:"1rem"}}>
+              <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Reason for submission</label>
+              <textarea value={submissionReason} onChange={e=>setSubmissionReason(e.target.value)} placeholder="Explain why this document is ready for review..." rows={3} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px",resize:"vertical" as const}}/>
+            </div>
+            <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
+              <button onClick={()=>{setShowSubmitModal(false);setSubmissionReason("");}} style={{fontSize:"11px",padding:"6px 14px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>Cancel</button>
+              <button onClick={async()=>{
+                if(!submissionReason.trim()){alert("Please add a reason for submission.");return;}
+                const{error}=await supabase.from("documents").update({status:"Under Review",submission_reason:submissionReason}).eq("id",selectedDoc.id);
+                if(!error){
+                  await supabase.from("audit_trail").insert([{user_id:user.id,user_email:user.email,action:"Submitted for review",document_id:selectedDoc.id,study_id:activeStudy?.study_id,field_changed:"status",old_value:"Draft",new_value:"Under Review",signature_reason:submissionReason,created_at:new Date().toISOString()}]);
+                  setDocs(prev=>prev.map(d=>d.id===selectedDoc.id?{...d,status:"Under Review",submission_reason:submissionReason}:d));
+                }
+                setShowSubmitModal(false);setSubmissionReason("");setSelectedDoc(null);
+              }} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Submit for review</button>
             </div>
           </div>
         </div>
