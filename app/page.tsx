@@ -140,7 +140,7 @@ export default function TMF360() {
   }
 
   async function loadDocs(studyId: string, uid: string) {
-    const {data} = await supabase.from("Documents").select("*").eq("study_id", studyId).eq("user_id", uid).order("created_at", {ascending:false});
+    const {data} = await supabase.from("documents").select("*").eq("study_id", studyId).eq("user_id", uid).order("created_at", {ascending:false});
     if (data) setDocs(data);
   }
 
@@ -205,7 +205,7 @@ console.log("Upload success:", upData);
       file_type: (window as any)._pendingFileType || "",
       file_size: (window as any)._pendingFileSize || 0,
     };
-    const {data,error} = await supabase.from("Documents").insert([d]).select();
+    const {data,error} = await supabase.from("documents").insert([d]).select();
     if (!error && data) setDocs(prev=>[data[0],...prev]);
     setShowDocModal(false); setSelectedFile(null); setFVersion(""); setFOwner(""); setFEff(""); setFExp("");
     (window as any)._pendingFilePath = null; (window as any)._pendingFileName = null;
