@@ -399,6 +399,7 @@ export default function TMF360(){
           {navItem("readiness","Inspection readiness","ti-shield-check")}
           {navItem("chat","AI specialist","ti-message-circle")}
           {navItem("audit","Audit trail","ti-lock")}
+          {navItem("quality","Quality checks","ti-shield-check")}
         </aside>
 
         <main style={{flex:1,overflowY:"auto",padding:"1.25rem"}}>
@@ -1100,6 +1101,14 @@ export default function TMF360(){
             </div>
           )}
 
+          {/* QUALITY CHECKS */}
+          {panel==="quality"&&(
+            <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+              <h1 style={{fontSize:"14px",fontWeight:"500"}}>Quality checks — {activeStudy?.study_id||"No study selected"}</h1>
+              {!activeStudy?<div style={{fontSize:"12px",color:P.textTert}}>Select a study first.</div>:(<QualityPanel docs={studyDocs} P={P} supabase={supabase} setDocs={setDocs}/>)}
+            </div>
+          )}
+
           {/* AUDIT TRAIL */}
           {panel==="audit"&&(
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
@@ -1281,6 +1290,138 @@ export default function TMF360(){
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function calcQuality(d:any):{score:number,flags:string[]}{
+  const flags:string[]=[];
+  if(!d.file_path||!d.file_name){flags.push("NO_FILE");}
+  if(!d.effective_date){flags.push("MISSING_DATE");}
+  if(!d.owner||d.owner.trim()===""){flags.push("MISSING_OWNER");}
+  if(!d.version||d.version.trim()===""){flags.push("MISSING_VERSION");}
+  if(!d.custom_file_name||d.custom_file_name.trim()===""){flags.push("MISSING_CUSTOM_NAME");}
+  if(d.expiry_date&&new Date(d.expiry_date)<new Date()){flags.push("EXPIRED");}
+  let score=100;
+  if(flags.includes("NO_FILE"))score-=20;
+  if(flags.includes("MISSING_DATE"))score-=10;
+  if(flags.includes("MISSING_OWNER"))score-=10;
+  if(flags.includes("MISSING_VERSION"))score-=10;
+  if(flags.includes("MISSING_CUSTOM_NAME"))score-=5;
+  if(flags.includes("EXPIRED"))score-=15;
+  return{score:Math.max(0,score),flags};
+}
+
+const FLAG_LABELS:Record<string,{label:string,color:string,bg:string,fix:string}> = {
+  "NO_FILE":{label:"No file uploaded",color:"#991B1B",bg:"#FEF2F2",fix:"Upload the document file"},
+  "MISSING_DATE":{label:"Missing effective date",color:"#92400E",bg:"#FFFBEB",fix:"Add the effective date"},
+  "MISSING_OWNER":{label:"Missing owner",color:"#92400E",bg:"#FFFBEB",fix:"Assign a document owner"},
+  "MISSING_VERSION":{label:"Missing version",color:"#92400E",bg:"#FFFBEB",fix:"Add version number (e.g. v1.0)"},
+  "MISSING_CUSTOM_NAME":{label:"No custom document name",color:"#1E40AF",bg:"#EFF6FF",fix:"Set a descriptive document name"},
+  "EXPIRED":{label:"Document expired",color:"#991B1B",bg:"#FEF2F2",fix:"Renew or replace the expired document"},
+  "DUPLICATE":{label:"Duplicate file name",color:"#6B21A8",bg:"#FAF5FF",fix:"Check for duplicate uploads"},
+  "VERSION_CONFLICT":{label:"Version conflict",color:"#6B21A8",bg:"#FAF5FF",fix:"Review multiple versions of same artifact"},
+};
+
+function QualityPanel({docs,P,supabase,setDocs}:{docs:any[],P:any,supabase:any,setDocs:any}){
+  const fileNames=docs.map(d=>d.file_name).filter(Boolean);
+  const duplicateNames=fileNames.filter((n,i)=>fileNames.indexOf(n)!==i);
+  const artifactNums=docs.map(d=>d.artifact_num);
+  const duplicateArtifacts=artifactNums.filter((n,i)=>artifactNums.indexOf(n)!==i);
+
+  const docsWithQuality=docs.map(d=>{
+    const{score,flags}=calcQuality(d);
+    const allFlags=[...flags];
+    if(d.file_name&&duplicateNames.includes(d.file_name))allFlags.push("DUPLICATE");
+    if(d.artifact_num&&duplicateArtifacts.includes(d.artifact_num))allFlags.push("VERSION_CONFLICT");
+    return{...d,qualityScore:Math.max(0,score-(allFlags.includes("DUPLICATE")?15:0)-(allFlags.includes("VERSION_CONFLICT")?10:0)),qualityFlags:allFlags};
+  }).sort((a,b)=>a.qualityScore-b.qualityScore);
+
+  const avgScore=docs.length?Math.round(docsWithQuality.reduce((s,d)=>s+d.qualityScore,0)/docs.length):0;
+  const perfect=docsWithQuality.filter(d=>d.qualityScore===100).length;
+  const needsWork=docsWithQuality.filter(d=>d.qualityScore<70).length;
+
+  const scoreColor=(s:number)=>s>=90?"#10B981":s>=70?"#F59E0B":"#EF4444";
+  const scoreBg=(s:number)=>s>=90?"#ECFDF5":s>=70?"#FFFBEB":"#FEF2F2";
+
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+      {/* Summary */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"10px"}}>
+        {[
+          {val:`${avgScore}`,label:"Average quality score",color:scoreColor(avgScore),bg:scoreBg(avgScore)},
+          {val:`${docs.length}`,label:"Total documents",color:P.primary,bg:P.primaryLight},
+          {val:`${perfect}`,label:"Perfect score (100)",color:"#10B981",bg:"#ECFDF5"},
+          {val:`${needsWork}`,label:"Needs attention (<70)",color:"#EF4444",bg:"#FEF2F2"},
+        ].map((m,i)=>(
+          <div key={i} style={{background:`linear-gradient(135deg,${m.bg},#fff)`,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"14px",borderTop:`3px solid ${m.color}`}}>
+            <div style={{fontSize:"26px",fontWeight:"500",color:m.color}}>{m.val}</div>
+            <div style={{fontSize:"11px",color:P.textSec,marginTop:"3px"}}>{m.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Issue summary */}
+      {Object.keys(FLAG_LABELS).map(flag=>{
+        const affected=docsWithQuality.filter(d=>d.qualityFlags.includes(flag));
+        if(!affected.length)return null;
+        const f=FLAG_LABELS[flag];
+        return(
+          <div key={flag} style={{background:f.bg,border:`0.5px solid ${P.border}`,borderRadius:"10px",padding:"10px 14px",display:"flex",alignItems:"center",gap:"10px"}}>
+            <div style={{flex:1}}>
+              <span style={{fontSize:"12px",fontWeight:"500",color:f.color}}>{f.label}</span>
+              <span style={{fontSize:"11px",color:P.textTert,marginLeft:"8px"}}>{affected.length} document{affected.length!==1?"s":""}</span>
+              <div style={{fontSize:"10px",color:P.textTert,marginTop:"2px"}}>Fix: {f.fix}</div>
+            </div>
+            <span style={{fontSize:"11px",fontWeight:"500",color:f.color,flexShrink:0}}>−{flag==="NO_FILE"?20:flag==="EXPIRED"?15:flag==="DUPLICATE"?15:flag==="VERSION_CONFLICT"?10:flag==="MISSING_CUSTOM_NAME"?5:10} pts each</span>
+          </div>
+        );
+      })}
+
+      {/* Document list */}
+      <div style={{background:"#fff",border:`0.5px solid ${P.border}`,borderRadius:"12px",overflow:"hidden"}}>
+        <div style={{padding:"10px 14px",borderBottom:`0.5px solid ${P.border}`,fontSize:"11px",fontWeight:"500",color:P.textSec}}>All documents — sorted by quality score</div>
+        <table style={{width:"100%",fontSize:"11px",borderCollapse:"collapse"}}>
+          <thead><tr style={{borderBottom:`0.5px solid ${P.border}`}}>
+            {["Score","Artifact","Zone","File","Issues","Status"].map(h=>(
+              <th key={h} style={{textAlign:"left",padding:"8px 10px",fontSize:"10px",fontWeight:"500",color:P.textTert}}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody>
+            {docsWithQuality.length===0?(
+              <tr><td colSpan={6} style={{textAlign:"center",padding:"2rem",color:P.textTert}}>No documents yet.</td></tr>
+            ):docsWithQuality.map((d,i)=>(
+              <tr key={i} style={{borderBottom:`0.5px solid ${P.bgTert}`}}>
+                <td style={{padding:"8px 10px"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:"6px"}}>
+                    <div style={{width:"36px",height:"36px",borderRadius:"50%",background:scoreBg(d.qualityScore),display:"flex",alignItems:"center",justifyContent:"center",fontSize:"11px",fontWeight:"500",color:scoreColor(d.qualityScore),border:`1.5px solid ${scoreColor(d.qualityScore)}`}}>{d.qualityScore}</div>
+                  </div>
+                </td>
+                <td style={{padding:"8px 10px"}}>
+                  <div style={{fontFamily:"monospace",fontSize:"9px",color:P.textTert}}>{d.artifact_num}</div>
+                  <div style={{fontSize:"11px",fontWeight:"500"}}>{d.custom_file_name||d.artifact_name}</div>
+                </td>
+                <td style={{padding:"8px 10px",fontSize:"11px",color:P.textSec}}>Zone {d.zone}</td>
+                <td style={{padding:"8px 10px",fontSize:"11px",color:P.textSec}}>{d.file_name?`${fileIcon(d.file_name)} ${d.file_name}`:"—"}</td>
+                <td style={{padding:"8px 10px"}}>
+                  {d.qualityFlags.length===0?(
+                    <span style={{fontSize:"10px",color:"#10B981"}}>✓ No issues</span>
+                  ):(
+                    <div style={{display:"flex",gap:"3px",flexWrap:"wrap" as const}}>
+                      {d.qualityFlags.map((f:string,fi:number)=>(
+                        <span key={fi} style={{fontSize:"9px",padding:"1px 5px",borderRadius:"4px",background:FLAG_LABELS[f]?.bg||"#F3F4F6",color:FLAG_LABELS[f]?.color||P.textSec}}>{FLAG_LABELS[f]?.label||f}</span>
+                      ))}
+                    </div>
+                  )}
+                </td>
+                <td style={{padding:"8px 10px"}}>
+                  <span style={{fontSize:"10px",padding:"2px 7px",borderRadius:"8px",background:d.status==="Approved"?"#ECFDF5":d.status==="Under Review"?"#EFF6FF":"#FFFBEB",color:d.status==="Approved"?"#065F46":d.status==="Under Review"?"#1E40AF":"#92400E"}}>{d.status}</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
