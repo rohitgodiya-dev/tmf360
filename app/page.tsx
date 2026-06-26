@@ -399,6 +399,7 @@ export default function TMF360(){
           {navItem("readiness","Inspection readiness","ti-shield-check")}
           {navItem("chat","AI specialist","ti-message-circle")}
           {navItem("audit","Audit trail","ti-lock")}
+          {navItem("quality","Quality checks","ti-clipboard-list")}
 {navItem("quality","Quality checks","ti-clipboard-list")}
           {navItem("quality","Quality checks","ti-shield-check")}
         </aside>
