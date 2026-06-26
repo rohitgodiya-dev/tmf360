@@ -402,7 +402,176 @@ export default function TMF360(){
         <main style={{flex:1,overflowY:"auto",padding:"1.25rem"}}>
 
           {/* DASHBOARD */}
-          {panel==="dashboard"&&(
+          {(panel==="completeness-detail")&&(
+  <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+    <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
+      <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>← Back</button>
+      <h1 style={{fontSize:"14px",fontWeight:"500"}}>TMF completeness — {activeStudy?.study_id}</h1>
+    </div>
+    <div style={{background:"#EFF6FF",border:"0.5px solid #BFDBFE",borderRadius:"10px",padding:"10px 14px",fontSize:"11px",color:"#1E40AF"}}>
+      Showing all Core artifacts. Green = approved document filed. Red = missing. Download available for approved documents.
+    </div>
+    {ZONES.map(({z,zn})=>{
+      const zoneArtsAll=TMF.filter(a=>a.cl==="Core"&&a.z===z);
+      const zoneApproved=studyDocs.filter(d=>d.status==="Approved"&&zoneArtsAll.some(a=>a.a===d.artifact_num||a.an.toLowerCase()===d.artifact_name.toLowerCase()));
+      const pct=zoneComp(z);
+      return(
+        <div key={z} style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",overflow:"hidden"}}>
+          <div style={{display:"flex",alignItems:"center",gap:"10px",padding:"10px 14px",borderBottom:`0.5px solid ${P.border}`,background:P.bgSec}}>
+            <span style={{fontSize:"12px",fontWeight:"500"}}>Zone {z} — {zn}</span>
+            <div style={{flex:1,height:"4px",background:P.bgTert,borderRadius:"4px",overflow:"hidden"}}><div style={{width:`${pct}%`,height:"100%",background:ZONE_COLORS[z]||P.primary,borderRadius:"4px"}}/></div>
+            <span style={{fontSize:"11px",fontWeight:"500",color:ZONE_COLORS[z]||P.primary}}>{pct}%</span>
+          </div>
+          {zoneArtsAll.map(a=>{
+            const filed=studyDocs.find(d=>d.artifact_num===a.a&&d.status==="Approved");
+            return(
+              <div key={a.a} style={{display:"flex",alignItems:"center",gap:"10px",padding:"8px 14px",borderBottom:`0.5px solid ${P.bgTert}`}}>
+                <span style={{fontSize:"14px"}}>{filed?"✅":"❌"}</span>
+                <span style={{fontFamily:"monospace",fontSize:"9px",color:P.textTert,flexShrink:0}}>{a.a}</span>
+                <span style={{fontSize:"11px",flex:1,color:filed?P.text:P.textSec}}>{a.an}</span>
+                {filed&&filed.file_path&&(
+                  <a href={supabase.storage.from("Documents").getPublicUrl(filed.file_path).data.publicUrl} download={filed.custom_file_name||filed.file_name} style={{fontSize:"9px",padding:"3px 8px",background:P.successLight,color:"#065F46",borderRadius:"6px",textDecoration:"none",flexShrink:0}}>⬇ Download</a>
+                )}
+                {filed&&<span style={{fontSize:"9px",color:"#065F46",flexShrink:0}}>v{filed.version} · {filed.approved_by}</span>}
+                {!filed&&<span style={{fontSize:"9px",padding:"2px 7px",background:"#FEF2F2",color:"#991B1B",borderRadius:"6px",flexShrink:0}}>{["3","4","5"].includes(a.z)?"CRITICAL":["1","2","7"].includes(a.z)?"MAJOR":"MINOR"}</span>}
+              </div>
+            );
+          })}
+        </div>
+      );
+    })}
+  </div>
+)}
+
+{(panel==="missing-detail")&&(
+  <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+    <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
+      <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>← Back</button>
+      <h1 style={{fontSize:"14px",fontWeight:"500"}}>Missing documents — {activeStudy?.study_id}</h1>
+    </div>
+    <div style={{background:"#FEF2F2",border:"0.5px solid #FECACA",borderRadius:"10px",padding:"10px 14px",fontSize:"11px",color:"#991B1B"}}>
+      These Core artifacts have no document filed. CRITICAL gaps in Zones 3, 4, 5 are immediate audit risk.
+    </div>
+    {["CRITICAL","MAJOR","MINOR"].map(sev=>{
+      const sevZones=sev==="CRITICAL"?["3","4","5"]:sev==="MAJOR"?["1","2","7"]:["6","8","9","10","11"];
+      const items=TMF.filter(a=>a.cl==="Core"&&sevZones.includes(a.z)&&!filedNames.some(f=>a.an.toLowerCase().includes(f)||f.includes(a.an.toLowerCase())));
+      if(!items.length)return null;
+      const colors:Record<string,any>={CRITICAL:{bg:"#FEF2F2",color:"#991B1B",border:"#FECACA"},MAJOR:{bg:"#FFFBEB",color:"#92400E",border:"#FDE68A"},MINOR:{bg:P.primaryLight,color:"#3730A3",border:"#C7D2FE"}};
+      const c=colors[sev];
+      return(
+        <div key={sev} style={{border:`0.5px solid ${c.border}`,borderRadius:"12px",overflow:"hidden"}}>
+          <div style={{background:c.bg,color:c.color,padding:"8px 14px",fontSize:"11px",fontWeight:"500"}}>{sev} — {items.length} missing artifact{items.length!==1?"s":""}</div>
+          {items.map((a,i)=>(
+            <div key={i} style={{display:"flex",alignItems:"center",gap:"10px",padding:"8px 14px",borderTop:`0.5px solid ${P.bgTert}`,background:P.bg}}>
+              <span style={{fontFamily:"monospace",fontSize:"9px",color:P.textTert,flexShrink:0}}>{a.a}</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:"11px",fontWeight:"500"}}>{a.an}</div>
+                <div style={{fontSize:"10px",color:P.textTert}}>Zone {a.z} — {a.zn}{a.iso?` · ISO 14155: ${a.iso}`:""}</div>
+              </div>
+              <button onClick={()=>{setFZone(a.z);setFArtifact(a.a+"|"+a.an+"|"+a.z);setShowDocModal(true);}} style={{fontSize:"9px",padding:"3px 8px",background:P.primaryLight,color:P.primary,border:`0.5px solid ${P.primary}`,borderRadius:"6px",cursor:"pointer",flexShrink:0}}>+ Upload</button>
+            </div>
+          ))}
+        </div>
+      );
+    })}
+  </div>
+)}
+
+{(panel==="notapproved-detail")&&(
+  <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+    <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
+      <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>← Back</button>
+      <h1 style={{fontSize:"14px",fontWeight:"500"}}>Not approved — {activeStudy?.study_id}</h1>
+    </div>
+    <div style={{background:"#FFFBEB",border:"0.5px solid #FDE68A",borderRadius:"10px",padding:"10px 14px",fontSize:"11px",color:"#92400E"}}>
+      Documents filed but not yet approved. Use the Approve button to add an electronic signature (21 CFR Part 11).
+    </div>
+    {studyDocs.filter(d=>d.status!=="Approved"&&d.status!=="Archived").length===0?(
+      <div style={{textAlign:"center",padding:"2rem",color:P.textTert,fontSize:"12px"}}>All filed documents are approved.</div>
+    ):studyDocs.filter(d=>d.status!=="Approved"&&d.status!=="Archived").map((d,i)=>(
+      <div key={i} style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"10px",padding:"12px 14px",display:"flex",alignItems:"center",gap:"10px"}}>
+        <div style={{flex:1}}>
+          <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"3px"}}>
+            <span style={{fontFamily:"monospace",fontSize:"9px",color:P.textTert}}>{d.artifact_num}</span>
+            <span style={{fontSize:"12px",fontWeight:"500"}}>{d.artifact_name}</span>
+            {statusBadge(d.status)}
+          </div>
+          <div style={{fontSize:"10px",color:P.textTert}}>Zone {d.zone} · {d.owner||"No owner"} · v{d.version||"—"} · {d.effective_date||"No date"}</div>
+          {d.custom_file_name&&<div style={{fontSize:"10px",color:P.textSec,marginTop:"2px"}}>📄 {d.custom_file_name}</div>}
+        </div>
+        <button onClick={()=>{setSelectedDoc(d);setShowApproveModal(true);}} style={{fontSize:"11px",padding:"6px 12px",background:P.successLight,color:"#065F46",border:"0.5px solid #6EE7B7",borderRadius:"8px",cursor:"pointer",flexShrink:0}}>Approve</button>
+      </div>
+    ))}
+  </div>
+)}
+
+{(panel==="expiring-detail")&&(
+  <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+    <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
+      <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>← Back</button>
+      <h1 style={{fontSize:"14px",fontWeight:"500"}}>Expiring documents — {activeStudy?.study_id}</h1>
+    </div>
+    {studyDocs.filter(d=>d.expiry_date&&new Date(d.expiry_date)<new Date(Date.now()+90*86400000)).length===0?(
+      <div style={{textAlign:"center",padding:"2rem",color:P.textTert,fontSize:"12px"}}>No documents expiring in the next 90 days.</div>
+    ):studyDocs.filter(d=>d.expiry_date&&new Date(d.expiry_date)<new Date(Date.now()+90*86400000)).sort((a,b)=>new Date(a.expiry_date).getTime()-new Date(b.expiry_date).getTime()).map((d,i)=>{
+      const daysLeft=Math.ceil((new Date(d.expiry_date).getTime()-Date.now())/(86400000));
+      const isExpired=daysLeft<0;
+      const isCritical=daysLeft<=30;
+      return(
+        <div key={i} style={{background:P.bg,border:`0.5px solid ${isExpired?"#FECACA":isCritical?"#FDE68A":P.border}`,borderRadius:"10px",padding:"12px 14px",display:"flex",alignItems:"center",gap:"12px"}}>
+          <div style={{width:"60px",height:"60px",borderRadius:"10px",background:isExpired?"#FEF2F2":isCritical?"#FFFBEB":"#ECFDF5",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <span style={{fontSize:"18px",fontWeight:"500",color:isExpired?"#EF4444":isCritical?"#F59E0B":"#10B981"}}>{Math.abs(daysLeft)}</span>
+            <span style={{fontSize:"8px",color:isExpired?"#EF4444":isCritical?"#F59E0B":"#10B981"}}>{isExpired?"days ago":"days left"}</span>
+          </div>
+          <div style={{flex:1}}>
+            <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"3px"}}>
+              <span style={{fontFamily:"monospace",fontSize:"9px",color:P.textTert}}>{d.artifact_num}</span>
+              <span style={{fontSize:"12px",fontWeight:"500"}}>{d.artifact_name}</span>
+              {statusBadge(d.status)}
+            </div>
+            <div style={{fontSize:"10px",color:P.textTert}}>Expires: <span style={{color:isExpired?"#EF4444":isCritical?"#F59E0B":"#10B981",fontWeight:"500"}}>{d.expiry_date}</span> · Owner: {d.owner||"—"} · v{d.version||"—"}</div>
+            {d.custom_file_name&&<div style={{fontSize:"10px",color:P.textSec,marginTop:"2px"}}>📄 {d.custom_file_name}</div>}
+          </div>
+          {d.file_path&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"10px",padding:"5px 10px",background:P.bgTert,color:P.textSec,borderRadius:"6px",textDecoration:"none",flexShrink:0}}>⬇ Download</a>}
+        </div>
+      );
+    })}
+  </div>
+)}
+
+{(panel==="pending-detail")&&(
+  <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+    <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
+      <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>← Back</button>
+      <h1 style={{fontSize:"14px",fontWeight:"500"}}>Pending review — {activeStudy?.study_id}</h1>
+    </div>
+    <div style={{background:P.primaryLight,border:`0.5px solid #C7D2FE`,borderRadius:"10px",padding:"10px 14px",fontSize:"11px",color:"#3730A3"}}>
+      Documents in Draft or Under Review status waiting for approval.
+    </div>
+    {studyDocs.filter(d=>["Draft","Under Review"].includes(d.status)).length===0?(
+      <div style={{textAlign:"center",padding:"2rem",color:P.textTert,fontSize:"12px"}}>No documents pending review.</div>
+    ):studyDocs.filter(d=>["Draft","Under Review"].includes(d.status)).map((d,i)=>(
+      <div key={i} style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"10px",padding:"12px 14px",display:"flex",alignItems:"center",gap:"10px"}}>
+        <div style={{flex:1}}>
+          <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"3px"}}>
+            <span style={{fontFamily:"monospace",fontSize:"9px",color:P.textTert}}>{d.artifact_num}</span>
+            <span style={{fontSize:"12px",fontWeight:"500"}}>{d.artifact_name}</span>
+            {statusBadge(d.status)}
+          </div>
+          <div style={{fontSize:"10px",color:P.textTert}}>Zone {d.zone} · Owner: {d.owner||"—"} · v{d.version||"—"} · Effective: {d.effective_date||"—"}</div>
+          {d.custom_file_name&&<div style={{fontSize:"10px",color:P.textSec,marginTop:"2px"}}>📄 {d.custom_file_name}</div>}
+          {d.comments&&<div style={{fontSize:"10px",color:P.textTert,marginTop:"2px"}}>💬 {d.comments.split("\n").length} comment{d.comments.split("\n").length!==1?"s":""}</div>}
+        </div>
+        <div style={{display:"flex",gap:"6px",flexShrink:0}}>
+          {d.file_path&&canPreview(d.file_name||"")&&<button onClick={()=>openPreview(d)} style={{fontSize:"10px",padding:"5px 10px",background:"#EFF6FF",color:"#1E40AF",border:"none",borderRadius:"6px",cursor:"pointer"}}>Preview</button>}
+          <button onClick={()=>{setSelectedDoc(d);setShowApproveModal(true);}} style={{fontSize:"10px",padding:"5px 10px",background:P.successLight,color:"#065F46",border:"0.5px solid #6EE7B7",borderRadius:"6px",cursor:"pointer"}}>Approve</button>
+        </div>
+      </div>
+    ))}
+  </div>
+)}
+
+{panel==="dashboard"&&(
             <div style={{display:"flex",flexDirection:"column",gap:"1rem"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                 <h1 style={{fontSize:"14px",fontWeight:"500"}}>Dashboard {activeStudy?`— ${activeStudy.study_id}`:""}</h1>
@@ -418,12 +587,13 @@ export default function TMF360(){
               ):(
                 <>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"10px"}}>
-                    {[{val:`${donePct}%`,label:"TMF completeness",color:scoreColor(donePct),bg:donePct>=80?P.successLight:donePct>=60?P.warningLight:P.dangerLight},
-                      {val:missing,label:"Missing / not approved",color:"#EF4444",bg:"#FEF2F2"},
-                      {val:expiring,label:"Expiring (90 days)",color:"#F59E0B",bg:"#FFFBEB"},
-                      {val:pending,label:"Pending review",color:P.primary,bg:P.primaryLight}
+                    {[{val:`${donePct}%`,label:"TMF completeness",color:scoreColor(donePct),bg:donePct>=80?P.successLight:donePct>=60?P.warningLight:P.dangerLight,page:"completeness-detail"},
+                      {val:missing,label:"Missing documents",color:"#EF4444",bg:"#FEF2F2",page:"missing-detail"},
+                      {val:studyDocs.filter(d=>d.status!=="Approved"&&d.status!=="Archived").length,label:"Not approved",color:"#F59E0B",bg:"#FFFBEB",page:"notapproved-detail"},
+                      {val:expiring,label:"Expiring (90 days)",color:"#EF4444",bg:"#FEF2F2",page:"expiring-detail"},
+                      {val:pending,label:"Pending review",color:P.primary,bg:P.primaryLight,page:"pending-detail"}
                     ].map((m,i)=>(
-                      <div key={i} style={{background:`linear-gradient(135deg, ${m.bg}, #fff)`,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"14px",borderTop:`3px solid ${m.color}`}}>
+                      <div key={i} onClick={()=>setPanel((m as any).page)} style={{background:`linear-gradient(135deg, ${m.bg}, #fff)`,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"14px",borderTop:`3px solid ${m.color}`,cursor:"pointer",transition:"transform 0.1s"}} onMouseEnter={e=>(e.currentTarget.style.transform="scale(1.02)")} onMouseLeave={e=>(e.currentTarget.style.transform="scale(1)")}>
                         <div style={{fontSize:"24px",fontWeight:"500",color:m.color}}>{m.val}</div>
                         <div style={{fontSize:"11px",color:P.textSec,marginTop:"3px"}}>{m.label}</div>
                       </div>
