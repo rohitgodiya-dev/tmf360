@@ -3,398 +3,455 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase";
 
 const TMF = [
-  {z:"1",zn:"Trial Management",s:"1.01",sn:"Trial Oversight",a:"01.01.04",an:"List of SOPs Current During Trial",cl:"Core",iso:"",def:"Record of which SOPs were in effect during the trial."},
-  {z:"1",zn:"Trial Management",s:"1.01",sn:"Trial Oversight",a:"01.01.08",an:"Monitoring Plan",cl:"Core",iso:"6.7, 7.3, 9.2.4.1",def:"Monitoring strategy, frequency, and approach for the trial."},
-  {z:"1",zn:"Trial Management",s:"1.02",sn:"Central Trial Team",a:"01.02.01",an:"Delegation of Authority Log",cl:"Core",iso:"6.2, 9.2",def:"Records delegation of sponsor responsibilities."},
-  {z:"1",zn:"Trial Management",s:"1.02",sn:"Central Trial Team",a:"01.02.02",an:"Staff CVs and Training Records",cl:"Core",iso:"6.2",def:"CVs and training records for sponsor/CRO staff."},
-  {z:"1",zn:"Trial Management",s:"1.03",sn:"Agreements",a:"01.03.01",an:"CRO Agreement",cl:"Core",iso:"6.1",def:"Contract between sponsor and CRO."},
-  {z:"1",zn:"Trial Management",s:"1.04",sn:"Monitoring",a:"01.04.01",an:"Monitoring Visit Report",cl:"Core",iso:"9.2.4",def:"Report from each monitoring visit."},
-  {z:"1",zn:"Trial Management",s:"1.05",sn:"Risk Management",a:"01.05.01",an:"Risk Assessment",cl:"Core",iso:"9.1",def:"Identified risks with mitigation strategies."},
-  {z:"2",zn:"Central Trial Documents",s:"2.01",sn:"Protocol",a:"02.01.01",an:"Protocol",cl:"Core",iso:"7.2, Annex A",def:"Clinical investigation plan."},
-  {z:"2",zn:"Central Trial Documents",s:"2.01",sn:"Protocol",a:"02.01.02",an:"Protocol Amendment",cl:"Core",iso:"7.2.10",def:"Documented changes to the approved protocol."},
-  {z:"2",zn:"Central Trial Documents",s:"2.02",sn:"Informed Consent",a:"02.02.01",an:"Informed Consent Form (Master)",cl:"Core",iso:"7.4, 4.1",def:"Master ICF template approved by IRB/IEC."},
-  {z:"2",zn:"Central Trial Documents",s:"2.03",sn:"Device Description",a:"02.03.01",an:"Investigator Brochure / Device Description",cl:"Core",iso:"7.3",def:"Summary of clinical and non-clinical device data."},
-  {z:"2",zn:"Central Trial Documents",s:"2.04",sn:"CRFs",a:"02.04.01",an:"Case Report Form (Blank)",cl:"Core",iso:"7.8",def:"Blank CRF templates."},
-  {z:"2",zn:"Central Trial Documents",s:"2.05",sn:"SAP",a:"02.05.01",an:"Statistical Analysis Plan",cl:"Core",iso:"7.9",def:"Detailed statistical analysis methods."},
-  {z:"3",zn:"Regulatory",s:"3.01",sn:"Regulatory Applications",a:"03.01.01",an:"Regulatory Submission",cl:"Core",iso:"9.3",def:"Submission to regulatory authority (e.g., IDE)."},
-  {z:"3",zn:"Regulatory",s:"3.01",sn:"Regulatory Applications",a:"03.01.02",an:"Regulatory Approval / Authorization",cl:"Core",iso:"9.3",def:"Approval letter from regulatory authority."},
-  {z:"3",zn:"Regulatory",s:"3.02",sn:"Correspondence",a:"03.02.01",an:"Regulatory Correspondence",cl:"Core",iso:"9.3",def:"All correspondence with regulatory authorities."},
-  {z:"3",zn:"Regulatory",s:"3.03",sn:"Progress Reports",a:"03.03.01",an:"Annual / Progress Report to Regulatory Authority",cl:"Core",iso:"9.4",def:"Periodic progress reports."},
-  {z:"4",zn:"IRB or IEC and other Approvals",s:"4.01",sn:"IRB or IEC",a:"04.01.01",an:"IRB / IEC Submission",cl:"Core",iso:"9.5",def:"Submission package to IRB/IEC."},
-  {z:"4",zn:"IRB or IEC and other Approvals",s:"4.01",sn:"IRB or IEC",a:"04.01.02",an:"IRB / IEC Approval",cl:"Core",iso:"4.1.3, 9.5.1",def:"Written IRB/IEC approval."},
-  {z:"4",zn:"IRB or IEC and other Approvals",s:"4.01",sn:"IRB or IEC",a:"04.01.03",an:"IRB / IEC Continuing Review",cl:"Core",iso:"9.5.3",def:"Annual continuing review documentation."},
-  {z:"4",zn:"IRB or IEC and other Approvals",s:"4.01",sn:"IRB or IEC",a:"04.01.04",an:"IRB / IEC Correspondence",cl:"Core",iso:"9.5",def:"All correspondence with IRB/IEC."},
-  {z:"5",zn:"Site Management",s:"5.01",sn:"Site Selection",a:"05.01.01",an:"Site Selection and Qualification Report",cl:"Core",iso:"6.5, 9.2.1",def:"Site evaluation and qualification documentation."},
-  {z:"5",zn:"Site Management",s:"5.01",sn:"Site Selection",a:"05.01.02",an:"Investigator / Site Qualification Questionnaire",cl:"Core",iso:"6.5",def:"Questionnaire assessing site capabilities."},
-  {z:"5",zn:"Site Management",s:"5.02",sn:"Site Initiation",a:"05.02.01",an:"Site Initiation Visit Report",cl:"Core",iso:"9.2.2",def:"SIV report before first subject enrollment."},
-  {z:"5",zn:"Site Management",s:"5.02",sn:"Site Initiation",a:"05.02.02",an:"Training Materials",cl:"Core",iso:"9.2.2",def:"Protocol and device training materials."},
-  {z:"5",zn:"Site Management",s:"5.02",sn:"Site Initiation",a:"05.02.03",an:"Site Training Records",cl:"Core",iso:"9.2.2",def:"Records confirming training completion."},
-  {z:"5",zn:"Site Management",s:"5.03",sn:"Investigator and Staff",a:"05.03.01",an:"Investigator Agreement / Signed Protocol",cl:"Core",iso:"6.4, 9.2.3.1",def:"Signed agreement or protocol page."},
-  {z:"5",zn:"Site Management",s:"5.03",sn:"Investigator and Staff",a:"05.03.02",an:"Principal Investigator CV",cl:"Core",iso:"6.4.1",def:"Current CV of the principal investigator."},
-  {z:"5",zn:"Site Management",s:"5.03",sn:"Investigator and Staff",a:"05.03.03",an:"Sub-Investigator CVs",cl:"Core",iso:"6.4.1",def:"CVs of all sub-investigators."},
-  {z:"5",zn:"Site Management",s:"5.03",sn:"Investigator and Staff",a:"05.03.04",an:"Investigator / Staff Delegation Log",cl:"Core",iso:"6.4.2",def:"Delegation of responsibilities by PI."},
-  {z:"5",zn:"Site Management",s:"5.03",sn:"Investigator and Staff",a:"05.03.05",an:"Medical Licenses",cl:"Core",iso:"6.4.1",def:"Current medical licenses for PI and sub-investigators."},
-  {z:"5",zn:"Site Management",s:"5.04",sn:"Site Facilities",a:"05.04.01",an:"Normal Value Ranges (Lab)",cl:"Core",iso:"7.5.4",def:"Lab reference ranges used at site."},
-  {z:"5",zn:"Site Management",s:"5.04",sn:"Site Facilities",a:"05.04.02",an:"Laboratory Certification / Accreditation",cl:"Core",iso:"7.5.4",def:"Evidence of lab accreditation."},
-  {z:"5",zn:"Site Management",s:"5.05",sn:"Clinical Trial Agreement",a:"05.05.01",an:"Clinical Trial Agreement (Site)",cl:"Core",iso:"6.4.4",def:"Executed contract between sponsor and site."},
-  {z:"5",zn:"Site Management",s:"5.06",sn:"Informed Consent",a:"05.06.01",an:"Signed Informed Consent Forms",cl:"Core",iso:"4.1, 7.4",def:"Executed ICFs for each enrolled subject."},
-  {z:"5",zn:"Site Management",s:"5.07",sn:"Screening",a:"05.07.01",an:"Screening / Enrollment Log",cl:"Core",iso:"8.3",def:"Log of all screened and enrolled subjects."},
-  {z:"5",zn:"Site Management",s:"5.07",sn:"Screening",a:"05.07.02",an:"Subject Identification Code List",cl:"Core",iso:"8.3",def:"Confidential subject ID list."},
-  {z:"5",zn:"Site Management",s:"5.08",sn:"Protocol Deviations",a:"05.08.01",an:"Protocol Deviation Log",cl:"Core",iso:"8.2.4",def:"Log of all protocol deviations."},
-  {z:"5",zn:"Site Management",s:"5.08",sn:"Protocol Deviations",a:"05.08.02",an:"Protocol Deviation Report",cl:"Core",iso:"8.2.4",def:"Individual deviation reports."},
-  {z:"5",zn:"Site Management",s:"5.09",sn:"Site Closure",a:"05.09.01",an:"Site Closure Visit Report",cl:"Core",iso:"9.2.5",def:"Site closeout visit report."},
-  {z:"6",zn:"IP and Trial Supplies",s:"6.01",sn:"Investigational Device",a:"06.01.01",an:"Device Accountability Log",cl:"Core",iso:"8.6",def:"Device receipt, use, and return/destruction log."},
-  {z:"6",zn:"IP and Trial Supplies",s:"6.01",sn:"Investigational Device",a:"06.01.02",an:"Device Shipping and Receipt Records",cl:"Core",iso:"8.6",def:"Device shipment and receipt records."},
-  {z:"7",zn:"Safety Reporting",s:"7.01",sn:"Adverse Events",a:"07.01.01",an:"Adverse Event Log",cl:"Core",iso:"8.5",def:"All AEs reported during investigation."},
-  {z:"7",zn:"Safety Reporting",s:"7.01",sn:"Adverse Events",a:"07.01.02",an:"Serious Adverse Event Reports (SAE)",cl:"Core",iso:"8.5.4, 8.5.5",def:"Individual SAE reports."},
-  {z:"7",zn:"Safety Reporting",s:"7.01",sn:"Adverse Events",a:"07.01.03",an:"Device Deficiency Reports",cl:"Core",iso:"8.5.6",def:"Device failure or malfunction reports."},
-  {z:"7",zn:"Safety Reporting",s:"7.02",sn:"Safety Reports",a:"07.02.01",an:"UADE / Safety Reports to Regulatory Authority",cl:"Core",iso:"8.5.4",def:"UADE reports to regulatory authority."},
-  {z:"8",zn:"Central and Local Testing",s:"8.01",sn:"Lab and Imaging",a:"08.01.01",an:"Central Lab Manual",cl:"Core",iso:"7.5",def:"Sample collection and shipping instructions."},
-  {z:"8",zn:"Central and Local Testing",s:"8.01",sn:"Lab and Imaging",a:"08.01.02",an:"Imaging Manual",cl:"Recommended",iso:"",def:"Imaging procedures and reading guidelines."},
-  {z:"9",zn:"Third Parties",s:"9.01",sn:"Third Party Agreements",a:"09.01.01",an:"Third Party Agreement",cl:"Core",iso:"6.1",def:"Vendor and service provider contracts."},
-  {z:"10",zn:"Data Management",s:"10.01",sn:"Data Management Plan",a:"10.01.01",an:"Data Management Plan",cl:"Core",iso:"7.8, 7.9",def:"Data collection, cleaning, and lock procedures."},
-  {z:"10",zn:"Data Management",s:"10.02",sn:"Database",a:"10.02.01",an:"Database Validation Documentation",cl:"Core",iso:"7.8.4",def:"EDC system validation evidence."},
-  {z:"11",zn:"Statistics",s:"11.01",sn:"Statistical Analysis",a:"11.01.01",an:"Statistical Analysis Plan",cl:"Core",iso:"7.9",def:"Pre-specified statistical methods."},
-  {z:"11",zn:"Statistics",s:"11.02",sn:"Analysis Outputs",a:"11.02.01",an:"Statistical Analysis Output",cl:"Core",iso:"7.9",def:"Final tables, figures, and listings."},
+  {z:"1",zn:"Trial Management",s:"1.01",sn:"Trial Oversight",a:"01.01.04",an:"List of SOPs Current During Trial",cl:"Core",iso:""},
+  {z:"1",zn:"Trial Management",s:"1.01",sn:"Trial Oversight",a:"01.01.08",an:"Monitoring Plan",cl:"Core",iso:"6.7, 7.3, 9.2.4.1"},
+  {z:"1",zn:"Trial Management",s:"1.02",sn:"Central Trial Team",a:"01.02.01",an:"Delegation of Authority Log",cl:"Core",iso:"6.2, 9.2"},
+  {z:"1",zn:"Trial Management",s:"1.02",sn:"Central Trial Team",a:"01.02.02",an:"Staff CVs and Training Records",cl:"Core",iso:"6.2"},
+  {z:"1",zn:"Trial Management",s:"1.03",sn:"Agreements",a:"01.03.01",an:"CRO Agreement",cl:"Core",iso:"6.1"},
+  {z:"1",zn:"Trial Management",s:"1.04",sn:"Monitoring",a:"01.04.01",an:"Monitoring Visit Report",cl:"Core",iso:"9.2.4"},
+  {z:"1",zn:"Trial Management",s:"1.05",sn:"Risk Management",a:"01.05.01",an:"Risk Assessment",cl:"Core",iso:"9.1"},
+  {z:"2",zn:"Central Trial Documents",s:"2.01",sn:"Protocol",a:"02.01.01",an:"Protocol",cl:"Core",iso:"7.2, Annex A"},
+  {z:"2",zn:"Central Trial Documents",s:"2.01",sn:"Protocol",a:"02.01.02",an:"Protocol Amendment",cl:"Core",iso:"7.2.10"},
+  {z:"2",zn:"Central Trial Documents",s:"2.02",sn:"Informed Consent",a:"02.02.01",an:"Informed Consent Form (Master)",cl:"Core",iso:"7.4, 4.1"},
+  {z:"2",zn:"Central Trial Documents",s:"2.03",sn:"Device Description",a:"02.03.01",an:"Investigator Brochure / Device Description",cl:"Core",iso:"7.3"},
+  {z:"2",zn:"Central Trial Documents",s:"2.04",sn:"CRFs",a:"02.04.01",an:"Case Report Form (Blank)",cl:"Core",iso:"7.8"},
+  {z:"2",zn:"Central Trial Documents",s:"2.05",sn:"SAP",a:"02.05.01",an:"Statistical Analysis Plan",cl:"Core",iso:"7.9"},
+  {z:"3",zn:"Regulatory",s:"3.01",sn:"Regulatory Applications",a:"03.01.01",an:"Regulatory Submission",cl:"Core",iso:"9.3"},
+  {z:"3",zn:"Regulatory",s:"3.01",sn:"Regulatory Applications",a:"03.01.02",an:"Regulatory Approval / Authorization",cl:"Core",iso:"9.3"},
+  {z:"3",zn:"Regulatory",s:"3.02",sn:"Correspondence",a:"03.02.01",an:"Regulatory Correspondence",cl:"Core",iso:"9.3"},
+  {z:"3",zn:"Regulatory",s:"3.03",sn:"Progress Reports",a:"03.03.01",an:"Annual / Progress Report to Regulatory Authority",cl:"Core",iso:"9.4"},
+  {z:"4",zn:"IRB or IEC and other Approvals",s:"4.01",sn:"IRB or IEC",a:"04.01.01",an:"IRB / IEC Submission",cl:"Core",iso:"9.5"},
+  {z:"4",zn:"IRB or IEC and other Approvals",s:"4.01",sn:"IRB or IEC",a:"04.01.02",an:"IRB / IEC Approval",cl:"Core",iso:"4.1.3, 9.5.1"},
+  {z:"4",zn:"IRB or IEC and other Approvals",s:"4.01",sn:"IRB or IEC",a:"04.01.03",an:"IRB / IEC Continuing Review",cl:"Core",iso:"9.5.3"},
+  {z:"4",zn:"IRB or IEC and other Approvals",s:"4.01",sn:"IRB or IEC",a:"04.01.04",an:"IRB / IEC Correspondence",cl:"Core",iso:"9.5"},
+  {z:"5",zn:"Site Management",s:"5.01",sn:"Site Selection",a:"05.01.01",an:"Site Selection and Qualification Report",cl:"Core",iso:"6.5, 9.2.1"},
+  {z:"5",zn:"Site Management",s:"5.01",sn:"Site Selection",a:"05.01.02",an:"Investigator / Site Qualification Questionnaire",cl:"Core",iso:"6.5"},
+  {z:"5",zn:"Site Management",s:"5.02",sn:"Site Initiation",a:"05.02.01",an:"Site Initiation Visit Report",cl:"Core",iso:"9.2.2"},
+  {z:"5",zn:"Site Management",s:"5.02",sn:"Site Initiation",a:"05.02.02",an:"Training Materials",cl:"Core",iso:"9.2.2"},
+  {z:"5",zn:"Site Management",s:"5.02",sn:"Site Initiation",a:"05.02.03",an:"Site Training Records",cl:"Core",iso:"9.2.2"},
+  {z:"5",zn:"Site Management",s:"5.03",sn:"Investigator and Staff",a:"05.03.01",an:"Investigator Agreement / Signed Protocol",cl:"Core",iso:"6.4, 9.2.3.1"},
+  {z:"5",zn:"Site Management",s:"5.03",sn:"Investigator and Staff",a:"05.03.02",an:"Principal Investigator CV",cl:"Core",iso:"6.4.1"},
+  {z:"5",zn:"Site Management",s:"5.03",sn:"Investigator and Staff",a:"05.03.03",an:"Sub-Investigator CVs",cl:"Core",iso:"6.4.1"},
+  {z:"5",zn:"Site Management",s:"5.03",sn:"Investigator and Staff",a:"05.03.04",an:"Investigator / Staff Delegation Log",cl:"Core",iso:"6.4.2"},
+  {z:"5",zn:"Site Management",s:"5.03",sn:"Investigator and Staff",a:"05.03.05",an:"Medical Licenses",cl:"Core",iso:"6.4.1"},
+  {z:"5",zn:"Site Management",s:"5.04",sn:"Site Facilities",a:"05.04.01",an:"Normal Value Ranges (Lab)",cl:"Core",iso:"7.5.4"},
+  {z:"5",zn:"Site Management",s:"5.04",sn:"Site Facilities",a:"05.04.02",an:"Laboratory Certification / Accreditation",cl:"Core",iso:"7.5.4"},
+  {z:"5",zn:"Site Management",s:"5.05",sn:"Clinical Trial Agreement",a:"05.05.01",an:"Clinical Trial Agreement (Site)",cl:"Core",iso:"6.4.4"},
+  {z:"5",zn:"Site Management",s:"5.06",sn:"Informed Consent",a:"05.06.01",an:"Signed Informed Consent Forms",cl:"Core",iso:"4.1, 7.4"},
+  {z:"5",zn:"Site Management",s:"5.07",sn:"Screening",a:"05.07.01",an:"Screening / Enrollment Log",cl:"Core",iso:"8.3"},
+  {z:"5",zn:"Site Management",s:"5.07",sn:"Screening",a:"05.07.02",an:"Subject Identification Code List",cl:"Core",iso:"8.3"},
+  {z:"5",zn:"Site Management",s:"5.08",sn:"Protocol Deviations",a:"05.08.01",an:"Protocol Deviation Log",cl:"Core",iso:"8.2.4"},
+  {z:"5",zn:"Site Management",s:"5.08",sn:"Protocol Deviations",a:"05.08.02",an:"Protocol Deviation Report",cl:"Core",iso:"8.2.4"},
+  {z:"5",zn:"Site Management",s:"5.09",sn:"Site Closure",a:"05.09.01",an:"Site Closure Visit Report",cl:"Core",iso:"9.2.5"},
+  {z:"6",zn:"IP and Trial Supplies",s:"6.01",sn:"Investigational Device",a:"06.01.01",an:"Device Accountability Log",cl:"Core",iso:"8.6"},
+  {z:"6",zn:"IP and Trial Supplies",s:"6.01",sn:"Investigational Device",a:"06.01.02",an:"Device Shipping and Receipt Records",cl:"Core",iso:"8.6"},
+  {z:"7",zn:"Safety Reporting",s:"7.01",sn:"Adverse Events",a:"07.01.01",an:"Adverse Event Log",cl:"Core",iso:"8.5"},
+  {z:"7",zn:"Safety Reporting",s:"7.01",sn:"Adverse Events",a:"07.01.02",an:"Serious Adverse Event Reports (SAE)",cl:"Core",iso:"8.5.4, 8.5.5"},
+  {z:"7",zn:"Safety Reporting",s:"7.01",sn:"Adverse Events",a:"07.01.03",an:"Device Deficiency Reports",cl:"Core",iso:"8.5.6"},
+  {z:"7",zn:"Safety Reporting",s:"7.02",sn:"Safety Reports",a:"07.02.01",an:"UADE / Safety Reports to Regulatory Authority",cl:"Core",iso:"8.5.4"},
+  {z:"8",zn:"Central and Local Testing",s:"8.01",sn:"Lab and Imaging",a:"08.01.01",an:"Central Lab Manual",cl:"Core",iso:"7.5"},
+  {z:"8",zn:"Central and Local Testing",s:"8.01",sn:"Lab and Imaging",a:"08.01.02",an:"Imaging Manual",cl:"Recommended",iso:""},
+  {z:"9",zn:"Third Parties",s:"9.01",sn:"Third Party Agreements",a:"09.01.01",an:"Third Party Agreement",cl:"Core",iso:"6.1"},
+  {z:"10",zn:"Data Management",s:"10.01",sn:"Data Management Plan",a:"10.01.01",an:"Data Management Plan",cl:"Core",iso:"7.8, 7.9"},
+  {z:"10",zn:"Data Management",s:"10.02",sn:"Database",a:"10.02.01",an:"Database Validation Documentation",cl:"Core",iso:"7.8.4"},
+  {z:"11",zn:"Statistics",s:"11.01",sn:"Statistical Analysis",a:"11.01.01",an:"Statistical Analysis Plan",cl:"Core",iso:"7.9"},
+  {z:"11",zn:"Statistics",s:"11.02",sn:"Analysis Outputs",a:"11.02.01",an:"Statistical Analysis Output",cl:"Core",iso:"7.9"},
 ];
 
-const ZONES = [...new Set(TMF.map(a => a.z))].map(z => ({
-  z, zn: TMF.find(a => a.z === z)!.zn,
-  count: TMF.filter(a => a.z === z).length,
-}));
+const ZONES = [...new Set(TMF.map(a=>a.z))].map(z=>({z,zn:TMF.find(a=>a.z===z)!.zn}));
+const ZONE_WEIGHT:Record<string,number>={"3":3,"4":3,"5":3,"1":2,"2":2,"7":2,"6":1,"8":1,"9":1,"10":1,"11":1};
+const ZONE_COLORS:Record<string,string>={"1":"#8B5CF6","2":"#6366F1","3":"#EF4444","4":"#F59E0B","5":"#10B981","6":"#3B82F6","7":"#EC4899","8":"#06B6D4","9":"#6B7280","10":"#8B5CF6","11":"#6366F1"};
 
-const ZONE_WEIGHT: Record<string,number> = {"3":3,"4":3,"5":3,"1":2,"2":2,"7":2,"6":1,"8":1,"9":1,"10":1,"11":1};
-const ZONE_COLORS: Record<string,string> = {"1":"#1D9E75","2":"#185FA5","3":"#D85A30","4":"#BA7517","5":"#3B6D11","6":"#639922","7":"#A32D2D","8":"#533AB7","9":"#888780","10":"#D4537E","11":"#0F6E56"};
+const FILE_ICONS:Record<string,string>={"pdf":"📄","doc":"📝","docx":"📝","xls":"📊","xlsx":"📊","ppt":"📋","pptx":"📋","png":"🖼","jpg":"🖼","jpeg":"🖼","tiff":"🖼","tif":"🖼","gif":"🖼","zip":"🗜","csv":"📊","txt":"📄"};
+function fileIcon(n:string){return FILE_ICONS[n.split(".").pop()?.toLowerCase()||""]||"📎";}
+function canPreview(n:string){return ["pdf","png","jpg","jpeg","gif","webp","tiff","tif"].includes(n.split(".").pop()?.toLowerCase()||"");}
+function formatSize(b:number){if(b<1024)return b+" B";if(b<1024*1024)return (b/1024).toFixed(1)+" KB";return (b/(1024*1024)).toFixed(1)+" MB";}
 
-const FILE_ICONS: Record<string,string> = {
-  "pdf":"📄","doc":"📝","docx":"📝","xls":"📊","xlsx":"📊","ppt":"📋","pptx":"📋",
-  "png":"🖼","jpg":"🖼","jpeg":"🖼","tiff":"🖼","tif":"🖼","gif":"🖼",
-  "zip":"🗜","csv":"📊","txt":"📄"
-};
+interface Study{id?:string;study_id:string;protocol:string;phase:string;status:string;sponsor:string;user_id?:string;}
+interface Doc{id?:string;study_id:string;artifact_num:string;artifact_name:string;zone:string;version:string;status:string;owner:string;effective_date:string;expiry_date:string;file_path?:string;file_name?:string;custom_file_name?:string;file_type?:string;file_size?:number;comments?:string;user_id?:string;approved_by?:string;approved_at?:string;signature_reason?:string;}
 
-function fileIcon(name: string) {
-  const ext = name.split(".").pop()?.toLowerCase() || "";
-  return FILE_ICONS[ext] || "📎";
-}
-
-function canPreview(name: string) {
-  const ext = name.split(".").pop()?.toLowerCase() || "";
-  return ["pdf","png","jpg","jpeg","gif","webp","tiff","tif"].includes(ext);
-}
-
-function formatSize(bytes: number) {
-  if (bytes < 1024) return bytes + " B";
-  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + " KB";
-  return (bytes/(1024*1024)).toFixed(1) + " MB";
-}
-
-interface Study { id?: string; study_id: string; protocol: string; phase: string; status: string; sponsor: string; user_id?: string; }
-interface Doc { id?: string; study_id: string; artifact_num: string; artifact_name: string; zone: string; version: string; status: string; owner: string; effective_date: string; expiry_date: string; file_path?: string; file_name?: string; file_type?: string; file_size?: number; user_id?: string; }
-
-export default function TMF360() {
-  const [panel, setPanel] = useState("auth");
-  const [user, setUser] = useState<any>(null);
-  const [authMode, setAuthMode] = useState<"login"|"signup">("login");
-  const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [authError, setAuthError] = useState("");
-  const [studies, setStudies] = useState<Study[]>([]);
-  const [docs, setDocs] = useState<Doc[]>([]);
-  const [activeStudy, setActiveStudy] = useState<Study|null>(null);
-  const [docFilter, setDocFilter] = useState("all");
-  const [artSearch, setArtSearch] = useState(""); const [artZone, setArtZone] = useState(""); const [artCl, setArtCl] = useState("");
-  const [gapZone, setGapZone] = useState("");
-  const [expandedArt, setExpandedArt] = useState<string|null>(null);
-  const [showStudyModal, setShowStudyModal] = useState(false);
-  const [showDocModal, setShowDocModal] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string|null>(null);
-  const [previewName, setPreviewName] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState("");
-  const [dragOver, setDragOver] = useState(false);
-  const [chatMessages, setChatMessages] = useState([{role:"ai",text:"Hello! I'm your TMF360 AI Specialist. Ask me anything about TMF filing, ISO 14155, gap analysis, or document drafting."}]);
-  const [chatInput, setChatInput] = useState(""); const [chatLoading, setChatLoading] = useState(false);
-  const chatHistory = useRef<{role:string;content:string}[]>([]);
-  const messagesEnd = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+export default function TMF360(){
+  const [panel,setPanel]=useState("auth");
+  const [user,setUser]=useState<any>(null);
+  const [authMode,setAuthMode]=useState<"login"|"signup">("login");
+  const [email,setEmail]=useState("");const [password,setPassword]=useState("");const [authError,setAuthError]=useState("");
+  const [studies,setStudies]=useState<Study[]>([]);
+  const [docs,setDocs]=useState<Doc[]>([]);
+  const [activeStudy,setActiveStudy]=useState<Study|null>(null);
+  const [docFilter,setDocFilter]=useState("all");
+  const [docSearch,setDocSearch]=useState("");
+  const [artSearch,setArtSearch]=useState("");const [artZone,setArtZone]=useState("");const [artCl,setArtCl]=useState("");
+  const [gapZone,setGapZone]=useState("");
+  const [expandedArt,setExpandedArt]=useState<string|null>(null);
+  const [showStudyModal,setShowStudyModal]=useState(false);
+  const [showDocModal,setShowDocModal]=useState(false);
+  const [showApproveModal,setShowApproveModal]=useState(false);
+  const [showCommentModal,setShowCommentModal]=useState(false);
+  const [selectedDoc,setSelectedDoc]=useState<Doc|null>(null);
+  const [previewUrl,setPreviewUrl]=useState<string|null>(null);
+  const [previewName,setPreviewName]=useState("");
+  const [uploading,setUploading]=useState(false);
+  const [uploadProgress,setUploadProgress]=useState("");
+  const [dragOver,setDragOver]=useState(false);
+  const [chatMessages,setChatMessages]=useState([{role:"ai",text:"Hello! I'm your TMF360 AI Specialist — trained on DIA TMF Reference Model v3.3.1, ISO 14155:2020, ICH E6(R3), and 21 CFR Part 11. Ask me anything about TMF filing, gaps, inspection readiness, or document drafting."}]);
+  const [chatInput,setChatInput]=useState("");const [chatLoading,setChatLoading]=useState(false);
+  const chatHistory=useRef<{role:string;content:string}[]>([]);
+  const messagesEnd=useRef<HTMLDivElement>(null);
+  const fileInputRef=useRef<HTMLInputElement>(null);
 
   // Form state
-  const [fId,setFId]=useState(""); const [fProtocol,setFProtocol]=useState(""); const [fPhase,setFPhase]=useState("Phase I"); const [fStatus,setFStatus]=useState("Startup"); const [fSponsor,setFSponsor]=useState("");
+  const [fId,setFId]=useState("");const [fProtocol,setFProtocol]=useState("");const [fPhase,setFPhase]=useState("Phase I");const [fStatus,setFStatus]=useState("Startup");const [fSponsor,setFSponsor]=useState("");
+  const [fZone,setFZone]=useState(TMF[0].z);
   const [fArtifact,setFArtifact]=useState(TMF[0].a+"|"+TMF[0].an+"|"+TMF[0].z);
-  const [fVersion,setFVersion]=useState(""); const [fDocStatus,setFDocStatus]=useState("Draft"); const [fOwner,setFOwner]=useState(""); const [fEff,setFEff]=useState(""); const [fExp,setFExp]=useState("");
+  const [fCustomName,setFCustomName]=useState("");
+  const [fVersion,setFVersion]=useState("");const [fDocStatus,setFDocStatus]=useState("Draft");const [fOwner,setFOwner]=useState("");const [fEff,setFEff]=useState("");const [fExp,setFExp]=useState("");const [fComments,setFComments]=useState("");
   const [selectedFile,setSelectedFile]=useState<File|null>(null);
+  const [pendingFilePath,setPendingFilePath]=useState("");
+  const [pendingFileName,setPendingFileName]=useState("");
+  const [pendingFileType,setPendingFileType]=useState("");
+  const [pendingFileSize,setPendingFileSize]=useState(0);
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({data:{session}}) => {
-      if (session?.user) { setUser(session.user); setPanel("dashboard"); loadStudies(session.user.id); }
+  // Approval modal state
+  const [approvePassword,setApprovePassword]=useState("");
+  const [approveReason,setApproveReason]=useState("");
+  const [approveError,setApproveError]=useState("");
+
+  // Comment modal state
+  const [commentText,setCommentText]=useState("");
+
+  useEffect(()=>{
+    supabase.auth.getSession().then(({data:{session}})=>{
+      if(session?.user){setUser(session.user);setPanel("dashboard");loadStudies(session.user.id);}
     });
-    supabase.auth.onAuthStateChange((_,session) => {
-      if (session?.user) { setUser(session.user); setPanel("dashboard"); loadStudies(session.user.id); }
-      else { setUser(null); setPanel("auth"); setStudies([]); setDocs([]); setActiveStudy(null); }
+    supabase.auth.onAuthStateChange((_,session)=>{
+      if(session?.user){setUser(session.user);setPanel("dashboard");loadStudies(session.user.id);}
+      else{setUser(null);setPanel("auth");setStudies([]);setDocs([]);setActiveStudy(null);}
     });
-  }, []);
+  },[]);
 
-  useEffect(() => { messagesEnd.current?.scrollIntoView({behavior:"smooth"}); }, [chatMessages]);
+  useEffect(()=>{messagesEnd.current?.scrollIntoView({behavior:"smooth"});},[chatMessages]);
 
-  async function loadStudies(uid: string) {
-    const {data} = await supabase.from("studies").select("*").eq("user_id", uid).order("created_at", {ascending:false});
-    if (data && data.length > 0) { setStudies(data); setActiveStudy(data[0]); loadDocs(data[0].study_id, uid); }
+  async function loadStudies(uid:string){
+    const{data}=await supabase.from("studies").select("*").eq("user_id",uid).order("created_at",{ascending:false});
+    if(data&&data.length>0){setStudies(data);setActiveStudy(data[0]);loadDocs(data[0].study_id,uid);}
   }
 
-  async function loadDocs(studyId: string, uid: string) {
-    const {data} = await supabase.from("documents").select("*").eq("study_id", studyId).eq("user_id", uid).order("created_at", {ascending:false});
-    if (data) setDocs(data);
+  async function loadDocs(studyId:string,uid:string){
+    const{data}=await supabase.from("documents").select("*").eq("study_id",studyId).eq("user_id",uid).order("created_at",{ascending:false});
+    if(data)setDocs(data);
   }
 
-  async function handleAuth() {
+  async function logAudit(action:string,docId:string|undefined,studyId:string,field:string,oldVal:string,newVal:string,sigReason:string=""){
+    await supabase.from("audit_trail").insert([{
+      user_id:user.id,user_email:user.email,action,document_id:docId,
+      study_id:studyId,field_changed:field,old_value:oldVal,new_value:newVal,
+      signature_reason:sigReason,created_at:new Date().toISOString()
+    }]);
+  }
+
+  async function handleAuth(){
     setAuthError("");
-    if (authMode === "signup") {
-      const {error} = await supabase.auth.signUp({email, password});
-      if (error) setAuthError(error.message);
+    if(authMode==="signup"){
+      const{error}=await supabase.auth.signUp({email,password});
+      if(error)setAuthError(error.message);
       else setAuthError("Check your email to confirm your account, then log in.");
-    } else {
-      const {error} = await supabase.auth.signInWithPassword({email, password});
-      if (error) setAuthError(error.message);
+    }else{
+      const{error}=await supabase.auth.signInWithPassword({email,password});
+      if(error)setAuthError(error.message);
     }
   }
 
-  async function handleSignOut() {
-    await supabase.auth.signOut();
-  }
+  async function handleSignOut(){await supabase.auth.signOut();}
 
-  async function createStudy() {
-    if (!fId.trim() || !user) return;
-    const s: Study = {study_id:fId, protocol:fProtocol, phase:fPhase, status:fStatus, sponsor:fSponsor, user_id:user.id};
-    const {data,error} = await supabase.from("studies").insert([s]).select();
-    if (!error && data) { const ns = data[0]; setStudies(prev=>[ns,...prev]); setActiveStudy(ns); setDocs([]); }
-    setShowStudyModal(false); setFId(""); setFProtocol(""); setFSponsor("");
+  async function createStudy(){
+    if(!fId.trim()||!user)return;
+    const s:Study={study_id:fId,protocol:fProtocol,phase:fPhase,status:fStatus,sponsor:fSponsor,user_id:user.id};
+    const{data,error}=await supabase.from("studies").insert([s]).select();
+    if(!error&&data){const ns=data[0];setStudies(prev=>[ns,...prev]);setActiveStudy(ns);setDocs([]);}
+    setShowStudyModal(false);setFId("");setFProtocol("");setFSponsor("");
     setPanel("dashboard");
   }
 
-  async function handleFileUpload(file: File) {
-    if (!user || !activeStudy) return;
-    setUploading(true); setUploadProgress("Uploading file...");
-    const ext = file.name.split(".").pop();
-    const path = `${user.id}/${activeStudy.study_id}/${Date.now()}_${file.name}`;
-    const {data: upData, error: upErr} = await supabase.storage.from("Documents").upload(path, file);
-if (upErr) { 
-  setUploadProgress("Upload failed: " + upErr.message + " | " + JSON.stringify(upErr));
-  setUploading(false); 
-  return; 
-}
-console.log("Upload success:", upData);
-    setUploadProgress("File uploaded! Saving record...");
+  async function handleFileUpload(file:File){
+    if(!user||!activeStudy)return;
+    setUploading(true);setUploadProgress("Uploading...");
+    const path=`${user.id}/${activeStudy.study_id}/${Date.now()}_${file.name}`;
+    const{error:upErr}=await supabase.storage.from("Documents").upload(path,file);
+    if(upErr){setUploadProgress("Upload failed: "+upErr.message);setUploading(false);return;}
+    setPendingFilePath(path);setPendingFileName(file.name);setPendingFileType(file.type);setPendingFileSize(file.size);
     setSelectedFile(file);
-    setUploadProgress(`✓ ${file.name} ready to attach`);
+    if(!fCustomName)setFCustomName(file.name.replace(/\.[^/.]+$/,""));
+    setUploadProgress("✓ "+file.name+" ready");
     setUploading(false);
-    // Store path for use when adding doc
-    (window as any)._pendingFilePath = path;
-    (window as any)._pendingFileName = file.name;
-    (window as any)._pendingFileType = file.type;
-    (window as any)._pendingFileSize = file.size;
   }
 
-  async function addDocument() {
-    if (!user || !activeStudy) return;
-    const [artNum,an,zone] = fArtifact.split("|");
-    const d: Doc = {
-      study_id: activeStudy.study_id, user_id: user.id,
-      artifact_num: artNum, artifact_name: an, zone,
-      version: fVersion, status: fDocStatus, owner: fOwner,
-      effective_date: fEff, expiry_date: fExp,
-      file_path: (window as any)._pendingFilePath || "",
-      file_name: (window as any)._pendingFileName || "",
-      file_type: (window as any)._pendingFileType || "",
-      file_size: (window as any)._pendingFileSize || 0,
+  async function addDocument(){
+    if(!user||!activeStudy)return;
+    const[artNum,an,zone]=fArtifact.split("|");
+    const d:Doc={
+      study_id:activeStudy.study_id,user_id:user.id,
+      artifact_num:artNum,artifact_name:an,zone,
+      version:fVersion,status:fDocStatus,owner:fOwner,
+      effective_date:fEff,expiry_date:fExp,comments:fComments,
+      file_path:pendingFilePath,file_name:pendingFileName,
+      custom_file_name:fCustomName,file_type:pendingFileType,file_size:pendingFileSize,
     };
-    const {data,error} = await supabase.from("documents").insert([d]).select();
-    if (!error && data) setDocs(prev=>[data[0],...prev]);
-    setShowDocModal(false); setSelectedFile(null); setFVersion(""); setFOwner(""); setFEff(""); setFExp("");
-    (window as any)._pendingFilePath = null; (window as any)._pendingFileName = null;
+    const{data,error}=await supabase.from("documents").insert([d]).select();
+    if(!error&&data){
+      setDocs(prev=>[data[0],...prev]);
+      await logAudit("Document uploaded",data[0].id,activeStudy.study_id,"status","",fDocStatus);
+    }
+    setShowDocModal(false);setSelectedFile(null);setPendingFilePath("");setPendingFileName("");setFCustomName("");
+    setFVersion("");setFOwner("");setFEff("");setFExp("");setFComments("");
   }
 
-  function openPreview(doc: Doc) {
-    if (!doc.file_path) return;
-    const {data} = supabase.storage.from("Documents").getPublicUrl(doc.file_path);
-    setPreviewUrl(data.publicUrl);
-    setPreviewName(doc.file_name || doc.artifact_name);
+  async function handleApprove(){
+    if(!selectedDoc||!user||!activeStudy)return;
+    setApproveError("");
+    if(!approvePassword){setApproveError("Password required for electronic signature");return;}
+    if(!approveReason){setApproveError("Signature reason required (21 CFR Part 11)");return;}
+    const{error:authErr}=await supabase.auth.signInWithPassword({email:user.email,password:approvePassword});
+    if(authErr){setApproveError("Incorrect password — signature rejected");return;}
+    const now=new Date().toISOString();
+    const{error}=await supabase.from("documents").update({
+      status:"Approved",approved_by:user.email,approved_at:now,signature_reason:approveReason
+    }).eq("id",selectedDoc.id);
+    if(!error){
+      await logAudit("Document approved",selectedDoc.id,activeStudy.study_id,"status",selectedDoc.status||"","Approved",approveReason);
+      setDocs(prev=>prev.map(d=>d.id===selectedDoc.id?{...d,status:"Approved",approved_by:user.email,approved_at:now,signature_reason:approveReason}:d));
+    }
+    setShowApproveModal(false);setApprovePassword("");setApproveReason("");setSelectedDoc(null);
   }
 
-  // Metrics
-  const studyDocs = docs;
-  const filedNames = studyDocs.map(d => d.artifact_name.toLowerCase());
-  const coreArts = TMF.filter(a => a.cl === "Core");
-  const donePct = activeStudy ? Math.round(coreArts.filter(a => filedNames.some(f => a.an.toLowerCase().includes(f) || f.includes(a.an.toLowerCase()))).length / coreArts.length * 100) : 0;
-  const missing = Math.max(0, coreArts.length - studyDocs.filter(d => d.status === "Approved").length);
-  const expiring = studyDocs.filter(d => d.expiry_date && new Date(d.expiry_date) < new Date(Date.now()+90*86400000)).length;
-  const pending = studyDocs.filter(d => ["Draft","Under Review"].includes(d.status)).length;
+  async function handleAddComment(){
+    if(!selectedDoc||!user)return;
+    const existing=selectedDoc.comments||"";
+    const newComment=`${existing}${existing?"\n":""}[${new Date().toLocaleString()} - ${user.email}]: ${commentText}`;
+    const{error}=await supabase.from("documents").update({comments:newComment}).eq("id",selectedDoc.id);
+    if(!error){
+      setDocs(prev=>prev.map(d=>d.id===selectedDoc.id?{...d,comments:newComment}:d));
+      await logAudit("Comment added",selectedDoc.id,activeStudy?.study_id||"","comments","",commentText);
+    }
+    setShowCommentModal(false);setCommentText("");setSelectedDoc(null);
+  }
 
-  function zoneComp(z: string) {
-    const core = TMF.filter(a => a.cl==="Core" && a.z===z);
-    if (!core.length) return 100;
-    const done = core.filter(a => filedNames.some(f => a.an.toLowerCase().includes(f)||f.includes(a.an.toLowerCase())));
+  function openPreview(doc:Doc){
+    if(!doc.file_path)return;
+    const{data}=supabase.storage.from("Documents").getPublicUrl(doc.file_path);
+    setPreviewUrl(data.publicUrl);setPreviewName(doc.custom_file_name||doc.file_name||doc.artifact_name);
+  }
+
+  const studyDocs=docs;
+  const filedNames=studyDocs.map(d=>d.artifact_name.toLowerCase());
+  const coreArts=TMF.filter(a=>a.cl==="Core");
+  const donePct=activeStudy?Math.round(coreArts.filter(a=>filedNames.some(f=>a.an.toLowerCase().includes(f)||f.includes(a.an.toLowerCase()))).length/coreArts.length*100):0;
+  const missing=Math.max(0,coreArts.length-studyDocs.filter(d=>d.status==="Approved").length);
+  const expiring=studyDocs.filter(d=>d.expiry_date&&new Date(d.expiry_date)<new Date(Date.now()+90*86400000)).length;
+  const pending=studyDocs.filter(d=>["Draft","Under Review"].includes(d.status)).length;
+
+  function zoneComp(z:string){
+    const core=TMF.filter(a=>a.cl==="Core"&&a.z===z);
+    if(!core.length)return 100;
+    const done=core.filter(a=>filedNames.some(f=>a.an.toLowerCase().includes(f)||f.includes(a.an.toLowerCase())));
     return Math.round(done.length/core.length*100);
   }
 
-  function riScore() {
-    let w=0,t=0;
-    ZONES.forEach(({z})=>{const wt=ZONE_WEIGHT[z]||1;w+=zoneComp(z)*wt;t+=100*wt;});
-    return t?Math.round(w/t*100):0;
-  }
-
-  function gapFindings() {
+  function riScore(){let w=0,t=0;ZONES.forEach(({z})=>{const wt=ZONE_WEIGHT[z]||1;w+=zoneComp(z)*wt;t+=100*wt;});return t?Math.round(w/t*100):0;}
+  function gapFindings(){
     const gaps:{crit:any[],major:any[],minor:any[]}={crit:[],major:[],minor:[]};
     coreArts.forEach(a=>{
       const found=filedNames.some(f=>a.an.toLowerCase().includes(f)||f.includes(a.an.toLowerCase()));
-      if(!found){
-        const e={an:a.an,a:a.a,z:a.z,zn:a.zn,iso:a.iso};
+      if(!found){const e={an:a.an,a:a.a,z:a.z,zn:a.zn,iso:a.iso};
         if(["3","4","5"].includes(a.z))gaps.crit.push(e);
         else if(["1","2","7"].includes(a.z))gaps.major.push(e);
-        else gaps.minor.push(e);
-      }
+        else gaps.minor.push(e);}
     });
     return gaps;
   }
 
-  const ri = activeStudy ? riScore() : 0;
-  const gaps = activeStudy ? gapFindings() : {crit:[],major:[],minor:[]};
-  const scoreColor = (s:number) => s>=80?"text-green-600":s>=60?"text-amber-600":"text-red-600";
+  const ri=activeStudy?riScore():0;
+  const gaps=activeStudy?gapFindings():{crit:[],major:[],minor:[]};
+  const scoreColor=(s:number)=>s>=80?"#10B981":s>=60?"#F59E0B":"#EF4444";
 
-  async function sendChat() {
-    if (!chatInput.trim()||chatLoading) return;
-    const msg=chatInput.trim(); setChatInput("");
+  const filteredDocs=studyDocs.filter(d=>{
+    if(docFilter!=="all"&&d.status!==docFilter)return false;
+    if(docSearch){
+      const q=docSearch.toLowerCase();
+      return (d.artifact_name+d.zone+d.status+d.owner+(d.custom_file_name||"")+(d.file_name||"")).toLowerCase().includes(q);
+    }
+    return true;
+  });
+
+  const filteredArts=TMF.filter(a=>{
+    if(artZone&&a.z!==artZone)return false;
+    if(artCl&&a.cl!==artCl)return false;
+    if(artSearch&&!(a.an+a.sn+a.zn).toLowerCase().includes(artSearch.toLowerCase()))return false;
+    return true;
+  });
+
+  const zoneArts=fZone?TMF.filter(a=>a.z===fZone):TMF;
+
+  async function sendChat(){
+    if(!chatInput.trim()||chatLoading)return;
+    const msg=chatInput.trim();setChatInput("");
     setChatMessages(prev=>[...prev,{role:"user",text:msg}]);
     chatHistory.current.push({role:"user",content:msg});
     setChatLoading(true);
     const ctx=activeStudy?`Active study: ${activeStudy.study_id} (${activeStudy.protocol}), Phase: ${activeStudy.phase}. TMF completeness: ${donePct}%. Readiness: ${ri}. Filed: ${studyDocs.map(d=>d.artifact_name).join(", ")||"none"}.`:"No study selected.";
-    try {
+    try{
       const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
         model:"claude-sonnet-4-6",max_tokens:1000,
-        system:`You are TMF360 AI Specialist — expert in DIA TMF Reference Model v3.3.1, ISO 14155:2020, ICH E6(R3), 21 CFR Part 11.\n\nContext: ${ctx}\n\nAlways cite artifact numbers and ISO 14155 sections. Be concise and direct.`,
+        system:`You are TMF360 AI Specialist — expert in DIA TMF Reference Model v3.3.1, ISO 14155:2020, ICH E6(R3), 21 CFR Part 11, and ALCOA+.\n\nContext: ${ctx}\n\nAlways cite artifact numbers and ISO 14155 sections. Be concise and direct.`,
         messages:chatHistory.current
       })});
       const data=await res.json();
       const reply=data.content?.map((b:any)=>b.text||"").join("")||"Could not get a response.";
       setChatMessages(prev=>[...prev,{role:"ai",text:reply}]);
       chatHistory.current.push({role:"assistant",content:reply});
-    } catch { setChatMessages(prev=>[...prev,{role:"ai",text:"Connection error. Please try again."}]); }
+    }catch{setChatMessages(prev=>[...prev,{role:"ai",text:"Connection error. Please try again."}]);}
     setChatLoading(false);
   }
 
-  const filteredDocs = docFilter==="all"?studyDocs:studyDocs.filter(d=>d.status===docFilter);
-  const filteredArts = TMF.filter(a=>{
-    if(artZone&&a.z!==artZone)return false;
-    if(artCl&&a.cl!==artCl)return false;
-    if(artSearch&&!(a.an+a.sn+a.zn+a.def).toLowerCase().includes(artSearch.toLowerCase()))return false;
-    return true;
-  });
+  // Purple theme colors
+  const P={
+    primary:"#6366F1",primaryDark:"#4F46E5",primaryLight:"#EEF2FF",
+    text:"#111827",textSec:"#6B7280",textTert:"#9CA3AF",
+    bg:"#FFFFFF",bgSec:"#F9FAFB",bgTert:"#F3F4F6",
+    border:"#E5E7EB",borderSec:"#D1D5DB",
+    success:"#10B981",successLight:"#ECFDF5",
+    danger:"#EF4444",dangerLight:"#FEF2F2",
+    warning:"#F59E0B",warningLight:"#FFFBEB",
+    blue:"#3B82F6",blueLight:"#EFF6FF",
+  };
 
-  const navItem=(id:string,label:string)=>(
-    <button onClick={()=>{setPanel(id);if(activeStudy&&user)loadDocs(activeStudy.study_id,user.id);}} className={`w-full text-left px-3 py-1.5 text-xs rounded flex items-center gap-2 transition-colors ${panel===id?"bg-white text-emerald-700 font-medium":"text-gray-500 hover:text-gray-800 hover:bg-white/50"}`}>{label}</button>
+  const navItem=(id:string,label:string,icon:string)=>(
+    <button onClick={()=>{setPanel(id);if(activeStudy&&user)loadDocs(activeStudy.study_id,user.id);}}
+      style={{width:"100%",textAlign:"left",padding:"6px 12px",fontSize:"12px",cursor:"pointer",display:"flex",alignItems:"center",gap:"6px",borderRadius:"6px",transition:"all 0.1s",background:panel===id?P.primaryLight:"transparent",color:panel===id?P.primary:P.textSec,fontWeight:panel===id?"500":"400",border:"none",borderLeft:panel===id?`2px solid ${P.primary}`:"2px solid transparent"}}>
+      <i className={`ti ${icon}`} aria-hidden="true" style={{fontSize:"14px"}}></i>{label}
+    </button>
   );
 
-  // AUTH SCREEN
-  if (panel === "auth") return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="bg-white border border-gray-200 rounded-xl p-8 w-96 shadow-sm">
-        <div className="text-center mb-6">
-          <div className="text-2xl font-semibold">TMF<span className="text-emerald-600">360</span></div>
-          <div className="text-xs text-gray-400 mt-1">Trial Master File Platform · Free for clinical research</div>
+  const statusBadge=(s:string)=>{
+    const styles:Record<string,any>={
+      "Approved":{background:P.successLight,color:"#065F46"},"Under Review":{background:P.blueLight,color:"#1E40AF"},
+      "Draft":{background:P.warningLight,color:"#92400E"},"Archived":{background:P.bgTert,color:P.textSec},
+      "Missing":{background:P.dangerLight,color:"#991B1B"}
+    };
+    const st=styles[s]||styles["Draft"];
+    return <span style={{...st,fontSize:"10px",padding:"2px 8px",borderRadius:"10px",whiteSpace:"nowrap" as const}}>{s}</span>;
+  };
+
+  if(panel==="auth")return(
+    <div style={{minHeight:"100vh",background:`linear-gradient(135deg, ${P.primaryLight} 0%, #fff 50%, ${P.primaryLight} 100%)`,display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"16px",padding:"2rem",width:"380px",boxShadow:"0 4px 24px rgba(99,102,241,0.08)"}}>
+        <div style={{textAlign:"center",marginBottom:"1.5rem"}}>
+          <div style={{fontSize:"24px",fontWeight:"500",color:P.text}}>TMF<span style={{color:P.primary}}>360</span></div>
+          <div style={{fontSize:"12px",color:P.textTert,marginTop:"4px"}}>Trial Master File Platform · Free for clinical research</div>
+          <div style={{fontSize:"11px",color:P.textTert,marginTop:"2px"}}>DIA TMF Reference Model v3.3.1 · ISO 14155 · 21 CFR Part 11</div>
         </div>
-        <div className="flex gap-2 mb-5">
-          <button onClick={()=>setAuthMode("login")} className={`flex-1 py-1.5 text-xs rounded border transition-colors ${authMode==="login"?"bg-emerald-600 text-white border-emerald-600":"border-gray-200 text-gray-500"}`}>Log in</button>
-          <button onClick={()=>setAuthMode("signup")} className={`flex-1 py-1.5 text-xs rounded border transition-colors ${authMode==="signup"?"bg-emerald-600 text-white border-emerald-600":"border-gray-200 text-gray-500"}`}>Sign up</button>
+        <div style={{display:"flex",gap:"6px",marginBottom:"1.25rem"}}>
+          {(["login","signup"] as const).map(m=>(
+            <button key={m} onClick={()=>setAuthMode(m)} style={{flex:1,padding:"7px",fontSize:"12px",borderRadius:"8px",border:`0.5px solid ${m===authMode?P.primary:P.border}`,background:m===authMode?P.primary:"transparent",color:m===authMode?"#fff":P.textSec,cursor:"pointer",fontWeight:m===authMode?"500":"400"}}>
+              {m==="login"?"Log in":"Sign up"}
+            </button>
+          ))}
         </div>
-        <div className="mb-3"><label className="text-xs text-gray-500 block mb-1">Email</label><input value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="you@organization.com" className="w-full text-xs border border-gray-200 rounded px-3 py-2"/></div>
-        <div className="mb-4"><label className="text-xs text-gray-500 block mb-1">Password</label><input value={password} onChange={e=>setPassword(e.target.value)} type="password" placeholder="••••••••" className="w-full text-xs border border-gray-200 rounded px-3 py-2" onKeyDown={e=>e.key==="Enter"&&handleAuth()}/></div>
-        {authError && <div className={`text-xs mb-3 p-2 rounded ${authError.includes("Check")||authError.includes("confirm")?"bg-emerald-50 text-emerald-700":"bg-red-50 text-red-600"}`}>{authError}</div>}
-        <button onClick={handleAuth} className="w-full py-2 bg-emerald-600 text-white text-xs rounded hover:bg-emerald-700 font-medium">{authMode==="login"?"Log in":"Create account"}</button>
-        <p className="text-[10px] text-gray-400 text-center mt-4">Free forever · No credit card · DIA TMF Reference Model v3.3.1</p>
+        <div style={{marginBottom:"12px"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>Email</label><input value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="you@organization.com" style={{width:"100%",fontSize:"12px",padding:"8px 10px",border:`0.5px solid ${P.border}`,borderRadius:"8px"}}/></div>
+        <div style={{marginBottom:"1rem"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>Password</label><input value={password} onChange={e=>setPassword(e.target.value)} type="password" placeholder="••••••••" style={{width:"100%",fontSize:"12px",padding:"8px 10px",border:`0.5px solid ${P.border}`,borderRadius:"8px"}} onKeyDown={e=>e.key==="Enter"&&handleAuth()}/></div>
+        {authError&&<div style={{fontSize:"11px",marginBottom:"12px",padding:"8px 10px",borderRadius:"8px",background:authError.includes("Check")?P.successLight:P.dangerLight,color:authError.includes("Check")?"#065F46":"#991B1B"}}>{authError}</div>}
+        <button onClick={handleAuth} style={{width:"100%",padding:"9px",background:P.primary,color:"#fff",fontSize:"12px",borderRadius:"8px",border:"none",cursor:"pointer",fontWeight:"500"}}>{authMode==="login"?"Log in":"Create account"}</button>
+        <p style={{fontSize:"10px",color:P.textTert,textAlign:"center",marginTop:"1rem"}}>Free forever · No credit card · 21 CFR Part 11 compliant</p>
       </div>
     </div>
   );
 
-  return (
-    <div className="flex flex-col h-screen bg-gray-50 text-gray-900 font-sans">
+  return(
+    <div style={{display:"flex",flexDirection:"column",height:"100vh",background:P.bgSec,color:P.text,fontFamily:"var(--font-sans)"}}>
       {/* Header */}
-      <header className="flex items-center gap-3 px-5 border-b border-gray-200 bg-white shrink-0" style={{height:"52px"}}>
-        <span className="text-base font-semibold">TMF<span className="text-emerald-600">360</span></span>
-        <span className="text-xs text-gray-400 hidden md:block">Trial Master File Platform · DIA v3.3.1 · ISO 14155</span>
-        <div className="ml-auto flex items-center gap-3">
-          {studies.length > 0 && (
-            <select value={activeStudy?.study_id||""} onChange={e=>{const s=studies.find(s=>s.study_id===e.target.value);if(s){setActiveStudy(s);loadDocs(s.study_id,user.id);}}} className="text-xs border border-gray-200 rounded px-2 py-1 bg-gray-50">
+      <header style={{display:"flex",alignItems:"center",gap:"12px",padding:"0 1.25rem",height:"52px",borderBottom:`0.5px solid ${P.border}`,background:P.bg,flexShrink:0}}>
+        <span style={{fontSize:"16px",fontWeight:"500"}}>TMF<span style={{color:P.primary}}>360</span></span>
+        <span style={{fontSize:"11px",color:P.textTert}}>Trial Master File Platform · DIA v3.3.1 · ISO 14155 · 21 CFR Part 11</span>
+        <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:"10px"}}>
+          {studies.length>0&&(
+            <select value={activeStudy?.study_id||""} onChange={e=>{const s=studies.find(s=>s.study_id===e.target.value);if(s){setActiveStudy(s);loadDocs(s.study_id,user.id);}}} style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"6px",padding:"4px 8px",background:P.bgSec,color:P.text}}>
               {studies.map(s=><option key={s.study_id} value={s.study_id}>{s.study_id}</option>)}
             </select>
           )}
-          {activeStudy && <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${donePct>=80?"bg-emerald-100 text-emerald-800":donePct>=60?"bg-amber-100 text-amber-800":"bg-red-100 text-red-800"}`}>{donePct}% complete</span>}
-          <span className="text-xs text-gray-400">{user?.email}</span>
-          <button onClick={handleSignOut} className="text-xs text-gray-400 hover:text-gray-700">Sign out</button>
+          {activeStudy&&<span style={{fontSize:"11px",padding:"3px 10px",borderRadius:"10px",fontWeight:"500",background:donePct>=80?P.successLight:donePct>=60?P.warningLight:P.dangerLight,color:donePct>=80?"#065F46":donePct>=60?"#92400E":"#991B1B"}}>{donePct}% complete</span>}
+          <span style={{fontSize:"11px",color:P.textTert}}>{user?.email}</span>
+          <button onClick={handleSignOut} style={{fontSize:"11px",color:P.textTert,background:"none",border:"none",cursor:"pointer"}}>Sign out</button>
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div style={{display:"flex",flex:1,overflow:"hidden"}}>
         {/* Sidebar */}
-        <aside className="w-48 border-r border-gray-200 bg-gray-50 flex flex-col p-2 gap-0.5 shrink-0 overflow-y-auto">
-          <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider px-3 pt-2 pb-1">Overview</p>
-          {navItem("dashboard","📊 Dashboard")}
-          {navItem("studies","🧪 Studies")}
-          <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider px-3 pt-3 pb-1">TMF</p>
-          {navItem("Documents","📁 Documents")}
-          {navItem("artifacts","🗂 Artifact browser")}
-          {navItem("gap","✅ Gap analysis")}
-          <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider px-3 pt-3 pb-1">Intelligence</p>
-          {navItem("readiness","🛡 Inspection readiness")}
-          {navItem("chat","💬 AI specialist")}
+        <aside style={{width:"192px",borderRight:`0.5px solid ${P.border}`,background:P.bg,display:"flex",flexDirection:"column",padding:"8px",gap:"2px",flexShrink:0,overflowY:"auto"}}>
+          <p style={{fontSize:"9px",fontWeight:"500",color:P.textTert,padding:"8px 10px 3px",letterSpacing:".08em",textTransform:"uppercase" as const}}>Overview</p>
+          {navItem("dashboard","Dashboard","ti-layout-dashboard")}
+          {navItem("studies","Studies","ti-flask")}
+          <p style={{fontSize:"9px",fontWeight:"500",color:P.textTert,padding:"10px 10px 3px",letterSpacing:".08em",textTransform:"uppercase" as const}}>TMF</p>
+          {navItem("documents","Documents","ti-files")}
+          {navItem("artifacts","Artifact browser","ti-layout-grid")}
+          {navItem("gap","Gap analysis","ti-clipboard-check")}
+          <p style={{fontSize:"9px",fontWeight:"500",color:P.textTert,padding:"10px 10px 3px",letterSpacing:".08em",textTransform:"uppercase" as const}}>Intelligence</p>
+          {navItem("readiness","Inspection readiness","ti-shield-check")}
+          {navItem("chat","AI specialist","ti-message-circle")}
+          {navItem("audit","Audit trail","ti-lock")}
         </aside>
 
-        <main className="flex-1 overflow-y-auto p-5">
+        <main style={{flex:1,overflowY:"auto",padding:"1.25rem"}}>
 
           {/* DASHBOARD */}
-          {panel==="dashboard" && (
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <h1 className="text-sm font-semibold">Dashboard {activeStudy?`— ${activeStudy.study_id}`:""}</h1>
-                <button onClick={()=>setShowStudyModal(true)} className="text-xs px-3 py-1.5 bg-emerald-600 text-white rounded hover:bg-emerald-700">+ New study</button>
+          {panel==="dashboard"&&(
+            <div style={{display:"flex",flexDirection:"column",gap:"1rem"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <h1 style={{fontSize:"14px",fontWeight:"500"}}>Dashboard {activeStudy?`— ${activeStudy.study_id}`:""}</h1>
+                <button onClick={()=>setShowStudyModal(true)} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ New study</button>
               </div>
-              {!activeStudy ? (
-                <div className="text-center py-12 text-gray-400">
-                  <div className="text-4xl mb-3">📋</div>
-                  <div className="text-sm font-medium mb-1">No studies yet</div>
-                  <div className="text-xs mb-4">Create your first study to start tracking your TMF</div>
-                  <button onClick={()=>setShowStudyModal(true)} className="text-xs px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700">+ Create study</button>
+              {!activeStudy?(
+                <div style={{textAlign:"center",padding:"3rem",color:P.textTert}}>
+                  <div style={{fontSize:"3rem",marginBottom:"12px"}}>📋</div>
+                  <div style={{fontSize:"13px",fontWeight:"500",marginBottom:"6px",color:P.text}}>No studies yet</div>
+                  <div style={{fontSize:"12px",marginBottom:"1rem"}}>Create your first study to start tracking your TMF</div>
+                  <button onClick={()=>setShowStudyModal(true)} style={{fontSize:"11px",padding:"8px 16px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ Create study</button>
                 </div>
-              ) : (
+              ):(
                 <>
-                  <div className="grid grid-cols-4 gap-3">
-                    {[{val:`${donePct}%`,label:"TMF completeness",color:scoreColor(donePct)},{val:missing,label:"Missing / not approved",color:"text-red-600"},{val:expiring,label:"Expiring (90 days)",color:"text-amber-600"},{val:pending,label:"Pending review",color:"text-blue-600"}].map((m,i)=>(
-                      <div key={i} className="bg-white border border-gray-200 rounded-lg p-3">
-                        <div className={`text-2xl font-semibold ${m.color}`}>{m.val}</div>
-                        <div className="text-xs text-gray-500 mt-1">{m.label}</div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"10px"}}>
+                    {[{val:`${donePct}%`,label:"TMF completeness",color:scoreColor(donePct),bg:donePct>=80?P.successLight:donePct>=60?P.warningLight:P.dangerLight},
+                      {val:missing,label:"Missing / not approved",color:"#EF4444",bg:"#FEF2F2"},
+                      {val:expiring,label:"Expiring (90 days)",color:"#F59E0B",bg:"#FFFBEB"},
+                      {val:pending,label:"Pending review",color:P.primary,bg:P.primaryLight}
+                    ].map((m,i)=>(
+                      <div key={i} style={{background:`linear-gradient(135deg, ${m.bg}, #fff)`,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"14px",borderTop:`3px solid ${m.color}`}}>
+                        <div style={{fontSize:"24px",fontWeight:"500",color:m.color}}>{m.val}</div>
+                        <div style={{fontSize:"11px",color:P.textSec,marginTop:"3px"}}>{m.label}</div>
                       </div>
                     ))}
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white border border-gray-200 rounded-lg p-4">
-                      <h2 className="text-xs font-semibold mb-3">TMF completeness by zone</h2>
-                      <div className="flex flex-col gap-2">
-                        {ZONES.map(({z,zn})=>{const p=zoneComp(z);return(
-                          <div key={z} className="flex items-center gap-2">
-                            <span className="text-[10px] text-gray-400 w-4">{z}</span>
-                            <span className="text-xs text-gray-600 flex-1 truncate">{zn}</span>
-                            <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{width:`${p}%`,background:ZONE_COLORS[z]}}/></div>
-                            <span className="text-[10px] font-medium w-8 text-right" style={{color:ZONE_COLORS[z]}}>{p}%</span>
-                          </div>
-                        );})}
-                      </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px"}}>
+                    <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"14px"}}>
+                      <h2 style={{fontSize:"11px",fontWeight:"500",marginBottom:"12px",color:P.textSec,textTransform:"uppercase" as const,letterSpacing:".06em"}}>TMF completeness by zone</h2>
+                      {ZONES.map(({z,zn})=>{const p=zoneComp(z);return(
+                        <div key={z} style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"6px"}}>
+                          <span style={{fontSize:"9px",color:P.textTert,width:"14px"}}>{z}</span>
+                          <span style={{fontSize:"11px",color:P.textSec,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{zn}</span>
+                          <div style={{width:"80px",height:"4px",background:P.bgTert,borderRadius:"4px",overflow:"hidden"}}><div style={{width:`${p}%`,height:"100%",background:ZONE_COLORS[z]||P.primary,borderRadius:"4px"}}/></div>
+                          <span style={{fontSize:"10px",fontWeight:"500",width:"28px",textAlign:"right",color:ZONE_COLORS[z]||P.primary}}>{p}%</span>
+                        </div>
+                      );})}
                     </div>
-                    <div className="bg-white border border-gray-200 rounded-lg p-4">
-                      <h2 className="text-xs font-semibold mb-3">Inspection readiness</h2>
-                      <div className="flex flex-col items-center py-2 mb-3">
-                        <span className={`text-4xl font-semibold ${scoreColor(ri)}`}>{ri}</span>
-                        <span className="text-xs text-gray-500 mt-1">Readiness score</span>
+                    <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"14px"}}>
+                      <h2 style={{fontSize:"11px",fontWeight:"500",marginBottom:"12px",color:P.textSec,textTransform:"uppercase" as const,letterSpacing:".06em"}}>Inspection readiness</h2>
+                      <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"8px 0 12px"}}>
+                        <span style={{fontSize:"48px",fontWeight:"500",color:scoreColor(ri)}}>{ri}</span>
+                        <span style={{fontSize:"11px",color:P.textTert,marginTop:"2px"}}>Readiness score</span>
+                        <div style={{width:"100%",height:"6px",background:P.bgTert,borderRadius:"6px",marginTop:"12px",overflow:"hidden"}}><div style={{width:`${ri}%`,height:"100%",background:scoreColor(ri),borderRadius:"6px"}}/></div>
                       </div>
-                      <div className="flex flex-col gap-1.5">
-                        {gaps.crit.slice(0,2).map((g,i)=><div key={i} className="text-xs bg-red-50 text-red-700 rounded px-2 py-1">⚠ CRITICAL — {g.an}</div>)}
-                        {gaps.major.slice(0,2).map((g,i)=><div key={i} className="text-xs bg-amber-50 text-amber-700 rounded px-2 py-1">▲ MAJOR — {g.an}</div>)}
-                        {gaps.crit.length===0&&gaps.major.length===0&&<div className="text-xs text-emerald-600 px-2 py-1">✓ No critical or major findings</div>}
+                      <div style={{display:"flex",flexDirection:"column",gap:"4px"}}>
+                        {gaps.crit.slice(0,2).map((g,i)=><div key={i} style={{fontSize:"11px",background:P.dangerLight,color:"#991B1B",borderRadius:"6px",padding:"5px 8px"}}>⚠ CRITICAL — {g.an}</div>)}
+                        {gaps.major.slice(0,2).map((g,i)=><div key={i} style={{fontSize:"11px",background:P.warningLight,color:"#92400E",borderRadius:"6px",padding:"5px 8px"}}>▲ MAJOR — {g.an}</div>)}
+                        {gaps.crit.length===0&&gaps.major.length===0&&<div style={{fontSize:"11px",color:P.success,padding:"5px 8px"}}>✓ No critical or major findings</div>}
                       </div>
                     </div>
                   </div>
@@ -404,20 +461,20 @@ console.log("Upload success:", upData);
           )}
 
           {/* STUDIES */}
-          {panel==="studies" && (
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <h1 className="text-sm font-semibold">Studies</h1>
-                <button onClick={()=>setShowStudyModal(true)} className="text-xs px-3 py-1.5 bg-emerald-600 text-white rounded hover:bg-emerald-700">+ New study</button>
+          {panel==="studies"&&(
+            <div style={{display:"flex",flexDirection:"column",gap:"1rem"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <h1 style={{fontSize:"14px",fontWeight:"500"}}>Studies</h1>
+                <button onClick={()=>setShowStudyModal(true)} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ New study</button>
               </div>
-              {studies.length===0?<div className="text-center py-12 text-gray-400 text-xs">No studies yet — create your first study.</div>:(
-                <div className="grid grid-cols-3 gap-3">
+              {studies.length===0?<div style={{textAlign:"center",padding:"3rem",color:P.textTert,fontSize:"12px"}}>No studies yet.</div>:(
+                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"10px"}}>
                   {studies.map(s=>(
-                    <div key={s.study_id} onClick={()=>{setActiveStudy(s);loadDocs(s.study_id,user.id);setPanel("dashboard");}} className={`border rounded-lg p-3 cursor-pointer transition-colors ${activeStudy?.study_id===s.study_id?"border-emerald-500 bg-emerald-50":"border-gray-200 bg-white hover:border-emerald-300"}`}>
-                      <div className="text-sm font-semibold">{s.study_id}</div>
-                      <div className="text-xs text-gray-500 mt-1">{s.protocol||"—"}</div>
-                      <div className="text-xs text-gray-400 mt-0.5">Phase: {s.phase} · {s.sponsor||"—"}</div>
-                      <span className={`inline-block mt-2 text-[10px] px-2 py-0.5 rounded-full ${s.status==="Active"?"bg-emerald-100 text-emerald-700":s.status==="Startup"?"bg-blue-100 text-blue-700":"bg-gray-100 text-gray-500"}`}>{s.status}</span>
+                    <div key={s.study_id} onClick={()=>{setActiveStudy(s);loadDocs(s.study_id,user.id);setPanel("dashboard");}} style={{border:`0.5px solid ${activeStudy?.study_id===s.study_id?P.primary:P.border}`,borderRadius:"12px",padding:"14px",cursor:"pointer",background:activeStudy?.study_id===s.study_id?P.primaryLight:P.bg,transition:"all 0.15s"}}>
+                      <div style={{fontSize:"13px",fontWeight:"500"}}>{s.study_id}</div>
+                      <div style={{fontSize:"11px",color:P.textSec,marginTop:"4px"}}>{s.protocol||"—"}</div>
+                      <div style={{fontSize:"11px",color:P.textTert,marginTop:"2px"}}>Phase: {s.phase} · {s.sponsor||"—"}</div>
+                      <span style={{display:"inline-block",marginTop:"8px",fontSize:"10px",padding:"2px 8px",borderRadius:"10px",background:s.status==="Active"?P.successLight:s.status==="Startup"?P.blueLight:P.bgTert,color:s.status==="Active"?"#065F46":s.status==="Startup"?"#1E40AF":P.textSec}}>{s.status}</span>
                     </div>
                   ))}
                 </div>
@@ -426,49 +483,60 @@ console.log("Upload success:", upData);
           )}
 
           {/* DOCUMENTS */}
-          {panel==="Documents" && (
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <h1 className="text-sm font-semibold">Documents — {activeStudy?.study_id||"No study selected"}</h1>
-                {activeStudy && <button onClick={()=>setShowDocModal(true)} className="text-xs px-3 py-1.5 bg-emerald-600 text-white rounded hover:bg-emerald-700">+ Add document</button>}
+          {panel==="documents"&&(
+            <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <h1 style={{fontSize:"14px",fontWeight:"500"}}>Documents — {activeStudy?.study_id||"No study selected"}</h1>
+                {activeStudy&&<button onClick={()=>setShowDocModal(true)} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ Add document</button>}
               </div>
-              <div className="flex gap-2 flex-wrap">
+              <div style={{display:"flex",gap:"8px",flexWrap:"wrap" as const,alignItems:"center"}}>
+                <input value={docSearch} onChange={e=>setDocSearch(e.target.value)} placeholder="Search documents..." style={{fontSize:"12px",padding:"6px 10px",border:`0.5px solid ${P.border}`,borderRadius:"8px",width:"220px"}}/>
                 {["all","Approved","Under Review","Draft","Archived"].map(f=>(
-                  <button key={f} onClick={()=>setDocFilter(f)} className={`text-xs px-3 py-1 rounded-full border transition-colors ${docFilter===f?"bg-emerald-600 text-white border-emerald-600":"border-gray-200 text-gray-500 hover:border-emerald-400"}`}>{f==="all"?"All":f}</button>
+                  <button key={f} onClick={()=>setDocFilter(f)} style={{fontSize:"11px",padding:"4px 12px",borderRadius:"20px",border:`0.5px solid ${docFilter===f?P.primary:P.border}`,background:docFilter===f?P.primary:"transparent",color:docFilter===f?"#fff":P.textSec,cursor:"pointer"}}>{f==="all"?"All":f}</button>
                 ))}
               </div>
-              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                <table className="w-full text-xs">
-                  <thead><tr className="border-b border-gray-100">{["Artifact","Zone","File","Version","Effective","Expiry","Status","Owner","Preview"].map(h=><th key={h} className="text-left px-3 py-2 text-[11px] font-medium text-gray-500">{h}</th>)}</tr></thead>
+              <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",overflow:"hidden"}}>
+                <table style={{width:"100%",fontSize:"12px",borderCollapse:"collapse"}}>
+                  <thead><tr style={{borderBottom:`0.5px solid ${P.border}`}}>
+                    {["Artifact","Zone","File name","Version","Effective","Expiry","Status","Owner","Actions"].map(h=>(
+                      <th key={h} style={{textAlign:"left",padding:"8px 10px",fontSize:"10px",fontWeight:"500",color:P.textTert}}>{h}</th>
+                    ))}
+                  </tr></thead>
                   <tbody>
                     {filteredDocs.length===0?(
-                      <tr><td colSpan={9} className="text-center py-6 text-gray-400">No documents — add your first document.</td></tr>
+                      <tr><td colSpan={9} style={{textAlign:"center",padding:"2rem",color:P.textTert}}>No documents found.</td></tr>
                     ):filteredDocs.map((d,i)=>(
-                      <tr key={i} className="border-b border-gray-50 hover:bg-gray-50">
-                        <td className="px-3 py-2"><div className="font-mono text-[10px] text-gray-400">{d.artifact_num}</div><div>{d.artifact_name}</div></td>
-                        <td className="px-3 py-2 text-gray-500">Zone {d.zone}</td>
-                        <td className="px-3 py-2">
-                          {d.file_name?(
-                            <div className="flex items-center gap-1">
-                              <span>{fileIcon(d.file_name)}</span>
-                              <span className="text-[10px] text-gray-500 truncate max-w-20">{d.file_name}</span>
-                              {d.file_size?<span className="text-[10px] text-gray-400">({formatSize(d.file_size)})</span>:null}
+                      <tr key={i} style={{borderBottom:`0.5px solid ${P.bgTert}`}}>
+                        <td style={{padding:"8px 10px"}}><div style={{fontFamily:"monospace",fontSize:"9px",color:P.textTert}}>{d.artifact_num}</div><div style={{fontSize:"11px"}}>{d.artifact_name}</div></td>
+                        <td style={{padding:"8px 10px",fontSize:"11px",color:P.textSec}}>Zone {d.zone}</td>
+                        <td style={{padding:"8px 10px"}}>
+                          {(d.custom_file_name||d.file_name)?(
+                            <div style={{display:"flex",alignItems:"center",gap:"4px"}}>
+                              <span>{fileIcon(d.file_name||"")}</span>
+                              <span style={{fontSize:"11px",color:P.textSec,maxWidth:"100px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{d.custom_file_name||d.file_name}</span>
                             </div>
-                          ):<span className="text-gray-300">—</span>}
+                          ):<span style={{color:P.textTert}}>—</span>}
                         </td>
-                        <td className="px-3 py-2">{d.version||"—"}</td>
-                        <td className="px-3 py-2">{d.effective_date||"—"}</td>
-                        <td className={`px-3 py-2 ${d.expiry_date&&new Date(d.expiry_date)<new Date(Date.now()+90*86400000)?"text-red-600 font-medium":""}`}>{d.expiry_date||"—"}</td>
-                        <td className="px-3 py-2"><span className={`px-2 py-0.5 rounded-full text-[10px] ${d.status==="Approved"?"bg-emerald-100 text-emerald-700":d.status==="Under Review"?"bg-blue-100 text-blue-700":d.status==="Draft"?"bg-amber-100 text-amber-700":"bg-gray-100 text-gray-500"}`}>{d.status}</span></td>
-                        <td className="px-3 py-2 text-gray-500">{d.owner||"—"}</td>
-                        <td className="px-3 py-2">
-                          {d.file_path&&(
-                            canPreview(d.file_name||"")?(
-                              <button onClick={()=>openPreview(d)} className="text-[10px] px-2 py-0.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100">Preview</button>
-                            ):(
-                              <a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] px-2 py-0.5 bg-gray-50 text-gray-600 rounded hover:bg-gray-100">Download</a>
-                            )
-                          )}
+                        <td style={{padding:"8px 10px",fontSize:"11px"}}>{d.version||"—"}</td>
+                        <td style={{padding:"8px 10px",fontSize:"11px"}}>{d.effective_date||"—"}</td>
+                        <td style={{padding:"8px 10px",fontSize:"11px",color:d.expiry_date&&new Date(d.expiry_date)<new Date(Date.now()+90*86400000)?"#EF4444":"inherit"}}>{d.expiry_date||"—"}</td>
+                        <td style={{padding:"8px 10px"}}>{statusBadge(d.status)}</td>
+                        <td style={{padding:"8px 10px",fontSize:"11px",color:P.textSec}}>{d.owner||"—"}</td>
+                        <td style={{padding:"8px 10px"}}>
+                          <div style={{display:"flex",gap:"4px",flexWrap:"wrap" as const}}>
+                            {d.file_path&&canPreview(d.file_name||"")&&(
+                              <button onClick={()=>openPreview(d)} style={{fontSize:"9px",padding:"2px 6px",background:P.blueLight,color:"#1E40AF",border:"none",borderRadius:"4px",cursor:"pointer"}}>Preview</button>
+                            )}
+                            {d.file_path&&(
+                              <a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none"}}>Download</a>
+                            )}
+                            {d.status!=="Approved"&&(
+                              <button onClick={()=>{setSelectedDoc(d);setShowApproveModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:P.successLight,color:"#065F46",border:"none",borderRadius:"4px",cursor:"pointer"}}>Approve</button>
+                            )}
+                            <button onClick={()=>{setSelectedDoc(d);setCommentText("");setShowCommentModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:P.primaryLight,color:P.primary,border:"none",borderRadius:"4px",cursor:"pointer"}}>Comment</button>
+                          </div>
+                          {d.comments&&<div style={{fontSize:"9px",color:P.textTert,marginTop:"3px",maxWidth:"140px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}} title={d.comments}>💬 {d.comments.split("\n").length} comment{d.comments.split("\n").length!==1?"s":""}</div>}
+                          {d.approved_by&&<div style={{fontSize:"9px",color:"#065F46",marginTop:"2px"}}>✓ {d.approved_by}</div>}
                         </td>
                       </tr>
                     ))}
@@ -479,75 +547,89 @@ console.log("Upload success:", upData);
           )}
 
           {/* ARTIFACT BROWSER */}
-          {panel==="artifacts" && (
-            <div className="flex flex-col gap-3">
-              <h1 className="text-sm font-semibold">Artifact browser — DIA TMF Reference Model v3.3.1</h1>
-              <div className="flex gap-2">
-                <input value={artSearch} onChange={e=>setArtSearch(e.target.value)} placeholder="Search artifacts..." className="flex-1 text-xs border border-gray-200 rounded px-3 py-1.5 bg-white"/>
-                <select value={artZone} onChange={e=>setArtZone(e.target.value)} className="text-xs border border-gray-200 rounded px-2 py-1.5 bg-white">
+          {panel==="artifacts"&&(
+            <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+              <h1 style={{fontSize:"14px",fontWeight:"500"}}>Artifact browser — DIA TMF Reference Model v3.3.1</h1>
+              <div style={{display:"flex",gap:"8px"}}>
+                <input value={artSearch} onChange={e=>setArtSearch(e.target.value)} placeholder="Search artifacts..." style={{flex:1,fontSize:"12px",padding:"6px 10px",border:`0.5px solid ${P.border}`,borderRadius:"8px"}}/>
+                <select value={artZone} onChange={e=>setArtZone(e.target.value)} style={{fontSize:"12px",padding:"6px 10px",border:`0.5px solid ${P.border}`,borderRadius:"8px"}}>
                   <option value="">All zones</option>
                   {ZONES.map(({z,zn})=><option key={z} value={z}>Zone {z} — {zn}</option>)}
                 </select>
-                <select value={artCl} onChange={e=>setArtCl(e.target.value)} className="text-xs border border-gray-200 rounded px-2 py-1.5 bg-white">
+                <select value={artCl} onChange={e=>setArtCl(e.target.value)} style={{fontSize:"12px",padding:"6px 10px",border:`0.5px solid ${P.border}`,borderRadius:"8px"}}>
                   <option value="">Core + Recommended</option>
                   <option value="Core">Core only</option>
                   <option value="Recommended">Recommended only</option>
                 </select>
               </div>
-              <p className="text-xs text-gray-400">{filteredArts.length} artifact{filteredArts.length!==1?"s":""}</p>
-              <div className="flex flex-col gap-2">
-                {filteredArts.map(a=>(
-                  <div key={a.a} className="bg-white border border-gray-200 rounded-lg px-3 py-2">
-                    <div className="flex items-center gap-2 cursor-pointer" onClick={()=>setExpandedArt(expandedArt===a.a?null:a.a)}>
-                      <span className="font-mono text-[10px] text-gray-400 shrink-0">{a.a}</span>
-                      <span className="text-xs font-medium flex-1">{a.an}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full ${a.cl==="Core"?"bg-emerald-100 text-emerald-700":"bg-amber-100 text-amber-700"}`}>{a.cl}</span>
-                    </div>
-                    {expandedArt===a.a&&(
-                      <div className="mt-2 pt-2 border-t border-gray-100 text-xs text-gray-500 leading-relaxed">
-                        {a.def}
-                        <div className="flex gap-2 mt-2 flex-wrap">
-                          <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full text-[10px]">Zone {a.z} · {a.zn}</span>
-                          <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full text-[10px]">{a.sn}</span>
-                          {a.iso&&<span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full text-[10px] font-mono">ISO 14155: {a.iso}</span>}
-                        </div>
+              <p style={{fontSize:"11px",color:P.textTert}}>{filteredArts.length} artifact{filteredArts.length!==1?"s":""}</p>
+              <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+                {filteredArts.map(a=>{
+                  const approvedDocs=studyDocs.filter(d=>d.artifact_num===a.a&&d.status==="Approved");
+                  return(
+                    <div key={a.a} style={{background:P.bg,border:`0.5px solid ${approvedDocs.length>0?P.primary:P.border}`,borderRadius:"10px",overflow:"hidden"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:"8px",padding:"10px 12px",cursor:"pointer"}} onClick={()=>setExpandedArt(expandedArt===a.a?null:a.a)}>
+                        <span style={{fontFamily:"monospace",fontSize:"9px",color:P.textTert,flexShrink:0}}>{a.a}</span>
+                        <span style={{fontSize:"12px",fontWeight:"500",flex:1}}>{a.an}</span>
+                        {approvedDocs.length>0&&<span style={{fontSize:"9px",padding:"2px 6px",background:P.successLight,color:"#065F46",borderRadius:"8px"}}>✓ {approvedDocs.length} filed</span>}
+                        <span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"10px",background:a.cl==="Core"?P.primaryLight:P.warningLight,color:a.cl==="Core"?P.primary:"#92400E"}}>{a.cl}</span>
                       </div>
-                    )}
-                  </div>
-                ))}
+                      {expandedArt===a.a&&(
+                        <div style={{borderTop:`0.5px solid ${P.border}`,padding:"10px 12px",background:P.bgSec}}>
+                          {a.iso&&<div style={{fontSize:"11px",color:P.textTert,marginBottom:"8px"}}>ISO 14155: {a.iso}</div>}
+                          {approvedDocs.length>0&&(
+                            <div style={{marginBottom:"10px"}}>
+                              <div style={{fontSize:"10px",fontWeight:"500",color:P.textSec,marginBottom:"6px"}}>Filed documents:</div>
+                              {approvedDocs.map((d,i)=>(
+                                <div key={i} style={{display:"flex",alignItems:"center",gap:"6px",padding:"5px 8px",background:P.bg,borderRadius:"6px",marginBottom:"4px",border:`0.5px solid ${P.border}`}}>
+                                  <span>{fileIcon(d.file_name||"")}</span>
+                                  <span style={{fontSize:"11px",flex:1}}>{d.custom_file_name||d.file_name||d.artifact_name}</span>
+                                  <span style={{fontSize:"9px",color:P.textTert}}>{d.version}</span>
+                                  {d.file_path&&canPreview(d.file_name||"")&&<button onClick={()=>openPreview(d)} style={{fontSize:"9px",padding:"2px 6px",background:P.blueLight,color:"#1E40AF",border:"none",borderRadius:"4px",cursor:"pointer"}}>Preview</button>}
+                                  {d.file_path&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none"}}>Download</a>}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          <button onClick={()=>{setFZone(a.z);setFArtifact(a.a+"|"+a.an+"|"+a.z);setShowDocModal(true);}} style={{fontSize:"10px",padding:"4px 10px",background:P.primaryLight,color:P.primary,border:`0.5px solid ${P.primary}`,borderRadius:"6px",cursor:"pointer"}}>+ Upload document to this artifact</button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
 
           {/* GAP ANALYSIS */}
-          {panel==="gap" && (
-            <div className="flex flex-col gap-3">
-              <h1 className="text-sm font-semibold">Gap analysis — {activeStudy?.study_id||"No study selected"}</h1>
-              {!activeStudy?<div className="text-xs text-gray-400">Select a study first.</div>:(
+          {panel==="gap"&&(
+            <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+              <h1 style={{fontSize:"14px",fontWeight:"500"}}>Gap analysis — {activeStudy?.study_id||"No study selected"}</h1>
+              {!activeStudy?<div style={{fontSize:"12px",color:P.textTert}}>Select a study first.</div>:(
                 <>
-                  <p className="text-xs text-gray-500">Comparing filed documents against Core artifacts in DIA TMF Reference Model v3.3.1</p>
-                  <select value={gapZone} onChange={e=>setGapZone(e.target.value)} className="text-xs border border-gray-200 rounded px-2 py-1.5 bg-white w-48">
+                  <p style={{fontSize:"12px",color:P.textSec}}>Comparing filed documents against Core artifacts in DIA TMF Reference Model v3.3.1</p>
+                  <select value={gapZone} onChange={e=>setGapZone(e.target.value)} style={{fontSize:"12px",padding:"6px 10px",border:`0.5px solid ${P.border}`,borderRadius:"8px",width:"200px"}}>
                     <option value="">All zones</option>
                     {ZONES.map(({z,zn})=><option key={z} value={z}>Zone {z} — {zn}</option>)}
                   </select>
-                  <div className="grid grid-cols-3 gap-3">
-                    {[{val:gaps.crit.length,label:"Critical",color:"text-red-600",bg:"bg-red-50"},{val:gaps.major.length,label:"Major",color:"text-amber-600",bg:"bg-amber-50"},{val:gaps.minor.length,label:"Minor",color:"text-blue-600",bg:"bg-blue-50"}].map((s,i)=>(
-                      <div key={i} className={`${s.bg} border border-gray-200 rounded-lg p-3 text-center`}>
-                        <div className={`text-2xl font-semibold ${s.color}`}>{s.val}</div>
-                        <div className="text-xs text-gray-500 mt-1">{s.label}</div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"10px"}}>
+                    {[{val:gaps.crit.length,label:"Critical",color:"#EF4444",bg:"#FEF2F2"},{val:gaps.major.length,label:"Major",color:"#F59E0B",bg:"#FFFBEB"},{val:gaps.minor.length,label:"Minor",color:P.primary,bg:P.primaryLight}].map((s,i)=>(
+                      <div key={i} style={{background:s.bg,border:`0.5px solid ${P.border}`,borderRadius:"10px",padding:"12px",textAlign:"center"}}>
+                        <div style={{fontSize:"28px",fontWeight:"500",color:s.color}}>{s.val}</div>
+                        <div style={{fontSize:"11px",color:P.textSec,marginTop:"2px"}}>{s.label}</div>
                       </div>
                     ))}
                   </div>
-                  {[{items:gaps.crit.filter(g=>!gapZone||g.z===gapZone),label:"CRITICAL",bg:"bg-red-50",text:"text-red-700",border:"border-red-200"},
-                    {items:gaps.major.filter(g=>!gapZone||g.z===gapZone),label:"MAJOR",bg:"bg-amber-50",text:"text-amber-700",border:"border-amber-200"},
-                    {items:gaps.minor.filter(g=>!gapZone||g.z===gapZone),label:"MINOR",bg:"bg-blue-50",text:"text-blue-700",border:"border-blue-200"}
-                  ].map(({items,label,bg,text,border})=>items.length>0&&(
-                    <div key={label} className={`border ${border} rounded-lg overflow-hidden`}>
-                      <div className={`${bg} ${text} px-3 py-2 text-xs font-semibold`}>{label} — {items.length} gap{items.length!==1?"s":""}</div>
-                      {items.map((g,i)=>(
-                        <div key={i} className="border-t border-gray-100 px-3 py-2 flex justify-between items-center bg-white text-xs">
-                          <div><div className="font-medium">{g.an}</div><div className="text-gray-400 text-[10px] mt-0.5">Zone {g.z} — {g.zn}</div></div>
-                          <div className="text-right shrink-0"><div className="font-mono text-[10px] text-gray-400">{g.a}</div>{g.iso&&<div className="font-mono text-[10px] text-blue-500">{g.iso}</div>}</div>
+                  {[{items:gaps.crit.filter((g:any)=>!gapZone||g.z===gapZone),label:"CRITICAL",color:"#991B1B",bg:"#FEF2F2",border:"#FECACA"},
+                    {items:gaps.major.filter((g:any)=>!gapZone||g.z===gapZone),label:"MAJOR",color:"#92400E",bg:"#FFFBEB",border:"#FDE68A"},
+                    {items:gaps.minor.filter((g:any)=>!gapZone||g.z===gapZone),label:"MINOR",color:"#1E40AF",bg:P.primaryLight,border:"#C7D2FE"}
+                  ].map(({items,label,color,bg,border})=>items.length>0&&(
+                    <div key={label} style={{border:`0.5px solid ${border}`,borderRadius:"10px",overflow:"hidden"}}>
+                      <div style={{background:bg,color,padding:"8px 12px",fontSize:"11px",fontWeight:"500"}}>{label} — {items.length} gap{items.length!==1?"s":""}</div>
+                      {items.map((g:any,i:number)=>(
+                        <div key={i} style={{borderTop:`0.5px solid ${P.bgTert}`,padding:"8px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",background:P.bg}}>
+                          <div><div style={{fontSize:"12px",fontWeight:"500"}}>{g.an}</div><div style={{fontSize:"10px",color:P.textTert,marginTop:"2px"}}>Zone {g.z} — {g.zn}</div></div>
+                          <div style={{textAlign:"right",flexShrink:0}}><div style={{fontFamily:"monospace",fontSize:"10px",color:P.textTert}}>{g.a}</div>{g.iso&&<div style={{fontFamily:"monospace",fontSize:"10px",color:P.blue}}>{g.iso}</div>}</div>
                         </div>
                       ))}
                     </div>
@@ -558,38 +640,36 @@ console.log("Upload success:", upData);
           )}
 
           {/* INSPECTION READINESS */}
-          {panel==="readiness" && (
-            <div className="flex flex-col gap-4">
-              <h1 className="text-sm font-semibold">Inspection readiness — {activeStudy?.study_id||"No study selected"}</h1>
-              {!activeStudy?<div className="text-xs text-gray-400">Select a study first.</div>:(
+          {panel==="readiness"&&(
+            <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+              <h1 style={{fontSize:"14px",fontWeight:"500"}}>Inspection readiness — {activeStudy?.study_id||"No study selected"}</h1>
+              {!activeStudy?<div style={{fontSize:"12px",color:P.textTert}}>Select a study first.</div>:(
                 <>
-                  <div className="grid grid-cols-4 gap-3">
-                    <div className="bg-white border border-gray-200 rounded-lg p-4 flex flex-col items-center">
-                      <span className={`text-5xl font-semibold ${scoreColor(ri)}`}>{ri}</span>
-                      <span className="text-xs text-gray-500 mt-2">Readiness score</span>
-                      <div className="w-full h-2 bg-gray-100 rounded-full mt-3 overflow-hidden"><div className={`h-full rounded-full ${ri>=80?"bg-emerald-500":ri>=60?"bg-amber-500":"bg-red-500"}`} style={{width:`${ri}%`}}/></div>
+                  <div style={{display:"grid",gridTemplateColumns:"160px 1fr",gap:"12px"}}>
+                    <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"16px",display:"flex",flexDirection:"column",alignItems:"center"}}>
+                      <span style={{fontSize:"52px",fontWeight:"500",color:scoreColor(ri)}}>{ri}</span>
+                      <span style={{fontSize:"11px",color:P.textTert,marginTop:"4px"}}>Readiness score</span>
+                      <div style={{width:"100%",height:"6px",background:P.bgTert,borderRadius:"6px",marginTop:"12px",overflow:"hidden"}}><div style={{width:`${ri}%`,height:"100%",background:scoreColor(ri),borderRadius:"6px"}}/></div>
                     </div>
-                    <div className="col-span-3 bg-white border border-gray-200 rounded-lg p-4">
-                      <h2 className="text-xs font-semibold mb-3">Top findings</h2>
-                      <div className="flex flex-col gap-2">
-                        {gaps.crit.slice(0,4).map((g,i)=><div key={i} className="text-xs bg-red-50 text-red-700 rounded px-2 py-1.5">⚠ CRITICAL — {g.an} <span className="font-mono text-[10px]">({g.a})</span></div>)}
-                        {gaps.major.slice(0,3).map((g,i)=><div key={i} className="text-xs bg-amber-50 text-amber-700 rounded px-2 py-1.5">▲ MAJOR — {g.an} <span className="font-mono text-[10px]">({g.a})</span></div>)}
-                        {gaps.crit.length===0&&gaps.major.length===0&&<div className="text-xs text-emerald-600">✓ No critical or major findings</div>}
+                    <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"14px"}}>
+                      <h2 style={{fontSize:"11px",fontWeight:"500",marginBottom:"10px",color:P.textSec}}>Top findings</h2>
+                      <div style={{display:"flex",flexDirection:"column",gap:"5px"}}>
+                        {gaps.crit.slice(0,4).map((g:any,i:number)=><div key={i} style={{fontSize:"11px",background:"#FEF2F2",color:"#991B1B",borderRadius:"6px",padding:"6px 10px"}}>⚠ CRITICAL — {g.an} <span style={{fontFamily:"monospace",fontSize:"9px"}}>({g.a})</span></div>)}
+                        {gaps.major.slice(0,3).map((g:any,i:number)=><div key={i} style={{fontSize:"11px",background:"#FFFBEB",color:"#92400E",borderRadius:"6px",padding:"6px 10px"}}>▲ MAJOR — {g.an} <span style={{fontFamily:"monospace",fontSize:"9px"}}>({g.a})</span></div>)}
+                        {gaps.crit.length===0&&gaps.major.length===0&&<div style={{fontSize:"11px",color:P.success}}>✓ No critical or major findings</div>}
                       </div>
                     </div>
                   </div>
-                  <div className="bg-white border border-gray-200 rounded-lg p-4">
-                    <h2 className="text-xs font-semibold mb-3">Zone readiness breakdown</h2>
-                    <div className="flex flex-col gap-2">
-                      {ZONES.map(({z,zn})=>{const p=zoneComp(z);return(
-                        <div key={z} className="flex items-center gap-3">
-                          <span className="text-[10px] text-gray-400 w-4">{z}</span>
-                          <span className="text-xs text-gray-600 w-44 truncate">{zn}</span>
-                          <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{width:`${p}%`,background:ZONE_COLORS[z]}}/></div>
-                          <span className={`text-xs font-medium w-10 text-right ${scoreColor(p)}`}>{p}%</span>
-                        </div>
-                      );})}
-                    </div>
+                  <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"14px"}}>
+                    <h2 style={{fontSize:"11px",fontWeight:"500",marginBottom:"12px",color:P.textSec}}>Zone readiness breakdown</h2>
+                    {ZONES.map(({z,zn})=>{const p=zoneComp(z);return(
+                      <div key={z} style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"8px"}}>
+                        <span style={{fontSize:"9px",color:P.textTert,width:"14px"}}>{z}</span>
+                        <span style={{fontSize:"11px",color:P.textSec,width:"180px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{zn}</span>
+                        <div style={{flex:1,height:"5px",background:P.bgTert,borderRadius:"5px",overflow:"hidden"}}><div style={{width:`${p}%`,height:"100%",background:ZONE_COLORS[z]||P.primary,borderRadius:"5px"}}/></div>
+                        <span style={{fontSize:"11px",fontWeight:"500",width:"32px",textAlign:"right",color:scoreColor(p)}}>{p}%</span>
+                      </div>
+                    );})}
                   </div>
                 </>
               )}
@@ -597,37 +677,48 @@ console.log("Upload success:", upData);
           )}
 
           {/* AI CHAT */}
-          {panel==="chat" && (
-            <div className="flex flex-col h-full gap-3">
-              <h1 className="text-sm font-semibold">TMF AI specialist</h1>
-              <div className="flex gap-2 flex-wrap">
-                {["Where does a CTA go in the TMF?","Core docs before first patient?","Draft a Note to File for late IRB filing","What is Zone 5?","Explain ALCOA+"].map(q=>(
-                  <button key={q} onClick={()=>setChatInput(q)} className="text-xs border border-gray-200 rounded-full px-3 py-1 text-gray-500 hover:border-emerald-400 hover:text-emerald-700 bg-white">{q}</button>
+          {panel==="chat"&&(
+            <div style={{display:"flex",flexDirection:"column",height:"100%",gap:"12px"}}>
+              <h1 style={{fontSize:"14px",fontWeight:"500"}}>TMF AI specialist</h1>
+              <div style={{display:"flex",gap:"6px",flexWrap:"wrap" as const}}>
+                {["Where does a CTA go in the TMF?","Core docs before first patient?","Draft a Note to File for late IRB filing","What is Zone 5?","Explain ALCOA+","What is 21 CFR Part 11?"].map(q=>(
+                  <button key={q} onClick={()=>setChatInput(q)} style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"20px",padding:"4px 10px",color:P.textSec,background:P.bg,cursor:"pointer"}}>{q}</button>
                 ))}
               </div>
-              <div className="flex-1 bg-white border border-gray-200 rounded-lg flex flex-col overflow-hidden" style={{minHeight:"360px"}}>
-                <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+              <div style={{flex:1,background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",display:"flex",flexDirection:"column",overflow:"hidden",minHeight:"360px"}}>
+                <div style={{flex:1,overflowY:"auto",padding:"1rem",display:"flex",flexDirection:"column",gap:"10px"}}>
                   {chatMessages.map((m,i)=>(
-                    <div key={i} className={`flex gap-2 ${m.role==="user"?"flex-row-reverse":""}`}>
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-medium shrink-0 ${m.role==="ai"?"bg-emerald-100 text-emerald-700":"bg-emerald-600 text-white"}`}>{m.role==="ai"?"AI":"You"}</div>
-                      <div className={`max-w-[85%] text-xs rounded-lg px-3 py-2 leading-relaxed ${m.role==="ai"?"bg-gray-50 text-gray-800":"bg-emerald-600 text-white"}`} style={{whiteSpace:"pre-wrap"}}>{m.text}</div>
+                    <div key={i} style={{display:"flex",gap:"8px",flexDirection:m.role==="user"?"row-reverse":"row"}}>
+                      <div style={{width:"24px",height:"24px",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"9px",fontWeight:"500",flexShrink:0,background:m.role==="ai"?P.primaryLight:"#6366F1",color:m.role==="ai"?P.primary:"#fff"}}>{m.role==="ai"?"AI":"You"}</div>
+                      <div style={{maxWidth:"85%",fontSize:"12px",borderRadius:"10px",padding:"8px 12px",lineHeight:"1.6",whiteSpace:"pre-wrap" as const,background:m.role==="ai"?P.bgSec:"#6366F1",color:m.role==="ai"?P.text:"#fff"}}>{m.text}</div>
                     </div>
                   ))}
                   {chatLoading&&(
-                    <div className="flex gap-2">
-                      <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-[9px] font-medium">AI</div>
-                      <div className="bg-gray-50 rounded-lg px-3 py-2 flex gap-1 items-center">
-                        {[0,1,2].map(i=><span key={i} className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" style={{animationDelay:`${i*0.15}s`}}/>)}
+                    <div style={{display:"flex",gap:"8px"}}>
+                      <div style={{width:"24px",height:"24px",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"9px",background:P.primaryLight,color:P.primary}}>AI</div>
+                      <div style={{background:P.bgSec,borderRadius:"10px",padding:"8px 12px",display:"flex",gap:"4px",alignItems:"center"}}>
+                        {[0,1,2].map(i=><span key={i} style={{width:"6px",height:"6px",borderRadius:"50%",background:P.primary,display:"inline-block",animation:"bounce 0.9s infinite",animationDelay:`${i*0.15}s`}}/>)}
                       </div>
                     </div>
                   )}
                   <div ref={messagesEnd}/>
                 </div>
-                <div className="border-t border-gray-100 p-3 flex gap-2">
-                  <input value={chatInput} onChange={e=>setChatInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendChat()} placeholder="Ask about your TMF, ISO 14155, gaps, document drafting..." className="flex-1 text-xs border border-gray-200 rounded px-3 py-2"/>
-                  <button onClick={sendChat} disabled={chatLoading} className="text-xs px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 disabled:opacity-50">Send</button>
+                <div style={{borderTop:`0.5px solid ${P.border}`,padding:"10px 12px",display:"flex",gap:"8px"}}>
+                  <input value={chatInput} onChange={e=>setChatInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendChat()} placeholder="Ask about your TMF, ISO 14155, gaps, document drafting..." style={{flex:1,fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/>
+                  <button onClick={sendChat} disabled={chatLoading} style={{fontSize:"12px",padding:"7px 16px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",opacity:chatLoading?0.5:1}}>Send</button>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* AUDIT TRAIL */}
+          {panel==="audit"&&(
+            <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+              <h1 style={{fontSize:"14px",fontWeight:"500"}}>Audit trail — 21 CFR Part 11 compliant</h1>
+              <div style={{background:"#FFFBEB",border:"0.5px solid #FDE68A",borderRadius:"10px",padding:"10px 14px",fontSize:"11px",color:"#92400E"}}>
+                ⚠ This audit trail is read-only and tamper-evident in compliance with 21 CFR Part 11. All document actions, electronic signatures, and approvals are permanently recorded.
+              </div>
+              <AuditTrail user={user} activeStudy={activeStudy} P={P}/>
             </div>
           )}
 
@@ -636,94 +727,180 @@ console.log("Upload success:", upData);
 
       {/* Study Modal */}
       {showStudyModal&&(
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-96 border border-gray-200 shadow-xl">
-            <h2 className="text-sm font-semibold mb-4">New study</h2>
-            {[{label:"Study ID",val:fId,set:setFId,ph:"e.g. OIL-BR-US-10"},{label:"Protocol title",val:fProtocol,set:setFProtocol,ph:"e.g. CLE Imaging of Breast Tissue"},{label:"Sponsor",val:fSponsor,set:setFSponsor,ph:"e.g. Optiscan Imaging Ltd."}].map(f=>(
-              <div key={f.label} className="mb-3"><label className="text-xs text-gray-500 block mb-1">{f.label}</label><input value={f.val} onChange={e=>f.set(e.target.value)} placeholder={f.ph} className="w-full text-xs border border-gray-200 rounded px-3 py-2"/></div>
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
+          <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"380px",border:`0.5px solid ${P.border}`,boxShadow:"0 8px 32px rgba(0,0,0,0.12)"}}>
+            <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"1rem"}}>New study</h2>
+            {[{l:"Study ID",v:fId,s:setFId,p:"e.g. OIL-BR-US-10"},{l:"Protocol title",v:fProtocol,s:setFProtocol,p:"e.g. CLE Imaging of Breast Tissue"},{l:"Sponsor",v:fSponsor,s:setFSponsor,p:"e.g. Optiscan Imaging Ltd."}].map(f=>(
+              <div key={f.l} style={{marginBottom:"10px"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>{f.l}</label><input value={f.v} onChange={e=>f.s(e.target.value)} placeholder={f.p} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/></div>
             ))}
-            <div className="mb-3"><label className="text-xs text-gray-500 block mb-1">Phase</label><select value={fPhase} onChange={e=>setFPhase(e.target.value)} className="w-full text-xs border border-gray-200 rounded px-3 py-2">{["Phase I","Phase II","Phase III","Observational","Feasibility"].map(p=><option key={p}>{p}</option>)}</select></div>
-            <div className="mb-4"><label className="text-xs text-gray-500 block mb-1">Status</label><select value={fStatus} onChange={e=>setFStatus(e.target.value)} className="w-full text-xs border border-gray-200 rounded px-3 py-2">{["Startup","Active","Closed","On Hold"].map(s=><option key={s}>{s}</option>)}</select></div>
-            <div className="flex gap-2 justify-end">
-              <button onClick={()=>setShowStudyModal(false)} className="text-xs px-3 py-1.5 border border-gray-200 rounded hover:bg-gray-50">Cancel</button>
-              <button onClick={createStudy} className="text-xs px-3 py-1.5 bg-emerald-600 text-white rounded hover:bg-emerald-700">Create study</button>
+            <div style={{marginBottom:"10px"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Phase</label><select value={fPhase} onChange={e=>setFPhase(e.target.value)} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}>{["Phase I","Phase II","Phase III","Observational","Feasibility"].map(p=><option key={p}>{p}</option>)}</select></div>
+            <div style={{marginBottom:"1rem"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Status</label><select value={fStatus} onChange={e=>setFStatus(e.target.value)} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}>{["Startup","Active","Closed","On Hold"].map(s=><option key={s}>{s}</option>)}</select></div>
+            <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
+              <button onClick={()=>setShowStudyModal(false)} style={{fontSize:"11px",padding:"6px 14px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>Cancel</button>
+              <button onClick={createStudy} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Create study</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Doc Modal with file upload */}
+      {/* Doc Modal */}
       {showDocModal&&(
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-[480px] border border-gray-200 shadow-xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-sm font-semibold mb-4">Add document</h2>
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
+          <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"500px",border:`0.5px solid ${P.border}`,boxShadow:"0 8px 32px rgba(0,0,0,0.12)",maxHeight:"90vh",overflowY:"auto"}}>
+            <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"1rem"}}>Add document</h2>
 
-            {/* Drag & Drop Upload */}
-            <div className="mb-4">
-              <label className="text-xs text-gray-500 block mb-2">Upload file (PDF, Word, Excel, PPT, images, etc.)</label>
-              <div
-                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${dragOver?"border-emerald-400 bg-emerald-50":"border-gray-200 hover:border-emerald-300"}`}
-                onDragOver={e=>{e.preventDefault();setDragOver(true);}}
-                onDragLeave={()=>setDragOver(false)}
-                onDrop={e=>{e.preventDefault();setDragOver(false);const f=e.dataTransfer.files[0];if(f)handleFileUpload(f);}}
-                onClick={()=>fileInputRef.current?.click()}
-              >
-                <input ref={fileInputRef} type="file" className="hidden" accept="*/*" onChange={e=>{const f=e.target.files?.[0];if(f)handleFileUpload(f);}}/>
-                {uploading?(
-                  <div className="text-xs text-emerald-600">{uploadProgress}</div>
-                ):selectedFile?(
-                  <div className="text-xs">
-                    <div className="text-2xl mb-1">{fileIcon(selectedFile.name)}</div>
-                    <div className="font-medium text-gray-700">{selectedFile.name}</div>
-                    <div className="text-gray-400 mt-0.5">{formatSize(selectedFile.size)} · {uploadProgress}</div>
-                    <button onClick={e=>{e.stopPropagation();setSelectedFile(null);(window as any)._pendingFilePath=null;}} className="mt-2 text-red-400 hover:text-red-600">Remove</button>
-                  </div>
-                ):(
-                  <div className="text-xs text-gray-400">
-                    <div className="text-2xl mb-2">📎</div>
-                    <div>Drag & drop any file here, or click to browse</div>
-                    <div className="mt-1 text-[10px]">PDF · Word · Excel · PowerPoint · Images · Any file type</div>
-                  </div>
-                )}
+            {/* Step 1: Select Zone */}
+            <div style={{marginBottom:"10px"}}>
+              <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Step 1 — Select zone</label>
+              <select value={fZone} onChange={e=>{setFZone(e.target.value);const arts=TMF.filter(a=>a.z===e.target.value);if(arts.length>0)setFArtifact(arts[0].a+"|"+arts[0].an+"|"+arts[0].z);}} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}>
+                {ZONES.map(({z,zn})=><option key={z} value={z}>Zone {z} — {zn}</option>)}
+              </select>
+            </div>
+
+            {/* Step 2: Select Artifact */}
+            <div style={{marginBottom:"10px"}}>
+              <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Step 2 — Select artifact</label>
+              <select value={fArtifact} onChange={e=>setFArtifact(e.target.value)} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}>
+                {zoneArts.map(a=><option key={a.a} value={`${a.a}|${a.an}|${a.z}`}>{a.a} — {a.an}</option>)}
+              </select>
+            </div>
+
+            {/* Step 3: Upload File */}
+            <div style={{marginBottom:"10px"}}>
+              <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"6px"}}>Step 3 — Upload file</label>
+              <div onDragOver={e=>{e.preventDefault();setDragOver(true);}} onDragLeave={()=>setDragOver(false)} onDrop={e=>{e.preventDefault();setDragOver(false);const f=e.dataTransfer.files[0];if(f)handleFileUpload(f);}} onClick={()=>fileInputRef.current?.click()} style={{border:`2px dashed ${dragOver?P.primary:P.borderSec}`,borderRadius:"10px",padding:"1.5rem",textAlign:"center",cursor:"pointer",background:dragOver?P.primaryLight:"transparent",transition:"all 0.15s"}}>
+                <input ref={fileInputRef} type="file" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)handleFileUpload(f);}}/>
+                {uploading?<div style={{fontSize:"12px",color:P.primary}}>{uploadProgress}</div>
+                :selectedFile?<div style={{fontSize:"12px"}}><div style={{fontSize:"1.5rem",marginBottom:"4px"}}>{fileIcon(selectedFile.name)}</div><div style={{fontWeight:"500"}}>{selectedFile.name}</div><div style={{fontSize:"10px",color:P.textTert,marginTop:"2px"}}>{formatSize(selectedFile.size)} · {uploadProgress}</div><button onClick={e=>{e.stopPropagation();setSelectedFile(null);setPendingFilePath("");}} style={{marginTop:"6px",fontSize:"10px",color:"#EF4444",background:"none",border:"none",cursor:"pointer"}}>Remove</button></div>
+                :<div style={{fontSize:"12px",color:P.textTert}}><div style={{fontSize:"2rem",marginBottom:"6px"}}>📎</div><div>Drag & drop or click to browse</div><div style={{fontSize:"10px",marginTop:"4px"}}>PDF · Word · Excel · PowerPoint · Images · Any file type</div></div>}
               </div>
             </div>
 
-            <div className="mb-3"><label className="text-xs text-gray-500 block mb-1">Artifact</label><select value={fArtifact} onChange={e=>setFArtifact(e.target.value)} className="w-full text-xs border border-gray-200 rounded px-3 py-2">{TMF.map(a=><option key={a.a} value={`${a.a}|${a.an}|${a.z}`}>{a.a} — {a.an}</option>)}</select></div>
-            <div className="mb-3"><label className="text-xs text-gray-500 block mb-1">Version</label><input value={fVersion} onChange={e=>setFVersion(e.target.value)} placeholder="e.g. v1.0" className="w-full text-xs border border-gray-200 rounded px-3 py-2"/></div>
-            <div className="mb-3"><label className="text-xs text-gray-500 block mb-1">Status</label><select value={fDocStatus} onChange={e=>setFDocStatus(e.target.value)} className="w-full text-xs border border-gray-200 rounded px-3 py-2">{["Draft","Under Review","Approved","Archived"].map(s=><option key={s}>{s}</option>)}</select></div>
-            <div className="mb-3"><label className="text-xs text-gray-500 block mb-1">Owner</label><input value={fOwner} onChange={e=>setFOwner(e.target.value)} placeholder="e.g. Jane Smith, CRA" className="w-full text-xs border border-gray-200 rounded px-3 py-2"/></div>
-            <div className="mb-3"><label className="text-xs text-gray-500 block mb-1">Effective date</label><input type="date" value={fEff} onChange={e=>setFEff(e.target.value)} className="w-full text-xs border border-gray-200 rounded px-3 py-2"/></div>
-            <div className="mb-4"><label className="text-xs text-gray-500 block mb-1">Expiry date (if applicable)</label><input type="date" value={fExp} onChange={e=>setFExp(e.target.value)} className="w-full text-xs border border-gray-200 rounded px-3 py-2"/></div>
-            <div className="flex gap-2 justify-end">
-              <button onClick={()=>{setShowDocModal(false);setSelectedFile(null);}} className="text-xs px-3 py-1.5 border border-gray-200 rounded hover:bg-gray-50">Cancel</button>
-              <button onClick={addDocument} className="text-xs px-3 py-1.5 bg-emerald-600 text-white rounded hover:bg-emerald-700">Add document</button>
+            {/* Step 4: Name the file */}
+            <div style={{marginBottom:"10px"}}>
+              <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Step 4 — Document name (custom)</label>
+              <input value={fCustomName} onChange={e=>setFCustomName(e.target.value)} placeholder="e.g. Protocol v3.0 - OIL-BR-US-10" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/>
+            </div>
+
+            {[{l:"Version",v:fVersion,s:setFVersion,p:"e.g. v1.0"},{l:"Owner",v:fOwner,s:setFOwner,p:"e.g. Jane Smith, CRA"}].map(f=>(
+              <div key={f.l} style={{marginBottom:"10px"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>{f.l}</label><input value={f.v} onChange={e=>f.s(e.target.value)} placeholder={f.p} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/></div>
+            ))}
+            <div style={{marginBottom:"10px"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Status</label><select value={fDocStatus} onChange={e=>setFDocStatus(e.target.value)} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}>{["Draft","Under Review","Approved","Archived"].map(s=><option key={s}>{s}</option>)}</select></div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"10px"}}>
+              <div><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Effective date</label><input type="date" value={fEff} onChange={e=>setFEff(e.target.value)} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/></div>
+              <div><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Expiry date</label><input type="date" value={fExp} onChange={e=>setFExp(e.target.value)} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/></div>
+            </div>
+            <div style={{marginBottom:"1rem"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Comments / notes</label><textarea value={fComments} onChange={e=>setFComments(e.target.value)} placeholder="Any notes about this document..." rows={2} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px",resize:"vertical" as const}}/></div>
+            <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
+              <button onClick={()=>{setShowDocModal(false);setSelectedFile(null);setPendingFilePath("");}} style={{fontSize:"11px",padding:"6px 14px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>Cancel</button>
+              <button onClick={addDocument} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Add document</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* File Preview Modal */}
+      {/* Approve Modal — 21 CFR Part 11 Electronic Signature */}
+      {showApproveModal&&selectedDoc&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
+          <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"420px",border:`0.5px solid ${P.border}`,boxShadow:"0 8px 32px rgba(0,0,0,0.2)"}}>
+            <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"4px"}}>Electronic signature</h2>
+            <p style={{fontSize:"11px",color:P.textSec,marginBottom:"1rem"}}>21 CFR Part 11 compliant approval — {selectedDoc.artifact_name}</p>
+            <div style={{background:"#EFF6FF",border:"0.5px solid #BFDBFE",borderRadius:"8px",padding:"10px 12px",marginBottom:"1rem",fontSize:"11px",color:"#1E40AF"}}>
+              <strong>Approver:</strong> {user?.email}<br/>
+              <strong>Timestamp:</strong> {new Date().toLocaleString()}<br/>
+              <strong>Document:</strong> {selectedDoc.custom_file_name||selectedDoc.file_name||selectedDoc.artifact_name}<br/>
+              <strong>Meaning:</strong> I approve this document as accurate and complete
+            </div>
+            <div style={{marginBottom:"10px"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Re-enter your password to sign</label><input type="password" value={approvePassword} onChange={e=>setApprovePassword(e.target.value)} placeholder="••••••••" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/></div>
+            <div style={{marginBottom:"1rem"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Reason for signature (required)</label><select value={approveReason} onChange={e=>setApproveReason(e.target.value)} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}>
+              <option value="">Select reason...</option>
+              <option>Reviewed and approved — document is accurate and complete</option>
+              <option>QC review complete — no findings</option>
+              <option>Regulatory review complete</option>
+              <option>Final approval for TMF filing</option>
+            </select></div>
+            {approveError&&<div style={{fontSize:"11px",color:"#991B1B",background:"#FEF2F2",borderRadius:"8px",padding:"8px 10px",marginBottom:"10px"}}>{approveError}</div>}
+            <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
+              <button onClick={()=>{setShowApproveModal(false);setApprovePassword("");setApproveReason("");setApproveError("");}} style={{fontSize:"11px",padding:"6px 14px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>Cancel</button>
+              <button onClick={handleApprove} style={{fontSize:"11px",padding:"6px 14px",background:P.success,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Sign & approve</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Comment Modal */}
+      {showCommentModal&&selectedDoc&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
+          <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"420px",border:`0.5px solid ${P.border}`}}>
+            <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"4px"}}>Add comment</h2>
+            <p style={{fontSize:"11px",color:P.textSec,marginBottom:"1rem"}}>{selectedDoc.artifact_name}</p>
+            {selectedDoc.comments&&(
+              <div style={{background:P.bgSec,borderRadius:"8px",padding:"10px 12px",marginBottom:"12px",maxHeight:"120px",overflowY:"auto"}}>
+                {selectedDoc.comments.split("\n").map((c,i)=><div key={i} style={{fontSize:"11px",color:P.textSec,marginBottom:"4px"}}>{c}</div>)}
+              </div>
+            )}
+            <div style={{marginBottom:"1rem"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>New comment</label><textarea value={commentText} onChange={e=>setCommentText(e.target.value)} placeholder="Add your comment..." rows={3} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px",resize:"vertical" as const}}/></div>
+            <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
+              <button onClick={()=>setShowCommentModal(false)} style={{fontSize:"11px",padding:"6px 14px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>Cancel</button>
+              <button onClick={handleAddComment} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Save comment</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Preview Modal */}
       {previewUrl&&(
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50" onClick={()=>setPreviewUrl(null)}>
-          <div className="bg-white rounded-xl overflow-hidden shadow-2xl max-w-4xl w-full mx-4" onClick={e=>e.stopPropagation()} style={{maxHeight:"90vh"}}>
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-              <span className="text-sm font-medium">{previewName}</span>
-              <div className="flex gap-2">
-                <a href={previewUrl} target="_blank" rel="noopener noreferrer" className="text-xs px-3 py-1.5 border border-gray-200 rounded hover:bg-gray-50">Open in new tab</a>
-                <a href={previewUrl} download className="text-xs px-3 py-1.5 bg-emerald-600 text-white rounded hover:bg-emerald-700">Download</a>
-                <button onClick={()=>setPreviewUrl(null)} className="text-xs px-3 py-1.5 border border-gray-200 rounded hover:bg-gray-50">Close</button>
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}} onClick={()=>setPreviewUrl(null)}>
+          <div style={{background:P.bg,borderRadius:"16px",overflow:"hidden",maxWidth:"900px",width:"100%",margin:"1rem",maxHeight:"90vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:`0.5px solid ${P.border}`}}>
+              <span style={{fontSize:"13px",fontWeight:"500"}}>{previewName}</span>
+              <div style={{display:"flex",gap:"8px"}}>
+                <a href={previewUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:"11px",padding:"5px 12px",border:`0.5px solid ${P.border}`,borderRadius:"6px",textDecoration:"none",color:P.text}}>Open in new tab</a>
+                <a href={previewUrl} download style={{fontSize:"11px",padding:"5px 12px",background:P.primary,color:"#fff",borderRadius:"6px",textDecoration:"none"}}>Download</a>
+                <button onClick={()=>setPreviewUrl(null)} style={{fontSize:"11px",padding:"5px 12px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:"transparent",cursor:"pointer"}}>Close</button>
               </div>
             </div>
-            <div className="overflow-auto" style={{maxHeight:"calc(90vh - 60px)"}}>
-              {previewName.match(/\.(png|jpg|jpeg|gif|webp|tiff|tif)$/i)?(
-                <img src={previewUrl} alt={previewName} className="max-w-full mx-auto"/>
-              ):(
-                <iframe src={previewUrl} className="w-full" style={{height:"80vh"}} title={previewName}/>
-              )}
+            <div style={{flex:1,overflow:"auto"}}>
+              {previewName.match(/\.(png|jpg|jpeg|gif|webp|tiff|tif)$/i)?<img src={previewUrl} alt={previewName} style={{maxWidth:"100%",margin:"0 auto",display:"block"}}/>:<iframe src={previewUrl} style={{width:"100%",height:"75vh",border:"none"}} title={previewName}/>}
             </div>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function AuditTrail({user,activeStudy,P}:{user:any,activeStudy:any,P:any}){
+  const [logs,setLogs]=useState<any[]>([]);
+  useEffect(()=>{
+    if(!user||!activeStudy)return;
+    supabase.from("audit_trail").select("*").eq("user_id",user.id).eq("study_id",activeStudy.study_id).order("created_at",{ascending:false}).limit(50).then(({data})=>{if(data)setLogs(data);});
+  },[user,activeStudy]);
+  if(!activeStudy)return<div style={{fontSize:"12px",color:P.textTert}}>Select a study first.</div>;
+  if(logs.length===0)return<div style={{fontSize:"12px",color:P.textTert}}>No audit events yet. Actions will appear here as documents are uploaded and approved.</div>;
+  return(
+    <div style={{background:"#fff",border:`0.5px solid ${P.border}`,borderRadius:"12px",overflow:"hidden"}}>
+      <table style={{width:"100%",fontSize:"11px",borderCollapse:"collapse"}}>
+        <thead><tr style={{borderBottom:`0.5px solid ${P.border}`}}>
+          {["Timestamp","User","Action","Document","Field","Old value","New value","Signature reason"].map(h=>(
+            <th key={h} style={{textAlign:"left",padding:"8px 10px",fontSize:"10px",fontWeight:"500",color:P.textTert}}>{h}</th>
+          ))}
+        </tr></thead>
+        <tbody>
+          {logs.map((l,i)=>(
+            <tr key={i} style={{borderBottom:`0.5px solid ${P.bgTert}`}}>
+              <td style={{padding:"7px 10px",fontFamily:"monospace",fontSize:"10px",color:P.textTert,whiteSpace:"nowrap"}}>{new Date(l.created_at).toLocaleString()}</td>
+              <td style={{padding:"7px 10px",color:P.textSec}}>{l.user_email}</td>
+              <td style={{padding:"7px 10px"}}><span style={{fontSize:"10px",padding:"2px 7px",borderRadius:"8px",background:l.action.includes("approved")?P.successLight:P.primaryLight,color:l.action.includes("approved")?"#065F46":P.primary}}>{l.action}</span></td>
+              <td style={{padding:"7px 10px",color:P.textSec,fontSize:"10px"}}>{l.document_id?.slice(0,8)||"—"}</td>
+              <td style={{padding:"7px 10px",color:P.textTert}}>{l.field_changed||"—"}</td>
+              <td style={{padding:"7px 10px",color:P.textTert}}>{l.old_value||"—"}</td>
+              <td style={{padding:"7px 10px",color:P.textSec}}>{l.new_value||"—"}</td>
+              <td style={{padding:"7px 10px",color:P.textSec,fontSize:"10px"}}>{l.signature_reason||"—"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
