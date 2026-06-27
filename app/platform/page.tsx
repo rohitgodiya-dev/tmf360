@@ -327,7 +327,7 @@ export default function TMF360(){
   };
 
   const navItem=(id:string,label:string,icon:string)=>(
-    <button onClick={()=>{setPanel(id);if(activeStudy&&user)loadDocs(activeStudy.study_id,user.id);}}
+    <button onClick={()=>{setPanel(id);if(activeStudy&&user&&id!=="users")loadDocs(activeStudy.study_id,user.id);}}
       style={{width:"100%",textAlign:"left",padding:"6px 12px",fontSize:"12px",cursor:"pointer",display:"flex",alignItems:"center",gap:"6px",borderRadius:"6px",transition:"all 0.1s",background:panel===id?P.primaryLight:"transparent",color:panel===id?P.primary:P.textSec,fontWeight:panel===id?"500":"400",border:"none",borderLeft:panel===id?`2px solid ${P.primary}`:"2px solid transparent"}}>
       <i className={`ti ${icon}`} aria-hidden="true" style={{fontSize:"14px"}}></i>{label}
     </button>
@@ -1112,7 +1112,7 @@ export default function TMF360(){
 
           {/* USERS */}
           {panel==="users"&&(
-            <iframe src="/platform/users" style={{width:"100%",height:"calc(100vh - 100px)",border:"none"}} title="User Management"/>
+            <UserManagementPanel user={user} P={P} supabase={supabase}/>
           )}
 
           {/* AUDIT TRAIL */}
@@ -1563,3 +1563,4 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
     </div>
   );
 }
+
