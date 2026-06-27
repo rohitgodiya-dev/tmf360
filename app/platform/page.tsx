@@ -400,6 +400,7 @@ export default function TMF360(){
           {navItem("chat","AI specialist","ti-message-circle")}
           {navItem("audit","Audit trail","ti-lock")}
           {navItem("quality","Quality checks","ti-clipboard-list")}
+          {navItem("users","User management","ti-users")}
         </aside>
 
         <main style={{flex:1,overflowY:"auto",padding:"1.25rem"}}>
@@ -1460,3 +1461,4 @@ function AuditTrail({user,activeStudy,P}:{user:any,activeStudy:any,P:any}){
     </div>
   );
 }
+
