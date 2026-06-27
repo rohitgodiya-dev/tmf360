@@ -3,7 +3,7 @@ import { useEffect } from "react";
 
 export default function Home() {
   useEffect(() => {
-    window.location.href = "/app";
+    window.location.href = "/platform";
   }, []);
   return null;
 }
