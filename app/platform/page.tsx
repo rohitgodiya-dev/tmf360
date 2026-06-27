@@ -141,12 +141,12 @@ export default function TMF360(){
     if(data)setCurrentUserRole(data.role);
   }
   async function loadStudies(uid:string){
-    const{data}=await supabase.from("studies").select("*").eq("user_id",uid).order("created_at",{ascending:false});
+    const{data}=await supabase.from("studies").select("*").order("created_at",{ascending:false});
     if(data&&data.length>0){setStudies(data);setActiveStudy(data[0]);loadDocs(data[0].study_id,uid);}
   }
 
   async function loadDocs(studyId:string,uid:string){
-    const{data}=await supabase.from("documents").select("*").eq("study_id",studyId).eq("user_id",uid).order("created_at",{ascending:false});
+    const{data}=await supabase.from("documents").select("*").eq("study_id",studyId).order("created_at",{ascending:false});
     if(data)setDocs(data);
   }
 
