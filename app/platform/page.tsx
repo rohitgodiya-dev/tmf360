@@ -881,7 +881,7 @@ export default function TMF360(){
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                 <h1 style={{fontSize:"14px",fontWeight:"500"}}>Documents — {activeStudy?.study_id||"No study selected"}</h1>
-                {activeStudy&&<button onClick={()=>setShowDocModal(true)} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ Add document</button>}
+                {activeStudy&&canUploadDownload&&<button onClick={()=>setShowDocModal(true)} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ Add document</button>}
               </div>
               <div style={{display:"flex",gap:"8px",flexWrap:"wrap" as const,alignItems:"center"}}>
                 <input value={docSearch} onChange={e=>setDocSearch(e.target.value)} placeholder="Search documents..." style={{fontSize:"12px",padding:"6px 10px",border:`0.5px solid ${P.border}`,borderRadius:"8px",width:"220px"}}/>
@@ -983,7 +983,7 @@ export default function TMF360(){
                                   <span style={{fontSize:"11px",flex:1}}>{d.custom_file_name||d.file_name||d.artifact_name}</span>
                                   <span style={{fontSize:"9px",color:P.textTert}}>{d.version}</span>
                                   {d.file_path&&canPreview(d.file_name||"")&&<button onClick={()=>openPreview(d)} style={{fontSize:"9px",padding:"2px 6px",background:P.blueLight,color:"#1E40AF",border:"none",borderRadius:"4px",cursor:"pointer"}}>Preview</button>}
-                                  {d.file_path&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none"}}>Download</a>}
+                                  {d.file_path&&canUploadDownload&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none"}}>Download</a>}
                                 </div>
                               ))}
                             </div>
