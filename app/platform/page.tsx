@@ -138,8 +138,8 @@ export default function TMF360(){
   useEffect(()=>{messagesEnd.current?.scrollIntoView({behavior:"smooth"});},[chatMessages]);
 
   async function loadUserRole(uid:string){
-    const{data}=await supabase.from("user_roles").select("role").eq("user_id",uid).single();
-    if(data)setCurrentUserRole(data.role);
+    const{data}=await supabase.from("user_roles").select("role,can_upload_download").eq("user_id",uid).single();
+    if(data){setCurrentUserRole(data.role);setCanUploadDownload(data.can_upload_download!==false);}
   }
   async function loadStudies(uid:string){
     const{data}=await supabase.from("studies").select("*").order("created_at",{ascending:false});
