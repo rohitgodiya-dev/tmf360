@@ -14,7 +14,9 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // Create user account in Supabase Auth
+    let userId = '';
+
+    // Try to create user — if exists, get their ID
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: email.trim(),
       password: password,
@@ -23,27 +25,36 @@ export async function POST(request: NextRequest) {
     });
 
     if (authError) {
-      return NextResponse.json({ error: authError.message }, { status: 400 });
+      if (authError.message.includes('already registered') || authError.message.includes('already been registered')) {
+        // User exists — get their ID
+        const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+        const existingUser = existingUsers?.users?.find(u => u.email === email.trim());
+        if (existingUser) {
+          userId = existingUser.id;
+          // Update their password
+          await supabaseAdmin.auth.admin.updateUserById(userId, { password });
+        } else {
+          return NextResponse.json({ error: authError.message }, { status: 400 });
+        }
+      } else {
+        return NextResponse.json({ error: authError.message }, { status: 400 });
+      }
+    } else {
+      userId = authData.user.id;
     }
 
     // Assign role in user_roles table
-    const { error: roleError } = await supabaseAdmin
-      .from('user_roles')
-      .upsert([{
-        user_id: authData.user.id,
-        email: email.trim(),
-        role,
-        full_name: full_name || '',
-        is_active: true,
-        notifications_enabled: true,
-      }], { onConflict: 'email' });
-
-    if (roleError) {
-      console.error('Role insert error:', roleError);
-    }
+    await supabaseAdmin.from('user_roles').upsert([{
+      user_id: userId,
+      email: email.trim(),
+      role,
+      full_name: full_name || '',
+      is_active: true,
+      notifications_enabled: true,
+    }], { onConflict: 'email' });
 
     // Send login credentials via Resend
-    const resendResponse = await fetch('https://api.resend.com/emails', {
+    await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -74,7 +85,7 @@ export async function POST(request: NextRequest) {
               <a href="https://tmf360-gliv.vercel.app" style="background:#6366F1;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;display:inline-block">Login to TMF360 →</a>
             </div>
             <div style="padding:16px 32px;border-top:1px solid #E5E7EB;background:#F9FAFB">
-              <p style="color:#9CA3AF;font-size:11px;margin:0">© 2025 TMF360 · Free for the clinical research community · DIA TMF Reference Model v3.3.1</p>
+              <p style="color:#9CA3AF;font-size:11px;margin:0">© 2025 TMF360 · Free for the clinical research community</p>
             </div>
           </div>
         `
