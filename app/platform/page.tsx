@@ -73,7 +73,8 @@ interface Doc{id?:string;study_id:string;artifact_num:string;artifact_name:strin
 export default function TMF360(){
   const [panel,setPanel]=useState("auth");
   const [user,setUser]=useState<any>(null);
-  const [authMode,setAuthMode]=useState<"login"|"signup">("login");
+  const [user,setUser]=useState<any>(null);
+  const [currentUserRole,setCurrentUserRole]=useState<string>("");
   const [email,setEmail]=useState("");const [password,setPassword]=useState("");const [authError,setAuthError]=useState("");
   const [studies,setStudies]=useState<Study[]>([]);
   const [docs,setDocs]=useState<Doc[]>([]);
@@ -123,16 +124,20 @@ export default function TMF360(){
 
   useEffect(()=>{
     supabase.auth.getSession().then(({data:{session}})=>{
-      if(session?.user){setUser(session.user);setPanel("dashboard");loadStudies(session.user.id);}
+      if(session?.user){setUser(session.user);setPanel("dashboard");loadStudies(session.user.id);loadUserRole(session.user.id);}
     });
     supabase.auth.onAuthStateChange((_,session)=>{
-      if(session?.user){setUser(session.user);setPanel("dashboard");loadStudies(session.user.id);}
+      if(session?.user){setUser(session.user);setPanel("dashboard");loadStudies(session.user.id);loadUserRole(session.user.id);}
       else{setUser(null);setPanel("auth");setStudies([]);setDocs([]);setActiveStudy(null);}
     });
   },[]);
 
   useEffect(()=>{messagesEnd.current?.scrollIntoView({behavior:"smooth"});},[chatMessages]);
 
+  async function loadUserRole(uid:string){
+    const{data}=await supabase.from("user_roles").select("role").eq("user_id",uid).single();
+    if(data)setCurrentUserRole(data.role);
+  }
   async function loadStudies(uid:string){
     const{data}=await supabase.from("studies").select("*").eq("user_id",uid).order("created_at",{ascending:false});
     if(data&&data.length>0){setStudies(data);setActiveStudy(data[0]);loadDocs(data[0].study_id,uid);}
@@ -401,7 +406,7 @@ export default function TMF360(){
           {navItem("chat","AI specialist","ti-message-circle")}
           {navItem("audit","Audit trail","ti-lock")}
           {navItem("quality","Quality checks","ti-clipboard-list")}
-          {navItem("users","User management","ti-users")}
+          {currentUserRole==="System Administrator"&&navItem("users","User management","ti-users")}
         </aside>
         <main style={{flex:1,overflowY:"auto",padding:"1.25rem"}}>
 
