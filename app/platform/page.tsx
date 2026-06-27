@@ -511,7 +511,7 @@ export default function TMF360(){
             </div>
             <div style={{fontSize:"10px",color:P.textTert}}>Zone {d.zone} · {d.owner||"—"} · v{d.version||"—"}</div>
           </div>
-          {d.file_path&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"10px",padding:"4px 10px",background:P.bgTert,color:P.textSec,borderRadius:"6px",textDecoration:"none",flexShrink:0}}>⬇ Download</a>}
+          {d.file_path&&canDownload&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"10px",padding:"4px 10px",background:P.bgTert,color:P.textSec,borderRadius:"6px",textDecoration:"none",flexShrink:0}}>⬇ Download</a>}
         </div>
         <div style={{background:"#FEF2F2",borderRadius:"8px",padding:"10px 12px"}}>
           <div style={{fontSize:"10px",fontWeight:"500",color:"#991B1B",marginBottom:"3px"}}>❌ Rejected by {(d as any).rejected_by} · {(d as any).rejected_at?new Date((d as any).rejected_at).toLocaleString():""}</div>
@@ -566,7 +566,7 @@ export default function TMF360(){
             </div>
             <div style={{fontSize:"10px",color:P.textTert}}>Zone {d.zone} · {d.owner||"—"} · v{d.version||"—"}</div>
           </div>
-          {d.file_path&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"10px",padding:"4px 10px",background:P.bgTert,color:P.textSec,borderRadius:"6px",textDecoration:"none",flexShrink:0}}>⬇ Download</a>}
+          {d.file_path&&canDownload&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"10px",padding:"4px 10px",background:P.bgTert,color:P.textSec,borderRadius:"6px",textDecoration:"none",flexShrink:0}}>⬇ Download</a>}
         </div>
         <div style={{background:"#FEF2F2",borderRadius:"8px",padding:"10px 12px"}}>
           <div style={{fontSize:"10px",fontWeight:"500",color:"#991B1B",marginBottom:"3px"}}>❌ Rejected by {(d as any).rejected_by} · {(d as any).rejected_at?new Date((d as any).rejected_at).toLocaleString():""}</div>
@@ -621,7 +621,7 @@ export default function TMF360(){
             </div>
             <div style={{fontSize:"10px",color:P.textTert}}>Zone {d.zone} · {d.owner||"—"} · v{d.version||"—"}</div>
           </div>
-          {d.file_path&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"10px",padding:"4px 10px",background:P.bgTert,color:P.textSec,borderRadius:"6px",textDecoration:"none",flexShrink:0}}>⬇ Download</a>}
+          {d.file_path&&canDownload&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"10px",padding:"4px 10px",background:P.bgTert,color:P.textSec,borderRadius:"6px",textDecoration:"none",flexShrink:0}}>⬇ Download</a>}
         </div>
         <div style={{background:"#FEF2F2",borderRadius:"8px",padding:"10px 12px"}}>
           <div style={{fontSize:"10px",fontWeight:"500",color:"#991B1B",marginBottom:"3px"}}>❌ Rejected by {(d as any).rejected_by} · {(d as any).rejected_at?new Date((d as any).rejected_at).toLocaleString():""}</div>
@@ -709,7 +709,7 @@ export default function TMF360(){
             <div style={{fontSize:"10px",color:P.textTert}}>Expires: <span style={{color:isExpired?"#EF4444":isCritical?"#F59E0B":"#10B981",fontWeight:"500"}}>{d.expiry_date}</span> · Owner: {d.owner||"—"} · v{d.version||"—"}</div>
             {d.custom_file_name&&<div style={{fontSize:"10px",color:P.textSec,marginTop:"2px"}}>📄 {d.custom_file_name}</div>}
           </div>
-          {d.file_path&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"10px",padding:"5px 10px",background:P.bgTert,color:P.textSec,borderRadius:"6px",textDecoration:"none",flexShrink:0}}>⬇ Download</a>}
+          {d.file_path&&canDownload&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"10px",padding:"5px 10px",background:P.bgTert,color:P.textSec,borderRadius:"6px",textDecoration:"none",flexShrink:0}}>⬇ Download</a>}
         </div>
       );
     })}
@@ -741,7 +741,7 @@ export default function TMF360(){
           </div>
           <div style={{display:"flex",gap:"6px",flexShrink:0}}>
             {d.file_path&&canPreview(d.file_name||"")&&<button onClick={()=>openPreview(d)} style={{fontSize:"10px",padding:"5px 10px",background:"#EFF6FF",color:"#1E40AF",border:"none",borderRadius:"6px",cursor:"pointer"}}>Preview</button>}
-            {d.file_path&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"10px",padding:"5px 10px",background:P.bgTert,color:P.textSec,borderRadius:"6px",textDecoration:"none"}}>⬇ Download</a>}
+            {d.file_path&&canDownload&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"10px",padding:"5px 10px",background:P.bgTert,color:P.textSec,borderRadius:"6px",textDecoration:"none"}}>⬇ Download</a>}
           </div>
         </div>
         {(d as any).submission_reason&&(
@@ -1586,3 +1586,4 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
     </div>
   );
 }
+
