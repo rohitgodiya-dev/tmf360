@@ -1523,7 +1523,7 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
       <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",overflow:"hidden"}}>
         <table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px"}}>
           <thead><tr style={{borderBottom:`0.5px solid ${P.border}`}}>
-            {["Name / Email","Role","Status","Notifications","Added","Actions"].map(h=><th key={h} style={{textAlign:"left",padding:"10px 14px",fontSize:"11px",fontWeight:"500",color:P.textSec}}>{h}</th>)}
+            {["Name / Email","Role","Status","Added","Notifications","Actions"].map(h=><th key={h} style={{textAlign:"left",padding:"10px 14px",fontSize:"11px",fontWeight:"500",color:P.textSec}}>{h}</th>)}
           </tr></thead>
           <tbody>
             {loading?<tr><td colSpan={5} style={{textAlign:"center",padding:"2rem",color:P.textTert}}>Loading...</td></tr>
@@ -1537,8 +1537,8 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
                   </select>
                 </td>
                 <td style={{padding:"10px 14px"}}><span style={{fontSize:"10px",padding:"3px 8px",borderRadius:"20px",background:u.is_active?P.successLight:P.bgTert,color:u.is_active?P.success:P.textSec,fontWeight:"500"}}>{u.is_active?"Active":"Inactive"}</span></td>
+                <td style={{padding:"10px 14px"}}><span style={{fontSize:"10px",padding:"3px 8px",borderRadius:"20px",background:u.is_active?P.successLight:P.bgTert,color:u.is_active?P.success:P.textSec,fontWeight:"500"}}>{u.is_active?"Active":"Inactive"}</span></td>
                 <td style={{padding:"10px 14px",fontSize:"11px",color:P.textSec}}>{new Date(u.created_at).toLocaleDateString()}</td>
-                <td style={{padding:"10px 14px"}}>
                   <button onClick={()=>toggleNotifications(u.id,u.notifications_enabled)} style={{fontSize:"10px",padding:"3px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:u.notifications_enabled?"#ECFDF5":"#FEF2F2",cursor:"pointer",color:u.notifications_enabled?"#10B981":"#EF4444",fontWeight:"500"}}>{u.notifications_enabled?"ON":"OFF"}</button>
                 </td>
                 <td style={{padding:"10px 14px"}}><button onClick={()=>toggleActive(u.id,u.is_active)} style={{fontSize:"10px",padding:"3px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:"transparent",cursor:"pointer",color:u.is_active?P.danger:P.success}}>{u.is_active?"Deactivate":"Activate"}</button></td>
@@ -1568,6 +1568,8 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
     </div>
   );
 }
+
+
 
 
 
