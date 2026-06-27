@@ -1488,13 +1488,13 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
   }
   async function addUser() {
     if (!inviteEmail.trim()) return;
-    const {error} = await supabase.from("user_roles").insert([{user_id:user.id,email:inviteEmail.trim(),role:inviteRole,full_name:inviteName.trim(),is_active:true}]);
-    if (!error) { setMessage("User added successfully"); setShowModal(false); setInviteEmail(""); setInviteName(""); loadUsers(); }
-    else setMessage("Error: "+error.message);
-    setTimeout(()=>setMessage(""),3000);
-  }
-  async function updateRole(id: string, role: string) {
-    await supabase.from("user_roles").update({role}).eq("id",id);
+    setMessage("Sending invitation...");
+    try {
+      const res = await fetch("/api/invite", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:inviteEmail.trim(),role:inviteRole,full_name:inviteName.trim(),invited_by_email:user?.email})});
+      const data = await res.json();
+      if (data.error) { setMessage("Error: "+data.error); } else { setMessage("Invitation sent to "+inviteEmail); setShowModal(false); setInviteEmail(""); setInviteName(""); loadUsers(); }
+    } catch(e: any) { setMessage("Error: "+e.message); }
+    setTimeout(()=>setMessage(""),4000);
     loadUsers();
   }
   async function toggleActive(id: string, current: boolean) {
