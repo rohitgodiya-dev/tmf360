@@ -1473,6 +1473,7 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteName, setInviteName] = useState("");
   const [inviteRole, setInviteRole] = useState("CRA");
+  const [invitePassword, setInvitePassword] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const ROLES = ["System Administrator","Sponsor Admin","TMF Lead","Clinical Trial Manager","Clinical Trial Associate","CRA","Regulatory","Quality Assurance","Medical Monitor","Site Coordinator","Investigator","Auditor","Inspector"];
@@ -1487,7 +1488,7 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
     if (!inviteEmail.trim()) return;
     setMessage("Sending invitation...");
     try {
-      const res = await fetch("/api/invite", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:inviteEmail.trim(),role:inviteRole,full_name:inviteName.trim(),invited_by_email:user?.email})});
+      const res = await fetch("/api/invite", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:inviteEmail.trim(),role:inviteRole,full_name:inviteName.trim(),password:invitePassword,invited_by_email:user?.email})});
       const data = await res.json();
       if (data.error) { setMessage("Error: "+data.error); }
       else { setMessage("Invitation sent to "+inviteEmail); setShowModal(false); setInviteEmail(""); setInviteName(""); loadUsers(); }
@@ -1547,6 +1548,7 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
             <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"1rem"}}>Add Team Member</h2>
             <div style={{marginBottom:"10px"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Full Name</label><input value={inviteName} onChange={e=>setInviteName(e.target.value)} placeholder="e.g. Jane Smith" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/></div>
             <div style={{marginBottom:"10px"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Email</label><input value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)} placeholder="jane@organization.com" type="email" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/></div>
+            <div style={{marginBottom:"10px"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Password</label><input value={invitePassword} onChange={e=>setInvitePassword(e.target.value)} placeholder="Create a password for this user" type="password" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/></div>
             <div style={{marginBottom:"1rem"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Role</label>
               <select value={inviteRole} onChange={e=>setInviteRole(e.target.value)} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}>
                 {ROLES.map(r=><option key={r} value={r}>{r}</option>)}
