@@ -1,4 +1,5 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request: NextRequest) {
   try {
@@ -6,6 +7,27 @@ export async function POST(request: NextRequest) {
 
     if (!email || !role) {
       return NextResponse.json({ error: 'Email and role are required' }, { status: 400 });
+    }
+
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    // Pre-insert role so it's ready when user signs up
+    const { error: roleError } = await supabaseAdmin
+      .from('user_roles')
+      .upsert([{
+        user_id: '00000000-0000-0000-0000-000000000000', // placeholder
+        email: email.trim(),
+        role,
+        full_name: full_name || '',
+        is_active: true,
+        notifications_enabled: true,
+      }], { onConflict: 'email' });
+
+    if (roleError) {
+      console.error('Role insert error:', roleError);
     }
 
     // Send branded invitation email via Resend
@@ -30,9 +52,6 @@ export async function POST(request: NextRequest) {
               <p style="color:#6B7280;font-size:14px;line-height:1.6">
                 <strong>${invited_by_email || 'A System Administrator'}</strong> has invited you to join <strong>TMF360</strong> as a <strong style="color:#6366F1">${role}</strong>.
               </p>
-              <p style="color:#6B7280;font-size:14px;line-height:1.6">
-                Click the button below to create your account and get started.
-              </p>
               <div style="margin:28px 0">
                 <a href="https://tmf360-gliv.vercel.app" 
                    style="background:#6366F1;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;display:inline-block">
@@ -42,7 +61,6 @@ export async function POST(request: NextRequest) {
               <div style="background:#F9FAFB;border-radius:8px;padding:14px;margin-top:20px">
                 <p style="color:#6B7280;font-size:12px;margin:0"><strong>Your role:</strong> ${role}</p>
                 <p style="color:#6B7280;font-size:12px;margin:4px 0 0"><strong>Platform:</strong> tmf360-gliv.vercel.app</p>
-                <p style="color:#6B7280;font-size:12px;margin:4px 0 0"><strong>Invited by:</strong> ${invited_by_email || 'System Administrator'}</p>
               </div>
             </div>
             <div style="padding:16px 32px;border-top:1px solid #E5E7EB;background:#F9FAFB">
@@ -54,7 +72,7 @@ export async function POST(request: NextRequest) {
     });
 
     const resendData = await resendResponse.json();
-    
+
     if (!resendResponse.ok) {
       return NextResponse.json({ error: resendData.message || 'Failed to send email' }, { status: 400 });
     }
