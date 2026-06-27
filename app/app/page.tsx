@@ -68,7 +68,7 @@ function canPreview(n:string){return ["pdf","png","jpg","jpeg","gif","webp","tif
 function formatSize(b:number){if(b<1024)return b+" B";if(b<1024*1024)return (b/1024).toFixed(1)+" KB";return (b/(1024*1024)).toFixed(1)+" MB";}
 
 interface Study{id?:string;study_id:string;protocol:string;phase:string;status:string;sponsor:string;user_id?:string;}
-interface Doc{id?:string;study_id:string;artifact_num:string;artifact_name:string;zone:string;version:string;status:string;owner:string;effective_date:string;expiry_date:string;file_path?:string;file_name?:string;custom_file_name?:string;file_type?:string;file_size?:number;comments?:string;user_id?:string;approved_by?:string;approved_at?:string;signature_reason?:string;}
+interface Doc{id?:string;study_id:string;artifact_num:string;artifact_name:string;zone:string;version:string;status:string;owner:string;effective_date:string;expiry_date:string;file_path?:string;file_name?:string;custom_file_name?:string;file_type?:string;file_size?:number;comments?:string;user_id?:string;approved_by?:string;approved_at?:string;signature_reason?:string;rejection_reason?:string;rejected_by?:string;rejected_at?:string;appeal_reason?:string;submission_reason?:string;}
 
 export default function TMF360(){
   const [panel,setPanel]=useState("auth");
