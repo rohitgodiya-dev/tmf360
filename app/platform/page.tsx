@@ -1471,18 +1471,22 @@ function AuditTrail({user,activeStudy,P}:{user:any,activeStudy:any,P:any}){
 
 
 function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: any}) {
-  const [users, setUsers] = React.useState<any[]>([]);
-  const [showModal, setShowModal] = React.useState(false);
-  const [inviteEmail, setInviteEmail] = React.useState("");
-  const [inviteName, setInviteName] = React.useState("");
-  const [inviteRole, setInviteRole] = React.useState("CRA");
-  const [message, setMessage] = React.useState("");
-  const [loading, setLoading] = React.useState(true);
+  const [users, setUsers] = useState<any[]>([]);
+  const [showModal, setShowModal] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName] = useState("");
+
+
+
+
+
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
 
   const ROLES = ['System Administrator','Sponsor Admin','TMF Lead','Clinical Trial Manager','Clinical Trial Associate','CRA','Regulatory','Quality Assurance','Medical Monitor','Site Coordinator','Investigator','Auditor','Inspector'];
   const ROLE_COLORS: Record<string,string> = {'System Administrator':'#6366F1','Sponsor Admin':'#8B5CF6','TMF Lead':'#10B981','Clinical Trial Manager':'#3B82F6','Clinical Trial Associate':'#06B6D4','CRA':'#F59E0B','Regulatory':'#EF4444','Quality Assurance':'#EC4899','Medical Monitor':'#14B8A6','Site Coordinator':'#84CC16','Investigator':'#F97316','Auditor':'#6B7280','Inspector':'#DC2626'};
 
-  React.useEffect(() => { loadUsers(); }, []);
+  useEffect(() => { loadUsers(); }, []);
 
   async function loadUsers() {
     const {data} = await supabase.from("user_roles").select("*").order("created_at", {ascending: false});
@@ -1563,4 +1567,5 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
     </div>
   );
 }
+
 
