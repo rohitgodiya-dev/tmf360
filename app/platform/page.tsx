@@ -989,7 +989,7 @@ export default function TMF360(){
                               ))}
                             </div>
                           )}
-                          <button onClick={()=>{setFZone(a.z);setFArtifact(a.a+"|"+a.an+"|"+a.z);setShowDocModal(true);}} style={{fontSize:"10px",padding:"4px 10px",background:P.primaryLight,color:P.primary,border:`0.5px solid ${P.primary}`,borderRadius:"6px",cursor:"pointer"}}>+ Upload document to this artifact</button>
+                          {canUploadDownload&&<button onClick={()=>{setFZone(a.z);setFArtifact(a.a+"|"+a.an+"|"+a.z);setShowDocModal(true);}} style={{fontSize:"10px",padding:"4px 10px",background:P.primaryLight,color:P.primary,border:`0.5px solid ${P.primary}`,borderRadius:"6px",cursor:"pointer"}}>+ Upload document to this artifact</button>}
                         </div>
                       )}
                     </div>
