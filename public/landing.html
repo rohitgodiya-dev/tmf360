@@ -423,10 +423,7 @@ ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=`
 const pp=((t*.55)%1),pr=52+pp*115,pa=(1-pp)*.32;ctx.beginPath();ctx.arc(CX+px*.08,CY+py*.08,pr,0,Math.PI*2);ctx.strokeStyle=`rgba(139,92,246,${pa})`;ctx.lineWidth=1.3;ctx.stroke();
 sparks=sparks.filter(s=>s.life>0);sparks.forEach(s=>{s.x+=s.vx;s.y+=s.vy;s.vy+=.04;s.life-=s.dec;ctx.beginPath();ctx.arc(s.x,s.y,s.sz*s.life,0,Math.PI*2);const rgb=s.c==='#c4b5fd'?'196,181,253':s.c==='#67e8f9'?'103,232,249':s.c==='#93c5fd'?'147,197,253':'167,139,250';ctx.fillStyle=`rgba(${rgb},${s.life*.85})`;ctx.fill();});
 NODES.forEach((n,i)=>{const a=(2*Math.PI/5)*i+t,nx=CX+Math.cos(a)*ORBIT+px*.45,ny=CY+Math.sin(a)*ORBIT+py*.45,ih=hov===i,sc=ih?1.22:1,nr=26*sc;const ng=ctx.createRadialGradient(nx,ny,0,nx,ny,nr*2.5);ng.addColorStop(0,`rgba(${n.rgb},${ih?.38:.15})`);ng.addColorStop(1,'transparent');ctx.beginPath();ctx.arc(nx,ny,nr*2.5,0,Math.PI*2);ctx.fillStyle=ng;ctx.fill();const nb=ctx.createRadialGradient(nx-nr*.3,ny-nr*.3,0,nx,ny,nr);nb.addColorStop(0,`rgba(${n.rgb},.22)`);nb.addColorStop(1,'rgba(8,6,30,.92)');ctx.beginPath();ctx.roundRect(nx-nr,ny-nr,nr*2,nr*2,8*sc);ctx.fillStyle=nb;ctx.fill();ctx.strokeStyle=`rgba(${n.rgb},${ih?.75:.3})`;ctx.lineWidth=ih?1.5:1;ctx.stroke();ctx.save();ctx.translate(nx,ny);n.draw(0,0,sc);ctx.restore();const lines=n.label.split('\n');ctx.font=`600 ${Math.round(8.5*sc)}px Inter,system-ui,sans-serif`;ctx.fillStyle='rgba(226,232,240,.9)';ctx.textAlign='center';ctx.textBaseline='top';lines.forEach((l,li)=>ctx.fillText(l,nx,ny+nr+8+li*11*sc));});
-animId=requestAnimationFrame(frame);
-setTimeout(()=>{lastTs=null;if(animId)cancelAnimationFrame(animId);animId=requestAnimationFrame(frame);},5000);
-setTimeout(()=>{lastTs=null;if(animId)cancelAnimationFrame(animId);animId=requestAnimationFrame(frame);},8000);
-setInterval(()=>{lastTs=null;if(animId)cancelAnimationFrame(animId);animId=requestAnimationFrame(frame);},6000);
+animId=requestAnimationFrame(frame);}
 setInterval(()=>{if(!document.hidden){lastTs=null;if(animId)cancelAnimationFrame(animId);animId=requestAnimationFrame(frame);}},2000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){lastTs=null;if(animId)cancelAnimationFrame(animId);animId=requestAnimationFrame(frame);}});
 animId=requestAnimationFrame(frame);
