@@ -1,4 +1,3 @@
-import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
@@ -9,22 +8,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email and role are required' }, { status: 400 });
     }
 
-    // Create admin Supabase client
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-
-    // Send invitation via Supabase Auth
-    const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-      data: { role, full_name }
-    });
-
-    if (inviteError) {
-      return NextResponse.json({ error: inviteError.message }, { status: 400 });
-    }
-
-    // Send branded email via Resend
+    // Send branded invitation email via Resend
     const resendResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -42,15 +26,15 @@ export async function POST(request: NextRequest) {
               <p style="color:#A5B4FC;font-size:12px;margin:4px 0 0">Smart TMF. Confident Trials.</p>
             </div>
             <div style="padding:32px">
-              <h2 style="color:#111827;font-size:18px;margin:0 0 12px">You've been invited!</h2>
+              <h2 style="color:#111827;font-size:18px;margin:0 0 12px">You've been invited to TMF360!</h2>
               <p style="color:#6B7280;font-size:14px;line-height:1.6">
                 <strong>${invited_by_email || 'A System Administrator'}</strong> has invited you to join <strong>TMF360</strong> as a <strong style="color:#6366F1">${role}</strong>.
               </p>
               <p style="color:#6B7280;font-size:14px;line-height:1.6">
-                TMF360 is an AI-powered Trial Master File platform for clinical research — free for the global clinical research community.
+                Click the button below to create your account and get started.
               </p>
               <div style="margin:28px 0">
-                <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://tmf360-gliv.vercel.app'}/platform" 
+                <a href="https://tmf360-gliv.vercel.app/platform" 
                    style="background:#6366F1;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;display:inline-block">
                   Accept Invitation →
                 </a>
@@ -58,23 +42,24 @@ export async function POST(request: NextRequest) {
               <div style="background:#F9FAFB;border-radius:8px;padding:14px;margin-top:20px">
                 <p style="color:#6B7280;font-size:12px;margin:0"><strong>Your role:</strong> ${role}</p>
                 <p style="color:#6B7280;font-size:12px;margin:4px 0 0"><strong>Platform:</strong> tmf360-gliv.vercel.app</p>
+                <p style="color:#6B7280;font-size:12px;margin:4px 0 0"><strong>Invited by:</strong> ${invited_by_email || 'System Administrator'}</p>
               </div>
             </div>
             <div style="padding:16px 32px;border-top:1px solid #E5E7EB;background:#F9FAFB">
-              <p style="color:#9CA3AF;font-size:11px;margin:0">© 2025 TMF360 · Free for the clinical research community · DIA TMF Reference Model v3.3.1</p>
+              <p style="color:#9CA3AF;font-size:11px;margin:0">© 2025 TMF360 · Free for the clinical research community</p>
             </div>
           </div>
         `
       })
     });
 
+    const resendData = await resendResponse.json();
+    
     if (!resendResponse.ok) {
-      const resendError = await resendResponse.json();
-      console.error('Resend error:', resendError);
-      // Don't fail — invitation was still sent via Supabase
+      return NextResponse.json({ error: resendData.message || 'Failed to send email' }, { status: 400 });
     }
 
-    return NextResponse.json({ success: true, user: inviteData.user });
+    return NextResponse.json({ success: true });
 
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
