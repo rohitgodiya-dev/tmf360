@@ -1515,6 +1515,10 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
     await supabase.from("user_roles").update({is_active:!current}).eq("id",id);
     loadUsers();
   }
+  async function toggleDocAccess(id: string, current: boolean) {
+    await supabase.from("user_roles").update({can_upload_download:!current}).eq("id",id);
+    loadUsers();
+  }
   async function toggleNotifications(id: string, current: boolean) {
     await supabase.from("user_roles").update({notifications_enabled:!current}).eq("id",id);
     loadUsers();
