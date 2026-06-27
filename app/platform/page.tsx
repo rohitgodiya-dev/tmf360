@@ -1110,6 +1110,11 @@ export default function TMF360(){
             </div>
           )}
 
+          {/* USERS */}
+          {panel==="users"&&(
+            <iframe src="/platform/users" style={{width:"100%",height:"calc(100vh - 100px)",border:"none"}} title="User Management"/>
+          )}
+
           {/* AUDIT TRAIL */}
           {panel==="audit"&&(
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
@@ -1461,4 +1466,5 @@ function AuditTrail({user,activeStudy,P}:{user:any,activeStudy:any,P:any}){
     </div>
   );
 }
+
 
