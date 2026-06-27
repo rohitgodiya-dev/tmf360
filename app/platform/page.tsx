@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "../../lib/supabase";
 
@@ -400,8 +400,6 @@ export default function TMF360(){
           {navItem("chat","AI specialist","ti-message-circle")}
           {navItem("audit","Audit trail","ti-lock")}
           {navItem("quality","Quality checks","ti-clipboard-list")}
-{navItem("quality","Quality checks","ti-clipboard-list")}
-          {navItem("quality","Quality checks","ti-shield-check")}
         </aside>
 
         <main style={{flex:1,overflowY:"auto",padding:"1.25rem"}}>
