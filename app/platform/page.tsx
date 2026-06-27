@@ -1468,3 +1468,98 @@ function AuditTrail({user,activeStudy,P}:{user:any,activeStudy:any,P:any}){
 }
 
 
+
+
+function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: any}) {
+  const [users, setUsers] = React.useState<any[]>([]);
+  const [showModal, setShowModal] = React.useState(false);
+  const [inviteEmail, setInviteEmail] = React.useState("");
+  const [inviteName, setInviteName] = React.useState("");
+  const [inviteRole, setInviteRole] = React.useState("CRA");
+  const [message, setMessage] = React.useState("");
+  const [loading, setLoading] = React.useState(true);
+
+  const ROLES = ['System Administrator','Sponsor Admin','TMF Lead','Clinical Trial Manager','Clinical Trial Associate','CRA','Regulatory','Quality Assurance','Medical Monitor','Site Coordinator','Investigator','Auditor','Inspector'];
+  const ROLE_COLORS: Record<string,string> = {'System Administrator':'#6366F1','Sponsor Admin':'#8B5CF6','TMF Lead':'#10B981','Clinical Trial Manager':'#3B82F6','Clinical Trial Associate':'#06B6D4','CRA':'#F59E0B','Regulatory':'#EF4444','Quality Assurance':'#EC4899','Medical Monitor':'#14B8A6','Site Coordinator':'#84CC16','Investigator':'#F97316','Auditor':'#6B7280','Inspector':'#DC2626'};
+
+  React.useEffect(() => { loadUsers(); }, []);
+
+  async function loadUsers() {
+    const {data} = await supabase.from("user_roles").select("*").order("created_at", {ascending: false});
+    if (data) setUsers(data);
+    setLoading(false);
+  }
+
+  async function addUser() {
+    if (!inviteEmail.trim()) return;
+    const {error} = await supabase.from("user_roles").insert([{user_id: user.id, email: inviteEmail.trim(), role: inviteRole, full_name: inviteName.trim(), is_active: true}]);
+    if (!error) { setMessage("User added successfully"); setShowModal(false); setInviteEmail(""); setInviteName(""); loadUsers(); }
+    else setMessage("Error: " + error.message);
+    setTimeout(() => setMessage(""), 3000);
+  }
+
+  async function updateRole(id: string, role: string) {
+    await supabase.from("user_roles").update({role}).eq("id", id);
+    loadUsers();
+  }
+
+  async function toggleActive(id: string, current: boolean) {
+    await supabase.from("user_roles").update({is_active: !current}).eq("id", id);
+    loadUsers();
+  }
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <h1 style={{fontSize:"14px",fontWeight:"500"}}>User Management</h1>
+        <button onClick={() => setShowModal(true)} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ Add User</button>
+      </div>
+      {message && <div style={{padding:"8px 12px",borderRadius:"8px",fontSize:"12px",background:message.includes("Error")?P.dangerLight:P.successLight,color:message.includes("Error")?P.danger:P.success}}>{message}</div>}
+      <div style={{display:"flex",gap:"6px",flexWrap:"wrap" as const,padding:"10px 14px",background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px"}}>
+        {ROLES.map(r => <span key={r} style={{fontSize:"10px",padding:"3px 10px",borderRadius:"20px",background:ROLE_COLORS[r]+"22",color:ROLE_COLORS[r],fontWeight:"500"}}>{r}</span>)}
+      </div>
+      <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",overflow:"hidden"}}>
+        <table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px"}}>
+          <thead><tr style={{borderBottom:`0.5px solid ${P.border}`}}>
+            {["Name / Email","Role","Status","Added","Actions"].map(h => <th key={h} style={{textAlign:"left",padding:"10px 14px",fontSize:"11px",fontWeight:"500",color:P.textSec}}>{h}</th>)}
+          </tr></thead>
+          <tbody>
+            {loading ? <tr><td colSpan={5} style={{textAlign:"center",padding:"2rem",color:P.textTert}}>Loading...</td></tr>
+            : users.length === 0 ? <tr><td colSpan={5} style={{textAlign:"center",padding:"2rem",color:P.textTert}}>No users yet — add your first team member.</td></tr>
+            : users.map((u,i) => (
+              <tr key={u.id} style={{borderBottom:`0.5px solid ${P.bgTert}`}}>
+                <td style={{padding:"10px 14px"}}><div style={{fontWeight:"500"}}>{u.full_name||"—"}</div><div style={{fontSize:"11px",color:P.textSec}}>{u.email}</div></td>
+                <td style={{padding:"10px 14px"}}>
+                  <select value={u.role} onChange={e => updateRole(u.id, e.target.value)} style={{fontSize:"11px",padding:"4px 8px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:(ROLE_COLORS[u.role]||"#6366F1")+"22",color:ROLE_COLORS[u.role]||"#6366F1",fontWeight:"500"}}>
+                    {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                </td>
+                <td style={{padding:"10px 14px"}}><span style={{fontSize:"10px",padding:"3px 8px",borderRadius:"20px",background:u.is_active?P.successLight:P.bgTert,color:u.is_active?P.success:P.textSec,fontWeight:"500"}}>{u.is_active?"Active":"Inactive"}</span></td>
+                <td style={{padding:"10px 14px",fontSize:"11px",color:P.textSec}}>{new Date(u.created_at).toLocaleDateString()}</td>
+                <td style={{padding:"10px 14px"}}><button onClick={() => toggleActive(u.id, u.is_active)} style={{fontSize:"10px",padding:"3px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:"transparent",cursor:"pointer",color:u.is_active?P.danger:P.success}}>{u.is_active?"Deactivate":"Activate"}</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {showModal && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
+          <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"400px",border:`0.5px solid ${P.border}`}}>
+            <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"1rem"}}>Add Team Member</h2>
+            <div style={{marginBottom:"10px"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Full Name</label><input value={inviteName} onChange={e => setInviteName(e.target.value)} placeholder="e.g. Jane Smith" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/></div>
+            <div style={{marginBottom:"10px"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Email</label><input value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="jane@organization.com" type="email" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/></div>
+            <div style={{marginBottom:"1rem"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Role</label>
+              <select value={inviteRole} onChange={e => setInviteRole(e.target.value)} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}>
+                {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </div>
+            <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
+              <button onClick={() => setShowModal(false)} style={{fontSize:"11px",padding:"6px 14px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>Cancel</button>
+              <button onClick={addUser} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Add User</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
