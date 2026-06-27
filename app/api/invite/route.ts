@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
                 Click the button below to create your account and get started.
               </p>
               <div style="margin:28px 0">
-                <a href="https://tmf360-gliv.vercel.app/platform" 
+                <a href="https://tmf360-gliv.vercel.app" 
                    style="background:#6366F1;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;display:inline-block">
                   Accept Invitation →
                 </a>
