@@ -1474,7 +1474,9 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
   const [users, setUsers] = useState<any[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteName, setInviteName] = useState("");
+  const [inviteRole, setInviteRole] = useState("CRA");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
 
 
 
