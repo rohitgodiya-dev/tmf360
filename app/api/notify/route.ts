@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request: NextRequest) {
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
               </div>
               <div style="padding:28px 32px">
                 <div style="display:inline-block;background:${color}22;border:1px solid ${color}44;border-radius:8px;padding:8px 14px;margin-bottom:16px">
-                  <span style="color:${color};font-weight:700;font-size:13px">${icon} ${type.replace(/_/g,' ').replace(/\b\w/g,l=>l.toUpperCase())}</span>
+                  <span style="color:${color};font-weight:700;font-size:13px">${icon} ${type.replace(/_/g,' ').replace(/\b\w/g,(l:string)=>l.toUpperCase())}</span>
                 </div>
                 <h2 style="color:#111827;font-size:16px;margin:0 0 12px">${subject}</h2>
                 <table style="width:100%;border-collapse:collapse;margin:16px 0;background:#F9FAFB;border-radius:8px;overflow:hidden">
