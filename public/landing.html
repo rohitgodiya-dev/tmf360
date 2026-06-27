@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TMF360 — AI-Powered. Human-Driven. Inspection-Ready.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#03040d;--bg2:#06091a;--bg3:#0a0f24;--bg4:#0f1a35;
+  --blue:#3b82f6;--blue2:#60a5fa;--cyan:#06b6d4;--cyan2:#22d3ee;
+  --purple:#8b5cf6;--purple2:#7c3aed;--purple3:#a78bfa;
+  --teal:#14b8a6;--amber:#fbbf24;--green:#34d399;
+  --white:#fff;--text:#e2e8f0;--muted:#475569;--muted2:#64748b;
+  --card:rgba(255,255,255,0.04);--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden}
+body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:200px 200px}
+.aurora{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.ab{position:absolute;border-radius:50%;filter:blur(90px);animation:adrift 14s ease-in-out infinite}
+.ab1{width:700px;height:500px;top:-200px;left:-100px;background:radial-gradient(ellipse,rgba(139,92,246,.16) 0%,transparent 70%);animation-duration:15s}
+.ab2{width:600px;height:600px;top:-80px;right:-180px;background:radial-gradient(ellipse,rgba(6,182,212,.1) 0%,transparent 70%);animation-duration:20s;animation-delay:-6s}
+.ab3{width:800px;height:400px;bottom:25%;left:35%;background:radial-gradient(ellipse,rgba(59,130,246,.08) 0%,transparent 70%);animation-duration:24s;animation-delay:-9s}
+.ab4{width:500px;height:500px;bottom:-120px;right:5%;background:radial-gradient(ellipse,rgba(167,139,250,.09) 0%,transparent 70%);animation-duration:18s;animation-delay:-4s}
+@keyframes adrift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-25px) scale(1.04)}66%{transform:translate(-18px,18px) scale(.97)}}
+nav{position:fixed;top:0;left:0;right:0;z-index:200;height:62px;padding:0 48px;display:flex;align-items:center;justify-content:space-between;background:rgba(3,4,13,.82);backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--border)}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-orb{width:32px;height:32px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#c4b5fd,#7c3aed,#4c1d95);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:900;color:#fff;box-shadow:0 0 14px rgba(139,92,246,.55),0 0 32px rgba(139,92,246,.2);animation:lpulse 3.5s ease-in-out infinite}
+@keyframes lpulse{0%,100%{box-shadow:0 0 14px rgba(139,92,246,.55),0 0 32px rgba(139,92,246,.2)}50%{box-shadow:0 0 22px rgba(139,92,246,.85),0 0 55px rgba(139,92,246,.35)}}
+.logo-text-wrap{display:flex;flex-direction:column;line-height:1}
+.logo-name{font-size:1rem;font-weight:900;color:#fff;letter-spacing:-.02em}
+.logo-tag{font-size:.58rem;color:var(--muted2);margin-top:1px}
+.nav-links{display:flex;list-style:none;gap:0}
+.nav-links a{color:var(--muted2);text-decoration:none;font-size:.8rem;font-weight:500;padding:.4rem .85rem;border-radius:6px;transition:color .15s;display:flex;align-items:center;gap:3px}
+.nav-links a:hover{color:#fff}
+.nav-right{display:flex;gap:.5rem;align-items:center}
+.btn-login{padding:.4rem 1rem;color:var(--text);background:transparent;border:none;font-size:.8rem;font-weight:500;cursor:pointer;font-family:inherit;border-radius:7px;transition:all .15s}
+.btn-login:hover{background:rgba(255,255,255,.06)}
+.btn-nav-cta{padding:.42rem 1.1rem;background:linear-gradient(135deg,var(--purple2),#2563eb);color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 0 18px rgba(124,58,237,.3);transition:opacity .15s}
+.btn-nav-cta:hover{opacity:.85}
+#hero{position:relative;z-index:1;min-height:100vh;padding:110px 48px 80px;display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:center;max-width:1200px;margin:0 auto}
+.hero-left{position:relative;z-index:2}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:7px;background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.25);border-radius:100px;padding:5px 13px;font-size:.68rem;font-weight:700;color:#c4b5fd;letter-spacing:.1em;text-transform:uppercase;margin-bottom:1.5rem}
+.ep{width:6px;height:6px;background:#a78bfa;border-radius:50%;animation:ep 2s infinite;display:inline-block}
+@keyframes ep{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(1.7)}}
+.hero-h1{font-size:clamp(2.6rem,4.5vw,3.9rem);font-weight:900;line-height:1.04;letter-spacing:-.055em;margin-bottom:1.2rem}
+.h1-w{color:#fff;display:block}
+.h1-grad{display:block;background:linear-gradient(135deg,#a78bfa 0%,#22d3ee 55%,#60a5fa 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200%;animation:gshift 5s ease infinite}
+@keyframes gshift{0%,100%{background-position:0%}50%{background-position:100%}}
+.hero-sub{font-size:.95rem;color:var(--muted2);line-height:1.8;margin-bottom:2rem;max-width:420px}
+.hero-btns{display:flex;gap:.75rem;margin-bottom:2.5rem;flex-wrap:wrap}
+.btn-hp{padding:.78rem 1.8rem;background:linear-gradient(135deg,var(--purple2),#2563eb);color:#fff;border:none;border-radius:11px;font-size:.9rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;box-shadow:0 4px 26px rgba(124,58,237,.38);transition:all .22s}
+.btn-hp:hover{transform:translateY(-2px);box-shadow:0 8px 38px rgba(124,58,237,.58)}
+.btn-hs{padding:.78rem 1.55rem;border:1px solid var(--border2);color:var(--text);background:rgba(255,255,255,.04);border-radius:11px;font-size:.9rem;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;transition:all .2s}
+.btn-hs:hover{background:rgba(255,255,255,.09)}
+.hero-personas-label{font-size:.7rem;color:var(--muted);margin-bottom:.65rem}
+.hero-personas{display:flex;gap:1.1rem;flex-wrap:wrap}
+.persona-pill{display:flex;align-items:center;gap:.4rem;font-size:.74rem;color:var(--muted2)}
+.hero-right{position:relative;z-index:2;display:flex;align-items:center;justify-content:center}
+#orb-wrap{width:480px;height:480px;position:relative;transition:transform .08s linear,opacity .3s;transform-origin:center top}
+#orb-canvas{display:block;width:480px;height:480px}
+.divider{height:1px;background:linear-gradient(90deg,transparent,rgba(139,92,246,.3),rgba(6,182,212,.2),transparent);position:relative;z-index:1;margin:0 48px}
+.sec{padding:90px 48px;position:relative;z-index:1}
+.sec-inner{max-width:1200px;margin:0 auto}
+.eyebrow-s{font-size:.65rem;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--cyan2);margin-bottom:.7rem;display:flex;align-items:center;gap:.4rem}
+.sec-h{font-size:clamp(1.7rem,3vw,2.4rem);font-weight:900;letter-spacing:-.04em;color:#fff;line-height:1.08;margin-bottom:.8rem}
+.sec-p{font-size:.9rem;color:var(--muted2);line-height:1.75;max-width:540px}
+.center{text-align:center}.center .sec-p{margin:0 auto}
+.grad-text{background:linear-gradient(135deg,#a78bfa,#22d3ee);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+#copilot{background:rgba(6,9,26,.55);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.cop-grid{display:grid;grid-template-columns:1fr 1.35fr .9fr;gap:1.5rem;align-items:start;margin-top:2.5rem}
+.cop-left h2{font-size:1.55rem;font-weight:900;letter-spacing:-.04em;color:#fff;line-height:1.1;margin-bottom:.7rem}
+.cop-left p{font-size:.82rem;color:var(--muted2);line-height:1.7;margin-bottom:1.1rem}
+.cop-features{list-style:none;display:flex;flex-direction:column;gap:.5rem;margin-bottom:1.4rem}
+.cop-feat{display:flex;align-items:center;gap:.55rem;font-size:.8rem;color:var(--text)}
+.cop-check{width:17px;height:17px;border-radius:50%;background:rgba(139,92,246,.2);border:1px solid rgba(139,92,246,.4);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.cop-check svg{width:9px;height:9px;stroke:#a78bfa;stroke-width:2.5;fill:none}
+.btn-try{padding:.62rem 1.3rem;background:linear-gradient(135deg,var(--purple2),#2563eb);color:#fff;border:none;border-radius:9px;font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;box-shadow:0 4px 20px rgba(124,58,237,.3);transition:all .2s}
+.btn-try:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(124,58,237,.48)}
+.cop-terminal{background:rgba(6,9,26,.9);border:1px solid var(--border2);border-radius:16px;overflow:hidden;box-shadow:0 0 0 1px rgba(139,92,246,.08),0 28px 70px rgba(0,0,0,.55)}
+.term-bar{background:rgba(3,4,13,.85);padding:.62rem 1rem;display:flex;align-items:center;gap:.5rem;border-bottom:1px solid var(--border)}
+.tdot{width:10px;height:10px;border-radius:50%}
+.term-title-t{flex:1;text-align:center;font-size:.63rem;color:var(--muted2)}
+.live-badge{background:rgba(6,182,212,.1);border:1px solid rgba(6,182,212,.25);border-radius:5px;padding:2px 8px;font-size:.54rem;font-weight:800;color:var(--cyan2);letter-spacing:.08em}
+.term-body{padding:1rem;min-height:250px;display:flex;flex-direction:column;gap:.6rem}
+.msg-user{display:flex;justify-content:flex-end}
+.msg-ai{display:flex}
+.bubble{max-width:88%;padding:.62rem .88rem;border-radius:12px;font-size:.75rem;line-height:1.6}
+.bubble-u{background:rgba(124,58,237,.2);border:1px solid rgba(124,58,237,.3);border-radius:12px 12px 2px 12px}
+.bubble-a{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);border-radius:12px 12px 12px 2px}
+.rt{width:100%;border-collapse:collapse;margin-top:.35rem}
+.rt td{padding:.26rem .32rem;font-size:.68rem;border-bottom:1px solid rgba(255,255,255,.05)}
+.rt tr:last-child td{border:none}
+.bdg{display:inline-flex;padding:2px 6px;border-radius:4px;font-size:.55rem;font-weight:700;text-transform:uppercase}
+.bm{background:rgba(248,113,113,.15);color:#f87171}
+.be{background:rgba(251,191,36,.15);color:#fbbf24}
+.bo{background:rgba(52,211,153,.15);color:#34d399}
+.bq{background:rgba(167,139,250,.15);color:#a78bfa}
+.term-input-r{background:rgba(255,255,255,.03);border-top:1px solid var(--border);padding:.62rem 1rem;display:flex;justify-content:space-between;align-items:center}
+.term-send{background:linear-gradient(135deg,var(--purple2),#2563eb);border:none;border-radius:7px;padding:.3rem .75rem;color:#fff;font-size:.68rem;font-weight:700;cursor:pointer;font-family:inherit}
+.cop-right-lbl{font-size:.65rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.7rem}
+.prompt-list{list-style:none;display:flex;flex-direction:column;gap:.45rem;margin-bottom:1.1rem}
+.prompt-item{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:.55rem .8rem;font-size:.72rem;color:var(--muted2);display:flex;align-items:center;justify-content:space-between;gap:.5rem;cursor:pointer;transition:all .15s}
+.prompt-item:hover{background:rgba(139,92,246,.08);border-color:rgba(139,92,246,.28);color:var(--text)}
+.cop-insight{background:rgba(139,92,246,.07);border:1px solid rgba(139,92,246,.2);border-radius:12px;padding:.95rem}
+.insight-lbl{font-size:.6rem;font-weight:800;color:var(--purple3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.45rem;display:flex;align-items:center;gap:.35rem}
+.insight-text{font-size:.74rem;color:var(--text);line-height:1.6;margin-bottom:.7rem}
+.insight-text strong{color:var(--purple3)}
+.btn-vd{width:100%;padding:.48rem;background:linear-gradient(135deg,var(--purple2),#2563eb);color:#fff;border:none;border-radius:7px;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .15s}
+.btn-vd:hover{opacity:.85}
+#capabilities{background:var(--bg)}
+.cap-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:.75rem;margin-top:2.5rem}
+.cap-card{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:13px;padding:1.2rem .9rem;text-align:center;transition:all .22s;cursor:default}
+.cap-card:hover{background:rgba(139,92,246,.07);border-color:rgba(139,92,246,.28);transform:translateY(-3px)}
+.cap-icon{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;margin:0 auto .7rem}
+.cap-card h4{font-size:.72rem;font-weight:700;color:#fff;margin-bottom:.22rem;line-height:1.3}
+.cap-card p{font-size:.6rem;color:var(--muted2);line-height:1.45}
+#why{background:rgba(6,9,26,.4);border-top:1px solid var(--border)}
+.why-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:2.5rem}
+.why-card{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:14px;padding:1.4rem;position:relative;overflow:hidden;transition:all .25s}
+.why-card::before{content:'';position:absolute;inset:0;border-radius:14px;background:radial-gradient(circle at 0 0,rgba(139,92,246,.07),transparent 60%);opacity:0;transition:opacity .3s}
+.why-card:hover{border-color:rgba(139,92,246,.25);transform:translateY(-3px)}
+.why-card:hover::before{opacity:1}
+.why-icon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:.85rem}
+.why-card h3{font-size:.92rem;font-weight:800;color:#fff;margin-bottom:.42rem}
+.why-card p{font-size:.79rem;color:var(--muted2);line-height:1.65}
+#compliance{padding:56px 48px;border-top:1px solid var(--border)}
+.comp-label{font-size:.65rem;color:var(--muted);text-align:center;margin-bottom:1.4rem;text-transform:uppercase;letter-spacing:.15em;font-weight:600}
+.comp-strip{max-width:1200px;margin:0 auto;display:flex;justify-content:center;gap:1.5rem;flex-wrap:wrap}
+.comp-pill{background:var(--card);border:1px solid var(--border);border-radius:100px;padding:.5rem 1.1rem;display:flex;align-items:center;gap:.55rem;font-size:.74rem;font-weight:600;color:var(--text);transition:all .2s}
+.comp-pill:hover{border-color:rgba(139,92,246,.3);color:#fff}
+.comp-pill svg{width:14px;height:14px;flex-shrink:0}
+#who{padding:80px 48px;border-top:1px solid var(--border)}
+.who-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:.75rem;margin-top:2.5rem;max-width:1200px;margin-left:auto;margin-right:auto}
+.who-card{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:13px;padding:1.1rem .8rem;text-align:center;transition:all .22s;cursor:default}
+.who-card:hover{border-color:rgba(6,182,212,.3);background:rgba(6,182,212,.05);transform:translateY(-2px)}
+.who-icon-wrap{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin:0 auto .5rem}
+.who-card h4{font-size:.74rem;font-weight:700;color:#fff;margin-bottom:.18rem}
+.who-card p{font-size:.62rem;color:var(--muted2);line-height:1.4}
+#stats{padding:0 48px 80px}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:18px;overflow:hidden;max-width:1200px;margin:0 auto}
+.stat-card{background:var(--bg2);padding:2rem;text-align:center}
+.stat-num{font-size:2.4rem;font-weight:900;letter-spacing:-.05em;margin-bottom:.28rem;background:linear-gradient(135deg,var(--purple3),var(--cyan2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-lbl{font-size:.68rem;color:var(--muted2);font-weight:600;text-transform:uppercase;letter-spacing:.1em}
+#cta{padding:110px 48px;text-align:center;position:relative;z-index:1;overflow:hidden}
+.cta-glow{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:700px;height:400px;border-radius:50%;background:radial-gradient(ellipse,rgba(124,58,237,.14) 0%,transparent 70%);filter:blur(50px);pointer-events:none}
+#cta h2{font-size:clamp(2.2rem,5vw,4rem);font-weight:900;letter-spacing:-.055em;color:#fff;line-height:1.0;margin-bottom:1.2rem}
+.cta-sub{font-size:1rem;color:var(--muted2);max-width:480px;margin:0 auto 2.5rem;line-height:1.75}
+.cta-btns{display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap}
+footer{position:relative;z-index:1;background:rgba(3,4,13,.96);border-top:1px solid var(--border);padding:48px 48px 26px}
+.footer-inner{max-width:1200px;margin:0 auto}
+.footer-top{display:grid;grid-template-columns:1.5fr repeat(4,1fr);gap:3rem;margin-bottom:2.5rem}
+.footer-brand p{font-size:.74rem;color:var(--muted2);line-height:1.65;margin-top:.5rem;max-width:200px}
+.fsocial{display:flex;gap:.5rem;margin-top:.9rem}
+.fsoc-btn{width:30px;height:30px;border-radius:7px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:default;transition:all .15s}
+.fsoc-btn:hover{border-color:rgba(139,92,246,.4)}
+.fsoc-btn svg{width:14px;height:14px;stroke:var(--muted2);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:stroke .15s}
+.fsoc-btn:hover svg{stroke:var(--purple3)}
+.footer-col h5{font-size:.74rem;font-weight:700;color:#fff;margin-bottom:.8rem}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:.48rem}
+.footer-col a{font-size:.72rem;color:var(--muted2);text-decoration:none;transition:color .15s}
+.footer-col a:hover{color:#fff}
+.fnews h5{font-size:.74rem;font-weight:700;color:#fff;margin-bottom:.38rem}
+.fnews p{font-size:.7rem;color:var(--muted2);margin-bottom:.8rem;line-height:1.55}
+.fnews-row{display:flex;gap:.38rem}
+.fnews-input{flex:1;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;padding:.48rem .72rem;font-size:.74rem;color:var(--text);font-family:inherit;outline:none}
+.fnews-input::placeholder{color:var(--muted)}
+.fnews-input:focus{border-color:rgba(139,92,246,.4)}
+.fnews-btn{padding:.48rem .8rem;background:linear-gradient(135deg,var(--purple2),#2563eb);color:#fff;border:none;border-radius:8px;font-size:.74rem;font-weight:700;cursor:pointer;font-family:inherit}
+.footer-bottom{border-top:1px solid var(--border);padding-top:1.2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem}
+.footer-copy{font-size:.67rem;color:var(--muted)}
+.footer-links{display:flex;gap:1.2rem}
+.footer-links a{font-size:.67rem;color:var(--muted2);text-decoration:none}
+.footer-links a:hover{color:#fff}
+.sr{opacity:0;transform:translateY(22px);transition:opacity .65s ease,transform .65s ease}
+.sr.show{opacity:1;transform:none}
+@media(max-width:960px){nav .nav-links{display:none}#hero{grid-template-columns:1fr;padding-top:100px}#orb-wrap{width:340px;height:340px}#orb-canvas{width:340px;height:340px}.cop-grid{grid-template-columns:1fr}.cap-grid{grid-template-columns:repeat(3,1fr)}.why-grid{grid-template-columns:1fr 1fr}.who-grid{grid-template-columns:repeat(2,1fr)}.stats-grid{grid-template-columns:1fr 1fr}.footer-top{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){nav{padding:0 20px}.sec{padding:65px 20px}#hero{padding:100px 20px 60px}.divider{margin:0 20px}.cap-grid{grid-template-columns:repeat(2,1fr)}.why-grid{grid-template-columns:1fr}.who-grid{grid-template-columns:repeat(2,1fr)}#stats,#who,#compliance{padding-left:20px;padding-right:20px}footer{padding:40px 20px 22px}.footer-top{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="aurora"><div class="ab ab1"></div><div class="ab ab2"></div><div class="ab ab3"></div><div class="ab ab4"></div></div>
+<nav>
+  <a href="#" class="nav-logo">
+    <div class="logo-orb">AI</div>
+    <div class="logo-text-wrap"><span class="logo-name">TMF360</span><span class="logo-tag">Smart TMF. Confident Trials.</span></div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#copilot">AI Copilot</a></li>
+    <li><a href="#capabilities">Platform</a></li>
+    <li><a href="#why">Solutions</a></li>
+    <li><a href="#who">Who It's For</a></li>
+  </ul>
+  <div class="nav-right">
+    <button class="btn-login" onclick="window.location.href='/app'">Log in</button>
+    <button class="btn-nav-cta" onclick="window.location.href='/app'">Get Started Free →</button>
+  </div>
+</nav>
+<section id="hero">
+  <div class="hero-left sr" id="hero-left">
+    <div class="hero-eyebrow"><span class="ep"></span>AI-Powered TMF Intelligence</div>
+    <h1 class="hero-h1"><span class="h1-w">AI-Powered.</span><span class="h1-w">Human-Driven.</span><span class="h1-grad">Inspection-Ready.</span></h1>
+    <p class="hero-sub">TMF360 is the intelligent TMF platform that brings structure, visibility, and confidence across your entire trial lifecycle — free for the clinical research community.</p>
+    <div class="hero-btns">
+      <button class="btn-hp" onclick="window.location.href='/app'">Get Started Free →</button>
+      <button class="btn-hs" onclick="document.getElementById('copilot').scrollIntoView({behavior:'smooth'})">&#9654; See How It Works</button>
+    </div>
+    <div class="hero-personas-label">Built for teams who demand more than document storage.</div>
+    <div class="hero-personas">
+      <span class="persona-pill">&#9632; Sponsors</span>
+      <span class="persona-pill">&#9632; CROs</span>
+      <span class="persona-pill">&#9632; TMF Leads</span>
+      <span class="persona-pill">&#9632; CRAs</span>
+      <span class="persona-pill">&#9632; QA / Regulatory</span>
+      <span class="persona-pill">&#9632; Site Teams</span>
+    </div>
+  </div>
+  <div class="hero-right sr" id="hero-right" style="transition-delay:.18s">
+    <div id="orb-wrap"><canvas id="orb-canvas" width="480" height="480"></canvas></div>
+  </div>
+</section>
+<div class="divider"></div>
+<section id="copilot" class="sec">
+  <div class="sec-inner">
+    <div class="sr"><div class="eyebrow-s">&#9733; AI COPILOT</div></div>
+    <div class="cop-grid sr" style="transition-delay:.1s">
+      <div class="cop-left">
+        <h2>Ask Anything.<br>Get Intelligent Answers.</h2>
+        <p>Your AI TMF assistant understands your trial, your documents, and your workflows.</p>
+        <ul class="cop-features">
+          <li class="cop-feat"><span class="cop-check"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg></span>Natural language interaction</li>
+          <li class="cop-feat"><span class="cop-check"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg></span>Context-aware responses</li>
+          <li class="cop-feat"><span class="cop-check"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg></span>Actionable insights</li>
+          <li class="cop-feat"><span class="cop-check"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg></span>Always learning, always accurate</li>
+        </ul>
+        <button class="btn-try" onclick="window.location.href='/app'">Try TMF360 Free →</button>
+      </div>
+      <div class="cop-terminal">
+        <div class="term-bar">
+          <div class="tdot" style="background:#f87171"></div>
+          <div class="tdot" style="background:#fbbf24"></div>
+          <div class="tdot" style="background:#34d399"></div>
+          <div class="term-title-t">TMF360 AI Copilot · STUDY-2024-001</div>
+          <div class="live-badge">&#9679; LIVE</div>
+        </div>
+        <div class="term-body" id="term-body"></div>
+        <div class="term-input-r">
+          <span style="font-size:.7rem;color:var(--muted2)">Ask anything about your TMF...</span>
+          <button class="term-send">Send</button>
+        </div>
+      </div>
+      <div>
+        <div class="cop-right-lbl">Try these examples</div>
+        <ul class="prompt-list" id="plist">
+          <li class="prompt-item" data-i="0">What docs are expiring in 30 days? <span style="color:var(--muted);font-size:.7rem">→</span></li>
+          <li class="prompt-item" data-i="1">Show missing docs for Site 102. <span style="color:var(--muted);font-size:.7rem">→</span></li>
+          <li class="prompt-item" data-i="2">Where should I file this document? <span style="color:var(--muted);font-size:.7rem">→</span></li>
+          <li class="prompt-item" data-i="3">Generate a Note to File. <span style="color:var(--muted);font-size:.7rem">→</span></li>
+          <li class="prompt-item" data-i="4">Identify high-risk sites. <span style="color:var(--muted);font-size:.7rem">→</span></li>
+        </ul>
+        <div class="cop-insight">
+          <div class="insight-lbl">&#9733; AI Insight</div>
+          <div class="insight-text">Site 102 is missing <strong>12 essential documents</strong>. 2 documents are overdue. Inspection readiness risk is <strong>Medium</strong>.</div>
+          <button class="btn-vd" onclick="window.location.href='/app'">Get Started Free →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<div class="divider"></div>
+<section id="capabilities" class="sec">
+  <div class="sec-inner">
+    <div class="center sr">
+      <div class="eyebrow-s" style="justify-content:center">One Platform. Complete TMF Control.</div>
+      <h2 class="sec-h">Everything You Need.<br><span class="grad-text">Powered by Intelligence.</span></h2>
+    </div>
+    <div class="cap-grid sr">
+      <div class="cap-card"><div class="cap-icon" style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.2)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div><h4>Intelligent Filing</h4><p>AI suggests placement and flags potential misfiles automatically.</p></div>
+      <div class="cap-card"><div class="cap-icon" style="background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.2)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 16 4-4 4 4 4-7"/></svg></div><h4>Real-Time Visibility</h4><p>Track completeness, risk, and health across all levels.</p></div>
+      <div class="cap-card"><div class="cap-icon" style="background:rgba(6,182,212,.12);border:1px solid rgba(6,182,212,.2)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><h4>Smart Expectations</h4><p>Knows what documents should exist based on milestones.</p></div>
+      <div class="cap-card"><div class="cap-icon" style="background:rgba(96,165,250,.12);border:1px solid rgba(96,165,250,.2)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#93c5fd" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div><h4>Inspection Ready</h4><p>Built-in dashboards keep you prepared at all times.</p></div>
+      <div class="cap-card"><div class="cap-icon" style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.2)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><h4>Human-in-the-Loop</h4><p>AI assists — your expertise always leads the way.</p></div>
+      <div class="cap-card"><div class="cap-icon" style="background:rgba(6,182,212,.12);border:1px solid rgba(6,182,212,.2)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><h4>Secure &amp; Compliant</h4><p>21 CFR Part 11-ready controls and role-based access.</p></div>
+    </div>
+  </div>
+</section>
+<div class="divider"></div>
+<section id="why" class="sec">
+  <div class="sec-inner">
+    <div class="center sr">
+      <div class="eyebrow-s" style="justify-content:center">Why TMF360</div>
+      <h2 class="sec-h">Built for Intelligence.<br>Designed for People.</h2>
+    </div>
+    <div class="why-grid sr">
+      <div class="why-card"><div class="why-icon" style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.2)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="6" height="6" rx="1"/><rect x="16" y="3" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/><rect x="2" y="15" width="6" height="6" rx="1"/><rect x="16" y="15" width="6" height="6" rx="1"/></svg></div><h3>AI That Works With You</h3><p>TMF360 understands your trial context and helps your team make faster, smarter decisions across every document and workflow.</p></div>
+      <div class="why-card"><div class="why-icon" style="background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.2)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2dd4bf" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><path d="M12 11v6M9 14h6"/></svg></div><h3>Complete Control</h3><p>Manage every document, workflow, review, and approval in one unified platform — no more scattered systems or manual tracking.</p></div>
+      <div class="why-card"><div class="why-icon" style="background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.2)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><h3>Proactive Risk Intelligence</h3><p>Identify missing, overdue, expired, and high-risk items before they become issues — not during an inspection.</p></div>
+      <div class="why-card"><div class="why-icon" style="background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.2)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div><h3>Built for Clinical Research</h3><p>Designed by TMF professionals for TMF professionals. Every feature has a purpose rooted in real clinical operations.</p></div>
+      <div class="why-card"><div class="why-icon" style="background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.2)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div><h3>Scalable for Every Study</h3><p>From early phase to global programs — TMF360 grows with your needs without added complexity or cost.</p></div>
+      <div class="why-card"><div class="why-icon" style="background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.2)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div><h3>Trusted &amp; Reliable</h3><p>Enterprise-grade security, validated processes, and a platform built on the DIA TMF Reference Model v3.3.1.</p></div>
+    </div>
+  </div>
+</section>
+<section id="compliance">
+  <div class="comp-label">Designed to support compliance with leading regulatory standards</div>
+  <div class="comp-strip sr">
+    <div class="comp-pill"><svg viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>ICH E6(R3) Aligned</div>
+    <div class="comp-pill"><svg viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>TMF Reference Model v3.3.1</div>
+    <div class="comp-pill"><svg viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>21 CFR Part 11 Ready</div>
+    <div class="comp-pill"><svg viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>Role-Based Access</div>
+    <div class="comp-pill"><svg viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Full Audit Trail</div>
+    <div class="comp-pill"><svg viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Data Security</div>
+    <div class="comp-pill"><svg viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>Inspection-Ready Exports</div>
+  </div>
+</section>
+<section id="who">
+  <div class="sec-inner center sr">
+    <div class="eyebrow-s" style="justify-content:center">Who It's For</div>
+    <h2 class="sec-h">Every Role in Clinical Research</h2>
+  </div>
+  <div class="who-grid sr" style="margin-top:2rem">
+    <div class="who-card"><div class="who-icon-wrap" style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.2)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div><h4>Sponsors</h4><p>Portfolio-level oversight</p></div>
+    <div class="who-card"><div class="who-icon-wrap" style="background:rgba(6,182,212,.12);border:1px solid rgba(6,182,212,.2)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18"/></svg></div><h4>CROs</h4><p>Multi-study management</p></div>
+    <div class="who-card"><div class="who-icon-wrap" style="background:rgba(96,165,250,.12);border:1px solid rgba(96,165,250,.2)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#93c5fd" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div><h4>TMF Leads</h4><p>Complete TMF control</p></div>
+    <div class="who-card"><div class="who-icon-wrap" style="background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.2)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg></div><h4>CRAs</h4><p>Site visit preparation</p></div>
+    <div class="who-card"><div class="who-icon-wrap" style="background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.2)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><h4>CTAs</h4><p>Efficient document filing</p></div>
+    <div class="who-card"><div class="who-icon-wrap" style="background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.2)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div><h4>QA Teams</h4><p>Structured QC workflows</p></div>
+    <div class="who-card"><div class="who-icon-wrap" style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.2)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 16 4-4 4 4 4-7"/></svg></div><h4>Trial Managers</h4><p>Real-time study status</p></div>
+    <div class="who-card"><div class="who-icon-wrap" style="background:rgba(6,182,212,.12);border:1px solid rgba(6,182,212,.2)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div><h4>Regulatory</h4><p>Submission-ready packages</p></div>
+    <div class="who-card"><div class="who-icon-wrap" style="background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.2)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div><h4>Site Teams</h4><p>Easy document submission</p></div>
+    <div class="who-card"><div class="who-icon-wrap" style="background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.2)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div><h4>Auditors</h4><p>Read-only audit access</p></div>
+  </div>
+</section>
+<section id="stats" style="padding:0 48px 80px;position:relative;z-index:1">
+  <div class="stats-grid sr">
+    <div class="stat-card"><div class="stat-num" id="s1">0</div><div class="stat-lbl">TMF Zones Mapped</div></div>
+    <div class="stat-card"><div class="stat-num" id="s2">0</div><div class="stat-lbl">Artifacts in Reference Model</div></div>
+    <div class="stat-card"><div class="stat-num" id="s3">0</div><div class="stat-lbl">Gap Severity Tiers</div></div>
+    <div class="stat-card"><div class="stat-num" id="s4">0%</div><div class="stat-lbl">Free for Community</div></div>
+  </div>
+</section>
+<section id="cta">
+  <div class="cta-glow"></div>
+  <div class="sr">
+    <div class="eyebrow-s" style="justify-content:center;margin-bottom:.7rem">Get Started</div>
+    <h2>Turn Your TMF Into<br><span style="background:linear-gradient(135deg,#a78bfa,#22d3ee,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200%;animation:gshift 5s ease infinite">Actionable Intelligence</span></h2>
+    <p class="cta-sub">Move beyond passive document storage. TMF360 gives your team the visibility, control, and AI-powered insight to stay inspection-ready — free for the clinical research community.</p>
+    <div class="cta-btns">
+      <button class="btn-hp" onclick="window.location.href='/app'">Get Started Free →</button>
+      <button class="btn-hs" onclick="window.location.href='/app'">Explore Platform</button>
+    </div>
+  </div>
+</section>
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a href="#" class="nav-logo" style="margin-bottom:.5rem">
+          <div class="logo-orb" style="width:28px;height:28px;font-size:.6rem">AI</div>
+          <div class="logo-text-wrap"><span class="logo-name" style="font-size:.9rem">TMF360</span><span class="logo-tag">Smart TMF. Confident Trials.</span></div>
+        </a>
+        <p>The intelligent TMF platform built for modern clinical research teams worldwide. Free for the community.</p>
+        <div class="fsocial">
+          <div class="fsoc-btn"><svg viewBox="0 0 24 24"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg></div>
+          <div class="fsoc-btn"><svg viewBox="0 0 24 24"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg></div>
+        </div>
+      </div>
+      <div class="footer-col"><h5>Platform</h5><ul><li><a href="/app">Dashboard</a></li><li><a href="/app">Documents</a></li><li><a href="/app">Gap Analysis</a></li><li><a href="/app">Inspection Readiness</a></li></ul></div>
+      <div class="footer-col"><h5>Solutions</h5><ul><li><a href="#">Sponsors</a></li><li><a href="#">CROs</a></li><li><a href="#">TMF Leads</a></li><li><a href="#">Site Teams</a></li></ul></div>
+      <div class="footer-col"><h5>Resources</h5><ul><li><a href="#">DIA TMF Reference Model</a></li><li><a href="#">ISO 14155 Guide</a></li><li><a href="#">21 CFR Part 11</a></li><li><a href="#">ICH E6(R3)</a></li></ul></div>
+      <div class="footer-col fnews">
+        <h5>Stay Updated</h5>
+        <p>Get the latest on TMF best practices, product features, and industry insights.</p>
+        <div class="fnews-row"><input class="fnews-input" type="email" placeholder="Enter your email"><button class="fnews-btn">→</button></div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-copy">© 2025 TMF360. Free for the clinical research community.</div>
+      <div class="footer-links"><a href="#">Privacy Policy</a><a href="#">Terms of Service</a></div>
+    </div>
+  </div>
+</footer>
+<script>
+const io=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('show')}),{threshold:0.07});
+document.querySelectorAll('.sr').forEach(el=>io.observe(el));
+document.querySelectorAll('.cap-card,.why-card,.who-card,.comp-pill').forEach((c,i)=>{c.style.transitionDelay=(i*40)+'ms'});
+const orbWrap=document.getElementById('orb-wrap');
+let scrollRAF=null,lastScroll=0;
+window.addEventListener('scroll',()=>{lastScroll=window.scrollY;if(scrollRAF)return;scrollRAF=requestAnimationFrame(()=>{const s=lastScroll,sc=Math.max(0.32,1-s*.0011),ty=-s*.32;orbWrap.style.transform=`scale(${sc}) translateY(${ty}px)`;orbWrap.style.opacity=Math.max(0,1-s*.0018);scrollRAF=null;});},{passive:true});
+let mx=0,my=0;
+document.addEventListener('mousemove',e=>{mx=(e.clientX/innerWidth-.5)*2;my=(e.clientY/innerHeight-.5)*2});
+const canvas=document.getElementById('orb-canvas');
+const ctx=canvas.getContext('2d');
+const W=480,H=480,CX=240,CY=240,ORBIT=165;
+const NODES=[
+  {label:'Intelligent\nFiling',color:'#a78bfa',rgb:'167,139,250',draw(x,y,s){const c=ctx,r=10*s;c.strokeStyle=this.color;c.lineWidth=1.5*s;c.lineCap='round';c.lineJoin='round';c.beginPath();c.arc(x,y,r*.8,0,Math.PI*2);c.stroke();c.beginPath();c.moveTo(x+r*.55,y+r*.55);c.lineTo(x+r,y+r);c.stroke();}},
+  {label:'Inspection\nReady',color:'#22d3ee',rgb:'34,211,238',draw(x,y,s){const c=ctx,r=10*s;c.strokeStyle=this.color;c.lineWidth=1.5*s;c.lineCap='round';c.lineJoin='round';c.beginPath();c.moveTo(x,y-r);c.lineTo(x+r*.85,y-r*.35);c.lineTo(x+r*.85,y+r*.25);c.lineTo(x,y+r);c.lineTo(x-r*.85,y+r*.25);c.lineTo(x-r*.85,y-r*.35);c.closePath();c.stroke();c.beginPath();c.moveTo(x-r*.3,y+r*.05);c.lineTo(x-r*.05,y+r*.35);c.lineTo(x+r*.35,y-r*.15);c.stroke();}},
+  {label:'Complete\nVisibility',color:'#60a5fa',rgb:'96,165,250',draw(x,y,s){const c=ctx,r=10*s;c.strokeStyle=this.color;c.lineWidth=1.5*s;c.lineCap='round';c.beginPath();c.moveTo(x-r,y);c.bezierCurveTo(x-r,y-r*.6,x+r,y-r*.6,x+r,y);c.bezierCurveTo(x+r,y+r*.6,x-r,y+r*.6,x-r,y);c.stroke();c.beginPath();c.arc(x,y,r*.3,0,Math.PI*2);c.stroke();}},
+  {label:'Risk\nIntelligence',color:'#fbbf24',rgb:'251,191,36',draw(x,y,s){const c=ctx,r=10*s;c.strokeStyle=this.color;c.lineWidth=1.5*s;c.lineCap='round';c.lineJoin='round';c.beginPath();c.moveTo(x,y-r);c.lineTo(x+r*.9,y+r*.65);c.lineTo(x-r*.9,y+r*.65);c.closePath();c.stroke();c.beginPath();c.moveTo(x,y-r*.3);c.lineTo(x,y+r*.2);c.moveTo(x,y+r*.38);c.lineTo(x,y+r*.43);c.stroke();}},
+  {label:'Real-Time\nControl',color:'#34d399',rgb:'52,211,153',draw(x,y,s){const c=ctx,r=10*s;c.strokeStyle=this.color;c.lineWidth=1.5*s;c.lineCap='round';c.lineJoin='round';c.beginPath();c.roundRect(x-r*.6,y-r*.6,r*1.2,r*1.2,r*.2);c.stroke();c.beginPath();c.moveTo(x-r*.3,y+r*.05);c.lineTo(x-r*.05,y+r*.35);c.lineTo(x+r*.35,y-r*.15);c.stroke();}}
+];
+let t=0,hov=-1,sparks=[],pathPts=[],bgPts=[],lastTs=null,animId=null;
+for(let i=0;i<70;i++)pathPts.push({ni:i%5,prog:Math.random(),spd:.003+Math.random()*.004,sz:Math.random()*1.8+.3,op:Math.random()*.5+.15});
+for(let i=0;i<35;i++)bgPts.push({x:CX+(Math.random()-.5)*440,y:CY+(Math.random()-.5)*440,vx:(Math.random()-.5)*.2,vy:(Math.random()-.5)*.2,r:Math.random()*1.3+.2,a:Math.random()*.3+.05,c:['#a78bfa','#22d3ee','#60a5fa'][i%3]});
+function spawnSparks(){for(let i=0;i<10;i++){const a=Math.random()*Math.PI*2,sp=Math.random()*3.5+1;sparks.push({x:CX,y:CY,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1,dec:.022+Math.random()*.018,sz:Math.random()*2+.5,c:['#c4b5fd','#67e8f9','#93c5fd','#a78bfa'][Math.floor(Math.random()*4)]});}}
+setInterval(spawnSparks,2800);
+canvas.addEventListener('mousemove',e=>{const r=canvas.getBoundingClientRect(),sx=(e.clientX-r.left)*(W/r.width),sy=(e.clientY-r.top)*(H/r.height);hov=-1;NODES.forEach((n,i)=>{const a=(2*Math.PI/5)*i+t,nx=CX+Math.cos(a)*ORBIT,ny=CY+Math.sin(a)*ORBIT,dx=sx-nx,dy=sy-ny;if(Math.sqrt(dx*dx+dy*dy)<40)hov=i});canvas.style.cursor=hov>=0?'pointer':'default';});
+canvas.addEventListener('mouseleave',()=>hov=-1);
+function frame(ts){if(lastTs===null)lastTs=ts;const dt=Math.min((ts-lastTs)/16.67,3);lastTs=ts;t+=.0058*dt;ctx.clearRect(0,0,W,H);const px=mx*7,py=my*7;
+bgPts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>W)p.vx*=-1;if(p.y<0||p.y>H)p.vy*=-1;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=p.c+(Math.round(p.a*255).toString(16).padStart(2,'0'));ctx.fill();});
+[{r:96,sp:.28},{r:ORBIT,sp:-.18},{r:210,sp:.1}].forEach((ring,ri)=>{const segs=64;for(let i=0;i<segs;i++){const a1=(2*Math.PI/segs)*i+t*ring.sp,a2=(2*Math.PI/segs)*(i+.55)+t*ring.sp,alpha=.06+.03*Math.sin(i*2.1+t*1.8);ctx.beginPath();ctx.arc(CX+px*.28,CY+py*.28,ring.r,a1,a2);ctx.strokeStyle=`rgba(${ri===1?'99,102,241':ri===0?'139,92,246':'59,130,246'},${alpha})`;ctx.lineWidth=1;ctx.stroke();}});
+NODES.forEach((n,i)=>{const a=(2*Math.PI/5)*i+t,nx=CX+Math.cos(a)*ORBIT+px*.45,ny=CY+Math.sin(a)*ORBIT+py*.45;const g=ctx.createLinearGradient(CX,CY,nx,ny);g.addColorStop(0,`rgba(${n.rgb},.35)`);g.addColorStop(1,`rgba(${n.rgb},0)`);ctx.beginPath();ctx.moveTo(CX+px*.12,CY+py*.12);ctx.lineTo(nx,ny);ctx.strokeStyle=g;ctx.lineWidth=.9;ctx.stroke();});
+pathPts.forEach(p=>{p.prog+=p.spd*dt;if(p.prog>1)p.prog-=1;const a=(2*Math.PI/5)*p.ni+t,ex=CX+Math.cos(a)*ORBIT+px*.45,ey=CY+Math.sin(a)*ORBIT+py*.45,bx=CX+px*.12,by=CY+py*.12;ctx.beginPath();ctx.arc(bx+(ex-bx)*p.prog,by+(ey-by)*p.prog,p.sz,0,Math.PI*2);ctx.fillStyle=`rgba(${NODES[p.ni].rgb},${p.op})`;ctx.fill();});
+const breathe=1+.065*Math.sin(t*1.15),cr=50*breathe;
+[[90,'rgba(124,58,237,.13)'],[62,'rgba(139,92,246,.22)'],[40,'rgba(109,40,217,.38)']].forEach(([r,c])=>{const g=ctx.createRadialGradient(CX+px*.08,CY+py*.08,0,CX+px*.08,CY+py*.08,r*breathe);g.addColorStop(0,c);g.addColorStop(1,'transparent');ctx.beginPath();ctx.arc(CX+px*.08,CY+py*.08,r*breathe,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();});
+const cg=ctx.createRadialGradient(CX+px*.08-9,CY+py*.08-9,0,CX+px*.08,CY+py*.08,cr);cg.addColorStop(0,'#d8b4fe');cg.addColorStop(.35,'#8b5cf6');cg.addColorStop(.75,'#5b21b6');cg.addColorStop(1,'#2e1065');ctx.beginPath();ctx.arc(CX+px*.08,CY+py*.08,cr,0,Math.PI*2);ctx.fillStyle=cg;ctx.fill();
+const sa=t*1.6%(Math.PI*2),sg=ctx.createLinearGradient(CX+Math.cos(sa)*cr,CY+Math.sin(sa)*cr,CX-Math.cos(sa)*cr,CY-Math.sin(sa)*cr);sg.addColorStop(0,'rgba(216,180,254,.65)');sg.addColorStop(.5,'rgba(139,92,246,.08)');sg.addColorStop(1,'rgba(216,180,254,.65)');ctx.beginPath();ctx.arc(CX+px*.08,CY+py*.08,cr,0,Math.PI*2);ctx.strokeStyle=sg;ctx.lineWidth=1.4;ctx.stroke();
+ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=`900 ${Math.round(27*breathe)}px Inter,system-ui,sans-serif`;ctx.fillText('AI',CX+px*.08,CY+py*.08-3);ctx.font=`700 8px Inter,system-ui,sans-serif`;ctx.fillStyle='rgba(216,180,254,.75)';ctx.fillText('TMF360',CX+px*.08,CY+py*.08+18);
+const pp=((t*.55)%1),pr=52+pp*115,pa=(1-pp)*.32;ctx.beginPath();ctx.arc(CX+px*.08,CY+py*.08,pr,0,Math.PI*2);ctx.strokeStyle=`rgba(139,92,246,${pa})`;ctx.lineWidth=1.3;ctx.stroke();
+sparks=sparks.filter(s=>s.life>0);sparks.forEach(s=>{s.x+=s.vx;s.y+=s.vy;s.vy+=.04;s.life-=s.dec;ctx.beginPath();ctx.arc(s.x,s.y,s.sz*s.life,0,Math.PI*2);const rgb=s.c==='#c4b5fd'?'196,181,253':s.c==='#67e8f9'?'103,232,249':s.c==='#93c5fd'?'147,197,253':'167,139,250';ctx.fillStyle=`rgba(${rgb},${s.life*.85})`;ctx.fill();});
+NODES.forEach((n,i)=>{const a=(2*Math.PI/5)*i+t,nx=CX+Math.cos(a)*ORBIT+px*.45,ny=CY+Math.sin(a)*ORBIT+py*.45,ih=hov===i,sc=ih?1.22:1,nr=26*sc;const ng=ctx.createRadialGradient(nx,ny,0,nx,ny,nr*2.5);ng.addColorStop(0,`rgba(${n.rgb},${ih?.38:.15})`);ng.addColorStop(1,'transparent');ctx.beginPath();ctx.arc(nx,ny,nr*2.5,0,Math.PI*2);ctx.fillStyle=ng;ctx.fill();const nb=ctx.createRadialGradient(nx-nr*.3,ny-nr*.3,0,nx,ny,nr);nb.addColorStop(0,`rgba(${n.rgb},.22)`);nb.addColorStop(1,'rgba(8,6,30,.92)');ctx.beginPath();ctx.roundRect(nx-nr,ny-nr,nr*2,nr*2,8*sc);ctx.fillStyle=nb;ctx.fill();ctx.strokeStyle=`rgba(${n.rgb},${ih?.75:.3})`;ctx.lineWidth=ih?1.5:1;ctx.stroke();ctx.save();ctx.translate(nx,ny);n.draw(0,0,sc);ctx.restore();const lines=n.label.split('\n');ctx.font=`600 ${Math.round(8.5*sc)}px Inter,system-ui,sans-serif`;ctx.fillStyle='rgba(226,232,240,.9)';ctx.textAlign='center';ctx.textBaseline='top';lines.forEach((l,li)=>ctx.fillText(l,nx,ny+nr+8+li*11*sc));});
+animId=requestAnimationFrame(frame);}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){lastTs=null;if(animId)cancelAnimationFrame(animId);animId=requestAnimationFrame(frame);}});
+animId=requestAnimationFrame(frame);
+const PDATA=[
+  {q:'What docs are expiring in 30 days?',table:[['Investigator CV – Site 107','Zone 05','be'],['GCP Certificate – Dr. Chen','Zone 05','be'],['IRB Approval – Site 112','Zone 02','be'],['Ethics Letter – Site 115','Zone 02','be']]},
+  {q:'Show missing docs for Site 102.',table:[['Investigator CV','Zone 05','bm'],['Financial Disclosure Form','Zone 05','bm'],['Ethics Approval (current)','Zone 02','be'],['Delegation of Authority Log','Zone 05','bm'],['Site Init Visit Report','Zone 07','bm']]},
+  {q:'Where should I file this document?',text:'Based on document content, this appears to be a Protocol Amendment:\n\nZone 01 · Trial Management\n→ Section 01.01 · Protocol\n→ Artifact: Protocol Amendment\n\nConfidence: 94% · Please review before filing.'},
+  {q:'Generate a Note to File.',text:'NOTE TO FILE — Investigator CV Gap\nSite 102 · STUDY-2024-001\n\nThis Note to File documents the gap in receipt of an updated PI CV at Site 102. The CV expired 14 Jan 2025. An updated CV was requested on [DATE].'},
+  {q:'Identify high-risk sites.',table:[['Site 102','TMF Health 71%','bm'],['Site 108','TMF Health 74%','be'],['Site 115','TMF Health 76%','be'],['Site 107','TMF Health 82%','bq'],['Site 119','TMF Health 85%','bo']]}
+];
+function badge(c){const m={bm:'bm Missing',be:'be Expiring',bo:'bo Filed',bq:'bq Pending QC'};const[cls,lbl]=(m[c]||'bo Filed').split(' ');return`<span class="bdg ${cls}">${lbl}</span>`}
+function renderP(idx){document.querySelectorAll('.prompt-item').forEach((el,i)=>el.classList.toggle('active-p',i===idx));const body=document.getElementById('term-body'),d=PDATA[idx];body.innerHTML=`<div class="msg-user"><div class="bubble bubble-u">${d.q}</div></div>`;setTimeout(()=>{let h='';if(d.table){h='<table class="rt">';d.table.forEach(([n,z,c])=>{h+=`<tr><td style="color:var(--text);font-weight:500">${n}</td><td style="color:var(--muted2)">${z}</td><td>${badge(c)}</td></tr>`;});h+='</table>';}else h=d.text.replace(/\n/g,'<br>');const row=document.createElement('div');row.className='msg-ai';const bub=document.createElement('div');bub.className='bubble bubble-a';bub.innerHTML=h;row.appendChild(bub);body.appendChild(row);body.scrollTop=body.scrollHeight;},380);}
+document.getElementById('plist').addEventListener('click',e=>{const c=e.target.closest('[data-i]');if(c)renderP(parseInt(c.dataset.i))});
+renderP(0);let ai=1;setInterval(()=>{renderP(ai);ai=(ai+1)%PDATA.length},4600);
+function countTo(el,v,s,dur){const st=performance.now();(function step(){const p=Math.min((performance.now()-st)/dur,1),e=1-Math.pow(1-p,3);el.textContent=Math.round(e*v)+s;if(p<1)requestAnimationFrame(step)})()}
+const sObs=new IntersectionObserver(e=>{if(e[0].isIntersecting){countTo(document.getElementById('s1'),11,'',1400);countTo(document.getElementById('s2'),250,'',1600);countTo(document.getElementById('s3'),3,'',1000);countTo(document.getElementById('s4'),100,'%',1400);sObs.disconnect()}},{threshold:.3});
+sObs.observe(document.getElementById('stats'));
+</script>
+</body>
+</html>
