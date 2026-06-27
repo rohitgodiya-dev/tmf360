@@ -75,7 +75,7 @@ export default function TMF360(){
   const [user,setUser]=useState<any>(null);
   const [currentUserRole,setCurrentUserRole]=useState<string>("");
   const [canUploadDownload,setCanUploadDownload]=useState<boolean>(true);
-  const [canUploadDownload,setCanUploadDownload]=useState<boolean>(true);
+
   const [authMode,setAuthMode]=useState<"login"|"signup">("login");
   const [email,setEmail]=useState("");const [password,setPassword]=useState("");const [authError,setAuthError]=useState("");
   const [studies,setStudies]=useState<Study[]>([]);
