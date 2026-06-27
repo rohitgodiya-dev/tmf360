@@ -73,7 +73,7 @@ interface Doc{id?:string;study_id:string;artifact_num:string;artifact_name:strin
 export default function TMF360(){
   const [panel,setPanel]=useState("auth");
   const [user,setUser]=useState<any>(null);
-  const [user,setUser]=useState<any>(null);
+  const [currentUserRole,setCurrentUserRole]=useState<string>("");
   const [currentUserRole,setCurrentUserRole]=useState<string>("");
   const [email,setEmail]=useState("");const [password,setPassword]=useState("");const [authError,setAuthError]=useState("");
   const [studies,setStudies]=useState<Study[]>([]);
