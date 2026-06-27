@@ -1496,6 +1496,11 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
     } catch(e: any) { setMessage("Error: "+e.message); }
     setTimeout(()=>setMessage(""),4000);
     loadUsers();
+    loadUsers();
+  }
+  async function updateRole(id: string, role: string) {
+    await supabase.from("user_roles").update({role}).eq("id",id);
+    loadUsers();
   }
   async function toggleActive(id: string, current: boolean) {
     await supabase.from("user_roles").update({is_active:!current}).eq("id",id);
