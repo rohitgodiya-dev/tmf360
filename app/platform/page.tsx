@@ -75,6 +75,7 @@ export default function TMF360(){
   const [user,setUser]=useState<any>(null);
   const [currentUserRole,setCurrentUserRole]=useState<string>("");
   const [canUploadDownload,setCanUploadDownload]=useState<boolean>(true);
+  const [canDownload,setCanDownload]=useState<boolean>(true);
 
   const [authMode,setAuthMode]=useState<"login"|"signup">("login");
   const [email,setEmail]=useState("");const [password,setPassword]=useState("");const [authError,setAuthError]=useState("");
@@ -138,8 +139,8 @@ export default function TMF360(){
   useEffect(()=>{messagesEnd.current?.scrollIntoView({behavior:"smooth"});},[chatMessages]);
 
   async function loadUserRole(uid:string){
-    const{data}=await supabase.from("user_roles").select("role,can_upload_download").eq("user_id",uid).single();
-    if(data){setCurrentUserRole(data.role);setCanUploadDownload(data.can_upload_download!==false);}
+    const{data}=await supabase.from("user_roles").select("role,can_upload_download,can_download").eq("user_id",uid).single();
+    if(data){setCurrentUserRole(data.role);setCanUploadDownload(data.can_upload_download!==false);setCanDownload(data.can_download!==false);}
   }
   async function loadStudies(uid:string){
     const{data}=await supabase.from("studies").select("*").order("created_at",{ascending:false});
@@ -984,7 +985,7 @@ export default function TMF360(){
                                   <span style={{fontSize:"11px",flex:1}}>{d.custom_file_name||d.file_name||d.artifact_name}</span>
                                   <span style={{fontSize:"9px",color:P.textTert}}>{d.version}</span>
                                   {d.file_path&&canPreview(d.file_name||"")&&<button onClick={()=>openPreview(d)} style={{fontSize:"9px",padding:"2px 6px",background:P.blueLight,color:"#1E40AF",border:"none",borderRadius:"4px",cursor:"pointer"}}>Preview</button>}
-                                  {d.file_path&&canUploadDownload&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none"}}>Download</a>}
+                                  {d.file_path&&canDownload&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none"}}>Download</a>}
                                 </div>
                               ))}
                             </div>
@@ -1520,6 +1521,10 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
     await supabase.from("user_roles").update({can_upload_download:!current}).eq("id",id);
     loadUsers();
   }
+  async function toggleDownload(id: string, current: boolean) {
+    await supabase.from("user_roles").update({can_download:!current}).eq("id",id);
+    loadUsers();
+  }
   async function toggleNotifications(id: string, current: boolean) {
     await supabase.from("user_roles").update({notifications_enabled:!current}).eq("id",id);
     loadUsers();
@@ -1537,7 +1542,7 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
       <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",overflow:"hidden"}}>
         <table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px"}}>
           <thead><tr style={{borderBottom:`0.5px solid ${P.border}`}}>
-            {["Name / Email","Role","Status","Added","Notifications","Doc Access","Actions"].map(h=><th key={h} style={{textAlign:"left",padding:"10px 14px",fontSize:"11px",fontWeight:"500",color:P.textSec}}>{h}</th>)}
+            {["Name / Email","Role","Status","Added","Notifications","Upload","Download","Actions"].map(h=><th key={h} style={{textAlign:"left",padding:"10px 14px",fontSize:"11px",fontWeight:"500",color:P.textSec}}>{h}</th>)}
           </tr></thead>
           <tbody>
             {loading?<tr><td colSpan={6} style={{textAlign:"center",padding:"2rem",color:P.textTert}}>Loading...</td></tr>
@@ -1551,6 +1556,7 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
                 <td style={{padding:"10px 14px"}}><span style={{fontSize:"10px",padding:"3px 8px",borderRadius:"20px",background:u.is_active?"#ECFDF5":"#F3F4F6",color:u.is_active?"#10B981":"#6B7280",fontWeight:"500"}}>{u.is_active?"Active":"Inactive"}</span></td>
                 <td style={{padding:"10px 14px",fontSize:"11px",color:P.textSec}}>{new Date(u.created_at).toLocaleDateString()}</td>
                 <td style={{padding:"10px 14px"}}>{isAdmin?<button onClick={()=>toggleDocAccess(u.id,u.can_upload_download)} style={{fontSize:"10px",padding:"3px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:u.can_upload_download?"#ECFDF5":"#FEF2F2",cursor:"pointer",color:u.can_upload_download?"#10B981":"#EF4444",fontWeight:"500"}}>{u.can_upload_download?"YES":"NO"}</button>:<span style={{fontSize:"10px",color:u.can_upload_download?"#10B981":"#EF4444",fontWeight:"500"}}>{u.can_upload_download?"YES":"NO"}</span>}</td>
+                <td style={{padding:"10px 14px"}}>{isAdmin?<button onClick={()=>toggleDownload(u.id,u.can_download)} style={{fontSize:"10px",padding:"3px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:u.can_download?"#ECFDF5":"#FEF2F2",cursor:"pointer",color:u.can_download?"#10B981":"#EF4444",fontWeight:"500"}}>{u.can_download?"YES":"NO"}</button>:<span style={{fontSize:"10px",color:u.can_download?"#10B981":"#EF4444",fontWeight:"500"}}>{u.can_download?"YES":"NO"}</span>}</td>
                 <td style={{padding:"10px 14px"}}>{isAdmin?<button onClick={()=>toggleNotifications(u.id,u.notifications_enabled)} style={{fontSize:"10px",padding:"3px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:u.notifications_enabled?"#ECFDF5":"#FEF2F2",cursor:"pointer",color:u.notifications_enabled?"#10B981":"#EF4444",fontWeight:"500"}}>{u.notifications_enabled?"ON":"OFF"}</button>:<span style={{fontSize:"10px",color:u.notifications_enabled?"#10B981":"#EF4444",fontWeight:"500"}}>{u.notifications_enabled?"ON":"OFF"}</span>}</td>
                 <td style={{padding:"10px 14px"}}>{isAdmin?<button onClick={()=>toggleActive(u.id,u.is_active)} style={{fontSize:"10px",padding:"3px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:"transparent",cursor:"pointer",color:u.is_active?P.danger:P.success}}>{u.is_active?"Deactivate":"Activate"}</button>:<span style={{fontSize:"10px",color:u.is_active?"#10B981":"#EF4444",fontWeight:"500"}}>{u.is_active?"Active":"Inactive"}</span>}</td>
               </tr>
