@@ -408,10 +408,9 @@ export default function TMF360(){
           {navItem("chat","AI specialist","ti-message-circle")}
           {navItem("audit","Audit trail","ti-lock")}
           {navItem("quality","Quality checks","ti-clipboard-list")}
-          {currentUserRole==="System Administrator"&&navItem("users","User management","ti-users")}
+          {navItem("users","User management","ti-users")}
         </aside>
         <main style={{flex:1,overflowY:"auto",padding:"1.25rem"}}>
-
           {/* DASHBOARD */}
           {(panel==="completeness-detail")&&(
   <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
@@ -1475,6 +1474,12 @@ function AuditTrail({user,activeStudy,P}:{user:any,activeStudy:any,P:any}){
 }
 
 function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: any}) {
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    supabase.from("user_roles").select("role").eq("user_id", user?.id).single().then(({data}:any) => {
+      if (data?.role === "System Administrator") setIsAdmin(true);
+    });
+  }, [user]);
   const [users, setUsers] = useState<any[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -1518,7 +1523,7 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
     <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
         <h1 style={{fontSize:"14px",fontWeight:"500"}}>User Management</h1>
-        <button onClick={()=>setShowModal(true)} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ Add User</button>
+        {isAdmin&&<button onClick={()=>setShowModal(true)} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ Add User</button>}
       </div>
       {message&&<div style={{padding:"8px 12px",borderRadius:"8px",fontSize:"12px",background:message.includes("Error")?P.dangerLight:P.successLight,color:message.includes("Error")?P.danger:P.success}}>{message}</div>}
       <div style={{display:"flex",gap:"6px",flexWrap:"wrap" as const,padding:"10px 14px",background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px"}}>
