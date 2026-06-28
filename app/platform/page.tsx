@@ -410,8 +410,10 @@ export default function TMF360(){
           {navItem("chat","AI specialist","ti-message-circle")}
           {navItem("audit","Audit trail","ti-lock")}
           {navItem("quality","Quality checks","ti-clipboard-list")}
+          {navItem("quality","Quality checks","ti-clipboard-list")}
           {navItem("users","User management","ti-users")}
-        </aside>
+          {navItem("profile","My profile","ti-user-circle")}
+
         <main style={{flex:1,overflowY:"auto",padding:"1.25rem"}}>
           {/* DASHBOARD */}
           {(panel==="completeness-detail")&&(
@@ -1122,7 +1124,12 @@ export default function TMF360(){
           {panel==="users"&&(
             <UserManagementPanel user={user} P={P} supabase={supabase}/>
           )}
+          )}
 
+          {/* PROFILE */}
+          {panel==="profile"&&(
+            <ProfilePanel user={user} P={P} supabase={supabase}/>
+          )}
           {/* AUDIT TRAIL */}
           {panel==="audit"&&(
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
@@ -1587,3 +1594,107 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
   );
 }
 
+
+function ProfilePanel({user, P, supabase}: {user: any, P: any, supabase: any}) {
+  const [fullName, setFullName] = useState("");
+  const [role, setRole] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState<"success"|"error">("success");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("user_roles").select("full_name,role").eq("user_id", user.id).single().then(({data}:any) => {
+      if (data) { setFullName(data.full_name || ""); setRole(data.role || ""); }
+      setLoading(false);
+    });
+  }, [user]);
+
+  async function saveName() {
+    if (!fullName.trim()) return;
+    setSaving(true);
+    const {error} = await supabase.from("user_roles").update({full_name: fullName.trim()}).eq("user_id", user.id);
+    if (!error) { setMessage("Name updated successfully"); setMessageType("success"); }
+    else { setMessage("Error: " + error.message); setMessageType("error"); }
+    setSaving(false);
+    setTimeout(() => setMessage(""), 3000);
+  }
+
+  async function changePassword() {
+    if (!currentPassword || !newPassword || !confirmPassword) { setMessage("All password fields are required"); setMessageType("error"); return; }
+    if (newPassword !== confirmPassword) { setMessage("New passwords do not match"); setMessageType("error"); return; }
+    if (newPassword.length < 6) { setMessage("Password must be at least 6 characters"); setMessageType("error"); return; }
+    setSaving(true);
+    const {error: signInError} = await supabase.auth.signInWithPassword({email: user.email, password: currentPassword});
+    if (signInError) { setMessage("Current password is incorrect"); setMessageType("error"); setSaving(false); return; }
+    const {error} = await supabase.auth.updateUser({password: newPassword});
+    if (!error) { setMessage("Password changed successfully"); setMessageType("success"); setCurrentPassword(""); setNewPassword(""); setConfirmPassword(""); }
+    else { setMessage("Error: " + error.message); setMessageType("error"); }
+    setSaving(false);
+    setTimeout(() => setMessage(""), 4000);
+  }
+
+  if (loading) return <div style={{fontSize:"12px",color:P.textTert}}>Loading...</div>;
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:"16px",maxWidth:"600px"}}>
+      <h1 style={{fontSize:"14px",fontWeight:"500"}}>My Profile</h1>
+
+      {message && (
+        <div style={{padding:"10px 14px",borderRadius:"8px",fontSize:"12px",background:messageType==="success"?P.successLight:P.dangerLight,color:messageType==="success"?P.success:P.danger}}>
+          {message}
+        </div>
+      )}
+
+      {/* Profile Info */}
+      <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"20px"}}>
+        <h2 style={{fontSize:"12px",fontWeight:"500",color:P.textSec,marginBottom:"16px",textTransform:"uppercase" as const,letterSpacing:".06em"}}>Profile Information</h2>
+        <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+          <div>
+            <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>Full Name</label>
+            <div style={{display:"flex",gap:"8px"}}>
+              <input value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="Your full name" style={{flex:1,fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px"}}/>
+              <button onClick={saveName} disabled={saving} style={{fontSize:"11px",padding:"8px 16px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",opacity:saving?0.6:1}}>Save</button>
+            </div>
+          </div>
+          <div>
+            <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>Email</label>
+            <input value={user?.email||""} disabled style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px",background:P.bgTert,color:P.textSec,cursor:"not-allowed"}}/>
+            <p style={{fontSize:"10px",color:P.textTert,marginTop:"3px"}}>Email cannot be changed. Contact your System Administrator.</p>
+          </div>
+          <div>
+            <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>Role</label>
+            <input value={role} disabled style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px",background:P.bgTert,color:P.textSec,cursor:"not-allowed"}}/>
+            <p style={{fontSize:"10px",color:P.textTert,marginTop:"3px"}}>Role is assigned by your System Administrator.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Change Password */}
+      <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"20px"}}>
+        <h2 style={{fontSize:"12px",fontWeight:"500",color:P.textSec,marginBottom:"16px",textTransform:"uppercase" as const,letterSpacing:".06em"}}>Change Password</h2>
+        <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+          <div>
+            <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>Current Password</label>
+            <input type="password" value={currentPassword} onChange={e=>setCurrentPassword(e.target.value)} placeholder="••••••••" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px"}}/>
+          </div>
+          <div>
+            <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>New Password</label>
+            <input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="••••••••" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px"}}/>
+          </div>
+          <div>
+            <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>Confirm New Password</label>
+            <input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="••••••••" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px"}}/>
+          </div>
+          <button onClick={changePassword} disabled={saving} style={{fontSize:"12px",padding:"9px 16px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",opacity:saving?0.6:1,alignSelf:"flex-start"}}>
+            {saving?"Changing...":"Change Password"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
