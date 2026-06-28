@@ -1134,11 +1134,16 @@ export default function TMF360(){
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
               <h1 style={{fontSize:"14px",fontWeight:"500"}}>Quality checks — {activeStudy?.study_id||"No study selected"}</h1>
               {!activeStudy?<div style={{fontSize:"12px",color:P.textTert}}>Select a study first.</div>:(<QualityPanel docs={studyDocs} P={P} supabase={supabase} setDocs={setDocs}/>)}
+              {!activeStudy?<div style={{fontSize:"12px",color:P.textTert}}>Select a study first.</div>:(<QualityPanel docs={studyDocs} P={P} supabase={supabase} setDocs={setDocs}/>)}
             </div>
           )}
 
-          {/* USERS */}
-          {panel==="users"&&(
+          {panel==="messages"&&activeStudy&&(
+            <MessagesPanel user={user} P={P} supabase={supabase} activeStudy={activeStudy}/>
+          )}
+
+
+
             <UserManagementPanel user={user} P={P} supabase={supabase}/>
           )}
 
