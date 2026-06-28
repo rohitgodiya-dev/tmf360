@@ -129,10 +129,10 @@ export default function TMF360(){
 
   useEffect(()=>{
     supabase.auth.getSession().then(({data:{session}})=>{
-      if(session?.user){setUser(session.user);setPanel("dashboard");loadStudies(session.user.id);loadUserRole(session.user.id);}
+      if(session?.user){setUser(session.user);loadUserRole(session.user.id);supabase.from("user_roles").select("org_id").eq("user_id",session.user.id).single().then(({data})=>{if(!data?.org_id){window.location.href="/setup";}else{setPanel("dashboard");loadStudies(session.user.id);}});}
     });
     supabase.auth.onAuthStateChange((_,session)=>{
-      if(session?.user){setUser(session.user);setPanel("dashboard");loadStudies(session.user.id);loadUserRole(session.user.id);}
+      if(session?.user){setUser(session.user);loadUserRole(session.user.id);supabase.from("user_roles").select("org_id").eq("user_id",session.user.id).single().then(({data})=>{if(!data?.org_id){window.location.href="/setup";}else{setPanel("dashboard");loadStudies(session.user.id);}});}
       else{setUser(null);setPanel("auth");setStudies([]);setDocs([]);setActiveStudy(null);}
     });
   },[]);
@@ -166,7 +166,7 @@ export default function TMF360(){
     if(authMode==="signup"){
       const{error}=await supabase.auth.signUp({email,password});
       if(error)setAuthError(error.message);
-      else setAuthError("Check your email to confirm your account, then log in.");
+      else setAuthError("Account created! Please check your email to confirm, then log in.");
     }else{
       const{error}=await supabase.auth.signInWithPassword({email,password});
       if(error)setAuthError(error.message);
