@@ -1132,7 +1132,7 @@ export default function TMF360(){
           {panel==="profile"&&(
             <ProfilePanel user={user} P={P} supabase={supabase}/>
           )}
-          )}
+
 
           {/* MESSAGES */}
           {panel==="messages"&&(
