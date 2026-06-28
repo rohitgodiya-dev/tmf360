@@ -413,7 +413,8 @@ export default function TMF360(){
           {navItem("quality","Quality checks","ti-clipboard-list")}
           {navItem("users","User management","ti-users")}
           {navItem("profile","My profile","ti-user-circle")}
-        </aside>
+          {navItem("messages","Messages","ti-message-2")}
+          {navItem("messages","Messages","ti-message-2")}
 
         <main style={{flex:1,overflowY:"auto",padding:"1.25rem"}}>
           {/* DASHBOARD */}
@@ -1131,7 +1132,12 @@ export default function TMF360(){
           {panel==="profile"&&(
             <ProfilePanel user={user} P={P} supabase={supabase}/>
           )}
+          )}
 
+          {/* MESSAGES */}
+          {panel==="messages"&&(
+            <MessagesPanel user={user} P={P} supabase={supabase} activeStudy={activeStudy}/>
+          )}
 
           {/* AUDIT TRAIL */}
           {panel==="audit"&&(
@@ -1701,6 +1707,307 @@ function ProfilePanel({user, P, supabase}: {user: any, P: any, supabase: any}) {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function MessagesPanel({user, P, supabase, activeStudy}: {user: any, P: any, supabase: any, activeStudy: any}) {
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [activeConv, setActiveConv] = useState<any>(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [showNewChat, setShowNewChat] = useState(false);
+  const [showNewGroup, setShowNewGroup] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [groupName, setGroupName] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File|null>(null);
+  const [uploading, setUploading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const pollRef = useRef<any>(null);
+
+  useEffect(() => {
+    loadConversations();
+    loadAllUsers();
+  }, [activeStudy]);
+
+  useEffect(() => {
+    if (activeConv) {
+      loadMessages(activeConv.id);
+      pollRef.current = setInterval(() => loadMessages(activeConv.id), 3000);
+    }
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, [activeConv]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({behavior:"smooth"});
+  }, [messages]);
+
+  async function loadConversations() {
+    if (!user) return;
+    const {data} = await supabase
+      .from("conversations")
+      .select("*, conversation_members!inner(user_id)")
+      .eq("conversation_members.user_id", user.id)
+      .eq("study_id", activeStudy?.study_id || "")
+      .order("updated_at", {ascending: false});
+    if (data) setConversations(data);
+  }
+
+  async function loadAllUsers() {
+    const {data} = await supabase.from("user_roles").select("user_id,email,full_name").eq("is_active", true);
+    if (data) setAllUsers(data.filter((u:any) => u.user_id !== user?.id));
+  }
+
+  async function loadMessages(convId: string) {
+    const {data} = await supabase
+      .from("messages")
+      .select("*, message_attachments(*)")
+      .eq("conversation_id", convId)
+      .order("created_at", {ascending: true});
+    if (data) setMessages(data);
+  }
+
+  async function startDM(targetUser: any) {
+    // Check if DM already exists
+    const existing = conversations.find(c => !c.is_group && c.name === targetUser.email);
+    if (existing) { setActiveConv(existing); setShowNewChat(false); return; }
+
+    const {data: conv} = await supabase.from("conversations").insert([{
+      study_id: activeStudy?.study_id || "",
+      name: targetUser.email,
+      is_group: false,
+      created_by: user.id,
+    }]).select().single();
+
+    if (conv) {
+      await supabase.from("conversation_members").insert([
+        {conversation_id: conv.id, user_id: user.id, email: user.email, full_name: ""},
+        {conversation_id: conv.id, user_id: targetUser.user_id, email: targetUser.email, full_name: targetUser.full_name},
+      ]);
+      await loadConversations();
+      setActiveConv(conv);
+    }
+    setShowNewChat(false);
+  }
+
+  async function createGroup() {
+    if (!groupName.trim() || selectedUsers.length === 0) return;
+    const {data: conv} = await supabase.from("conversations").insert([{
+      study_id: activeStudy?.study_id || "",
+      name: groupName.trim(),
+      is_group: true,
+      created_by: user.id,
+    }]).select().single();
+
+    if (conv) {
+      const members = [
+        {conversation_id: conv.id, user_id: user.id, email: user.email, full_name: ""},
+        ...selectedUsers.map(uid => {
+          const u = allUsers.find((au:any) => au.user_id === uid);
+          return {conversation_id: conv.id, user_id: uid, email: u?.email || "", full_name: u?.full_name || ""};
+        })
+      ];
+      await supabase.from("conversation_members").insert(members);
+      await loadConversations();
+      setActiveConv(conv);
+    }
+    setShowNewGroup(false);
+    setGroupName("");
+    setSelectedUsers([]);
+  }
+
+  async function sendMessage() {
+    if ((!newMessage.trim() && !selectedFile) || !activeConv) return;
+    const senderName = allUsers.find((u:any) => u.user_id === user?.id)?.full_name || user?.email || "";
+
+    let hasAttachment = false;
+    let filePath = "";
+    let fileName = "";
+
+    if (selectedFile) {
+      setUploading(true);
+      const path = `messages/${activeConv.id}/${Date.now()}_${selectedFile.name}`;
+      const {error} = await supabase.storage.from("Documents").upload(path, selectedFile);
+      if (!error) { filePath = path; fileName = selectedFile.name; hasAttachment = true; }
+      setUploading(false);
+    }
+
+    const {data: msg} = await supabase.from("messages").insert([{
+      conversation_id: activeConv.id,
+      sender_id: user.id,
+      sender_email: user.email,
+      sender_name: senderName,
+      content: newMessage.trim(),
+      has_attachment: hasAttachment,
+    }]).select().single();
+
+    if (msg && hasAttachment && filePath) {
+      await supabase.from("message_attachments").insert([{
+        message_id: msg.id,
+        file_name: fileName,
+        file_path: filePath,
+        file_type: selectedFile?.type || "",
+        file_size: selectedFile?.size || 0,
+      }]);
+    }
+
+    await supabase.from("conversations").update({updated_at: new Date().toISOString()}).eq("id", activeConv.id);
+    setNewMessage("");
+    setSelectedFile(null);
+    loadMessages(activeConv.id);
+    loadConversations();
+  }
+
+  const getConvName = (conv: any) => {
+    if (conv.is_group) return conv.name;
+    const other = conv.name;
+    const u = allUsers.find((u:any) => u.email === other);
+    return u?.full_name || other;
+  };
+
+  const getInitials = (name: string) => name?.split(" ").map((n:string)=>n[0]).join("").toUpperCase().slice(0,2) || "?";
+
+  return (
+    <div style={{display:"flex",height:"calc(100vh - 120px)",background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",overflow:"hidden"}}>
+      {/* Sidebar */}
+      <div style={{width:"260px",borderRight:`0.5px solid ${P.border}`,display:"flex",flexDirection:"column",flexShrink:0}}>
+        <div style={{padding:"12px",borderBottom:`0.5px solid ${P.border}`,display:"flex",gap:"6px"}}>
+          <button onClick={()=>setShowNewChat(true)} style={{flex:1,fontSize:"11px",padding:"6px",background:P.primaryLight,color:P.primary,border:`0.5px solid ${P.primary}`,borderRadius:"6px",cursor:"pointer"}}>+ Direct Message</button>
+          <button onClick={()=>setShowNewGroup(true)} style={{flex:1,fontSize:"11px",padding:"6px",background:P.successLight,color:P.success,border:`0.5px solid ${P.success}`,borderRadius:"6px",cursor:"pointer"}}>+ Group</button>
+        </div>
+        <div style={{flex:1,overflowY:"auto"}}>
+          {conversations.length===0?(
+            <div style={{padding:"20px",textAlign:"center",color:P.textTert,fontSize:"11px"}}>No conversations yet</div>
+          ):conversations.map(conv=>(
+            <div key={conv.id} onClick={()=>setActiveConv(conv)}
+              style={{padding:"10px 12px",cursor:"pointer",borderBottom:`0.5px solid ${P.bgTert}`,background:activeConv?.id===conv.id?P.primaryLight:"transparent",display:"flex",alignItems:"center",gap:"8px"}}>
+              <div style={{width:"32px",height:"32px",borderRadius:"50%",background:conv.is_group?"#8B5CF6":P.primary,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"11px",fontWeight:"500",color:"#fff",flexShrink:0}}>
+                {conv.is_group?"#":getInitials(getConvName(conv))}
+              </div>
+              <div style={{flex:1,overflow:"hidden"}}>
+                <div style={{fontSize:"12px",fontWeight:"500",color:P.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{getConvName(conv)}</div>
+                <div style={{fontSize:"10px",color:P.textTert}}>{conv.is_group?"Group":"Direct message"}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Chat area */}
+      {!activeConv?(
+        <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:"8px",color:P.textTert}}>
+          <div style={{fontSize:"2rem"}}>💬</div>
+          <div style={{fontSize:"12px"}}>Select a conversation or start a new one</div>
+        </div>
+      ):(
+        <div style={{flex:1,display:"flex",flexDirection:"column"}}>
+          {/* Header */}
+          <div style={{padding:"10px 16px",borderBottom:`0.5px solid ${P.border}`,display:"flex",alignItems:"center",gap:"10px"}}>
+            <div style={{width:"32px",height:"32px",borderRadius:"50%",background:activeConv.is_group?"#8B5CF6":P.primary,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"11px",fontWeight:"500",color:"#fff"}}>
+              {activeConv.is_group?"#":getInitials(getConvName(activeConv))}
+            </div>
+            <div>
+              <div style={{fontSize:"13px",fontWeight:"500",color:P.text}}>{getConvName(activeConv)}</div>
+              <div style={{fontSize:"10px",color:P.textTert}}>{activeConv.is_group?"Group chat":"Direct message"} · {activeStudy?.study_id}</div>
+            </div>
+          </div>
+
+          {/* Messages */}
+          <div style={{flex:1,overflowY:"auto",padding:"12px",display:"flex",flexDirection:"column",gap:"8px"}}>
+            {messages.map(msg=>{
+              const isMe = msg.sender_id === user?.id;
+              return(
+                <div key={msg.id} style={{display:"flex",flexDirection:isMe?"row-reverse":"row",gap:"8px",alignItems:"flex-end"}}>
+                  <div style={{width:"24px",height:"24px",borderRadius:"50%",background:isMe?P.primary:"#8B5CF6",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"9px",color:"#fff",flexShrink:0}}>
+                    {getInitials(msg.sender_name||msg.sender_email)}
+                  </div>
+                  <div style={{maxWidth:"70%"}}>
+                    {!isMe&&<div style={{fontSize:"9px",color:P.textTert,marginBottom:"2px"}}>{msg.sender_name||msg.sender_email}</div>}
+                    {msg.content&&<div style={{background:isMe?P.primary:P.bgSec,color:isMe?"#fff":P.text,padding:"8px 12px",borderRadius:isMe?"12px 12px 2px 12px":"12px 12px 12px 2px",fontSize:"12px",lineHeight:"1.5"}}>{msg.content}</div>}
+                    {msg.message_attachments?.map((att:any)=>(
+                      <div key={att.id} style={{marginTop:"4px"}}>
+                        <a href={supabase.storage.from("Documents").getPublicUrl(att.file_path).data.publicUrl} target="_blank" rel="noopener noreferrer"
+                          style={{display:"flex",alignItems:"center",gap:"6px",padding:"6px 10px",background:isMe?"rgba(255,255,255,0.2)":P.bgTert,borderRadius:"8px",textDecoration:"none",color:isMe?"#fff":P.text,fontSize:"11px"}}>
+                          📎 {att.file_name}
+                        </a>
+                      </div>
+                    ))}
+                    <div style={{fontSize:"9px",color:P.textTert,marginTop:"2px",textAlign:isMe?"right":"left"}}>{new Date(msg.created_at).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}</div>
+                  </div>
+                </div>
+              );
+            })}
+            <div ref={messagesEndRef}/>
+          </div>
+
+          {/* Input */}
+          <div style={{padding:"10px 12px",borderTop:`0.5px solid ${P.border}`,display:"flex",gap:"8px",alignItems:"flex-end"}}>
+            <input ref={fileInputRef} type="file" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)setSelectedFile(f);}}/>
+            <button onClick={()=>fileInputRef.current?.click()} style={{padding:"8px",background:P.bgTert,border:`0.5px solid ${P.border}`,borderRadius:"8px",cursor:"pointer",fontSize:"14px"}}>📎</button>
+            <div style={{flex:1}}>
+              {selectedFile&&<div style={{fontSize:"10px",color:P.primary,marginBottom:"4px",padding:"3px 8px",background:P.primaryLight,borderRadius:"4px",display:"flex",justifyContent:"space-between"}}>
+                📎 {selectedFile.name} <button onClick={()=>setSelectedFile(null)} style={{background:"none",border:"none",cursor:"pointer",color:P.danger,fontSize:"10px"}}>✕</button>
+              </div>}
+              <input value={newMessage} onChange={e=>setNewMessage(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&sendMessage()}
+                placeholder="Type a message..." style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px"}}/>
+            </div>
+            <button onClick={sendMessage} disabled={uploading} style={{padding:"8px 16px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",fontSize:"12px",opacity:uploading?0.6:1}}>
+              {uploading?"...":"Send"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* New DM Modal */}
+      {showNewChat&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
+          <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"380px",border:`0.5px solid ${P.border}`}}>
+            <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"1rem"}}>New Direct Message</h2>
+            <div style={{display:"flex",flexDirection:"column",gap:"6px",marginBottom:"1rem",maxHeight:"300px",overflowY:"auto"}}>
+              {allUsers.map((u:any)=>(
+                <div key={u.user_id} onClick={()=>startDM(u)} style={{display:"flex",alignItems:"center",gap:"10px",padding:"10px 12px",borderRadius:"8px",border:`0.5px solid ${P.border}`,cursor:"pointer",background:P.bgSec}}>
+                  <div style={{width:"32px",height:"32px",borderRadius:"50%",background:P.primary,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"11px",color:"#fff"}}>{getInitials(u.full_name||u.email)}</div>
+                  <div><div style={{fontSize:"12px",fontWeight:"500"}}>{u.full_name||"—"}</div><div style={{fontSize:"10px",color:P.textSec}}>{u.email}</div></div>
+                </div>
+              ))}
+            </div>
+            <button onClick={()=>setShowNewChat(false)} style={{fontSize:"11px",padding:"6px 14px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* New Group Modal */}
+      {showNewGroup&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
+          <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"400px",border:`0.5px solid ${P.border}`}}>
+            <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"1rem"}}>Create Group Chat</h2>
+            <div style={{marginBottom:"10px"}}>
+              <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Group Name</label>
+              <input value={groupName} onChange={e=>setGroupName(e.target.value)} placeholder="e.g. Site 002 Team" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/>
+            </div>
+            <div style={{marginBottom:"1rem"}}>
+              <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"6px"}}>Select Members</label>
+              <div style={{display:"flex",flexDirection:"column",gap:"4px",maxHeight:"200px",overflowY:"auto"}}>
+                {allUsers.map((u:any)=>(
+                  <div key={u.user_id} onClick={()=>setSelectedUsers(prev=>prev.includes(u.user_id)?prev.filter(id=>id!==u.user_id):[...prev,u.user_id])}
+                    style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"6px",border:`0.5px solid ${selectedUsers.includes(u.user_id)?P.primary:P.border}`,cursor:"pointer",background:selectedUsers.includes(u.user_id)?P.primaryLight:P.bgSec}}>
+                    <div style={{width:"16px",height:"16px",borderRadius:"3px",border:`1.5px solid ${selectedUsers.includes(u.user_id)?P.primary:P.border}`,background:selectedUsers.includes(u.user_id)?P.primary:"transparent",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",color:"#fff"}}>
+                      {selectedUsers.includes(u.user_id)?"✓":""}
+                    </div>
+                    <div style={{fontSize:"12px"}}>{u.full_name||u.email}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
+              <button onClick={()=>{setShowNewGroup(false);setSelectedUsers([]);setGroupName("");}} style={{fontSize:"11px",padding:"6px 14px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>Cancel</button>
+              <button onClick={createGroup} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Create Group</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
