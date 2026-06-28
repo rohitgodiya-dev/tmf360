@@ -75,7 +75,8 @@ export default function TMF360(){
   const [user,setUser]=useState<any>(null);
   const [currentUserRole,setCurrentUserRole]=useState<string>("");
   const [canUploadDownload,setCanUploadDownload]=useState<boolean>(true);
-  const [canDownload,setCanDownload]=useState<boolean>(true);
+  const [canUploadDownload,setCanUploadDownload]=useState<boolean>(true);
+  const [orgId,setOrgId]=useState<string>("");
 
   const [authMode,setAuthMode]=useState<"login"|"signup">("login");
   const [showLoginPwd,setShowLoginPwd]=useState(false);
@@ -139,16 +140,16 @@ export default function TMF360(){
 
   useEffect(()=>{messagesEnd.current?.scrollIntoView({behavior:"smooth"});},[chatMessages]);
 
-  async function loadUserRole(uid:string){
-    const{data}=await supabase.from("user_roles").select("role,can_upload_download,can_download").eq("user_id",uid).single();
+    const{data}=await supabase.from("user_roles").select("role,can_upload_download,can_download,org_id").eq("user_id",uid).single();
+    if(data){setCurrentUserRole(data.role);setCanUploadDownload(data.can_upload_download!==false);setCanDownload(data.can_download!==false);if(data.org_id)setOrgId(data.org_id);}
     if(data){setCurrentUserRole(data.role);setCanUploadDownload(data.can_upload_download!==false);setCanDownload(data.can_download!==false);}
   }
-  async function loadStudies(uid:string){
+    const{data}=await supabase.from("studies").select("*").eq("org_id",orgId||"none").order("created_at",{ascending:false});
     const{data}=await supabase.from("studies").select("*").order("created_at",{ascending:false});
     if(data&&data.length>0){setStudies(data);setActiveStudy(data[0]);loadDocs(data[0].study_id,uid);}
   }
 
-  async function loadDocs(studyId:string,uid:string){
+    const{data}=await supabase.from("documents").select("*").eq("study_id",studyId).eq("org_id",orgId||"none").order("created_at",{ascending:false});
     const{data}=await supabase.from("documents").select("*").eq("study_id",studyId).order("created_at",{ascending:false});
     if(data)setDocs(data);
   }
@@ -177,8 +178,9 @@ export default function TMF360(){
 
   async function createStudy(){
     if(!fId.trim()||!user)return;
-    const s:Study={study_id:fId,protocol:fProtocol,phase:fPhase,status:fStatus,sponsor:fSponsor,user_id:user.id};
-    const{data,error}=await supabase.from("studies").insert([s]).select();
+    if(!fId.trim()||!user)return;
+    const s:Study={study_id:fId,protocol:fProtocol,phase:fPhase,status:fStatus,sponsor:fSponsor,user_id:user.id,org_id:orgId} as any;
+
     if(!error&&data){const ns=data[0];setStudies(prev=>[ns,...prev]);setActiveStudy(ns);setDocs([]);}
     setShowStudyModal(false);setFId("");setFProtocol("");setFSponsor("");
     setPanel("dashboard");
@@ -201,7 +203,8 @@ export default function TMF360(){
     if(!user||!activeStudy)return;
     const[artNum,an,zone]=fArtifact.split("|");
     const d:Doc={
-      study_id:activeStudy.study_id,user_id:user.id,
+    const d:Doc={
+      study_id:activeStudy.study_id,user_id:user.id,org_id:orgId,
       artifact_num:artNum,artifact_name:an,zone,
       version:fVersion,status:fDocStatus,owner:fOwner,
       effective_date:fEff,expiry_date:fExp,comments:fComments,
