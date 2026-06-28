@@ -130,10 +130,10 @@ export default function TMF360(){
 
   useEffect(()=>{
     supabase.auth.getSession().then(({data:{session}})=>{
-      if(session?.user){setUser(session.user);loadUserRole(session.user.id);supabase.from("user_roles").select("org_id").eq("user_id",session.user.id).single().then(({data})=>{if(!data?.org_id){window.location.href="/setup";}else{setPanel("dashboard");loadStudies(session.user.id);}});}
+      if(session?.user){setUser(session.user);loadUserRole(session.user.id);supabase.from("user_roles").select("org_id,role").eq("user_id",session.user.id).single().then(({data})=>{if(!data){window.location.href="/setup";}else if(!data.org_id){window.location.href="/setup";}else{setPanel("dashboard");loadStudies(session.user.id);}});}
     });
     supabase.auth.onAuthStateChange((_,session)=>{
-      if(session?.user){setUser(session.user);loadUserRole(session.user.id);supabase.from("user_roles").select("org_id").eq("user_id",session.user.id).single().then(({data})=>{if(!data?.org_id){window.location.href="/setup";}else{setPanel("dashboard");loadStudies(session.user.id);}});}
+      if(session?.user){setUser(session.user);loadUserRole(session.user.id);supabase.from("user_roles").select("org_id,role").eq("user_id",session.user.id).single().then(({data})=>{if(!data){window.location.href="/setup";}else if(!data.org_id){window.location.href="/setup";}else{setPanel("dashboard");loadStudies(session.user.id);}});}
       else{setUser(null);setPanel("auth");setStudies([]);setDocs([]);setActiveStudy(null);}
     });
   },[]);
