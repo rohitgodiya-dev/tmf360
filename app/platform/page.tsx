@@ -415,8 +415,8 @@ export default function TMF360(){
           {navItem("profile","My profile","ti-user-circle")}
           {navItem("messages","Messages","ti-message-2")}
           {navItem("messages","Messages","ti-message-2")}
+        </aside>
 
-        <main style={{flex:1,overflowY:"auto",padding:"1.25rem"}}>
           {/* DASHBOARD */}
           {(panel==="completeness-detail")&&(
   <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
