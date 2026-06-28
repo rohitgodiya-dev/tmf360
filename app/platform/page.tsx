@@ -801,7 +801,7 @@ export default function TMF360(){
             <div style={{display:"flex",flexDirection:"column",gap:"1rem"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                 <h1 style={{fontSize:"14px",fontWeight:"500"}}>Dashboard {activeStudy?`— ${activeStudy.study_id}`:""}</h1>
-                <button onClick={()=>setShowStudyModal(true)} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ New study</button>
+                {currentUserRole==="System Administrator"&&<button onClick={()=>setShowStudyModal(true)} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ New study</button>}
               </div>
               {!activeStudy?(
                 <div style={{textAlign:"center",padding:"3rem",color:P.textTert}}>
@@ -861,7 +861,7 @@ export default function TMF360(){
             <div style={{display:"flex",flexDirection:"column",gap:"1rem"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                 <h1 style={{fontSize:"14px",fontWeight:"500"}}>Studies</h1>
-                <button onClick={()=>setShowStudyModal(true)} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ New study</button>
+                {currentUserRole==="System Administrator"&&<button onClick={()=>setShowStudyModal(true)} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ New study</button>}
               </div>
               {studies.length===0?<div style={{textAlign:"center",padding:"3rem",color:P.textTert,fontSize:"12px"}}>No studies yet.</div>:(
                 <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"10px"}}>
