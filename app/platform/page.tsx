@@ -139,7 +139,7 @@ export default function TMF360(){
   },[]);
 
   useEffect(()=>{messagesEnd.current?.scrollIntoView({behavior:"smooth"});},[chatMessages]);
-
+  async function loadUserRole(uid:string){
     const{data}=await supabase.from("user_roles").select("role,can_upload_download,can_download,org_id").eq("user_id",uid).single();
     if(data){setCurrentUserRole(data.role);setCanUploadDownload(data.can_upload_download!==false);setCanDownload(data.can_download!==false);if(data.org_id)setOrgId(data.org_id);}
     if(data){setCurrentUserRole(data.role);setCanUploadDownload(data.can_upload_download!==false);setCanDownload(data.can_download!==false);}
