@@ -1073,14 +1073,19 @@ export default function TMF360(){
                         <span style={{fontSize:"11px",fontWeight:"500",width:"32px",textAlign:"right",color:scoreColor(p)}}>{p}%</span>
                       </div>
                     );})}
+                    );})}
                   </div>
-
-
-                </div>
-
+                </>
               )}
             </div>
           )}
+
+
+
+
+
+
+
 
           {/* AI CHAT */}
           {panel==="chat"&&(
