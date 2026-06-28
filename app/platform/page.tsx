@@ -924,7 +924,7 @@ export default function TMF360(){
                               <button onClick={()=>openPreview(d)} style={{fontSize:"9px",padding:"2px 6px",background:P.blueLight,color:"#1E40AF",border:"none",borderRadius:"4px",cursor:"pointer"}}>Preview</button>
                             )}
                             {d.file_path&&(
-                              <a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none"}}>Download</a>
+                              {canDownload&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none"}}>Download</a>}
                             )}
                             {d.status==="Draft"&&(
                               <button onClick={()=>{setSelectedDoc(d);setShowSubmitModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:"#EFF6FF",color:"#1E40AF",border:"none",borderRadius:"4px",cursor:"pointer"}}>Submit</button>
