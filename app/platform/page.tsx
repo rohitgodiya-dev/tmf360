@@ -1072,7 +1072,7 @@ export default function TMF360(){
                         <div style={{flex:1,height:"5px",background:P.bgTert,borderRadius:"5px",overflow:"hidden"}}><div style={{width:`${p}%`,height:"100%",background:ZONE_COLORS[z]||P.primary,borderRadius:"5px"}}/></div>
                         <span style={{fontSize:"11px",fontWeight:"500",width:"32px",textAlign:"right",color:scoreColor(p)}}>{p}%</span>
                       </div>
-                    );})}
+
                     );})}
                   </div>
                 </>
@@ -1080,10 +1080,12 @@ export default function TMF360(){
             </div>
           )}
 
-                </>
-              )}
-            </div>
-          )}
+
+
+
+
+
+
 
 
 
