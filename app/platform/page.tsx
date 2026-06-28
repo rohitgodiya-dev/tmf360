@@ -144,13 +144,13 @@ export default function TMF360(){
     if(data){setCurrentUserRole(data.role);setCanUploadDownload(data.can_upload_download!==false);setCanDownload(data.can_download!==false);if(data.org_id)setOrgId(data.org_id);}
     if(data){setCurrentUserRole(data.role);setCanUploadDownload(data.can_upload_download!==false);setCanDownload(data.can_download!==false);}
   }
+  async function loadStudies(uid:string){
     const{data}=await supabase.from("studies").select("*").eq("org_id",orgId||"none").order("created_at",{ascending:false});
-    const{data}=await supabase.from("studies").select("*").order("created_at",{ascending:false});
     if(data&&data.length>0){setStudies(data);setActiveStudy(data[0]);loadDocs(data[0].study_id,uid);}
   }
 
+  async function loadDocs(studyId:string,uid:string){
     const{data}=await supabase.from("documents").select("*").eq("study_id",studyId).eq("org_id",orgId||"none").order("created_at",{ascending:false});
-    const{data}=await supabase.from("documents").select("*").eq("study_id",studyId).order("created_at",{ascending:false});
     if(data)setDocs(data);
   }
 
