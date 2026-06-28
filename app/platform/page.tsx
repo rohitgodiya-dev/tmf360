@@ -1130,7 +1130,7 @@ export default function TMF360(){
           {panel==="profile"&&(
             <ProfilePanel user={user} P={P} supabase={supabase}/>
           )}
-          )}
+
 
           {/* AUDIT TRAIL */}
           {panel==="audit"&&(
