@@ -410,9 +410,9 @@ export default function TMF360(){
           {navItem("chat","AI specialist","ti-message-circle")}
           {navItem("audit","Audit trail","ti-lock")}
           {navItem("quality","Quality checks","ti-clipboard-list")}
-          {navItem("quality","Quality checks","ti-clipboard-list")}
           {navItem("users","User management","ti-users")}
           {navItem("profile","My profile","ti-user-circle")}
+        </aside>
 
         <main style={{flex:1,overflowY:"auto",padding:"1.25rem"}}>
           {/* DASHBOARD */}
