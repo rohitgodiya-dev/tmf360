@@ -416,8 +416,8 @@ export default function TMF360(){
           {navItem("messages","Messages","ti-message-2")}
           {navItem("messages","Messages","ti-message-2")}
         </aside>
+        <main style={{flex:1,overflowY:"auto",padding:"1.25rem"}}>
 
-          {/* DASHBOARD */}
           {(panel==="completeness-detail")&&(
   <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
     <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
