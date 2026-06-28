@@ -203,8 +203,8 @@ export default function TMF360(){
     if(!user||!activeStudy)return;
     const[artNum,an,zone]=fArtifact.split("|");
     const d:Doc={
-    const d:Doc={
       study_id:activeStudy.study_id,user_id:user.id,org_id:orgId,
+      artifact_num:artNum,artifact_name:an,zone,
       artifact_num:artNum,artifact_name:an,zone,
       version:fVersion,status:fDocStatus,owner:fOwner,
       effective_date:fEff,expiry_date:fExp,comments:fComments,
