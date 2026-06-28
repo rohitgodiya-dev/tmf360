@@ -76,7 +76,7 @@ export default function TMF360(){
   const [currentUserRole,setCurrentUserRole]=useState<string>("");
   const [canUploadDownload,setCanUploadDownload]=useState<boolean>(true);
   const [canDownload,setCanDownload]=useState<boolean>(true);
-  const [canDownload,setCanDownload]=useState<boolean>(true);
+  const [orgId,setOrgId]=useState<string>("");
   const [orgId,setOrgId]=useState<string>("");
 
 
