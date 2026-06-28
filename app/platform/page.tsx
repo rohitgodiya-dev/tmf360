@@ -78,6 +78,7 @@ export default function TMF360(){
   const [canDownload,setCanDownload]=useState<boolean>(true);
 
   const [authMode,setAuthMode]=useState<"login"|"signup">("login");
+  const [showLoginPwd,setShowLoginPwd]=useState(false);
   const [email,setEmail]=useState("");const [password,setPassword]=useState("");const [authError,setAuthError]=useState("");
   const [studies,setStudies]=useState<Study[]>([]);
 
@@ -369,7 +370,7 @@ export default function TMF360(){
           ))}
         </div>
         <div style={{marginBottom:"12px"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>Email</label><input value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="you@organization.com" style={{width:"100%",fontSize:"12px",padding:"8px 10px",border:`0.5px solid ${P.border}`,borderRadius:"8px"}}/></div>
-        <div style={{marginBottom:"1rem"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>Password</label><input value={password} onChange={e=>setPassword(e.target.value)} type="password" placeholder="••••••••" style={{width:"100%",fontSize:"12px",padding:"8px 10px",border:`0.5px solid ${P.border}`,borderRadius:"8px"}} onKeyDown={e=>e.key==="Enter"&&handleAuth()}/></div>
+        <div style={{marginBottom:"1rem"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>Password</label><div style={{position:"relative" as const}}><input value={password} onChange={e=>setPassword(e.target.value)} type={showLoginPwd?"text":"password"} placeholder="••••••••" style={{width:"100%",fontSize:"12px",padding:"8px 36px 8px 10px",border:`0.5px solid ${P.border}`,borderRadius:"8px"}} onKeyDown={e=>e.key==="Enter"&&handleAuth()}/><button onClick={()=>setShowLoginPwd(!showLoginPwd)} style={{position:"absolute" as const,right:"8px",top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#9CA3AF",fontSize:"14px"}}>{showLoginPwd?"🙈":"👁"}</button></div></div>
         {authError&&<div style={{fontSize:"11px",marginBottom:"12px",padding:"8px 10px",borderRadius:"8px",background:authError.includes("Check")?P.successLight:P.dangerLight,color:authError.includes("Check")?"#065F46":"#991B1B"}}>{authError}</div>}
         <button onClick={handleAuth} style={{width:"100%",padding:"9px",background:P.primary,color:"#fff",fontSize:"12px",borderRadius:"8px",border:"none",cursor:"pointer",fontWeight:"500"}}>{authMode==="login"?"Log in":"Create account"}</button>
         <p style={{fontSize:"10px",color:P.textTert,textAlign:"center",marginTop:"1rem"}}>Free forever · No credit card · 21 CFR Part 11 compliant</p>
