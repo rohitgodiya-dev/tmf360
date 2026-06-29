@@ -116,11 +116,11 @@ export default function SetupPage() {
   const pcts = ["", "25%", "50%", "75%", "100%"];
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: "#F1F5F9", alignItems: "center", justifyContent: "center", padding: "1rem", fontFamily: "system-ui, sans-serif" }}>
-      <div style={{ display: "flex", height: "760px", width: "1200px", maxWidth: "100%", background: P.bg, borderRadius: "16px", overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,.12)" }}>
+    <div style={{ display: "flex", minHeight: "100vh", background: "#F1F5F9", alignItems: "flex-start", justifyContent: "center", padding: "1rem", fontFamily: "system-ui, sans-serif", overflowX: "hidden" as const }}>
+      <div style={{ display: "flex", height: "100%", width: "100%", maxWidth: "1200px", background: P.bg, borderRadius: "16px", overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,.12)" }}>
 
         {/* LEFT SIDEBAR */}
-        <div style={{ width: "270px", background: "#0F1E3D", display: "flex", flexDirection: "column", flexShrink: 0 }}>
+        <div style={{ width: "220px", minWidth: "180px", background: "#0F1E3D", display: "flex", flexDirection: "column", flexShrink: 0 }}>
           <div style={{ padding: "1.5rem 1.25rem .75rem" }}>
             <div style={{ marginBottom: "1.75rem" }}>
               <div style={{ fontSize: "20px", fontWeight: "700", color: "#fff", letterSpacing: "-.5px" }}>TMF<span style={{ color: "#3B82F6" }}>360</span></div>
@@ -327,7 +327,7 @@ export default function SetupPage() {
             </div>
 
             {/* PROGRESS PANEL */}
-            <div style={{ width: "220px", padding: "1.25rem", borderLeft: `1px solid ${P.border}`, background: P.bg, flexShrink: 0, overflowY: "auto" }}>
+            <div style={{ width: "180px", minWidth: "160px", padding: "1rem", borderLeft: `1px solid ${P.border}`, background: P.bg, flexShrink: 0, overflowY: "auto" }}>
               <div style={{ fontSize: "13px", fontWeight: "700", color: P.text, marginBottom: "12px" }}>Setup Progress</div>
               <div style={{ fontSize: "24px", fontWeight: "700", color: P.text, marginBottom: "4px" }}>{pcts[step]}</div>
               <div style={{ height: "6px", background: P.bgTert, borderRadius: "3px", marginBottom: "16px", overflow: "hidden" }}>
