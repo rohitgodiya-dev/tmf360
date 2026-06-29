@@ -132,10 +132,10 @@ export default function TMF360(){
 
   useEffect(()=>{
     supabase.auth.getSession().then(({data:{session}})=>{
-      if(session?.user){setUser(session.user);loadUserRole(session.user.id);supabase.from("user_roles").select("org_id,role").eq("user_id",session.user.id).single().then(({data})=>{if(!data){window.location.href="/setup";}else if(!data.org_id){window.location.href="/setup";}else{setPanel("dashboard");loadStudies(session.user.id);}});}
+      if(session?.user){setUser(session.user);supabase.from("user_roles").select("org_id").eq("user_id",session.user.id).single().then(({data})=>{if(!data||!data.org_id){window.location.href="/setup";}else{setPanel("dashboard");loadUserRole(session.user.id);}});}
     });
     supabase.auth.onAuthStateChange((_,session)=>{
-      if(session?.user){setUser(session.user);loadUserRole(session.user.id);supabase.from("user_roles").select("org_id,role").eq("user_id",session.user.id).single().then(({data})=>{if(!data){window.location.href="/setup";}else if(!data.org_id){window.location.href="/setup";}else{setPanel("dashboard");loadStudies(session.user.id);}});}
+      if(session?.user){setUser(session.user);supabase.from("user_roles").select("org_id").eq("user_id",session.user.id).single().then(({data})=>{if(!data||!data.org_id){window.location.href="/setup";}else{setPanel("dashboard");loadUserRole(session.user.id);}});}
       else{setUser(null);setPanel("auth");setStudies([]);setDocs([]);setActiveStudy(null);}
     });
   },[]);
@@ -143,18 +143,34 @@ export default function TMF360(){
   useEffect(()=>{messagesEnd.current?.scrollIntoView({behavior:"smooth"});},[chatMessages]);
   async function loadUserRole(uid:string){
     const{data}=await supabase.from("user_roles").select("role,can_upload_download,can_download,org_id").eq("user_id",uid).single();
-    if(data){setCurrentUserRole(data.role);setCanUploadDownload(data.can_upload_download!==false);setCanDownload(data.can_download!==false);if(data.org_id)setOrgId(data.org_id);}
-    if(data){setCurrentUserRole(data.role);setCanUploadDownload(data.can_upload_download!==false);setCanDownload(data.can_download!==false);}
+    if(data){
+      setCurrentUserRole(data.role);
+      setCanUploadDownload(data.can_upload_download!==false);
+      setCanDownload(data.can_download!==false);
+      if(data.org_id){setOrgId(data.org_id);loadStudiesWithOrg(data.org_id);}
+    }
   }
-  async function loadStudies(uid:string){
-    const{data}=await supabase.from("studies").select("*").eq("org_id",orgId||"none").order("created_at",{ascending:false});
-    if(data&&data.length>0){setStudies(data);setActiveStudy(data[0]);loadDocs(data[0].study_id,uid);}
+  async function loadStudiesWithOrg(oid:string){
+    const{data}=await supabase.from("studies").select("*").eq("org_id",oid).order("created_at",{ascending:false});
+    if(data&&data.length>0){setStudies(data);setActiveStudy(data[0]);loadDocsWithOrg(data[0].study_id,oid);}
   }
-
-  async function loadDocs(studyId:string,uid:string){
-    const{data}=await supabase.from("documents").select("*").eq("study_id",studyId).eq("org_id",orgId||"none").order("created_at",{ascending:false});
+  async function loadDocsWithOrg(studyId:string,oid:string){
+    const{data}=await supabase.from("documents").select("*").eq("study_id",studyId).eq("org_id",oid).order("created_at",{ascending:false});
     if(data)setDocs(data);
   }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   async function logAudit(action:string,docId:string|undefined,studyId:string,field:string,oldVal:string,newVal:string,sigReason:string=""){
     await supabase.from("audit_trail").insert([{
@@ -180,12 +196,12 @@ export default function TMF360(){
 
   async function createStudy(){
     if(!fId.trim()||!user)return;
-    if(!fId.trim()||!user)return;
     const s:Study={study_id:fId,protocol:fProtocol,phase:fPhase,status:fStatus,sponsor:fSponsor,user_id:user.id,org_id:orgId} as any;
-
+    const{data,error}=await supabase.from("studies").insert([s]).select();
     if(!error&&data){const ns=data[0];setStudies(prev=>[ns,...prev]);setActiveStudy(ns);setDocs([]);}
     setShowStudyModal(false);setFId("");setFProtocol("");setFSponsor("");
     setPanel("dashboard");
+  }
   }
 
   async function handleFileUpload(file:File){

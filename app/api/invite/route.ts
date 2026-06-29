@@ -14,9 +14,16 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    let userId = '';
+    // Get inviter's org_id
+    const { data: inviterRole } = await supabaseAdmin
+      .from('user_roles')
+      .select('org_id')
+      .eq('email', invited_by_email)
+      .single();
 
-    // Try to create user — if exists, get their ID
+    const orgId = inviterRole?.org_id || null;
+
+    // Create user account in Supabase Auth
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: email.trim(),
       password: password,
@@ -24,14 +31,14 @@ export async function POST(request: NextRequest) {
       user_metadata: { full_name, role }
     });
 
+    let userId = '';
+
     if (authError) {
       if (authError.message.includes('already registered') || authError.message.includes('already been registered')) {
-        // User exists — get their ID
         const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
         const existingUser = existingUsers?.users?.find(u => u.email === email.trim());
         if (existingUser) {
           userId = existingUser.id;
-          // Update their password
           await supabaseAdmin.auth.admin.updateUserById(userId, { password });
         } else {
           return NextResponse.json({ error: authError.message }, { status: 400 });
@@ -43,7 +50,7 @@ export async function POST(request: NextRequest) {
       userId = authData.user.id;
     }
 
-    // Assign role in user_roles table
+    // Assign role with org_id so invited user skips setup
     await supabaseAdmin.from('user_roles').upsert([{
       user_id: userId,
       email: email.trim(),
@@ -51,6 +58,9 @@ export async function POST(request: NextRequest) {
       full_name: full_name || '',
       is_active: true,
       notifications_enabled: true,
+      can_upload_download: true,
+      can_download: true,
+      org_id: orgId,
     }], { onConflict: 'email' });
 
     // Send login credentials via Resend
