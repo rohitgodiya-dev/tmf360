@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign360 — Sign in</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --page:#F7F8FA; --surface:#FFFFFF; --text:#1C1E22;
+    --muted:#6B7078; --muted-2:#9A9EA6;
+    --border:#E7E7EA; --border-strong:#DADCE1;
+    --orange:#FF7A3D; --orange-dark:#E85F22;
+    --blue:#4FB6E8; --blue-dark:#2E93C7;
+    --grad: linear-gradient(135deg, var(--orange) 0%, #FF9457 32%, #8FC7E4 70%, var(--blue) 100%);
+    --grad-soft: linear-gradient(120deg, rgba(255,122,61,0.10) 0%, rgba(79,182,232,0.10) 100%);
+    --success:#2E9E5B; --success-bg:#E7F6EC;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--surface);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;-webkit-font-smoothing:antialiased;}
+  a{color:inherit;text-decoration:none;}
+  .serif{font-family:'Fraunces',serif;}
+  button{font-family:inherit;cursor:pointer;}
+  .screen{display:none;}
+  .screen.active{display:grid;}
+
+  .auth-wrap{min-height:100vh;grid-template-columns:1fr 1fr;}
+  @media (max-width:900px){ .auth-wrap{grid-template-columns:1fr;} .auth-visual{display:none;} }
+
+  /* ===== LEFT: FORM ===== */
+  .auth-form-col{display:flex;flex-direction:column;padding:40px 56px;}
+  .auth-brand{display:flex;align-items:center;gap:9px;font-family:'Fraunces',serif;font-size:17px;font-weight:600;}
+  .brand-mark{width:26px;height:26px;border-radius:7px;background:var(--grad);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+  .brand-mark svg{width:14px;height:14px;stroke:#fff;}
+
+  .auth-form-inner{flex:1;display:flex;flex-direction:column;justify-content:center;max-width:380px;margin:0 auto;width:100%;}
+  .auth-form-inner h1{font-family:'Fraunces',serif;font-weight:500;font-size:28px;letter-spacing:-0.01em;margin-bottom:8px;}
+  .auth-form-inner .sub{font-size:13.5px;color:var(--muted);margin-bottom:30px;}
+  .auth-form-inner .sub a{color:var(--orange-dark);font-weight:600;}
+
+  .social-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:11px;border:1px solid var(--border-strong);border-radius:9px;font-size:13.5px;font-weight:500;margin-bottom:10px;background:var(--surface);}
+  .social-btn:hover{background:var(--page);}
+  .social-btn svg{width:17px;height:17px;}
+  .divider{display:flex;align-items:center;gap:12px;margin:22px 0;color:var(--muted-2);font-size:12px;}
+  .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--border);}
+
+  .field-label{font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:6px;display:block;}
+  .field-group{margin-bottom:16px;}
+  .text-input{width:100%;padding:11px 14px;border:1px solid var(--border-strong);border-radius:9px;font-size:13.5px;font-family:inherit;color:var(--text);}
+  .text-input:focus{outline:2px solid var(--blue);outline-offset:1px;}
+  .row-between{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;}
+  .checkbox-row{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);}
+  .checkbox-row input{width:14px;height:14px;accent-color:var(--orange);}
+  .forgot-link{font-size:12.5px;color:var(--blue-dark);font-weight:500;}
+  .terms-row{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--muted);margin-bottom:22px;line-height:1.5;}
+  .terms-row input{width:14px;height:14px;margin-top:2px;accent-color:var(--orange);flex-shrink:0;}
+  .terms-row a{color:var(--blue-dark);font-weight:500;}
+
+  .btn-primary-solid{width:100%;background:var(--grad);color:#fff;border:none;font-weight:600;font-size:14px;padding:12px;border-radius:9px;box-shadow:0 8px 20px rgba(255,122,61,0.22);}
+  .switch-line{text-align:center;font-size:13px;color:var(--muted);margin-top:26px;}
+  .switch-line a{color:var(--orange-dark);font-weight:600;}
+
+  .form-error{display:none;background:rgba(226,112,95,0.10);border:1px solid rgba(226,112,95,0.3);color:#B3402F;font-size:12.5px;padding:10px 12px;border-radius:8px;margin-bottom:16px;}
+  .form-error.show{display:block;}
+
+  /* ===== RIGHT: VISUAL PANEL ===== */
+  .auth-visual{background:var(--grad);position:relative;display:flex;flex-direction:column;justify-content:space-between;padding:48px;overflow:hidden;}
+  .auth-visual::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 30% 20%, rgba(255,255,255,0.18), transparent 45%);}
+  .visual-top{position:relative;z-index:1;color:#fff;font-size:13px;font-weight:600;opacity:0.9;}
+  .visual-quote{position:relative;z-index:1;color:#fff;max-width:420px;}
+  .visual-quote .qtext{font-family:'Fraunces',serif;font-size:24px;font-weight:500;line-height:1.35;letter-spacing:-0.01em;margin-bottom:22px;}
+  .visual-quote .qauthor{font-size:13px;opacity:0.9;display:flex;align-items:center;gap:10px;}
+  .qavatar{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;flex-shrink:0;}
+
+  .visual-card{position:relative;z-index:1;background:rgba(255,255,255,0.14);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,0.25);border-radius:14px;padding:18px 20px;color:#fff;}
+  .vc-row{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:12.5px;}
+  .vc-row:not(:last-child){border-bottom:1px solid rgba(255,255,255,0.18);}
+  .vc-check{width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,0.9);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .vc-check svg{width:9px;height:9px;color:var(--orange-dark);}
+</style>
+</head>
+<body>
+
+<!-- ========================= SIGN IN ========================= -->
+<div class="screen active auth-wrap" id="screen-signin">
+  <div class="auth-form-col">
+    <div class="auth-brand"><div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 18l4-1 10-10a2 2 0 0 0-3-3L5 14l-1 4z"/></svg></div>Sign360</div>
+
+    <div class="auth-form-inner">
+      <h1>Welcome back</h1>
+      <p class="sub">New to Sign360? <a href="#" onclick="showScreen('screen-signup');return false;">Create an account</a></p>
+
+      <div class="form-error" id="signinError">That email and password combination doesn't match. Try again.</div>
+
+      <button class="social-btn">
+        <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M23.5 12.3c0-.85-.08-1.66-.22-2.44H12v4.62h6.47c-.28 1.5-1.13 2.77-2.4 3.62v3h3.88c2.27-2.09 3.55-5.17 3.55-8.8z"/><path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.95-2.9l-3.88-3c-1.08.72-2.46 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.26v3.1C3.24 21.3 7.28 24 12 24z"/><path fill="#FBBC05" d="M5.27 14.29A7.2 7.2 0 0 1 4.89 12c0-.8.14-1.57.38-2.29V6.61H1.26A11.98 11.98 0 0 0 0 12c0 1.93.46 3.76 1.26 5.39l4.01-3.1z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.44-3.44C17.95 1.19 15.24 0 12 0 7.28 0 3.24 2.7 1.26 6.61l4.01 3.1C6.22 6.86 8.87 4.75 12 4.75z"/></svg>
+        Continue with Google
+      </button>
+
+      <div class="divider">or sign in with email</div>
+
+      <form onsubmit="return doSignIn(event)">
+        <div class="field-group">
+          <label class="field-label">Work email</label>
+          <input class="text-input" type="email" placeholder="you@company.com" required>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Password</label>
+          <input class="text-input" type="password" placeholder="Enter your password" required>
+        </div>
+        <div class="row-between">
+          <label class="checkbox-row"><input type="checkbox">Remember me</label>
+          <a href="#" class="forgot-link">Forgot password?</a>
+        </div>
+        <button type="submit" class="btn-primary-solid">Sign in</button>
+      </form>
+      <p class="switch-line">Don't have an account? <a href="#" onclick="showScreen('screen-signup');return false;">Sign up free</a></p>
+    </div>
+  </div>
+
+  <div class="auth-visual">
+    <div class="visual-top">Sign360</div>
+    <div class="visual-quote">
+      <div class="qtext">"We replaced four separate tools with Sign360. Approvals that took a week now close in a day."</div>
+      <div class="qauthor"><div class="qavatar">MK</div>Maya Kim, Director of Clinical Ops</div>
+    </div>
+    <div class="visual-card">
+      <div class="vc-row"><span class="vc-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>Forms, documents, and signatures in one place</div>
+      <div class="vc-row"><span class="vc-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>HIPAA and 21 CFR Part 11 ready</div>
+      <div class="vc-row"><span class="vc-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>Free for up to 5 documents a month</div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================= SIGN UP ========================= -->
+<div class="screen auth-wrap" id="screen-signup">
+  <div class="auth-form-col">
+    <div class="auth-brand"><div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 18l4-1 10-10a2 2 0 0 0-3-3L5 14l-1 4z"/></svg></div>Sign360</div>
+
+    <div class="auth-form-inner">
+      <h1>Create your account</h1>
+      <p class="sub">Already using Sign360? <a href="#" onclick="showScreen('screen-signin');return false;">Sign in</a></p>
+
+      <button class="social-btn">
+        <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M23.5 12.3c0-.85-.08-1.66-.22-2.44H12v4.62h6.47c-.28 1.5-1.13 2.77-2.4 3.62v3h3.88c2.27-2.09 3.55-5.17 3.55-8.8z"/><path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.95-2.9l-3.88-3c-1.08.72-2.46 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.26v3.1C3.24 21.3 7.28 24 12 24z"/><path fill="#FBBC05" d="M5.27 14.29A7.2 7.2 0 0 1 4.89 12c0-.8.14-1.57.38-2.29V6.61H1.26A11.98 11.98 0 0 0 0 12c0 1.93.46 3.76 1.26 5.39l4.01-3.1z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.44-3.44C17.95 1.19 15.24 0 12 0 7.28 0 3.24 2.7 1.26 6.61l4.01 3.1C6.22 6.86 8.87 4.75 12 4.75z"/></svg>
+        Continue with Google
+      </button>
+
+      <div class="divider">or sign up with email</div>
+
+      <form onsubmit="return doSignUp(event)">
+        <div class="field-group" style="display:flex;gap:12px">
+          <div style="flex:1"><label class="field-label">First name</label><input class="text-input" type="text" placeholder="Rohit" required></div>
+          <div style="flex:1"><label class="field-label">Last name</label><input class="text-input" type="text" placeholder="Godiya" required></div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Work email</label>
+          <input class="text-input" type="email" placeholder="you@company.com" required>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Password</label>
+          <input class="text-input" type="password" placeholder="At least 8 characters" required>
+        </div>
+        <label class="terms-row"><input type="checkbox" required>I agree to Sign360's <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></label>
+        <button type="submit" class="btn-primary-solid">Create account</button>
+      </form>
+      <p class="switch-line">Already have an account? <a href="#" onclick="showScreen('screen-signin');return false;">Sign in</a></p>
+    </div>
+  </div>
+
+  <div class="auth-visual">
+    <div class="visual-top">Sign360</div>
+    <div class="visual-quote">
+      <div class="qtext">"Set up our clinical site qualification workflow in an afternoon. It used to take us weeks to configure."</div>
+      <div class="qauthor"><div class="qavatar">DP</div>David Park, Head of Regulatory Affairs</div>
+    </div>
+    <div class="visual-card">
+      <div class="vc-row"><span class="vc-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>No credit card required to start</div>
+      <div class="vc-row"><span class="vc-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>Invite your team in seconds</div>
+      <div class="vc-row"><span class="vc-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>Cancel anytime</div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+function doSignIn(e){
+  e.preventDefault();
+  // Prototype only — redirect straight to the dashboard file in a real build.
+  window.location.href = 'sign360-dashboard.html';
+  return false;
+}
+function doSignUp(e){
+  e.preventDefault();
+  window.location.href = 'sign360-dashboard.html';
+  return false;
+}
+</script>
+
+</body>
+</html>
