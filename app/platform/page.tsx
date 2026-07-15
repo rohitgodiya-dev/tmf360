@@ -139,9 +139,13 @@ export default function Platform(){
   const[commentText,setCommentText]=useState("");
   const[previewUrl,setPreviewUrl]=useState<string|null>(null);
   const[previewName,setPreviewName]=useState("");
-  const[chatMessages,setChatMessages]=useState<{role:string;text:string}[]>([{role:"ai",text:"Hi! I'm your TMF AI Specialist. I can help with DIA TMF Reference Model v3.3.1, ISO 14155:2020, ICH E6(R3), and 21 CFR Part 11. What would you like to know?"}]);
+  const[chatMessages,setChatMessages]=useState<{role:string;text:string}[]>([{role:"ai",text:"Hi! I'm Trinity, your TMF AI specialist. I can help with DIA TMF Reference Model v3.3.1, ISO 14155:2020, ICH E6(R3), and 21 CFR Part 11 — and I can review, classify, approve, or flag documents for this study. What would you like to know?"}]);
   const[chatInput,setChatInput]=useState("");
   const[chatLoading,setChatLoading]=useState(false);
+const[chatDocAction,setChatDocAction]=useState<{msgIdx:number,stage:number,disabled:boolean}|null>(null);
+const[flagComment,setFlagComment]=useState("");
+const[flagStage,setFlagStage]=useState<"idle"|"form"|"done">("idle");
+const[flagMsgIdx,setFlagMsgIdx]=useState<number|null>(null);
   const messagesEnd=useRef<HTMLDivElement>(null);
   const fileInputRef=useRef<HTMLInputElement>(null);
 
@@ -929,7 +933,7 @@ export default function Platform(){
           {/* AI CHAT */}
           {panel==="chat"&&(
             <div style={{display:"flex",flexDirection:"column",height:"calc(100vh - 120px)",gap:"12px"}}>
-              <h1 style={{fontSize:"14px",fontWeight:"500"}}>TMF AI specialist</h1>
+              <h1 style={{fontSize:"14px",fontWeight:"500"}}>Trinity · TMF AI specialist</h1>
               <div style={{display:"flex",gap:"6px",flexWrap:"wrap" as const}}>
                 {["Where does a CTA go in the TMF?","Core docs before first patient?","Draft a Note to File for late IRB filing","What is Zone 5?","Explain ALCOA+","What is 21 CFR Part 11?"].map(q=>(
                   <button key={q} onClick={()=>setChatInput(q)} style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"20px",padding:"4px 10px",color:P.textSec,background:P.bg,cursor:"pointer"}}>{q}</button>
@@ -939,13 +943,13 @@ export default function Platform(){
                 <div style={{flex:1,overflowY:"auto",padding:"1rem",display:"flex",flexDirection:"column",gap:"10px"}}>
                   {chatMessages.map((m,i)=>(
                     <div key={i} style={{display:"flex",gap:"8px",flexDirection:m.role==="user"?"row-reverse":"row"}}>
-                      <div style={{width:"24px",height:"24px",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"9px",fontWeight:"500",flexShrink:0,background:m.role==="ai"?P.primaryLight:"#6366F1",color:m.role==="ai"?P.primary:"#fff"}}>{m.role==="ai"?"AI":"You"}</div>
+                      <div style={{width:"24px",height:"24px",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"9px",fontWeight:"500",flexShrink:0,background:m.role==="ai"?P.primaryLight:"#6366F1",color:m.role==="ai"?P.primary:"#fff"}}>{m.role==="ai"?"T":"You"}</div>
                       <div style={{maxWidth:"85%",fontSize:"12px",borderRadius:"10px",padding:"8px 12px",lineHeight:"1.6",whiteSpace:"pre-wrap" as const,background:m.role==="ai"?P.bgSec:"#6366F1",color:m.role==="ai"?P.text:"#fff"}}>{m.text}</div>
                     </div>
                   ))}
                   {chatLoading&&(
                     <div style={{display:"flex",gap:"8px"}}>
-                      <div style={{width:"24px",height:"24px",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"9px",background:P.primaryLight,color:P.primary}}>AI</div>
+                      <div style={{width:"24px",height:"24px",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"9px",background:P.primaryLight,color:P.primary}}>T</div>
                       <div style={{background:P.bgSec,borderRadius:"10px",padding:"8px 12px",display:"flex",gap:"4px",alignItems:"center"}}>
                         {[0,1,2].map(i=><span key={i} style={{width:"6px",height:"6px",borderRadius:"50%",background:P.primary,display:"inline-block",animation:"bounce 0.9s infinite",animationDelay:`${i*0.15}s`}}/>)}
                       </div>
@@ -954,7 +958,7 @@ export default function Platform(){
                   <div ref={messagesEnd}/>
                 </div>
                 <div style={{borderTop:`0.5px solid ${P.border}`,padding:"10px 12px",display:"flex",gap:"8px"}}>
-                  <input value={chatInput} onChange={e=>setChatInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendChat()} placeholder="Ask about your TMF, ISO 14155, gaps, document drafting..." style={{flex:1,fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/>
+                  <input value={chatInput} onChange={e=>setChatInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendChat()} placeholder="Ask Trinity or drop a document..." style={{flex:1,fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/>
                   <button onClick={sendChat} disabled={chatLoading} style={{fontSize:"12px",padding:"7px 16px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",opacity:chatLoading?0.5:1}}>Send</button>
                 </div>
               </div>
