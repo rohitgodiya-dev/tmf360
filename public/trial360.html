@@ -258,6 +258,7 @@
       <div class="agent-card" id="agent-regulatory" style="--pc:#2f6fed;"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 5H3z"/><path d="M4 9v10M9 9v10M15 9v10M20 9v10"/><path d="M2 21h20"/></svg></div><h3>Regulatory360</h3><div class="domain mono">REGULATORY SUBMISSIONS</div><p class="desc">Manages health authority submissions, amendments, and correspondence end to end.</p></div>
       <div class="agent-card" id="agent-site" style="--pc:#2f6fed;"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="13" rx="1"/><path d="M12 3v5M9.5 5.5h5"/><path d="M12 12v5M9.5 14.5h5"/></svg></div><h3>Site360</h3><div class="domain mono">SITE MANAGEMENT PORTAL</div><p class="desc">Gives sites one place for tasks, documents, enrollment, and payment status.</p></div>
       <div class="agent-card" id="agent-connect" style="--pc:#2f6fed;"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M4 20c0-3 2.5-5 5-5s5 2 5 5"/><circle cx="17" cy="9" r="2.3"/><path d="M14.7 20c.3-2 1.7-3.5 3.3-3.8"/></svg></div><h3>Connect360</h3><div class="domain mono">SITE &amp; MONITOR COMMS</div><p class="desc">Routes medical questions to the right monitor and tracks response SLAs.</p></div>
+      <div class="agent-card" id="agent-trialfinder" style="--pc:#2f6fed;cursor:pointer;"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><path d="M11 8a3 3 0 0 1 3 3"/></svg></div><h3>TrialFinder360</h3><div class="domain mono">PATIENT RECRUITMENT</div><p class="desc">Patient-first trial discovery — search thousands of studies, understand eligibility in plain language, and get a personalised match score.</p></div>
       <div class="agent-card" id="agent-sign" style="--pc:#2f6fed;cursor:pointer;" onclick="window.location.href='/sign360.html'"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5l3 3-8 8-3.5 1 1-3.5z"/><path d="M3 18c1.5-2.3 2.5 2 4-.3s2.5 2 4-.3 2.5 2 4-.3"/></svg></div><h3>Sign360</h3><div class="domain mono">ELECTRONIC SIGNATURES</div><p class="desc">Manages 21 CFR Part 11 e-signatures and approval workflows across every document.</p></div>
     </div>
   </div>
@@ -412,6 +413,7 @@
     { id:'regulatory', name:'Regulatory360', tag:'REGULATORY SUBMISSIONS', points:['IND/CTA submission tracking','Health authority correspondence','Amendment management'], color:'#2f6fed', ring:0, offset:3.77, draw:icoRegulatory },
     { id:'site', name:'Site360', tag:'SITE MANAGEMENT PORTAL', points:['Site-level task management','Document exchange','Payment visibility'], color:'#2f6fed', ring:0, offset:4.398, draw:icoSite },
     { id:'connect', name:'Connect360', tag:'SITE & MONITOR COMMS', points:['Query routing','Medical question triage','SLA tracking on responses'], color:'#2f6fed', ring:0, offset:5.027, draw:icoConnect },
+    { id:'trialfinder', name:'TrialFinder360', tag:'PATIENT RECRUITMENT', points:['Search thousands of clinical trials','Plain language eligibility','Personalised match score'], color:'#2f6fed', ring:0, offset:6.28, draw:icoETMF },
     { id:'sign', name:'Sign360', tag:'ELECTRONIC SIGNATURES', points:['21 CFR Part 11 e-signatures','Document approval workflows','Audit-ready signature trails'], color:'#2f6fed', ring:0, offset:5.655, draw:icoSign },
   ];
   AGENTS.forEach(a=> a.angle = a.offset);
@@ -761,4 +763,6 @@
 
 </body>
 </html>
+
+
 
