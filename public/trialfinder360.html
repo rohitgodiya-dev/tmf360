@@ -1,0 +1,1607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Trial Finder — Find a clinical trial</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" />
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #EFE9DE; font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
+
+  :root {
+    --ink: #16283F;
+    --ink-70: #3C4E63;
+    --ink-30: #A9B6C4;
+    --orange: #F2793A;
+    --orange-deep: #D9601F;
+    --orange-pale: #FFE9D6;
+    --sky: #6EC3E0;
+    --sky-deep: #2E8FB0;
+    --sky-pale: #DCEFF7;
+    --cream: #FFFBF7;
+    --line: #E8E1D6;
+  }
+  em { font-style: italic; }
+  button { font-family: inherit; }
+
+  /* ---------- shell ---------- */
+  .tf-shell { background: var(--cream); min-height: 100vh; }
+
+  /* ---------- nav ---------- */
+  .tf-nav {
+    display: flex; align-items: center; gap: 14px; padding: 14px 40px;
+    background: #fff; border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 20;
+  }
+  .tf-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .tf-brand-text h1 {
+    font-family: 'Fraunces', serif; font-weight: 600; font-size: 19px; margin: 0; color: var(--ink);
+    background: linear-gradient(100deg, var(--orange-deep), var(--sky-deep));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .tf-brand-text p { margin: 0; font-size: 11px; color: var(--ink-30); }
+
+  .tf-search {
+    flex: 1; max-width: 460px; display: flex; align-items: center; gap: 8px;
+    border: 1.5px solid var(--line); border-radius: 999px; padding: 9px 16px; background: var(--cream);
+  }
+  .tf-search input { border: none; background: transparent; outline: none; font-size: 14px; width: 100%; color: var(--ink); }
+  .tf-search svg { flex-shrink: 0; color: var(--ink-30); }
+
+  .tf-nav-actions { display: flex; align-items: center; gap: 6px; }
+  .tf-nav-btn {
+    display: flex; align-items: center; gap: 6px; border: none; background: none; cursor: pointer;
+    font-size: 13px; font-weight: 600; color: var(--ink-70); padding: 8px 12px; border-radius: 8px;
+  }
+  .tf-nav-btn:hover { background: var(--sky-pale); color: var(--sky-deep); }
+  .tf-nav-btn.active { background: var(--orange-pale); color: var(--orange-deep); }
+  .tf-icon { width: 14px; height: 14px; vertical-align: -2px; margin-right: 5px; flex-shrink: 0; }
+  .tf-btn-blue-nav {
+    font-size: 13.5px; font-weight: 700; padding: 9px 20px; border-radius: 8px; border: none;
+    background: var(--sky-deep); color: #fff; cursor: pointer;
+  }
+  .tf-btn-blue-nav:hover { background: #256f89; }
+
+  /* ---------- layout ---------- */
+  .tf-body {
+    display: grid; grid-template-columns: 260px 1fr 300px; gap: 22px;
+    padding: 22px 40px 60px; align-items: start; max-width: 1500px; margin: 0 auto;
+  }
+  @media (max-width: 1180px) {
+    .tf-body { grid-template-columns: 240px 1fr; }
+    .tf-sidebar-right { grid-column: span 2; }
+  }
+  @media (max-width: 820px) {
+    .tf-body { grid-template-columns: 1fr; }
+    .tf-sidebar-right { grid-column: span 1; }
+  }
+
+  .tf-panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+
+  /* ---------- left sidebar ---------- */
+  .tf-sidebar-left {
+    position: sticky; top: 76px; display: flex; flex-direction: column; gap: 16px;
+    max-height: calc(100vh - 92px); overflow-y: auto; padding-bottom: 4px;
+  }
+
+  .tf-location-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 4px; }
+  .tf-location-row svg { flex-shrink: 0; margin-top: 2px; color: var(--sky-deep); }
+  .tf-location-label { font-size: 11.5px; color: var(--ink-30); margin: 0 0 2px; }
+  .tf-location-value { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+  .tf-location-edit { display: none; margin-top: 10px; gap: 8px; }
+  .tf-location-edit.open { display: flex; }
+  .tf-location-edit input {
+    flex: 1; font-size: 13px; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 7px; outline: none;
+  }
+  .tf-location-edit input:focus { border-color: var(--orange); }
+  .tf-link-btn { background: none; border: none; padding: 0; color: var(--sky-deep); font-size: 12.5px; font-weight: 600; cursor: pointer; }
+  .tf-link-btn:hover { text-decoration: underline; }
+  .tf-mini-btn {
+    font-size: 12.5px; font-weight: 600; padding: 7px 12px; border-radius: 7px; border: none;
+    background: var(--orange); color: #fff; cursor: pointer;
+  }
+
+  .tf-filters-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .tf-filters-head h2 { font-size: 14.5px; margin: 0; color: var(--ink); }
+
+  .tf-filter-group { margin-bottom: 16px; }
+  .tf-filter-group:last-child { margin-bottom: 0; }
+  .tf-filter-group h3 {
+    font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-30);
+    margin: 0 0 8px; font-weight: 700;
+  }
+  .tf-check-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    font-size: 13.5px; color: var(--ink-70); padding: 4px 0; cursor: pointer;
+  }
+  .tf-check-row input { accent-color: var(--orange); width: 15px; height: 15px; }
+  .tf-check-row .count { font-size: 12px; color: var(--ink-30); font-family: 'IBM Plex Mono', monospace; }
+
+  .tf-age-row { display: flex; align-items: center; gap: 8px; }
+  .tf-age-row select {
+    flex: 1; font-size: 13px; padding: 7px 8px; border: 1.5px solid var(--line); border-radius: 7px;
+    background: #fff; color: var(--ink);
+  }
+  .tf-age-row span { font-size: 12.5px; color: var(--ink-30); }
+
+  .tf-select-full {
+    width: 100%; font-size: 13.5px; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 7px;
+    background: #fff; color: var(--ink);
+  }
+
+  .tf-clear { background: none; border: none; color: var(--sky-deep); font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 0; }
+
+  /* ---------- main ---------- */
+  .tf-main { min-width: 0; }
+  .tf-results-topbar {
+    display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;
+  }
+  .tf-results-topbar h2 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 21px; margin: 0; color: var(--ink); }
+  .tf-results-topbar p { margin: 2px 0 0; font-size: 13px; color: var(--ink-70); }
+  .tf-sort { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-70); }
+  .tf-sort select { border: 1.5px solid var(--line); border-radius: 7px; padding: 6px 10px; font-size: 13px; color: var(--ink); background: #fff; }
+
+  .tf-loading, .tf-empty, .tf-intro, .tf-error {
+    display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center;
+    padding: 40px 10px; color: var(--ink-70); font-size: 14.5px; background: #fff; border: 1px solid var(--line); border-radius: 12px;
+  }
+  .tf-loading { flex-direction: row; justify-content: center; }
+  .tf-empty-sub, .tf-error-sub { font-size: 13px; color: var(--ink-30); }
+  .tf-error strong { color: var(--orange-deep); }
+  .tf-error a { color: var(--sky-deep); }
+  .beacon-pulse { animation: tf-pulse 1.6s ease-in-out infinite; }
+  @keyframes tf-pulse { 0%,100% { opacity: 1; transform: scale(1);} 50% { opacity: .5; transform: scale(1.25);} }
+  @media (prefers-reduced-motion: reduce) { .beacon-pulse { animation: none; } }
+
+  .tf-location-notice {
+    font-size: 13px; line-height: 1.5; color: var(--orange-deep); background: #FFF3E9;
+    border: 1px solid #FBD8B8; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px;
+  }
+  .tf-location-notice strong { color: var(--ink); }
+
+  .tf-cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+
+  .tf-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; position: relative; }
+  .tf-card-top { display: flex; gap: 14px; }
+  .tf-card-icon {
+    width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  }
+  .tf-card-body { flex: 1; min-width: 0; }
+  .tf-card-badges { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+
+  .tf-badge { font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 5px; }
+  .tf-badge-recruiting { background: var(--orange-pale); color: var(--orange-deep); }
+  .tf-badge-pending { background: var(--sky-pale); color: var(--sky-deep); }
+  .tf-badge-closed { background: #F1EEE8; color: var(--ink-70); }
+  .tf-badge-match-high { background: var(--orange); color: #fff; }
+  .tf-badge-match-mid { background: var(--sky-pale); color: var(--sky-deep); }
+  .tf-badge-match-low { background: #F1EEE8; color: var(--ink-30); }
+  .tf-info-icon { color: var(--ink-30); cursor: help; }
+  .tf-nct { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-30); }
+
+  .tf-bookmark {
+    position: absolute; top: 16px; right: 18px; background: none; border: none; cursor: pointer;
+    color: var(--ink-30); padding: 4px;
+  }
+  .tf-bookmark.saved { color: var(--orange); }
+
+  .tf-card-title { font-family: 'Fraunces', serif; font-weight: 500; font-size: 17px; line-height: 1.32; margin: 0 0 5px; color: var(--ink); padding-right: 24px; }
+  .tf-card-cond { font-size: 12.5px; color: var(--orange-deep); font-weight: 600; margin: 0 0 8px; }
+  .tf-card-summary { font-size: 13.5px; line-height: 1.55; color: var(--ink-70); margin: 0 0 14px; }
+
+  .tf-facts { display: flex; flex-wrap: wrap; gap: 22px; margin-bottom: 14px; }
+  .tf-fact { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--ink-70); }
+  .tf-fact svg { color: var(--ink-30); flex-shrink: 0; }
+  .tf-fact strong { display: block; font-weight: 600; color: var(--ink); }
+  .tf-fact-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-30); }
+
+  .tf-site-row {
+    display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-70);
+    padding: 10px 0; border-top: 1px dashed var(--line); flex-wrap: wrap;
+  }
+  .tf-site-row svg { color: var(--ink-30); flex-shrink: 0; }
+  .tf-site-sponsor { font-weight: 600; color: var(--ink); }
+
+  .tf-fact-btn {
+    background: none; border: none; padding: 0; cursor: pointer; font-family: inherit; text-align: left;
+  }
+  .tf-fact-btn:hover strong { color: var(--sky-deep); text-decoration: underline; }
+  .tf-site-link {
+    background: none; border: none; padding: 0; cursor: pointer; font-family: inherit;
+    font-size: 12.5px; color: var(--sky-deep); font-weight: 600;
+  }
+  .tf-site-link:hover { text-decoration: underline; }
+
+  .tf-locations-panel {
+    display: none; margin: 0 0 12px; padding: 12px 14px; background: var(--sky-pale);
+    border: 1px solid #B9DEEC; border-radius: 8px;
+  }
+  .tf-locations-panel.open { display: block; }
+  .tf-locations-panel-title {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sky-deep);
+    font-weight: 700; margin-bottom: 8px;
+  }
+  .tf-locations-panel-list { list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; }
+  .tf-locations-panel-list li {
+    font-size: 12.5px; color: var(--ink-70); padding: 5px 0; border-bottom: 1px dashed #B9DEEC;
+  }
+  .tf-locations-panel-list li:last-child { border-bottom: none; }
+
+  .tf-card-contact { padding: 10px 0; border-top: 1px dashed var(--line); display: flex; flex-direction: column; gap: 3px; }
+  .tf-contact-row { font-size: 13px; color: var(--ink-70); }
+  .tf-contact-key { font-weight: 600; color: var(--ink); margin-right: 4px; }
+  .tf-contact-row a { color: var(--sky-deep); text-decoration: none; }
+  .tf-contact-row a:hover { text-decoration: underline; }
+
+  .tf-card-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .tf-card-actions .tf-btn-primary,
+  .tf-card-actions .tf-btn-secondary,
+  .tf-card-actions .tf-btn-orange {
+    font-size: 12.5px; padding: 8px 12px; gap: 5px;
+  }
+  .tf-card-actions .tf-icon { width: 13px; height: 13px; margin-right: 4px; }
+  .tf-btn-primary, .tf-btn-secondary {
+    font-size: 13.5px; font-weight: 600; padding: 10px 16px; border-radius: 8px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 7px; text-decoration: none;
+  }
+  .tf-btn-primary { background: var(--ink); color: #fff; border: none; }
+  .tf-btn-primary:hover { background: #223751; }
+  .tf-btn-secondary { background: #fff; color: var(--ink); border: 1.5px solid var(--line); }
+  .tf-btn-secondary:hover { border-color: var(--ink-30); }
+
+  .tf-btn-orange {
+    font-size: 13.5px; font-weight: 600; padding: 10px 16px; border-radius: 8px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 7px;
+    background: #fff; color: var(--orange-deep); border: 1.5px solid var(--orange);
+  }
+  .tf-btn-orange:hover { background: var(--orange-pale); }
+
+  .tf-eligibility {
+    margin-top: 12px; padding: 12px 14px; background: #FAF7F1; border: 1px solid var(--line); border-radius: 8px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; line-height: 1.6; white-space: pre-wrap;
+    max-height: 260px; overflow-y: auto; color: var(--ink-70); display: none;
+  }
+  .tf-eligibility.open { display: block; }
+
+  .tf-load-more { display: flex; justify-content: center; margin-top: 22px; }
+  .tf-btn-ghost {
+    font-size: 14px; font-weight: 600; padding: 11px 22px; border-radius: 8px; cursor: pointer;
+    background: transparent; color: var(--orange-deep); border: 1.5px solid var(--orange);
+  }
+  .tf-btn-ghost:hover:not(:disabled) { background: var(--orange-pale); }
+  .tf-btn-ghost:disabled { opacity: 0.6; cursor: default; }
+
+  /* ---------- right sidebar ---------- */
+  .tf-sidebar-right { display: flex; flex-direction: column; gap: 16px; position: static; }
+  .tf-panel-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .tf-panel-icon {
+    width: 40px; height: 40px; border-radius: 50%; background: var(--sky-pale); color: var(--sky-deep);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .tf-panel-icon.orange { background: var(--orange-pale); color: var(--orange-deep); }
+  .tf-panel h3 { font-size: 16px; margin: 0; color: var(--ink); display: flex; align-items: center; gap: 7px; font-family: 'Fraunces', serif; font-weight: 600; }
+  .tf-panel h3 .tf-info-i { color: var(--ink-30); cursor: help; }
+  .tf-panel p { font-size: 12.5px; line-height: 1.55; color: var(--ink-70); margin: 0 0 10px; }
+  .tf-panel .tf-note { font-size: 12px; line-height: 1.55; color: var(--ink-70); background: var(--sky-pale); border-radius: 8px; padding: 10px 12px; margin: 0 0 14px; }
+  .tf-panel .tf-note b { color: var(--sky-deep); }
+
+  .tf-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .tf-steps li { display: flex; gap: 14px; font-size: 13.5px; color: var(--ink-70); align-items: flex-start; padding-bottom: 22px; position: relative; }
+  .tf-steps li:last-child { padding-bottom: 0; }
+  .tf-steps li:not(:last-child)::before {
+    content: ''; position: absolute; left: 13px; top: 28px; bottom: 4px; width: 0;
+    border-left: 2px dotted var(--sky-pale);
+  }
+  .tf-steps li b { color: var(--ink); font-weight: 700; }
+  .tf-step-num {
+    width: 27px; height: 27px; border-radius: 50%; background: var(--sky-pale); color: var(--sky-deep);
+    display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; z-index: 1;
+  }
+
+  .tf-gauge-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 10px 0 14px; }
+  .tf-gauge-num { font-family: 'Fraunces', serif; font-size: 40px; font-weight: 700; color: var(--ink); margin-top: -58px; }
+  .tf-gauge-label { font-size: 14px; font-weight: 700; color: var(--orange-deep); }
+
+
+
+  .tf-footer-note { font-size: 11.5px; line-height: 1.6; color: var(--ink-30); }
+  .tf-footer-note strong { color: var(--ink-70); }
+
+  .tf-toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); opacity: 0;
+    background: var(--ink); color: #fff; font-size: 13px; padding: 10px 18px; border-radius: 8px;
+    transition: all 0.2s ease; pointer-events: none; z-index: 50;
+  }
+  .tf-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="tf-shell">
+  <header class="tf-nav">
+    <div class="tf-brand">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+        <path d="M12 21s-7.5-4.6-10-9.1C.4 8.5 2 5 5.5 5c2 0 3.4 1.1 4.2 2.2C10.5 6.1 12 5 14 5c3.5 0 5.1 3.5 3.5 6.9C15 16.4 12 21 12 21z"
+          fill="url(#tfGrad)" />
+        <defs>
+          <linearGradient id="tfGrad" x1="0" y1="0" x2="24" y2="24">
+            <stop offset="0%" stop-color="#F2793A"/>
+            <stop offset="100%" stop-color="#2E8FB0"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div class="tf-brand-text">
+        <h1>Trial Finder</h1>
+        <p>Find trials. Understand choices.</p>
+      </div>
+    </div>
+
+    <form class="tf-search" id="tf-search-form">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="condition" type="text" placeholder="Search a condition or treatment (e.g. Breast Cancer)" />
+    </form>
+
+    <div class="tf-nav-actions">
+      <button type="submit" form="tf-search-form" class="tf-btn-blue-nav">Search</button>
+    </div>
+  </header>
+
+  <div class="tf-body">
+    <!-- LEFT SIDEBAR -->
+    <aside class="tf-sidebar-left">
+      <div class="tf-panel">
+        <div class="tf-location-row">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-7.2 7-12a7 7 0 1 0-14 0c0 4.8 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
+          <div>
+            <p class="tf-location-label">Your location</p>
+            <p class="tf-location-value" id="tf-location-display">Not set</p>
+          </div>
+        </div>
+        <button type="button" class="tf-link-btn" id="tf-change-location">Change location</button>
+        <div class="tf-location-edit" id="tf-location-edit">
+          <input id="location" type="text" placeholder="City, state, or country" />
+          <button type="button" class="tf-mini-btn" id="tf-save-location">Save</button>
+        </div>
+      </div>
+
+      <div class="tf-panel">
+        <div class="tf-filters-head">
+          <h2>Filters</h2>
+          <button type="button" class="tf-clear" id="tf-clear-filters">Clear all</button>
+        </div>
+
+        <div class="tf-filter-group">
+          <h3>Recruitment status</h3>
+          <label class="tf-check-row"><span><input type="checkbox" class="tf-status" value="RECRUITING" checked /> Accepting participants</span></label>
+          <label class="tf-check-row"><span><input type="checkbox" class="tf-status" value="NOT_YET_RECRUITING" /> Not yet recruiting</span></label>
+          <label class="tf-check-row"><span><input type="checkbox" class="tf-status" value="COMPLETED" /> Completed</span></label>
+          <label class="tf-check-row"><span><input type="checkbox" class="tf-status" value="ACTIVE_NOT_RECRUITING" /> Active, not recruiting</span></label>
+        </div>
+
+        <div class="tf-filter-group">
+          <h3>Age</h3>
+          <div class="tf-age-row">
+            <select id="age-min">
+              <option value="">Any</option>
+            </select>
+            <span>to</span>
+            <select id="age-max">
+              <option value="">Any</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="tf-filter-group">
+          <h3>Sex</h3>
+          <select class="tf-select-full" id="sex">
+            <option value="ALL">All</option>
+            <option value="FEMALE">Female</option>
+            <option value="MALE">Male</option>
+          </select>
+        </div>
+
+        <div class="tf-filter-group">
+          <h3>Study phase</h3>
+          <label class="tf-check-row"><span><input type="checkbox" class="tf-phase" value="PHASE1" /> Phase 1</span></label>
+          <label class="tf-check-row"><span><input type="checkbox" class="tf-phase" value="PHASE2" /> Phase 2</span></label>
+          <label class="tf-check-row"><span><input type="checkbox" class="tf-phase" value="PHASE3" /> Phase 3</span></label>
+          <label class="tf-check-row"><span><input type="checkbox" class="tf-phase" value="PHASE4" /> Phase 4</span></label>
+        </div>
+
+        <button type="button" class="tf-btn-primary" id="tf-apply-filters" style="width:100%; justify-content:center; margin-top: 6px;">Apply filters</button>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="tf-main">
+      <div class="tf-results-topbar">
+        <div>
+          <h2 id="tf-results-count">Search for a condition to begin</h2>
+          <p id="tf-results-sub"></p>
+        </div>
+        <div class="tf-sort">
+          Sort by:
+          <select id="tf-sort">
+            <option value="match">Best match</option>
+            <option value="status">Recruiting first</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="tf-results">
+        <div class="tf-intro">
+          <p>Enter a condition above to get started — for example <em>"breast cancer"</em>, <em>"asthma"</em>, or <em>"rheumatoid arthritis"</em>.</p>
+        </div>
+      </div>
+    </main>
+
+    <!-- RIGHT SIDEBAR -->
+    <aside class="tf-sidebar-right">
+      <div class="tf-panel">
+        <div class="tf-panel-head">
+          <div class="tf-panel-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/></svg></div>
+          <h3>How it works</h3>
+        </div>
+        <ol class="tf-steps">
+          <li><span class="tf-step-num">1</span> <span><b>Search</b> for a condition or treatment</span></li>
+          <li><span class="tf-step-num">2</span> <span><b>Review</b> studies and check if you might qualify</span></li>
+          <li><span class="tf-step-num">3</span> <span><b>Contact</b> the study team if you're interested</span></li>
+        </ol>
+      </div>
+
+      <div class="tf-panel">
+        <div class="tf-panel-head">
+          <div class="tf-panel-icon orange"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><path d="M17 7l3-3M20 4h-3v3"/></svg></div>
+          <h3>Your match score <svg class="tf-info-i" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 16v-5"/><circle cx="12" cy="8" r="0.5" fill="currentColor"/></svg></h3>
+        </div>
+        <p>We compare studies against your age, sex, and your answers on inclusion and exclusion criteria to estimate how closely you may fit — not a real eligibility check.</p>
+        <div class="tf-note"><b>Note*</b> If it's hard to answer an inclusion or exclusion question yourself, check with your doctor before answering.</div>
+        <div class="tf-gauge-wrap">
+          <svg width="160" height="90" viewBox="0 0 160 90">
+            <path d="M 18 72 A 62 62 0 0 1 142 72" fill="none" stroke="#EDE8DF" stroke-width="16" stroke-linecap="round"/>
+            <path d="M 18 72 A 62 62 0 0 1 142 72" fill="none" stroke="url(#tfGaugeGradStatic)" stroke-width="16" stroke-linecap="round"/>
+            <defs>
+              <linearGradient id="tfGaugeGradStatic" x1="0" y1="0" x2="160" y2="0">
+                <stop offset="0%" stop-color="#6EC3E0"/>
+                <stop offset="100%" stop-color="#F2793A"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="tf-gauge-num">100%</div>
+          <div class="tf-gauge-label">Excellent match</div>
+        </div>
+      </div>
+
+      <p class="tf-footer-note"><strong>Trial Finder is not a medical provider.</strong> Information is for general awareness and not medical advice. Eligibility is determined by the study team.</p>
+    </aside>
+  </div>
+</div>
+
+<div class="tf-toast" id="tf-toast"></div>
+
+<script>
+  /* ---------- helpers ---------- */
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function parseAgeToYears(ageStr) {
+    if (!ageStr || ageStr === 'N/A') return null;
+    const m = ageStr.match(/(\d+)\s*(Year|Month|Week|Day)/i);
+    if (!m) return null;
+    const n = parseInt(m[1], 10);
+    const unit = m[2].toLowerCase();
+    if (unit.startsWith('year')) return n;
+    if (unit.startsWith('month')) return n / 12;
+    if (unit.startsWith('week')) return n / 52;
+    return n / 365;
+  }
+
+  function statusMeta(status) {
+    const map = {
+      RECRUITING: { label: 'Recruiting', tone: 'recruiting' },
+      NOT_YET_RECRUITING: { label: 'Not yet recruiting', tone: 'pending' },
+      ENROLLING_BY_INVITATION: { label: 'Enrolling by invitation', tone: 'pending' },
+      ACTIVE_NOT_RECRUITING: { label: 'Active, not recruiting', tone: 'closed' },
+      COMPLETED: { label: 'Completed', tone: 'closed' },
+      TERMINATED: { label: 'Terminated', tone: 'closed' },
+      SUSPENDED: { label: 'Suspended', tone: 'closed' },
+      WITHDRAWN: { label: 'Withdrawn', tone: 'closed' },
+    };
+    return map[status] || { label: status ? status.replaceAll('_',' ') : 'Unknown', tone: 'closed' };
+  }
+
+  function phaseLabel(phases) {
+    if (!phases || phases.length === 0) return null;
+    return phases.map((p) => p.replace('PHASE', 'Phase ')).join(' / ');
+  }
+
+  const LOCATION_ALIASES = {
+    'usa': 'United States', 'us': 'United States', 'u.s.': 'United States', 'u.s.a.': 'United States',
+    'united states of america': 'United States', 'america': 'United States',
+    'uk': 'United Kingdom', 'u.k.': 'United Kingdom', 'great britain': 'United Kingdom',
+    'uae': 'United Arab Emirates', 'u.a.e.': 'United Arab Emirates',
+    'south korea': 'Korea, Republic Of', 'russia': 'Russian Federation',
+    'czech republic': 'Czechia', 'ivory coast': "Cote D'Ivoire",
+  };
+  function normalizeLocation(text) {
+    return text.split(',').map((part) => {
+      const trimmed = part.trim();
+      const key = trimmed.toLowerCase().replace(/\s+/g, ' ');
+      return LOCATION_ALIASES[key] || trimmed;
+    }).join(', ');
+  }
+
+  function iconAvatar(seed) {
+    const bgs = ['#FFE9D6', '#DCEFF7', '#F1EEE8'];
+    const fgs = ['#D9601F', '#2E8FB0', '#3C4E63'];
+    const i = seed % 3;
+    return `<div class="tf-card-icon" style="background:${bgs[i]}">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${fgs[i]}" stroke-width="2">
+        <circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>
+      </svg></div>`;
+  }
+
+  /* ---------- local storage ---------- */
+  function getSaved() { try { return JSON.parse(localStorage.getItem('tf_saved') || '{}'); } catch(e) { return {}; } }
+  function setSaved(obj) { localStorage.setItem('tf_saved', JSON.stringify(obj)); }
+
+  function showToast(msg) {
+    const t = document.getElementById('tf-toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(showToast._tm);
+    showToast._tm = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  /* ---------- match score ---------- */
+  function computeMatchScore(study, opts) {
+    const elig = study.protocolSection?.eligibilityModule || {};
+    const cond = study.protocolSection?.conditionsModule?.conditions || [];
+    const title = study.protocolSection?.identificationModule?.briefTitle || '';
+    const dims = [];
+
+    if (opts.condition) {
+      const term = opts.condition.toLowerCase();
+      const inCond = cond.some((c) => c.toLowerCase().includes(term));
+      const inTitle = title.toLowerCase().includes(term);
+      dims.push(inCond ? 100 : inTitle ? 75 : 50);
+    }
+    if (opts.age !== null && !Number.isNaN(opts.age)) {
+      const min = parseAgeToYears(elig.minimumAge);
+      const max = parseAgeToYears(elig.maximumAge);
+      const inRange = (min === null || opts.age >= min) && (max === null || opts.age <= max);
+      dims.push(inRange ? 100 : 20);
+    }
+    if (dims.length === 0) dims.push(70);
+    return Math.round(dims.reduce((a, b) => a + b, 0) / dims.length);
+  }
+
+  function matchBreakdown(study, opts) {
+    const elig = study.protocolSection?.eligibilityModule || {};
+    const cond = study.protocolSection?.conditionsModule?.conditions || [];
+    const title = study.protocolSection?.identificationModule?.briefTitle || '';
+    const items = [];
+
+    if (opts.condition) {
+      const term = opts.condition.toLowerCase();
+      const inCond = cond.some((c) => c.toLowerCase().includes(term));
+      const inTitle = title.toLowerCase().includes(term);
+      items.push({
+        ok: inCond || inTitle,
+        label: 'Condition',
+        detail: inCond ? `This study lists "${opts.condition}" as a condition.` :
+                inTitle ? `"${opts.condition}" appears in the study title, but isn't listed as an exact condition.` :
+                `"${opts.condition}" wasn't found in the listed conditions or title — double check this is the right study.`,
+      });
+    }
+    if (opts.age !== null && !Number.isNaN(opts.age)) {
+      const min = parseAgeToYears(elig.minimumAge);
+      const max = parseAgeToYears(elig.maximumAge);
+      const inRange = (min === null || opts.age >= min) && (max === null || opts.age <= max);
+      items.push({
+        ok: inRange,
+        label: 'Age',
+        detail: inRange ? `Age ${opts.age} falls within the study's range (${elig.minimumAge || 'N/A'} – ${elig.maximumAge || 'N/A'}).` :
+                          `Age ${opts.age} is outside the study's stated range (${elig.minimumAge || 'N/A'} – ${elig.maximumAge || 'N/A'}).`,
+      });
+    }
+    if (opts.sex && opts.sex !== 'ALL') {
+      const sexOk = !elig.sex || elig.sex === 'ALL' || elig.sex === opts.sex;
+      items.push({
+        ok: sexOk,
+        label: 'Sex',
+        detail: sexOk ? `This study accepts your selected sex.` : `This study is restricted to ${elig.sex}, which doesn't match what you selected.`,
+      });
+    }
+    if (items.length === 0) {
+      items.push({ ok: null, label: 'Info needed', detail: 'Add your age, sex, or a condition in the filters to get a personalized breakdown here.' });
+    }
+    return items;
+  }
+
+  function matchBadgeClass(score) {
+    if (score >= 75) return 'tf-badge-match-high';
+    if (score >= 45) return 'tf-badge-match-mid';
+    return 'tf-badge-match-low';
+  }
+  function matchLabel(score) {
+    if (score >= 95) return 'Excellent match';
+    if (score >= 85) return 'Great match';
+    if (score >= 65) return 'Good match';
+    if (score >= 40) return 'Possible match';
+    return 'Limited match';
+  }
+
+  /* ---------- eligibility text parsing ---------- */
+  function parseEligibilityCriteria(text) {
+    if (!text) return { inclusion: [], exclusion: [] };
+    const lines = text.split(/\r?\n/);
+    let section = 'inclusion';
+    const inclusion = [], exclusion = [];
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line) continue;
+      if (/^inclusion criteria/i.test(line)) { section = 'inclusion'; continue; }
+      if (/^exclusion criteria/i.test(line)) { section = 'exclusion'; continue; }
+      const cleaned = line.replace(/^[-*•]\s*/, '').replace(/^\d+[.)]\s*/, '').trim();
+      if (!cleaned || cleaned.length < 4) continue;
+      if (/^(inclusion|exclusion)\b/i.test(cleaned)) continue;
+      (section === 'inclusion' ? inclusion : exclusion).push(cleaned);
+    }
+    return { inclusion: inclusion.slice(0, 20), exclusion: exclusion.slice(0, 20) };
+  }
+
+  /* ---------- dedicated "Am I a match?" page ---------- */
+  function buildMatchPageHtml(study, scoreOpts) {
+    const id = study.protocolSection?.identificationModule || {};
+    const status = study.protocolSection?.statusModule || {};
+    const design = study.protocolSection?.designModule || {};
+    const elig = study.protocolSection?.eligibilityModule || {};
+    const cond = study.protocolSection?.conditionsModule?.conditions || [];
+    const locs = study.protocolSection?.contactsLocationsModule?.locations || [];
+    const sponsor = study.protocolSection?.sponsorCollaboratorsModule?.leadSponsor?.name || '';
+    const meta = statusMeta(status.overallStatus);
+    const nctId = id.nctId || '';
+    const phase = phaseLabel(design.phases) || '';
+    const placesStr = locs.slice(0, 3).map((l) => [l.city, l.state, l.country].filter(Boolean).join(', ')).join(' · ');
+    const parsed = parseEligibilityCriteria(elig.eligibilityCriteria || '');
+
+    const centralContacts = study.protocolSection?.contactsLocationsModule?.centralContacts || [];
+    const firstLocContact = (locs.find((l) => (l.contacts || []).some((c) => c.role === 'CONTACT'))?.contacts || [])
+      .find((c) => c.role === 'CONTACT');
+    const contact = centralContacts[0] || firstLocContact || null;
+
+    const data = {
+      title: id.briefTitle || '', nctId, statusLabel: meta.label, statusTone: meta.tone, phase,
+      conditions: cond, minAge: elig.minimumAge || 'N/A', maxAge: elig.maximumAge || 'N/A',
+      sex: elig.sex || 'ALL', sponsor, locations: placesStr,
+      inclusion: parsed.inclusion, exclusion: parsed.exclusion,
+      presetAge: scoreOpts && scoreOpts.age != null ? scoreOpts.age : '',
+      presetSex: scoreOpts && scoreOpts.sex ? scoreOpts.sex : 'ALL',
+      officialUrl: 'https://clinicaltrials.gov/study/' + nctId,
+      contactName: contact?.name || '', contactPhone: contact?.phone || '', contactEmail: contact?.email || '',
+    };
+    const dataJson = JSON.stringify(data).replace(/</g, '\\u003c');
+
+    return `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>${escapeHtml(data.title)} — Am I a match?</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" />
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #EFE9DE; font-family: 'Inter', system-ui, sans-serif; color: #16283F; }
+  :root { --ink:#16283F; --ink-70:#3C4E63; --ink-30:#A9B6C4; --orange:#F2793A; --orange-deep:#D9601F; --orange-pale:#FFE9D6;
+    --sky:#6EC3E0; --sky-deep:#2E8FB0; --sky-pale:#DCEFF7; --cream:#FFFBF7; --line:#E8E1D6; --good:#2E8F5C; --bad:#D9601F; }
+  .wrap { max-width: 100%; margin: 0; padding: 28px 40px 80px; }
+  .top-nav { display:flex; align-items:center; justify-content:space-between; padding: 14px 24px; background:#fff; border-bottom:1px solid var(--line); }
+  .top-nav a { font-size: 13px; font-weight:600; color: var(--sky-deep); text-decoration:none; }
+  .brand { font-family:'Fraunces', serif; font-weight:600; font-size:16px;
+    background: linear-gradient(100deg, var(--orange-deep), var(--sky-deep)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+
+  .hero { background:#fff; border:1px solid var(--line); border-radius:14px; padding:22px 24px; margin-bottom:20px; }
+  .badges { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
+  .badge { font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:20px; }
+  .badge-recruiting { background: var(--orange-pale); color: var(--orange-deep); }
+  .badge-pending { background: var(--sky-pale); color: var(--sky-deep); }
+  .badge-closed { background:#F1EEE8; color: var(--ink-70); }
+  .nct { font-family:'IBM Plex Mono', monospace; font-size:11px; color: var(--ink-30); }
+  h1 { font-family:'Fraunces', serif; font-weight:500; font-size:24px; line-height:1.28; margin:0 0 6px; }
+  .cond { font-size:13px; color: var(--orange-deep); font-weight:600; margin:0 0 10px; }
+  .meta-row { display:flex; gap:22px; flex-wrap:wrap; font-size:12.5px; color: var(--ink-70); border-top:1px dashed var(--line); padding-top:12px; margin-top:6px; }
+  .meta-row b { display:block; color: var(--ink); font-size: 13px; }
+
+  .score-panel { position:sticky; top:14px; background:#fff; border:1px solid var(--line); border-radius:14px; padding:20px 24px; margin-bottom:20px; text-align:center; z-index:10; }
+  .score-num { font-family:'Fraunces', serif; font-weight:600; font-size:44px; color: var(--ink); }
+  .score-label { font-size:13.5px; font-weight:700; color: var(--orange-deep); margin-bottom:10px; }
+  .score-bar-track { height:10px; border-radius:6px; background:#EDE8DF; overflow:hidden; margin: 10px 0 4px; }
+  .score-bar-fill { height:100%; border-radius:6px; background: linear-gradient(90deg, var(--sky), var(--orange)); transition: width .25s ease; }
+  .score-sub { font-size:11.5px; color: var(--ink-30); }
+
+  .disclaimer { font-size:12px; line-height:1.55; color: var(--ink-70); background: var(--sky-pale); border-radius:10px; padding:12px 16px; margin-bottom:22px; }
+  .disclaimer strong { color: var(--ink); }
+
+  .section-title { font-family:'Fraunces', serif; font-weight:500; font-size:18px; margin: 26px 0 12px; display:flex; align-items:center; gap:8px; }
+  .section-sub { font-size:12.5px; color: var(--ink-70); margin: -6px 0 14px; }
+
+  .basic-grid { display:grid; grid-template-columns: 1fr 1fr; gap:14px; background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px 20px; max-width: 480px; }
+  .basic-field label { font-size:12px; font-weight:600; color: var(--ink-70); display:block; margin-bottom:6px; }
+  .basic-field input, .basic-field select { width:100%; font-size:14px; padding:9px 11px; border:1.5px solid var(--line); border-radius:8px; }
+
+  #inclusion-list, #exclusion-list { display: flex; flex-direction: column; gap: 10px; }
+  .q-card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin-bottom:0; }
+  .q-text { font-size:13.5px; line-height:1.5; color: var(--ink); margin-bottom:10px; }
+  .q-btns { display:flex; gap:8px; }
+  .q-btn { flex:1; font-size:12.5px; font-weight:600; padding:8px 6px; border-radius:7px; border:1.5px solid var(--line); background:#fff; color: var(--ink-70); cursor:pointer; }
+  .q-btn.sel-yes { background:#E7F5EC; border-color:var(--good); color:var(--good); }
+  .q-btn.sel-no { background:#FFEDE3; border-color:var(--bad); color:var(--bad); }
+  .q-btn.sel-unsure { background:#F1EEE8; border-color: var(--ink-30); color: var(--ink-70); }
+
+  .empty-note { font-size:13px; color: var(--ink-30); background:#fff; border:1px dashed var(--line); border-radius:10px; padding:14px 16px; }
+
+  .footer-actions { display:flex; gap:12px; margin-top: 28px; flex-wrap: wrap; }
+  .btn-outline { font-size:13.5px; font-weight:700; padding:10px 18px; border-radius:8px; border:1.5px solid var(--orange); background: var(--orange); color:#fff; text-decoration:none; cursor:pointer; display:inline-flex; align-items:center; gap:7px; }
+  .btn-outline:hover { background: var(--orange-deep); border-color: var(--orange-deep); }
+  .btn-blue { font-size:13.5px; font-weight:700; padding:10px 18px; border-radius:8px; border:1.5px solid var(--sky-deep); background: var(--sky-deep); color:#fff; text-decoration:none; cursor:pointer; display:inline-flex; align-items:center; gap:7px; }
+  .btn-blue:hover { background:#256f89; border-color:#256f89; }
+  .contact-panel { display:none; background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin-top:12px; }
+  .contact-panel.open { display:block; }
+  .contact-panel-title { font-size:11.5px; text-transform:uppercase; letter-spacing:0.05em; color: var(--ink-30); font-weight:700; margin-bottom:8px; }
+  .contact-row { font-size:13.5px; color: var(--ink-70); margin-bottom:4px; }
+  .contact-key { font-weight:600; color: var(--ink); margin-right:4px; }
+  .contact-row a { color: var(--sky-deep); text-decoration:none; }
+  .contact-row a:hover { text-decoration:underline; }
+
+  .print-only { display: none; }
+  @media print {
+    body * { visibility: hidden; }
+    #print-summary, #print-summary * { visibility: visible; }
+    #print-summary { display: block; position: absolute; top: 0; left: 0; width: 100%; padding: 20px; }
+    #print-summary h1 { font-family:'Fraunces', serif; font-size:20px; margin:0 0 4px; }
+    #print-summary .p-meta { font-size:12px; color:#3C4E63; margin-bottom:14px; }
+    #print-summary .p-score { font-family:'Fraunces', serif; font-size:30px; font-weight:600; margin: 10px 0 2px; }
+    #print-summary .p-score-label { font-size:13px; font-weight:700; color:#D9601F; margin-bottom:14px; }
+    #print-summary h2 { font-size:14px; margin: 18px 0 8px; border-bottom:1px solid #ddd; padding-bottom:4px; }
+    #print-summary .p-q { font-size:12.5px; margin-bottom:8px; padding-bottom:8px; border-bottom:1px dotted #ddd; }
+    #print-summary .p-q b { display:block; margin-bottom:2px; }
+    #print-summary .p-answer-yes { color:#2E8F5C; font-weight:700; }
+    #print-summary .p-answer-no { color:#D9601F; font-weight:700; }
+    #print-summary .p-answer-unsure { color:#888; font-weight:700; }
+    #print-summary .p-disclaimer { font-size:11px; color:#555; margin-top:20px; border-top:1px solid #ddd; padding-top:10px; }
+  }
+</style></head>
+<body>
+  <header class="top-nav"><span class="brand">Trial Finder</span><a href="javascript:window.close()">Close this tab</a></header>
+  <div class="wrap">
+
+    <div class="hero">
+      <div class="badges">
+        <span class="badge badge-${data.statusTone}">${escapeHtml(data.statusLabel)}</span>
+        ${data.phase ? `<span class="badge badge-pending">${escapeHtml(data.phase)}</span>` : ''}
+        <span class="nct">${escapeHtml(data.nctId)}</span>
+      </div>
+      <h1>${escapeHtml(data.title)}</h1>
+      ${data.conditions.length ? `<p class="cond">${escapeHtml(data.conditions.slice(0,4).join(', '))}</p>` : ''}
+      <div class="meta-row">
+        <div><span>Age range</span><b>${escapeHtml(data.minAge)} – ${escapeHtml(data.maxAge)}</b></div>
+        <div><span>Sex</span><b>${data.sex === 'ALL' ? 'All' : escapeHtml(data.sex)}</b></div>
+        ${data.sponsor ? `<div><span>Sponsor</span><b>${escapeHtml(data.sponsor)}</b></div>` : ''}
+        ${data.locations ? `<div><span>Locations</span><b>${escapeHtml(data.locations)}</b></div>` : ''}
+      </div>
+    </div>
+
+    <div class="score-panel">
+      <div class="score-num" id="score-num">—</div>
+      <div class="score-label" id="score-label">Answer the questions below</div>
+      <div class="score-bar-track"><div class="score-bar-fill" id="score-bar" style="width:0%"></div></div>
+      <div class="score-sub">Estimated fit based on your answers · updates live</div>
+    </div>
+
+    <div class="disclaimer"><strong>This is a self-assessment tool, not a real eligibility determination.</strong> It's meant to help you think through the criteria before you talk to the study team — they make the final call on whether you qualify.</div>
+
+    <div class="basic-grid">
+      <div class="basic-field">
+        <label>Your age</label>
+        <input type="number" id="q-age" min="0" max="120" placeholder="e.g. 45" value="${escapeHtml(String(data.presetAge))}" />
+      </div>
+      <div class="basic-field">
+        <label>Your sex</label>
+        <select id="q-sex">
+          <option value="ALL">Prefer not to say</option>
+          <option value="FEMALE">Female</option>
+          <option value="MALE">Male</option>
+        </select>
+      </div>
+    </div>
+
+    <h2 class="section-title">Inclusion criteria</h2>
+    <p class="section-sub">Answer "Yes" if the statement is true for you.</p>
+    <div id="inclusion-list"></div>
+
+    <h2 class="section-title">Exclusion criteria</h2>
+    <p class="section-sub">Answer "Yes" if the statement is true for you — matching an exclusion criterion works against eligibility.</p>
+    <div id="exclusion-list"></div>
+
+    <div class="footer-actions">
+      <a class="btn-outline" href="${escapeHtml(data.officialUrl)}" target="_blank" rel="noreferrer">View official listing on ClinicalTrials.gov ↗</a>
+      ${data.contactName || data.contactPhone || data.contactEmail ? '<button type="button" class="btn-outline" id="contact-toggle">Contact for more information</button>' : ''}
+      <button type="button" class="btn-blue" id="download-btn">Download</button>
+    </div>
+    <div id="print-summary" class="print-only"></div>
+    ${data.contactName || data.contactPhone || data.contactEmail ? `
+    <div class="contact-panel" id="contact-panel">
+      <div class="contact-panel-title">Study Contact</div>
+      <div class="contact-row"><span class="contact-key">Name:</span> ${escapeHtml(data.contactName || '—')}</div>
+      <div class="contact-row"><span class="contact-key">Phone Number:</span> ${escapeHtml(data.contactPhone || '—')}</div>
+      <div class="contact-row"><span class="contact-key">Email:</span> ${data.contactEmail ? `<a href="mailto:${escapeHtml(data.contactEmail)}">${escapeHtml(data.contactEmail)}</a>` : '—'}</div>
+    </div>` : ''}
+  </div>
+
+<script>
+  const DATA = ${dataJson};
+  const answers = { age: null, sex: null, inclusion: {}, exclusion: {} };
+
+  function el(html) { const d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstChild; }
+
+  function questionCard(text, key, group) {
+    const card = el('<div class="q-card"><div class="q-text"></div><div class="q-btns"></div></div>');
+    card.querySelector('.q-text').textContent = text;
+    const btns = card.querySelector('.q-btns');
+    ['Yes','No',"Not sure"].forEach((label) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'q-btn'; b.textContent = label;
+      b.addEventListener('click', () => {
+        const val = label === 'Yes' ? 'yes' : label === 'No' ? 'no' : 'unsure';
+        answers[group][key] = val;
+        btns.querySelectorAll('.q-btn').forEach((x) => x.classList.remove('sel-yes','sel-no','sel-unsure'));
+        b.classList.add('sel-' + val);
+        recompute();
+      });
+      btns.appendChild(b);
+    });
+    return card;
+  }
+
+  const incWrap = document.getElementById('inclusion-list');
+  const excWrap = document.getElementById('exclusion-list');
+  if (DATA.inclusion.length === 0) incWrap.appendChild(el('<div class="empty-note">No structured inclusion criteria were found in this listing — check the official page for full details.</div>'));
+  else DATA.inclusion.forEach((text, i) => incWrap.appendChild(questionCard(text, 'inc' + i, 'inclusion')));
+
+  if (DATA.exclusion.length === 0) excWrap.appendChild(el('<div class="empty-note">No structured exclusion criteria were found in this listing — check the official page for full details.</div>'));
+  else DATA.exclusion.forEach((text, i) => excWrap.appendChild(questionCard(text, 'exc' + i, 'exclusion')));
+
+  document.getElementById('q-age').addEventListener('input', (e) => { answers.age = e.target.value ? parseFloat(e.target.value) : null; recompute(); });
+  document.getElementById('q-sex').addEventListener('change', (e) => { answers.sex = e.target.value; recompute(); });
+  document.getElementById('q-sex').value = DATA.presetSex || 'ALL';
+  if (DATA.presetSex && DATA.presetSex !== 'ALL') answers.sex = DATA.presetSex;
+  if (DATA.presetAge !== '') answers.age = parseFloat(DATA.presetAge);
+
+  function parseAgeYears(str) {
+    if (!str || str === 'N/A') return null;
+    const m = String(str).match(/(\\d+)\\s*(Year|Month|Week|Day)/i);
+    if (!m) return null;
+    const n = parseInt(m[1], 10), unit = m[2].toLowerCase();
+    if (unit.startsWith('year')) return n;
+    if (unit.startsWith('month')) return n / 12;
+    if (unit.startsWith('week')) return n / 52;
+    return n / 365;
+  }
+
+  let lastPct = null, lastLabel = 'Not enough info answered yet';
+
+  function recompute() {
+    const points = [];
+
+    if (answers.age !== null && !Number.isNaN(answers.age)) {
+      const min = parseAgeYears(DATA.minAge), max = parseAgeYears(DATA.maxAge);
+      const inRange = (min === null || answers.age >= min) && (max === null || answers.age <= max);
+      points.push(inRange ? 1 : 0);
+    }
+    if (answers.sex && answers.sex !== 'ALL' && DATA.sex && DATA.sex !== 'ALL') {
+      points.push(answers.sex === DATA.sex ? 1 : 0);
+    }
+    Object.values(answers.inclusion).forEach((v) => points.push(v === 'yes' ? 1 : v === 'unsure' ? 0.5 : 0));
+    Object.values(answers.exclusion).forEach((v) => points.push(v === 'no' ? 1 : v === 'unsure' ? 0.5 : 0));
+
+    const totalQuestions = DATA.inclusion.length + DATA.exclusion.length + (document.getElementById('q-age').value ? 1 : 0) + (answers.sex && answers.sex !== 'ALL' && DATA.sex !== 'ALL' ? 1 : 0);
+    const answeredCount = points.length;
+
+    const scoreEl = document.getElementById('score-num');
+    const labelEl = document.getElementById('score-label');
+    const barEl = document.getElementById('score-bar');
+
+    if (points.length === 0) {
+      scoreEl.textContent = '—';
+      labelEl.textContent = 'Answer the questions below';
+      barEl.style.width = '0%';
+      lastPct = null;
+      lastLabel = 'No questions answered yet';
+      return;
+    }
+    const pct = Math.round((points.reduce((a,b)=>a+b,0) / points.length) * 100);
+    scoreEl.textContent = pct + '%';
+    barEl.style.width = pct + '%';
+    let label = pct >= 95 ? 'Excellent match so far' : pct >= 85 ? 'Great match so far' : pct >= 65 ? 'Good match so far' : pct >= 40 ? 'Possible match so far' : 'Limited match so far';
+    lastPct = pct;
+    lastLabel = label;
+    if (answeredCount < totalQuestions) label += ' · ' + answeredCount + ' of ' + totalQuestions + ' answered';
+    labelEl.textContent = label;
+  }
+
+  recompute();
+
+  const contactToggle = document.getElementById('contact-toggle');
+  if (contactToggle) {
+    contactToggle.addEventListener('click', () => {
+      const panel = document.getElementById('contact-panel');
+      const isOpen = panel.classList.toggle('open');
+      if (isOpen) panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  }
+
+  function answerLabel(val) {
+    if (val === 'yes') return { text: 'Yes', cls: 'p-answer-yes' };
+    if (val === 'no') return { text: 'No', cls: 'p-answer-no' };
+    if (val === 'unsure') return { text: 'Not sure', cls: 'p-answer-unsure' };
+    return { text: 'Not answered', cls: 'p-answer-unsure' };
+  }
+
+  function buildPrintSummary() {
+    const today = new Date().toLocaleDateString();
+    let html = '';
+    html += '<h1>' + DATA.title + '</h1>';
+    html += '<div class="p-meta">' + DATA.nctId + ' · ' + DATA.statusLabel + (DATA.phase ? ' · ' + DATA.phase : '') + ' · Generated ' + today + '</div>';
+    html += '<div class="p-meta">Sponsor: ' + (DATA.sponsor || '—') + ' · Locations: ' + (DATA.locations || '—') + '</div>';
+    html += '<div class="p-score">' + (lastPct === null ? '—' : lastPct + '%') + '</div>';
+    html += '<div class="p-score-label">' + lastLabel + '</div>';
+
+    html += '<h2>Your basic info</h2>';
+    const ageVal = document.getElementById('q-age').value || 'Not provided';
+    const sexVal = document.getElementById('q-sex').selectedOptions[0].textContent;
+    html += '<div class="p-q"><b>Your age</b>' + ageVal + ' (study range: ' + DATA.minAge + ' – ' + DATA.maxAge + ')</div>';
+    html += '<div class="p-q"><b>Your sex</b>' + sexVal + ' (study requires: ' + (DATA.sex === 'ALL' ? 'All' : DATA.sex) + ')</div>';
+
+    html += '<h2>Inclusion criteria</h2>';
+    if (DATA.inclusion.length === 0) html += '<div class="p-q">No structured inclusion criteria were listed.</div>';
+    DATA.inclusion.forEach((text, i) => {
+      const a = answerLabel(answers.inclusion['inc' + i]);
+      html += '<div class="p-q"><b>' + text + '</b><span class="' + a.cls + '">' + a.text + '</span></div>';
+    });
+
+    html += '<h2>Exclusion criteria</h2>';
+    if (DATA.exclusion.length === 0) html += '<div class="p-q">No structured exclusion criteria were listed.</div>';
+    DATA.exclusion.forEach((text, i) => {
+      const a = answerLabel(answers.exclusion['exc' + i]);
+      html += '<div class="p-q"><b>' + text + '</b><span class="' + a.cls + '">' + a.text + '</span></div>';
+    });
+
+    html += '<div class="p-disclaimer">This is a self-assessment summary, not a real eligibility determination. Contact the study team (' +
+      (DATA.contactName || DATA.sponsor || 'the study team') + ') to confirm — official listing: ' + DATA.officialUrl + '</div>';
+
+    document.getElementById('print-summary').innerHTML = html;
+  }
+
+  const downloadBtn = document.getElementById('download-btn');
+  if (downloadBtn) {
+    downloadBtn.addEventListener('click', () => {
+      buildPrintSummary();
+      window.print();
+    });
+  }
+<\/script>
+</body></html>`;
+  }
+
+  /* ---------- dedicated "Ask AI" chat page ---------- */
+  function buildAskAiPageHtml(study) {
+    const id = study.protocolSection?.identificationModule || {};
+    const status = study.protocolSection?.statusModule || {};
+    const design = study.protocolSection?.designModule || {};
+    const elig = study.protocolSection?.eligibilityModule || {};
+    const cond = study.protocolSection?.conditionsModule?.conditions || [];
+    const locs = study.protocolSection?.contactsLocationsModule?.locations || [];
+    const sponsor = study.protocolSection?.sponsorCollaboratorsModule?.leadSponsor?.name || '';
+    const desc = study.protocolSection?.descriptionModule || {};
+    const meta = statusMeta(status.overallStatus);
+    const nctId = id.nctId || '';
+    const phase = phaseLabel(design.phases) || '';
+    const placesStr = locs.map((l) => [l.city, l.state, l.country].filter(Boolean).join(', ')).join(' · ');
+    const parsed = parseEligibilityCriteria(elig.eligibilityCriteria || '');
+
+    const centralContacts = study.protocolSection?.contactsLocationsModule?.centralContacts || [];
+    const firstLocContact = (locs.find((l) => (l.contacts || []).some((c) => c.role === 'CONTACT'))?.contacts || [])
+      .find((c) => c.role === 'CONTACT');
+    const contact = centralContacts[0] || firstLocContact || null;
+
+    const data = {
+      title: id.briefTitle || '', nctId, statusLabel: meta.label, phase,
+      conditions: cond, summary: desc.briefSummary || '',
+      minAge: elig.minimumAge || 'N/A', maxAge: elig.maximumAge || 'N/A', sex: elig.sex || 'ALL',
+      sponsor, locations: placesStr, locationCount: locs.length,
+      inclusion: parsed.inclusion, exclusion: parsed.exclusion,
+      contactName: contact?.name || '', contactPhone: contact?.phone || '', contactEmail: contact?.email || '',
+      officialUrl: 'https://clinicaltrials.gov/study/' + nctId,
+    };
+    const dataJson = JSON.stringify(data).replace(/</g, '\\u003c');
+
+    return `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ask about ${escapeHtml(data.title)}</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" />
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; height:100%; background:#EFE9DE; font-family:'Inter', system-ui, sans-serif; color:#16283F; }
+  :root { --ink:#16283F; --ink-70:#3C4E63; --ink-30:#A9B6C4; --orange:#F2793A; --orange-deep:#D9601F; --orange-pale:#FFE9D6;
+    --sky:#6EC3E0; --sky-deep:#2E8FB0; --sky-pale:#DCEFF7; --cream:#FFFBF7; --line:#E8E1D6; }
+  .shell { display:flex; flex-direction:column; height:100vh; }
+
+  .top-nav { display:flex; align-items:center; justify-content:space-between; padding: 12px 20px; background:#fff; border-bottom:1px solid var(--line); flex-shrink:0; }
+  .brand { font-family:'Fraunces', serif; font-weight:600; font-size:15px;
+    background: linear-gradient(100deg, var(--orange-deep), var(--sky-deep)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+  .top-nav-title { font-size:12.5px; color: var(--ink-70); text-align:center; flex:1; padding: 0 16px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .top-nav a { font-size: 13px; font-weight:600; color: var(--sky-deep); text-decoration:none; flex-shrink:0; }
+
+  .disclaimer-bar {
+    background: var(--sky-pale); color: var(--sky-deep); font-size:12px; line-height:1.5;
+    padding: 9px 20px; text-align:center; flex-shrink:0; border-bottom:1px solid #B9DEEC;
+  }
+  .disclaimer-bar strong { color: var(--ink); }
+
+  .chat-scroll { flex:1; overflow-y:auto; padding: 20px 0; }
+  .chat-inner { max-width: 720px; margin: 0 auto; padding: 0 20px; display:flex; flex-direction:column; gap:16px; }
+
+  .msg { display:flex; gap:10px; max-width: 90%; }
+  .msg.user { align-self:flex-end; flex-direction:row-reverse; }
+  .msg.assistant { align-self:flex-start; }
+  .msg-avatar {
+    width:28px; height:28px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+    font-size:12px; font-weight:700; color:#fff;
+  }
+  .msg.assistant .msg-avatar { background: linear-gradient(135deg, var(--orange), var(--sky-deep)); }
+  .msg.user .msg-avatar { background: var(--ink); }
+  .msg-bubble { padding: 11px 14px; border-radius: 14px; font-size:13.5px; line-height:1.55; white-space:pre-wrap; }
+  .msg.assistant .msg-bubble { background:#fff; border:1px solid var(--line); color: var(--ink); border-top-left-radius:4px; }
+  .msg.user .msg-bubble { background: var(--ink); color:#fff; border-top-right-radius:4px; }
+
+  .typing-dots { display:inline-flex; gap:3px; padding: 4px 0; }
+  .typing-dots span { width:6px; height:6px; border-radius:50%; background: var(--ink-30); animation: bounce 1.2s infinite; }
+  .typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); opacity:.5; } 30% { transform: translateY(-4px); opacity:1; } }
+
+  .suggestions { display:flex; flex-wrap:wrap; gap:8px; margin: 4px 0 0 38px; }
+  .suggestion-chip {
+    font-size:12px; font-weight:600; padding:7px 12px; border-radius:999px; border:1.5px solid var(--line);
+    background:#fff; color: var(--sky-deep); cursor:pointer;
+  }
+  .suggestion-chip:hover { border-color: var(--sky-deep); background: var(--sky-pale); }
+
+  .input-bar { flex-shrink:0; border-top:1px solid var(--line); background:#fff; padding: 14px 20px; }
+  .input-inner { max-width:720px; margin:0 auto; display:flex; gap:10px; align-items:flex-end; }
+  .input-inner textarea {
+    flex:1; resize:none; border:1.5px solid var(--line); border-radius:12px; padding:11px 14px;
+    font-family:inherit; font-size:13.5px; line-height:1.5; max-height:120px; outline:none;
+  }
+  .input-inner textarea:focus { border-color: var(--orange); }
+  .send-btn {
+    width:40px; height:40px; border-radius:10px; border:none; background: var(--orange); color:#fff;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;
+  }
+  .send-btn:hover { background: var(--orange-deep); }
+  .send-btn:disabled { opacity:.5; cursor:default; }
+  .input-hint { max-width:720px; margin: 8px auto 0; font-size:11px; color: var(--ink-30); text-align:center; }
+</style></head>
+<body>
+  <div class="shell">
+    <header class="top-nav">
+      <span class="brand">Trial Finder</span>
+      <span class="top-nav-title">${escapeHtml(data.title)} · ${escapeHtml(data.nctId)}</span>
+      <a href="javascript:window.close()">Close this tab</a>
+    </header>
+    <div class="disclaimer-bar"><strong>Simple trial assistant, not a connected AI model.</strong> It answers using only the information listed for this specific trial — nothing else.</div>
+
+    <div class="chat-scroll" id="chat-scroll">
+      <div class="chat-inner" id="chat-inner"></div>
+    </div>
+
+    <div class="input-bar">
+      <div class="input-inner">
+        <textarea id="chat-input" rows="1" placeholder="Ask something about this trial…"></textarea>
+        <button type="button" class="send-btn" id="send-btn" aria-label="Send">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        </button>
+      </div>
+      <p class="input-hint">Answers are generated locally from this trial's listing — for anything else, contact the study team or view the official listing.</p>
+    </div>
+  </div>
+
+<script>
+  const DATA = ${dataJson};
+  const chatInner = document.getElementById('chat-inner');
+  const chatScroll = document.getElementById('chat-scroll');
+  const input = document.getElementById('chat-input');
+  const sendBtn = document.getElementById('send-btn');
+
+  function scrollToBottom() { chatScroll.scrollTop = chatScroll.scrollHeight; }
+
+  function addMessage(role, text, withSuggestions) {
+    const wrap = document.createElement('div');
+    wrap.className = 'msg ' + role;
+    const avatar = document.createElement('div');
+    avatar.className = 'msg-avatar';
+    avatar.textContent = role === 'user' ? 'You' : 'i';
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble';
+    bubble.textContent = text;
+    wrap.appendChild(avatar);
+    wrap.appendChild(bubble);
+    chatInner.appendChild(wrap);
+
+    if (withSuggestions && withSuggestions.length) {
+      const sugg = document.createElement('div');
+      sugg.className = 'suggestions';
+      withSuggestions.forEach((q) => {
+        const chip = document.createElement('button');
+        chip.type = 'button'; chip.className = 'suggestion-chip'; chip.textContent = q;
+        chip.addEventListener('click', () => { input.value = q; sendMessage(); });
+        sugg.appendChild(chip);
+      });
+      chatInner.appendChild(sugg);
+    }
+    scrollToBottom();
+  }
+
+  function addTyping() {
+    const wrap = document.createElement('div');
+    wrap.className = 'msg assistant'; wrap.id = 'typing-indicator';
+    wrap.innerHTML = '<div class="msg-avatar">i</div><div class="msg-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>';
+    chatInner.appendChild(wrap);
+    scrollToBottom();
+  }
+  function removeTyping() {
+    const t = document.getElementById('typing-indicator');
+    if (t) t.remove();
+  }
+
+  function answerQuestion(qRaw) {
+    const q = qRaw.toLowerCase();
+
+    if (/\\b(what|tell me).*(about|study|trial|purpose|summary|involve)/.test(q) || /^what is/.test(q)) {
+      let a = DATA.title + '.';
+      if (DATA.conditions.length) a += ' It focuses on: ' + DATA.conditions.join(', ') + '.';
+      if (DATA.summary) a += '\\n\\n' + DATA.summary;
+      return a;
+    }
+    if (/phase/.test(q)) {
+      return DATA.phase ? 'This is a ' + DATA.phase + ' trial.' : 'No phase is listed for this trial (it may be an observational study rather than a phased interventional trial).';
+    }
+    if (/(who can|eligib|qualify|join|participat)/.test(q)) {
+      let a = 'Based on the listing: ages ' + DATA.minAge + ' to ' + DATA.maxAge + ', sex: ' + (DATA.sex === 'ALL' ? 'all' : DATA.sex.toLowerCase()) + '.';
+      a += ' There are ' + DATA.inclusion.length + ' inclusion criteria and ' + DATA.exclusion.length + ' exclusion criteria listed.';
+      a += ' Use the "Am I a match?" page on this trial to go through them one by one.';
+      return a;
+    }
+    if (/(where|location|near|site|city|country)/.test(q)) {
+      if (!DATA.locations) return 'No specific locations are listed for this trial in the registry.';
+      return 'This trial runs at ' + DATA.locationCount + ' site' + (DATA.locationCount === 1 ? '' : 's') + ': ' + DATA.locations + '.';
+    }
+    if (/(contact|reach|call|email|phone|sign up|enroll)/.test(q)) {
+      if (!DATA.contactName && !DATA.contactPhone && !DATA.contactEmail) {
+        return 'No direct study contact is listed for this trial — the official listing may still have more detail.';
+      }
+      let a = 'You can reach the study contact';
+      if (DATA.contactName) a += ', ' + DATA.contactName;
+      a += ':';
+      if (DATA.contactPhone) a += '\\nPhone: ' + DATA.contactPhone;
+      if (DATA.contactEmail) a += '\\nEmail: ' + DATA.contactEmail;
+      return a;
+    }
+    if (/(sponsor|running|conduct|who.*(runs|leads))/.test(q)) {
+      return DATA.sponsor ? 'This trial is sponsored by ' + DATA.sponsor + '.' : 'No sponsor is listed for this trial.';
+    }
+    if (/(status|recruiting|open|closed)/.test(q)) {
+      return 'Current status: ' + DATA.statusLabel + '.';
+    }
+    if (/\\bage\\b/.test(q)) {
+      return 'The listed age range is ' + DATA.minAge + ' to ' + DATA.maxAge + '.';
+    }
+    if (/\\b(sex|gender|male|female)\\b/.test(q)) {
+      return 'This trial accepts: ' + (DATA.sex === 'ALL' ? 'all sexes' : DATA.sex.toLowerCase()) + '.';
+    }
+    if (/\\b(nct|id|number)\\b/.test(q)) {
+      return 'The trial ID is ' + DATA.nctId + '.';
+    }
+    if (/(side effect|risk|danger|safe|safety)/.test(q)) {
+      return "This page doesn't have detailed safety or side-effect information — that level of detail usually needs the full protocol or a conversation with the study team. Check the official listing or contact them directly.";
+    }
+    if (/(inclusion criteria|exclusion criteria|criteria)/.test(q)) {
+      let a = '';
+      if (DATA.inclusion.length) a += 'Inclusion criteria include:\\n- ' + DATA.inclusion.slice(0,5).join('\\n- ');
+      if (DATA.exclusion.length) a += (a ? '\\n\\n' : '') + 'Exclusion criteria include:\\n- ' + DATA.exclusion.slice(0,5).join('\\n- ');
+      if (!a) a = 'No structured criteria were found in this listing.';
+      return a;
+    }
+
+    return "I can only answer basic questions using what's listed for this specific trial — things like what it's about, who can join, where it runs, its status, or how to contact the study team. For anything more detailed, check the official listing or reach out to the study contact.";
+  }
+
+  function sendMessage() {
+    const text = input.value.trim();
+    if (!text) return;
+    addMessage('user', text);
+    input.value = '';
+    input.style.height = 'auto';
+    sendBtn.disabled = true;
+    addTyping();
+    setTimeout(() => {
+      removeTyping();
+      addMessage('assistant', answerQuestion(text));
+      sendBtn.disabled = false;
+      input.focus();
+    }, 500 + Math.random() * 400);
+  }
+
+  sendBtn.addEventListener('click', sendMessage);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+  });
+
+  addMessage('assistant',
+    "Hi! I can answer basic questions about this specific trial — " + DATA.title + ". Try asking what it's about, who can join, or where it's located.",
+    ['What is this trial about?', 'Who can join?', 'Where is it located?', 'How do I contact the study team?']
+  );
+<\/script>
+</body></html>`;
+  }
+
+  function gaugeSvg(score) {
+    const pct = Math.max(0, Math.min(100, score));
+    const angle = (pct / 100) * 180;
+    const r = 62, cx = 80, cy = 72;
+    const rad = (Math.PI / 180) * (180 - angle);
+    const x = cx + r * Math.cos(rad);
+    const y = cy - r * Math.sin(rad);
+    const largeArc = angle > 180 ? 1 : 0;
+    return `
+      <svg width="160" height="90" viewBox="0 0 160 90">
+        <path d="M 18 72 A 62 62 0 0 1 142 72" fill="none" stroke="#EDE8DF" stroke-width="16" stroke-linecap="round"/>
+        <path d="M 18 72 A 62 62 0 0 1 ${x.toFixed(1)} ${y.toFixed(1)}" fill="none" stroke="url(#gaugeGrad)" stroke-width="16" stroke-linecap="round"/>
+        <defs>
+          <linearGradient id="gaugeGrad" x1="0" y1="0" x2="160" y2="0">
+            <stop offset="0%" stop-color="#6EC3E0"/>
+            <stop offset="100%" stop-color="#F2793A"/>
+          </linearGradient>
+        </defs>
+      </svg>`;
+  }
+
+
+  /* ---------- state ---------- */
+  let currentStudies = [];
+  let nextPageToken = null;
+  let lastAgeMin = null, lastAgeMax = null, lastSex = 'ALL', lastPhases = [];
+  let lastConditionForScore = '';
+
+  const resultsEl = document.getElementById('tf-results');
+
+  function buildParams(pageToken, includeLocation) {
+    const condition = document.getElementById('condition').value.trim();
+    const location = normalizeLocation(document.getElementById('location').value.trim());
+    const statuses = Array.from(document.querySelectorAll('.tf-status:checked')).map((el) => el.value);
+
+    const params = new URLSearchParams();
+    if (condition) params.set('query.term', condition);
+    if (includeLocation && location) params.set('query.locn', location);
+    if (statuses.length > 0) params.set('filter.overallStatus', statuses.join(','));
+    params.set('pageSize', '20');
+    params.set('format', 'json');
+    params.set('countTotal', 'true');
+    if (pageToken) params.set('pageToken', pageToken);
+    return params;
+  }
+
+  function renderLoading() {
+    resultsEl.innerHTML = `<div class="tf-loading"><svg class="beacon-pulse" width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="#F2793A"/></svg><span>Scanning the registry…</span></div>`;
+  }
+  function renderError(msg) {
+    resultsEl.innerHTML = `<div class="tf-error"><p><strong>Couldn't reach ClinicalTrials.gov.</strong> ${escapeHtml(msg)}</p><p class="tf-error-sub">You can also search directly at <a href="https://clinicaltrials.gov" target="_blank" rel="noreferrer">clinicaltrials.gov</a>.</p></div>`;
+  }
+  function renderEmpty() {
+    resultsEl.innerHTML = `<div class="tf-empty"><p>No trials matched that search.</p><p class="tf-empty-sub">Try a broader condition name, clear the location, or check fewer status filters.</p></div>`;
+  }
+  function renderLocationNotice(location) {
+    return `<div class="tf-location-notice">No trials had a site matching "<strong>${escapeHtml(location)}</strong>" exactly, so these results aren't filtered by location — try just the state or country instead.</div>`;
+  }
+
+  function contactBlockHtml(s) {
+    const centralContacts = s.protocolSection?.contactsLocationsModule?.centralContacts || [];
+    const locs = s.protocolSection?.contactsLocationsModule?.locations || [];
+    const firstLocContact = (locs.find((l) => (l.contacts || []).some((c) => c.role === 'CONTACT'))?.contacts || [])
+      .find((c) => c.role === 'CONTACT');
+    const contact = centralContacts[0] || firstLocContact || null;
+    if (!contact) return '';
+    const name = contact.name || '—';
+    const phone = contact.phone || '—';
+    const email = contact.email || '—';
+    return `
+      <div class="tf-card-contact">
+        <span class="tf-fact-label">Study Contact</span>
+        <div class="tf-contact-row"><span class="tf-contact-key">Name:</span> ${escapeHtml(name)}</div>
+        <div class="tf-contact-row"><span class="tf-contact-key">Phone Number:</span> ${escapeHtml(phone)}</div>
+        <div class="tf-contact-row"><span class="tf-contact-key">Email:</span> ${email !== '—' ? `<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>` : '—'}</div>
+      </div>`;
+  }
+
+  function cardHtml(s, idx, scoreOpts) {
+    const id = s.protocolSection?.identificationModule || {};
+    const status = s.protocolSection?.statusModule || {};
+    const cond = s.protocolSection?.conditionsModule?.conditions || [];
+    const design = s.protocolSection?.designModule || {};
+    const elig = s.protocolSection?.eligibilityModule || {};
+    const desc = s.protocolSection?.descriptionModule || {};
+    const locs = s.protocolSection?.contactsLocationsModule?.locations || [];
+    const sponsor = s.protocolSection?.sponsorCollaboratorsModule?.leadSponsor?.name || '';
+    const meta = statusMeta(status.overallStatus);
+    const nctId = id.nctId || '';
+    const score = computeMatchScore(s, scoreOpts);
+
+    const placesShown = locs.slice(0, 1);
+    const morePlaces = locs.length - placesShown.length;
+    const placesStr = placesShown.map((l) => [l.city, l.state, l.country].filter(Boolean).join(', ')).join(' · ');
+
+    let summary = desc.briefSummary || '';
+    if (summary.length > 200) summary = summary.slice(0, 200).trim() + '…';
+
+    const phase = phaseLabel(design.phases);
+    const saved = !!getSaved()[nctId];
+
+    return `
+      <li class="tf-card" data-score="${score}">
+        <button type="button" class="tf-bookmark ${saved ? 'saved' : ''}" data-id="${escapeHtml(nctId)}" title="Save this trial">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="${saved ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M6 3h12v18l-6-4-6 4V3z"/></svg>
+        </button>
+        <div class="tf-card-top">
+          ${iconAvatar(idx)}
+          <div class="tf-card-body">
+            <div class="tf-card-badges">
+              <span class="tf-badge tf-badge-${meta.tone}">${meta.label}</span>
+              <span class="tf-nct">${escapeHtml(nctId)}</span>
+            </div>
+            <h3 class="tf-card-title">${escapeHtml(id.briefTitle || '')}</h3>
+            ${cond.length ? `<p class="tf-card-cond">${escapeHtml(cond.slice(0,4).join(', '))}</p>` : ''}
+            ${summary ? `<p class="tf-card-summary">${escapeHtml(summary)}</p>` : ''}
+            <div class="tf-facts">
+              <div class="tf-fact"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg><span><span class="tf-fact-label">Age</span><br><strong>${escapeHtml(elig.minimumAge || 'N/A')} – ${escapeHtml(elig.maximumAge || 'N/A')}</strong></span></div>
+              <div class="tf-fact"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="9" r="5"/><path d="M16 16l4 4M20 16v4h-4"/></svg><span><span class="tf-fact-label">Sex</span><br><strong>${elig.sex === 'ALL' ? 'All' : escapeHtml(elig.sex || '—')}</strong></span></div>
+              ${phase ? `<div class="tf-fact"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="12" height="16" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h6"/></svg><span><span class="tf-fact-label">Phase</span><br><strong>${escapeHtml(phase)}</strong></span></div>` : ''}
+              ${locs.length > 0
+                ? `<button type="button" class="tf-fact tf-fact-btn tf-locations-toggle" data-id="${escapeHtml(nctId)}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-7.2 7-12a7 7 0 1 0-14 0c0 4.8 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg><span><span class="tf-fact-label">Locations</span><br><strong>${locs.length} site${locs.length === 1 ? '' : 's'} ${locs.length > 1 ? '▾' : ''}</strong></span></button>`
+                : `<div class="tf-fact"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-7.2 7-12a7 7 0 1 0-14 0c0 4.8 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg><span><span class="tf-fact-label">Locations</span><br><strong>—</strong></span></div>`}
+            </div>
+            ${sponsor || placesShown.length ? `<div class="tf-site-row">
+              ${sponsor ? `<span class="tf-site-sponsor">${escapeHtml(sponsor)}</span>` : ''}
+              ${placesShown.length ? (
+                morePlaces > 0
+                  ? `<button type="button" class="tf-locations-toggle tf-site-link" data-id="${escapeHtml(nctId)}">· ${escapeHtml(placesStr)} + ${morePlaces} more ▾</button>`
+                  : `<span>· ${escapeHtml(placesStr)}</span>`
+              ) : ''}
+            </div>` : ''}
+            ${locs.length > 1 ? `<div class="tf-locations-panel" id="locpanel-${escapeHtml(nctId)}">
+              <div class="tf-locations-panel-title">All locations (${locs.length})</div>
+              <ul class="tf-locations-panel-list">
+                ${locs.map((l) => `<li>${escapeHtml([l.facility, [l.city, l.state, l.country].filter(Boolean).join(', ')].filter(Boolean).join(' — '))}</li>`).join('')}
+              </ul>
+            </div>` : ''}
+            ${contactBlockHtml(s)}
+            <div class="tf-card-actions">
+              <button type="button" class="tf-btn-primary tf-toggle-elig" data-id="${escapeHtml(nctId)}"><svg class="tf-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg><span class="tf-btn-label">Check eligibility</span></button>
+              <button type="button" class="tf-btn-orange tf-open-match" data-id="${escapeHtml(nctId)}"><svg class="tf-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/></svg><span class="tf-btn-label">Am I a match?</span></button>
+              <a class="tf-btn-secondary" href="https://clinicaltrials.gov/study/${escapeHtml(nctId)}" target="_blank" rel="noreferrer">View full study<svg class="tf-icon" style="margin-right:0;margin-left:5px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M9 7h8v8"/></svg></a>
+              <button type="button" class="tf-btn-secondary tf-open-ai" data-id="${escapeHtml(nctId)}"><svg class="tf-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 8V4"/><circle cx="8.5" cy="14" r="1" fill="currentColor"/><circle cx="15.5" cy="14" r="1" fill="currentColor"/><path d="M9 18h6"/></svg><span class="tf-btn-label">Ask AI</span></button>
+            </div>
+            <pre class="tf-eligibility" id="elig-${escapeHtml(nctId)}">${escapeHtml(elig.eligibilityCriteria || 'No eligibility text provided.')}</pre>
+          </div>
+        </div>
+      </li>`;
+  }
+
+  function renderResults(studies, totalCount, hasMore, locationNotice, scoreOpts) {
+    const notice = locationNotice ? renderLocationNotice(locationNotice) : '';
+    document.getElementById('tf-results-count').textContent = `${(totalCount ?? studies.length).toLocaleString()} studies found`;
+    document.getElementById('tf-results-sub').textContent = scoreOpts.condition ? `Showing results for "${scoreOpts.condition}"` : 'Showing all studies';
+
+    const list = `<ul class="tf-cards">${studies.map((s, i) => cardHtml(s, i, scoreOpts)).join('')}</ul>`;
+    const loadMore = hasMore ? `<div class="tf-load-more"><button type="button" class="tf-btn-ghost" id="tf-load-more-btn">Load more trials</button></div>` : '';
+    resultsEl.innerHTML = notice + list + loadMore;
+
+    document.querySelectorAll('.tf-toggle-elig').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const pre = document.getElementById('elig-' + btn.dataset.id);
+        const isOpen = pre.classList.toggle('open');
+        btn.querySelector('.tf-btn-label').textContent = isOpen ? 'Hide eligibility' : 'Check eligibility';
+      });
+    });
+    document.querySelectorAll('.tf-open-ai').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const study = currentStudies.find((st) => st.protocolSection?.identificationModule?.nctId === btn.dataset.id);
+        if (!study) { showToast('Could not find that trial — try searching again.'); return; }
+        try {
+          const html = buildAskAiPageHtml(study);
+          const blob = new Blob([html], { type: 'text/html' });
+          const url = URL.createObjectURL(blob);
+          const win = window.open(url, '_blank');
+          if (!win) {
+            showToast('Your browser blocked the popup — allow popups for this page and try again.');
+            URL.revokeObjectURL(url);
+            return;
+          }
+          setTimeout(() => URL.revokeObjectURL(url), 30000);
+        } catch (e) {
+          showToast('Something went wrong opening that page: ' + e.message);
+        }
+      });
+    });
+    document.querySelectorAll('.tf-locations-toggle').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const panel = document.getElementById('locpanel-' + btn.dataset.id);
+        if (!panel) return;
+        const isOpen = panel.classList.toggle('open');
+        if (isOpen) panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+    });
+    document.querySelectorAll('.tf-open-match').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const study = currentStudies.find((st) => st.protocolSection?.identificationModule?.nctId === btn.dataset.id);
+        if (!study) { showToast('Could not find that trial — try searching again.'); return; }
+        try {
+          const html = buildMatchPageHtml(study, scoreOpts);
+          const blob = new Blob([html], { type: 'text/html' });
+          const url = URL.createObjectURL(blob);
+          const win = window.open(url, '_blank');
+          if (!win) {
+            showToast('Your browser blocked the popup — allow popups for this page and try again.');
+            URL.revokeObjectURL(url);
+            return;
+          }
+          setTimeout(() => URL.revokeObjectURL(url), 30000);
+        } catch (e) {
+          showToast('Something went wrong opening that page: ' + e.message);
+        }
+      });
+    });
+    document.querySelectorAll('.tf-bookmark').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const saved = getSaved();
+        const id = btn.dataset.id;
+        if (saved[id]) { delete saved[id]; btn.classList.remove('saved'); btn.querySelector('svg').setAttribute('fill','none'); }
+        else { saved[id] = true; btn.classList.add('saved'); btn.querySelector('svg').setAttribute('fill','currentColor'); }
+        setSaved(saved);
+      });
+    });
+    const loadMoreBtn = document.getElementById('tf-load-more-btn');
+    if (loadMoreBtn) loadMoreBtn.addEventListener('click', () => runSearch(nextPageToken, true));
+  }
+
+  async function runSearch(pageToken, isLoadMore) {
+    const condition = document.getElementById('condition').value.trim();
+    const location = document.getElementById('location').value.trim();
+    lastAgeMin = document.getElementById('age-min').value ? parseFloat(document.getElementById('age-min').value) : null;
+    lastAgeMax = document.getElementById('age-max').value ? parseFloat(document.getElementById('age-max').value) : null;
+    lastSex = document.getElementById('sex').value;
+    lastPhases = Array.from(document.querySelectorAll('.tf-phase:checked')).map((el) => el.value);
+    lastConditionForScore = condition;
+
+    if (!isLoadMore) {
+      renderLoading();
+    } else {
+      const btn = document.getElementById('tf-load-more-btn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Loading…'; }
+    }
+
+    try {
+      let locationRelaxed = false;
+      let params = buildParams(pageToken, true);
+      let res = await fetch('https://clinicaltrials.gov/api/v2/studies?' + params.toString());
+      if (!res.ok) throw new Error('Request failed (' + res.status + ')');
+      let data = await res.json();
+
+      if (!isLoadMore && location && (data.studies || []).length === 0) {
+        locationRelaxed = true;
+        params = buildParams(pageToken, false);
+        res = await fetch('https://clinicaltrials.gov/api/v2/studies?' + params.toString());
+        if (!res.ok) throw new Error('Request failed (' + res.status + ')');
+        data = await res.json();
+      }
+
+      let results = data.studies || [];
+
+      results = results.filter((s) => {
+        const elig = s.protocolSection?.eligibilityModule || {};
+        const min = parseAgeToYears(elig.minimumAge);
+        const max = parseAgeToYears(elig.maximumAge);
+        if (lastAgeMin !== null && max !== null && max < lastAgeMin) return false;
+        if (lastAgeMax !== null && min !== null && min > lastAgeMax) return false;
+        return true;
+      });
+      if (lastSex !== 'ALL') {
+        results = results.filter((s) => {
+          const elig = s.protocolSection?.eligibilityModule || {};
+          return !elig.sex || elig.sex === 'ALL' || elig.sex === lastSex;
+        });
+      }
+      if (lastPhases.length > 0) {
+        results = results.filter((s) => {
+          const phases = s.protocolSection?.designModule?.phases || [];
+          return phases.some((p) => lastPhases.includes(p));
+        });
+      }
+
+      currentStudies = isLoadMore ? currentStudies.concat(results) : results;
+      nextPageToken = data.nextPageToken || null;
+
+      const scoreOpts = { condition: lastConditionForScore, age: lastAgeMin !== null ? lastAgeMin : (lastAgeMax !== null ? lastAgeMax : null), sex: lastSex };
+
+      if (currentStudies.length === 0) {
+        renderEmpty();
+      } else {
+        renderResults(currentStudies, typeof data.totalCount === 'number' ? data.totalCount : null, !!nextPageToken, locationRelaxed ? location : null, scoreOpts);
+      }
+    } catch (e) {
+      renderError(e.message || 'Something went wrong.');
+    }
+  }
+
+  /* ---------- wiring ---------- */
+  document.getElementById('tf-search-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    currentStudies = []; nextPageToken = null;
+    runSearch(null, false);
+  });
+  document.getElementById('tf-apply-filters').addEventListener('click', () => {
+    currentStudies = []; nextPageToken = null;
+    runSearch(null, false);
+  });
+  document.getElementById('tf-clear-filters').addEventListener('click', () => {
+    document.querySelectorAll('.tf-status').forEach((el) => el.checked = el.value === 'RECRUITING');
+    document.querySelectorAll('.tf-phase').forEach((el) => el.checked = false);
+    document.getElementById('age-min').value = '';
+    document.getElementById('age-max').value = '';
+    document.getElementById('sex').value = 'ALL';
+  });
+
+  document.getElementById('tf-change-location').addEventListener('click', () => {
+    document.getElementById('tf-location-edit').classList.toggle('open');
+  });
+  document.getElementById('tf-save-location').addEventListener('click', () => {
+    const val = document.getElementById('location').value.trim();
+    document.getElementById('tf-location-display').textContent = val || 'Not set';
+    document.getElementById('tf-location-edit').classList.remove('open');
+    if (currentStudies.length || document.getElementById('condition').value.trim()) {
+      currentStudies = []; nextPageToken = null;
+      runSearch(null, false);
+    }
+  });
+
+  function populateAgeSelects() {
+    const ages = Array.from({ length: 24 }, (_, i) => i * 5);
+    const minSel = document.getElementById('age-min');
+    const maxSel = document.getElementById('age-max');
+    ages.forEach((a) => {
+      const o1 = document.createElement('option');
+      o1.value = a; o1.textContent = a;
+      minSel.appendChild(o1);
+      const o2 = document.createElement('option');
+      o2.value = a; o2.textContent = a >= 100 ? a + '+' : a;
+      maxSel.appendChild(o2);
+    });
+  }
+  populateAgeSelects();
+</script>
+
+</body>
+</html>
