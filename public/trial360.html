@@ -186,7 +186,7 @@
   <div class="hero-inner">
     <div class="hero-content">
       <span class="eyebrow pill mono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2 2M16 16l2 2M6 18l2-2M16 8l2-2"/></svg>AI-POWERED CLINICAL INTELLIGENCE</span>
-      <h1 class="headline" id="scrambleHeadline">
+      <h1 class="headline" id="mainHeadline">
         <span class="hl-line">The Operating System</span><span class="hl-line">for Clinical Trials.</span><span class="hl-line grad-text">Complete Control.</span>
       </h1>
       <p class="sub">Trial360 OS is the AI operating system that brings structure, visibility, and control across your entire trial — ten specialized agents, one shared source of truth.</p>
@@ -307,37 +307,8 @@
 </footer>
 
 <script>
-/* ================= text scramble intro ================= */
-(function(){
-  const el = document.getElementById('scrambleHeadline');
-  const finalHTML = '<span class="hl-line">The Operating System</span><span class="hl-line">for Clinical Trials.</span><span class="hl-line grad-text">Complete Control.</span>';
-  const finalText = 'The Operating System for Clinical Trials. Complete Control.';
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%&01';
-  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if(reduce){ el.innerHTML = finalHTML; return; }
-  let frame = 0;
-  const totalFrames = 34;
-  function tick(){
-    frame++;
-    const progress = frame/totalFrames;
-    let out = '';
-    for(let i=0;i<finalText.length;i++){
-      const charProgress = i/finalText.length;
-      if(progress > charProgress + 0.15 || finalText[i]===' '){
-        out += finalText[i];
-      } else {
-        out += chars[Math.floor(Math.random()*chars.length)];
-      }
-    }
-    el.textContent = out;
-    if(frame < totalFrames){
-      requestAnimationFrame(tick);
-    } else {
-      el.innerHTML = finalHTML;
-    }
-  }
-  requestAnimationFrame(tick);
-})();
+
+
 
 /* ================= magnetic buttons ================= */
 (function(){
@@ -763,6 +734,9 @@
 
 </body>
 </html>
+
+
+
 
 
 
