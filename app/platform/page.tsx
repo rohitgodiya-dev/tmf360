@@ -158,6 +158,7 @@ const[flagReason,setFlagReason]=useState("");
 const[approveStage,setApproveStage]=useState<0|1|2|3>(0);
 const[approveDocId,setApproveDocId]=useState<string|null>(null);
   const messagesEnd=useRef<HTMLDivElement>(null);
+const[tmfConfig,setTmfConfig]=useState<any[]>([]);
   const fileInputRef=useRef<HTMLInputElement>(null);
   const chatFileInputRef=useRef<HTMLInputElement>(null);
 
@@ -216,6 +217,11 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
   async function loadDocsWithOrg(studyId:string,oid:string){
     const{data}=await supabase.from("documents").select("*").eq("study_id",studyId).eq("org_id",oid).order("created_at",{ascending:false});
     if(data)setDocs(data);
+  }
+
+  async function loadTmfConfig(studyId:string,oid:string){
+    const{data}=await supabase.from('tmf_config').select('*').eq('org_id',oid).eq('study_id',studyId).eq('is_enabled',true);
+    if(data)setTmfConfig(data);
   }
 
   function loadDocs(studyId:string,uid:string){
@@ -963,7 +969,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                 <input value={artSearch} onChange={e=>setArtSearch(e.target.value)} placeholder="Search artifacts..." style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"6px 10px",flex:1}}/>
                 <select value={artZone} onChange={e=>setArtZone(e.target.value)} style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"6px 10px"}}>
                   <option value="">All zones</option>
-                  {ZONES.map(({z,zn})=><option key={z} value={z}>Zone {z} - {zn}</option>)}
+                  {[...ZONES,...tmfConfig.filter(c=>c.type==="zone"&&!ZONES.some(z=>z.z===c.zone_num)).map(c=>({z:c.zone_num,zn:c.zone_name}))].map(({z,zn})=><option key={z} value={z}>Zone {z} - {zn}</option>)}
                 </select>
                 <select value={artCl} onChange={e=>setArtCl(e.target.value)} style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"6px 10px"}}>
                   <option value="">Core + Recommended</option>
@@ -1019,7 +1025,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                   <p style={{fontSize:"12px",color:P.textSec}}>Comparing filed documents against all Core artifacts in DIA TMF Reference Model v3.3.1</p>
                   <select value={gapZone} onChange={e=>setGapZone(e.target.value)} style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"6px 10px",width:"220px"}}>
                     <option value="">All zones</option>
-                    {ZONES.map(({z,zn})=><option key={z} value={z}>Zone {z} - {zn}</option>)}
+                    {[...ZONES,...tmfConfig.filter(c=>c.type==="zone"&&!ZONES.some(z=>z.z===c.zone_num)).map(c=>({z:c.zone_num,zn:c.zone_name}))].map(({z,zn})=><option key={z} value={z}>Zone {z} - {zn}</option>)}
                   </select>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"10px"}}>
                     {[{val:gaps.crit.length,label:"Critical",color:"#EF4444",bg:"#FEF2F2"},{val:gaps.major.length,label:"Major",color:"#F59E0B",bg:"#FFFBEB"},{val:gaps.minor.length,label:"Minor",color:P.textSec,bg:P.bgSec}].map((s,i)=>(
@@ -1361,14 +1367,14 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
             <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"1rem"}}>Add document</h2>
             <div style={{marginBottom:"10px"}}>
               <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Zone</label>
-              <select value={fZone} onChange={e=>{setFZone(e.target.value);const arts=TMF.filter(a=>a.z===e.target.value);setZoneArts(arts);setFArtifact(arts[0]?`${arts[0].a}|${arts[0].an}|${arts[0].z}`:"");}} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}>
-                {ZONES.map(({z,zn})=><option key={z} value={z}>Zone {z} - {zn}</option>)}
+              <select value={fZone} onChange={e=>{setFZone(e.target.value);const arts=TMF.filter(a=>a.z===e.target.value);const customArts=tmfConfig.filter(c=>c.type==="artifact"&&c.zone_num===e.target.value&&!arts.some(b=>b.a===c.artifact_num)).map(c=>({a:c.artifact_num,an:c.artifact_name,z:c.zone_num}));const allArts=[...arts,...customArts];setZoneArts(allArts);setFArtifact(allArts[0]?`${allArts[0].a}|${allArts[0].an}|${allArts[0].z}`:"");}} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}>
+                {[...ZONES,...tmfConfig.filter(c=>c.type==="zone"&&!ZONES.some(z=>z.z===c.zone_num)).map(c=>({z:c.zone_num,zn:c.zone_name}))].map(({z,zn})=><option key={z} value={z}>Zone {z} - {zn}</option>)}
               </select>
             </div>
             <div style={{marginBottom:"10px"}}>
               <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Artifact</label>
               <select value={fArtifact} onChange={e=>setFArtifact(e.target.value)} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}>
-                {(zoneArts.length>0?zoneArts:TMF.filter(a=>a.z===fZone)).map(a=><option key={a.a} value={`${a.a}|${a.an}|${a.z}`}>{a.a} - {a.an}</option>)}
+                {(()=>{const base=zoneArts.length>0?zoneArts:TMF.filter(a=>a.z===fZone);const custom=tmfConfig.filter(c=>c.type==="artifact"&&c.zone_num===fZone&&!base.some(b=>b.a===c.artifact_num)).map(c=>({a:c.artifact_num,an:c.artifact_name,z:c.zone_num}));return[...base,...custom].map(a=><option key={a.a} value={`${a.a}|${a.an}|${a.z}`}>{a.a} - {a.an}</option>);})()}
               </select>
             </div>
             <div style={{marginBottom:"10px"}}>
@@ -2560,3 +2566,6 @@ function TmfConfigPanel({user,P,supabase,activeStudy,orgId,currentUserRole,logAu
     </div>
   );
 }
+
+
+
