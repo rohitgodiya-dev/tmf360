@@ -514,7 +514,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
       {/* Header */}
       <header style={{display:"flex",alignItems:"center",gap:"12px",padding:"0 1.25rem",height:"48px",borderBottom:`0.5px solid ${P.border}`,background:P.bg,flexShrink:0}}>
         <span style={{fontSize:"16px",fontWeight:"500"}}>TMF<span style={{color:P.primary}}>360</span></span>
-        <span style={{fontSize:"11px",color:P.textTert}}>Trial Master File Platform - DIA TMF RM v3.3.1</span>
+        <span style={{fontSize:"11px",color:P.textTert}}>Trial Master File Platform</span>
         <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:"10px"}}>
           {studies.length>0&&(
             <select value={activeStudy?.study_id||""} onChange={e=>{const s=studies.find(x=>x.study_id===e.target.value);if(s){setActiveStudy(s);if(orgId)loadDocsWithOrg(s.study_id,orgId);}}} style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"6px",padding:"3px 8px",background:P.bg}}>
