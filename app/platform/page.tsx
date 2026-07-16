@@ -603,7 +603,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                       const filed=studyDocs.find(d=>d.artifact_num===a.a&&d.status==="Approved");
                       return(
                         <div key={a.a} style={{display:"flex",alignItems:"center",gap:"10px",padding:"8px 14px",borderBottom:`0.5px solid ${P.bgTert}`}}>
-                          <span style={{fontSize:"14px"}}>{filed?"?":"?"}</span>
+                          <span style={{fontSize:"14px"}}>{filed?"[OK]":"[X]"}</span>
                           <span style={{fontFamily:"monospace",fontSize:"9px",color:P.textTert,flexShrink:0}}>{a.a}</span>
                           <span style={{fontSize:"11px",flex:1,color:filed?P.text:P.textSec}}>{a.an}</span>
                           {filed&&filed.file_path&&canDownload&&(
@@ -1212,7 +1212,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
               <h1 style={{fontSize:"14px",fontWeight:"500"}}>Audit trail - 21 CFR Part 11 compliant</h1>
               <div style={{background:"#FFFBEB",border:"0.5px solid #FDE68A",borderRadius:"10px",padding:"10px 14px",fontSize:"11px",color:"#92400E"}}>
-                ?? This audit trail is read-only and tamper-evident in compliance with 21 CFR Part 11. All document actions, electronic signatures, and approvals are permanently recorded.
+                This audit trail is read-only and tamper-evident in compliance with 21 CFR Part 11. All document actions, electronic signatures, and approvals are permanently recorded.
               </div>
               <AuditTrail user={user} activeStudy={activeStudy} P={P}/>
             </div>
@@ -2010,7 +2010,7 @@ function MessagesPanel({user, P, supabase, activeStudy}: {user: any, P: any, sup
                       <div key={att.id} style={{marginTop:"4px"}}>
                         <a href={supabase.storage.from("Documents").getPublicUrl(att.file_path).data.publicUrl} target="_blank" rel="noopener noreferrer"
                           style={{display:"flex",alignItems:"center",gap:"6px",padding:"6px 10px",background:isMe?"rgba(255,255,255,0.2)":P.bgTert,borderRadius:"8px",textDecoration:"none",color:isMe?"#fff":P.text,fontSize:"11px"}}>
-                          ?? {att.file_name}
+                          Attachment: {att.file_name}
                         </a>
                       </div>
                     ))}
@@ -2028,7 +2028,7 @@ function MessagesPanel({user, P, supabase, activeStudy}: {user: any, P: any, sup
             <button onClick={()=>fileInputRef.current?.click()} style={{padding:"8px",background:P.bgTert,border:`0.5px solid ${P.border}`,borderRadius:"8px",cursor:"pointer",fontSize:"14px"}}></button>
             <div style={{flex:1}}>
               {selectedFile&&<div style={{fontSize:"10px",color:P.primary,marginBottom:"4px",padding:"3px 8px",background:P.primaryLight,borderRadius:"4px",display:"flex",justifyContent:"space-between"}}>
-                ?? {selectedFile.name} <button onClick={()=>setSelectedFile(null)} style={{background:"none",border:"none",cursor:"pointer",color:P.danger,fontSize:"10px"}}></button>
+                File: {selectedFile.name} <button onClick={()=>setSelectedFile(null)} style={{background:"none",border:"none",cursor:"pointer",color:P.danger,fontSize:"10px"}}></button>
               </div>}
               <input value={newMessage} onChange={e=>setNewMessage(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&sendMessage()}
                 placeholder="Type a message..." style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px"}}/>
@@ -2074,7 +2074,7 @@ function MessagesPanel({user, P, supabase, activeStudy}: {user: any, P: any, sup
                   <div key={u.user_id} onClick={()=>setSelectedUsers(prev=>prev.includes(u.user_id)?prev.filter(id=>id!==u.user_id):[...prev,u.user_id])}
                     style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"6px",border:`0.5px solid ${selectedUsers.includes(u.user_id)?P.primary:P.border}`,cursor:"pointer",background:selectedUsers.includes(u.user_id)?P.primaryLight:P.bgSec}}>
                     <div style={{width:"16px",height:"16px",borderRadius:"3px",border:`1.5px solid ${selectedUsers.includes(u.user_id)?P.primary:P.border}`,background:selectedUsers.includes(u.user_id)?P.primary:"transparent",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",color:"#fff"}}>
-                      {selectedUsers.includes(u.user_id)?"?":""}
+                      {selectedUsers.includes(u.user_id)?"v":""}
                     </div>
                     <div style={{fontSize:"12px"}}>{u.full_name||u.email}</div>
                   </div>
@@ -2091,6 +2091,7 @@ function MessagesPanel({user, P, supabase, activeStudy}: {user: any, P: any, sup
     </div>
   );
 }
+
 
 
 
