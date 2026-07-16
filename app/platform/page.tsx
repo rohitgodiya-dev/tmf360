@@ -570,9 +570,9 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                         <div style={{width:"100%",height:"6px",background:P.bgTert,borderRadius:"6px",marginTop:"8px",overflow:"hidden"}}><div style={{width:`${ri}%`,height:"100%",background:scoreColor(ri),borderRadius:"6px"}}/></div>
                       </div>
                       <div style={{display:"flex",flexDirection:"column",gap:"4px"}}>
-                        {gaps.crit.slice(0,2).map((g,i)=><div key={i} style={{fontSize:"11px",background:"#FEF2F2",color:"#991B1B",borderRadius:"6px",padding:"4px 8px"}}>? {g.an}</div>)}
-                        {gaps.major.slice(0,2).map((g,i)=><div key={i} style={{fontSize:"11px",background:"#FFFBEB",color:"#92400E",borderRadius:"6px",padding:"4px 8px"}}>? {g.an}</div>)}
-                        {gaps.crit.length===0&&gaps.major.length===0&&<div style={{fontSize:"11px",color:P.success}}>? No critical or major findings</div>}
+                        {gaps.crit.slice(0,2).map((g,i)=><div key={i} style={{fontSize:"11px",background:"#FEF2F2",color:"#991B1B",borderRadius:"6px",padding:"4px 8px"}}>! {g.an}</div>)}
+                        {gaps.major.slice(0,2).map((g,i)=><div key={i} style={{fontSize:"11px",background:"#FFFBEB",color:"#92400E",borderRadius:"6px",padding:"4px 8px"}}>! {g.an}</div>)}
+                        {gaps.crit.length===0&&gaps.major.length===0&&<div style={{fontSize:"11px",color:P.success}}>No critical or major findings</div>}
                       </div>
                     </div>
                   </div>
@@ -893,7 +893,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                       <div style={{display:"flex",alignItems:"center",gap:"8px",padding:"10px 14px",cursor:"pointer"}} onClick={()=>setExpandedArt(expandedArt===a.a?null:a.a)}>
                         <span style={{fontFamily:"monospace",fontSize:"9px",color:P.textTert,flexShrink:0}}>{a.a}</span>
                         <span style={{fontSize:"12px",fontWeight:"500",flex:1}}>{a.an}</span>
-                        {approvedDocs.length>0&&<span style={{fontSize:"9px",padding:"2px 8px",borderRadius:"20px",background:"#ECFDF5",color:"#065F46",fontWeight:"500"}}>? Filed</span>}
+                        {approvedDocs.length>0&&<span style={{fontSize:"9px",padding:"2px 8px",borderRadius:"20px",background:"#ECFDF5",color:"#065F46",fontWeight:"500"}}>Filed</span>}
                         <span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"10px",background:a.cl==="Core"?P.dangerLight:"#F3F4F6",color:a.cl==="Core"?"#991B1B":P.textTert}}>{a.cl}</span>
                       </div>
                       {expandedArt===a.a&&(
@@ -976,9 +976,9 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                     <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"14px"}}>
                       <h2 style={{fontSize:"11px",fontWeight:"500",marginBottom:"10px",color:P.textSec}}>Top findings</h2>
                       <div style={{display:"flex",flexDirection:"column",gap:"5px"}}>
-                        {gaps.crit.slice(0,4).map((g:any,i:number)=><div key={i} style={{fontSize:"11px",background:"#FEF2F2",color:"#991B1B",borderRadius:"6px",padding:"6px 10px"}}>? CRITICAL - {g.an}</div>)}
-                        {gaps.major.slice(0,3).map((g:any,i:number)=><div key={i} style={{fontSize:"11px",background:"#FFFBEB",color:"#92400E",borderRadius:"6px",padding:"6px 10px"}}>? MAJOR - {g.an}</div>)}
-                        {gaps.crit.length===0&&gaps.major.length===0&&<div style={{fontSize:"11px",color:P.success}}>? No critical or major findings</div>}
+                        {gaps.crit.slice(0,4).map((g:any,i:number)=><div key={i} style={{fontSize:"11px",background:"#FEF2F2",color:"#991B1B",borderRadius:"6px",padding:"6px 10px"}}>CRITICAL - {g.an}</div>)}
+                        {gaps.major.slice(0,3).map((g:any,i:number)=><div key={i} style={{fontSize:"11px",background:"#FFFBEB",color:"#92400E",borderRadius:"6px",padding:"6px 10px"}}>MAJOR - {g.an}</div>)}
+                        {gaps.crit.length===0&&gaps.major.length===0&&<div style={{fontSize:"11px",color:P.success}}>No critical or major findings</div>}
                       </div>
                     </div>
                   </div>
@@ -2091,6 +2091,7 @@ function MessagesPanel({user, P, supabase, activeStudy}: {user: any, P: any, sup
     </div>
   );
 }
+
 
 
 
