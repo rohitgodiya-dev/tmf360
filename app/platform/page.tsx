@@ -529,7 +529,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
               </div>
               {!activeStudy?(
                 <div style={{textAlign:"center",padding:"3rem",color:P.textTert}}>
-                  <div style={{fontSize:"3rem",marginBottom:"12px"}}>??</div>
+                  <div style={{fontSize:"3rem",marginBottom:"12px"}}></div>
                   <div style={{fontSize:"13px",fontWeight:"500",marginBottom:"6px",color:P.text}}>No studies yet</div>
                   <div style={{fontSize:"12px",marginBottom:"1rem"}}>Create your first study to get started.</div>
                   {currentUserRole==="System Administrator"&&<button onClick={()=>setShowStudyModal(true)} style={{fontSize:"11px",padding:"8px 18px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ Create first study</button>}
@@ -585,7 +585,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {panel==="completeness-detail"&&(
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
               <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
-                <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:P.bg,cursor:"pointer"}}>? Back</button>
+                <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:P.bg,cursor:"pointer"}}>Back</button>
                 <h1 style={{fontSize:"14px",fontWeight:"500"}}>TMF completeness - {activeStudy?.study_id}</h1>
               </div>
               <div style={{background:"#EFF6FF",border:"0.5px solid #BFDBFE",borderRadius:"10px",padding:"10px 14px",fontSize:"11px",color:"#1E40AF"}}>Showing all Core artifacts. Green = approved document filed. Red = missing.</div>
@@ -624,7 +624,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {panel==="missing-detail"&&(
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
               <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
-                <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:P.bg,cursor:"pointer"}}>? Back</button>
+                <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:P.bg,cursor:"pointer"}}>Back</button>
                 <h1 style={{fontSize:"14px",fontWeight:"500"}}>Missing documents - {activeStudy?.study_id}</h1>
               </div>
               <div style={{background:"#FEF2F2",border:"0.5px solid #FECACA",borderRadius:"10px",padding:"10px 14px",fontSize:"11px",color:"#991B1B"}}>These Core artifacts have no document filed. CRITICAL gaps in Zones 3, 4, 5 are inspection risks.</div>
@@ -653,7 +653,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {panel==="notapproved-detail"&&(
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
               <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
-                <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:P.bg,cursor:"pointer"}}>? Back</button>
+                <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:P.bg,cursor:"pointer"}}>Back</button>
                 <h1 style={{fontSize:"14px",fontWeight:"500"}}>Not approved - {activeStudy?.study_id}</h1>
               </div>
               <div style={{background:"#FEF2F2",border:"0.5px solid #FECACA",borderRadius:"10px",padding:"10px 14px",fontSize:"11px",color:"#991B1B"}}>These documents were rejected. Review the rejection reason and appeal if needed.</div>
@@ -704,7 +704,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {panel==="expiring-detail"&&(
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
               <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
-                <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:P.bg,cursor:"pointer"}}>? Back</button>
+                <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:P.bg,cursor:"pointer"}}>Back</button>
                 <h1 style={{fontSize:"14px",fontWeight:"500"}}>Expiring documents - {activeStudy?.study_id}</h1>
               </div>
               {studyDocs.filter(d=>d.expiry_date&&new Date(d.expiry_date)<new Date(Date.now()+90*86400000)).length===0?(
@@ -737,7 +737,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {panel==="pending-detail"&&(
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
               <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
-                <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:P.bg,cursor:"pointer"}}>? Back</button>
+                <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:P.bg,cursor:"pointer"}}>Back</button>
                 <h1 style={{fontSize:"14px",fontWeight:"500"}}>Pending review - {activeStudy?.study_id}</h1>
               </div>
               <div style={{background:P.primaryLight,border:`0.5px solid #C7D2FE`,borderRadius:"10px",padding:"10px 14px",fontSize:"11px",color:"#3730A3"}}>Review submitted documents. Approve with electronic signature or reject with a reason.</div>
@@ -771,7 +771,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                         const ta=document.getElementById(`review-comment-${d.id}`) as HTMLTextAreaElement;
                         if(ta?.value.trim()){const existing=d.comments||"";const newComment=`${existing}${existing?"\n":""}[${new Date().toLocaleString()} - ${user.email}]: ${ta.value.trim()}`;await supabase.from("documents").update({comments:newComment}).eq("id",d.id);setDocs(prev=>prev.map(doc=>doc.id===d.id?{...doc,comments:newComment}:doc));ta.value="";}
                         setSelectedDoc(d);setShowApproveModal(true);
-                      }} style={{fontSize:"11px",padding:"7px 14px",background:P.success,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>? Approve</button>
+                      }} style={{fontSize:"11px",padding:"7px 14px",background:P.success,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Approve</button>
                       <button onClick={async()=>{
                         const ta=document.getElementById(`review-comment-${d.id}`) as HTMLTextAreaElement;
                         const reason=ta?.value.trim();
@@ -779,7 +779,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                         const now=new Date().toISOString();
                         const{error}=await supabase.from("documents").update({status:"Draft",rejection_reason:reason,rejected_by:user.email,rejected_at:now}).eq("id",d.id);
                         if(!error){await logAudit("Document rejected",d.id,d.study_id,"status","Under Review","Draft",reason);setDocs(prev=>prev.map(doc=>doc.id===d.id?{...doc,status:"Draft",rejection_reason:reason,rejected_by:user.email,rejected_at:now} as any:doc));}
-                      }} style={{fontSize:"11px",padding:"7px 14px",background:"#FEF2F2",color:"#991B1B",border:"0.5px solid #FECACA",borderRadius:"8px",cursor:"pointer"}}>? Reject</button>
+                      }} style={{fontSize:"11px",padding:"7px 14px",background:"#FEF2F2",color:"#991B1B",border:"0.5px solid #FECACA",borderRadius:"8px",cursor:"pointer"}}>Reject</button>
                     </div>
                   </div>
                 </div>
@@ -857,8 +857,8 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                             {d.status==="Under Review"&&<button onClick={()=>{setSelectedDoc(d);setShowApproveModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:"#ECFDF5",color:"#065F46",border:"0.5px solid #A7F3D0",borderRadius:"4px",cursor:"pointer"}}>Review</button>}
                             <button onClick={()=>{setSelectedDoc(d);setCommentText("");setShowCommentModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,border:`0.5px solid ${P.border}`,borderRadius:"4px",cursor:"pointer"}}>Comment</button>
                           </div>
-                          {d.comments&&<div style={{fontSize:"9px",color:P.textTert,marginTop:"3px"}}>?? Has comments</div>}
-                          {d.approved_by&&<div style={{fontSize:"9px",color:"#065F46",marginTop:"2px"}}>? {d.approved_by}</div>}
+                          {d.comments&&<div style={{fontSize:"9px",color:P.textTert,marginTop:"3px"}}>Has comments</div>}
+                          {d.approved_by&&<div style={{fontSize:"9px",color:"#065F46",marginTop:"2px"}}>{d.approved_by}</div>}
                         </td>
                       </tr>
                     ))}
@@ -1285,7 +1285,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                 <input ref={fileInputRef} type="file" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)handleFileUpload(f);}}/>
                 {uploading?<div style={{fontSize:"12px",color:P.primary}}>{uploadProgress}</div>
                 :selectedFile?<div style={{fontSize:"12px"}}><div style={{fontSize:"1.5rem",marginBottom:"4px"}}>{fileIcon(selectedFile.name)}</div><div style={{fontWeight:"500"}}>{selectedFile.name}</div><div style={{color:P.textTert,fontSize:"11px"}}>{formatSize(selectedFile.size)} - {uploadProgress}</div></div>
-                :<div style={{fontSize:"12px",color:P.textTert}}><div style={{fontSize:"1.5rem",marginBottom:"4px"}}>??</div>Drag & drop or click to browse</div>}
+                :<div style={{fontSize:"12px",color:P.textTert}}><div style={{fontSize:"1.5rem",marginBottom:"4px"}}></div>Drag & drop or click to browse</div>}
               </div>
             </div>
             <div style={{marginBottom:"10px"}}>
@@ -1392,7 +1392,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
               <div style={{display:"flex",gap:"8px"}}>
                 <a href={previewUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:"11px",padding:"5px 12px",background:P.bgTert,color:P.textSec,borderRadius:"6px",textDecoration:"none"}}>Open</a>
                 <a href={previewUrl} download style={{fontSize:"11px",padding:"5px 12px",background:P.bgTert,color:P.textSec,borderRadius:"6px",textDecoration:"none"}}>Download</a>
-                <button onClick={()=>setPreviewUrl(null)} style={{fontSize:"11px",padding:"5px 12px",background:"#FEF2F2",color:"#991B1B",border:"none",borderRadius:"6px",cursor:"pointer"}}>? Close</button>
+                <button onClick={()=>setPreviewUrl(null)} style={{fontSize:"11px",padding:"5px 12px",background:"#FEF2F2",color:"#991B1B",border:"none",borderRadius:"6px",cursor:"pointer"}}>Close</button>
               </div>
             </div>
             <div style={{flex:1,overflow:"auto"}}>
@@ -1515,7 +1515,7 @@ function QualityPanel({docs,P,supabase,setDocs}:{docs:any[],P:any,supabase:any,s
                 <td style={{padding:"8px 10px",fontSize:"11px",color:P.textSec}}>{d.file_name?`${fileIcon(d.file_name)} ${d.file_name}`:"-"}</td>
                 <td style={{padding:"8px 10px"}}>
                   {d.qualityFlags.length===0?(
-                    <span style={{fontSize:"10px",color:"#10B981"}}>? No issues</span>
+                    <span style={{fontSize:"10px",color:"#10B981"}}>No issues</span>
                   ):(
                     <div style={{display:"flex",gap:"3px",flexWrap:"wrap" as const}}>
                       {d.qualityFlags.map((f:string,fi:number)=>(
@@ -1978,7 +1978,7 @@ function MessagesPanel({user, P, supabase, activeStudy}: {user: any, P: any, sup
       {/* Chat area */}
       {!activeConv?(
         <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:"8px",color:P.textTert}}>
-          <div style={{fontSize:"2rem"}}>??</div>
+          <div style={{fontSize:"2rem"}}></div>
           <div style={{fontSize:"12px"}}>Select a conversation or start a new one</div>
         </div>
       ):(
@@ -2025,10 +2025,10 @@ function MessagesPanel({user, P, supabase, activeStudy}: {user: any, P: any, sup
           {/* Input */}
           <div style={{padding:"10px 12px",borderTop:`0.5px solid ${P.border}`,display:"flex",gap:"8px",alignItems:"flex-end"}}>
             <input ref={fileInputRef} type="file" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)setSelectedFile(f);}}/>
-            <button onClick={()=>fileInputRef.current?.click()} style={{padding:"8px",background:P.bgTert,border:`0.5px solid ${P.border}`,borderRadius:"8px",cursor:"pointer",fontSize:"14px"}}>??</button>
+            <button onClick={()=>fileInputRef.current?.click()} style={{padding:"8px",background:P.bgTert,border:`0.5px solid ${P.border}`,borderRadius:"8px",cursor:"pointer",fontSize:"14px"}}></button>
             <div style={{flex:1}}>
               {selectedFile&&<div style={{fontSize:"10px",color:P.primary,marginBottom:"4px",padding:"3px 8px",background:P.primaryLight,borderRadius:"4px",display:"flex",justifyContent:"space-between"}}>
-                ?? {selectedFile.name} <button onClick={()=>setSelectedFile(null)} style={{background:"none",border:"none",cursor:"pointer",color:P.danger,fontSize:"10px"}}>?</button>
+                ?? {selectedFile.name} <button onClick={()=>setSelectedFile(null)} style={{background:"none",border:"none",cursor:"pointer",color:P.danger,fontSize:"10px"}}></button>
               </div>}
               <input value={newMessage} onChange={e=>setNewMessage(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&sendMessage()}
                 placeholder="Type a message..." style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px"}}/>
@@ -2091,6 +2091,7 @@ function MessagesPanel({user, P, supabase, activeStudy}: {user: any, P: any, sup
     </div>
   );
 }
+
 
 
 
