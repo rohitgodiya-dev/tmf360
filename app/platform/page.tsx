@@ -69,8 +69,8 @@ const ZONE_COLORS:Record<string,string>={
 };
 
 const FILE_ICONS:Record<string,string>={
-  pdf:"📄",doc:"📝",docx:"📝",xls:"📊",xlsx:"📊",ppt:"📋",pptx:"📋",
-  png:"🖼️",jpg:"🖼️",jpeg:"🖼️",gif:"🖼️",mp4:"🎬",zip:"📦",csv:"📊",txt:"📃",
+  pdf:"📄",doc:"📝",docx:"📝",xls:"📊",xlsx:"📊",ppt:"📽",pptx:"📽",
+  png:"🖼",jpg:"🖼",jpeg:"🖼",gif:"🖼",mp4:"🎬",zip:"🗜",csv:"📊",txt:"📃",
 };
 
 interface Study{study_id:string;protocol:string;phase:string;status:string;sponsor:string;user_id:string;org_id?:string;}
@@ -80,6 +80,8 @@ function fileIcon(n:string){return FILE_ICONS[n.split(".").pop()?.toLowerCase()|
 function canPreview(n:string){return["pdf","png","jpg","jpeg","gif","webp"].includes(n.split(".").pop()?.toLowerCase()||"");}
 function formatSize(b:number){if(b<1024)return b+" B";if(b<1024*1024)return(b/1024).toFixed(1)+" KB";return(b/(1024*1024)).toFixed(1)+" MB";}
 function scoreColor(s:number){return s>=80?"#10B981":s>=60?"#F59E0B":"#EF4444";}
+function padZone(z:string){return z.padStart(2,"0");}
+function formatSection(s:string){const parts=(s||"").split(".");if(parts.length<2)return s||"00.00";return `${parts[0].padStart(2,"0")}.${parts[1]}`;}
 
 export default function Platform(){
   const[panel,setPanel]=useState("auth");
@@ -139,15 +141,20 @@ export default function Platform(){
   const[commentText,setCommentText]=useState("");
   const[previewUrl,setPreviewUrl]=useState<string|null>(null);
   const[previewName,setPreviewName]=useState("");
-  const[chatMessages,setChatMessages]=useState<{role:string;text:string}[]>([{role:"ai",text:"Hi! I'm Trinity, your TMF AI specialist. I can help with DIA TMF Reference Model v3.3.1, ISO 14155:2020, ICH E6(R3), and 21 CFR Part 11 — and I can review, classify, approve, or flag documents for this study. What would you like to know?"}]);
+  const[chatMessages,setChatMessages]=useState<{role:string;text:string;isHealthCard?:boolean;docId?:string;sourceTags?:string[];classification?:{zoneLine:string;confidence:number;warning?:{detail:string;action:string}}}[]>([{role:"ai",text:"Hi, I'm Trinity — your TMF AI specialist for this study. I can classify uploaded documents against the tracker, and answer questions about this study's trial master file."}]);
   const[chatInput,setChatInput]=useState("");
   const[chatLoading,setChatLoading]=useState(false);
 const[chatDocAction,setChatDocAction]=useState<{msgIdx:number,stage:number,disabled:boolean}|null>(null);
 const[flagComment,setFlagComment]=useState("");
 const[flagStage,setFlagStage]=useState<"idle"|"form"|"done">("idle");
 const[flagMsgIdx,setFlagMsgIdx]=useState<number|null>(null);
+const[flagDocId,setFlagDocId]=useState<string|null>(null);
+const[flagReason,setFlagReason]=useState("");
+const[approveStage,setApproveStage]=useState<0|1|2|3>(0);
+const[approveDocId,setApproveDocId]=useState<string|null>(null);
   const messagesEnd=useRef<HTMLDivElement>(null);
   const fileInputRef=useRef<HTMLInputElement>(null);
+  const chatFileInputRef=useRef<HTMLInputElement>(null);
 
   const P={
     primary:"#6366F1",primaryLight:"#EEF2FF",primaryDark:"#4F46E5",
@@ -285,6 +292,7 @@ const[flagMsgIdx,setFlagMsgIdx]=useState<number|null>(null);
     if(!error){
       await logAudit("Document approved",selectedDoc.id,selectedDoc.study_id,"status","Under Review","Approved",approveReason);
       setDocs(prev=>prev.map(d=>d.id===selectedDoc.id?{...d,status:"Approved",approved_by:user.email,approved_at:now,signature_reason:approveReason}:d));
+      setChatMessages(prev=>[...prev,{role:"ai",text:`"${selectedDoc.custom_file_name||selectedDoc.artifact_name}" has been approved and filed. Audit trail entry recorded.`}]);
       setShowApproveModal(false);setApprovePassword("");setApproveReason("");setSelectedDoc(null);
     }
   }
@@ -306,12 +314,72 @@ const[flagMsgIdx,setFlagMsgIdx]=useState<number|null>(null);
     setPreviewUrl(url);setPreviewName(d.custom_file_name||d.file_name||"Document");
   }
 
+  function detectFlagReason(doc:Doc){
+    if(!doc.version||doc.version.trim()===""){return "Missing version — no version number is on file for this document.";}
+    if(doc.expiry_date&&new Date(doc.expiry_date)<new Date()){return `Document expired — the effective document expired on ${doc.expiry_date}.`;}
+    return `Version mismatch — document version ${doc.version} does not match the current tracked version for this artifact.`;
+  }
+
+  function presentClassification(){
+    if(!activeStudy){setChatMessages(prev=>[...prev,{role:"ai",text:"Select a study first."}]);return;}
+    const pendingDoc=studyDocs.find(d=>d.status==="Under Review");
+    if(!pendingDoc){
+      setChatMessages(prev=>[...prev,{role:"ai",text:`There are no documents currently under review in ${activeStudy.study_id}.`}]);
+      return;
+    }
+    const art=TMF.find(a=>a.a===pendingDoc.artifact_num);
+    const{score:confidence,flags}=calcQuality(pendingDoc);
+    const zoneLine=`Zone ${padZone(pendingDoc.zone)} · Section ${formatSection(art?.s||"")} · ${art?.an||pendingDoc.artifact_name}`;
+    const warning=flags.length>0?{detail:detectFlagReason(pendingDoc),action:"Request the current version from the site before filing, or flag this for reviewer follow-up."}:undefined;
+    setChatMessages(prev=>{
+      const idx=prev.length;
+      setChatDocAction({msgIdx:idx,stage:0,disabled:false});
+      return[...prev,{role:"ai",text:"I've classified this document and checked it against the version tracker.",docId:pendingDoc.id,classification:{zoneLine,confidence,warning}}];
+    });
+  }
+
   async function sendChat(){
     if(!chatInput.trim()||chatLoading)return;
     const userMsg=chatInput.trim();setChatInput("");
-    setChatMessages(prev=>[...prev,{role:"user",text:userMsg}]);setChatLoading(true);
+    setChatMessages(prev=>[...prev,{role:"user",text:userMsg}]);
+    setChatDocAction(null);setFlagStage("idle");setFlagMsgIdx(null);setFlagComment("");setFlagDocId(null);setFlagReason("");
+    setApproveStage(0);setApproveDocId(null);
+    setChatLoading(true);
+
+    const lower=userMsg.toLowerCase();
+
+    // TMF health / status snapshot
+    if(activeStudy&&/(health|status|readiness|overview)/.test(lower)&&/(tmf|study|trial)/.test(lower)){
+      const summary=`${donePct}% complete, with ${missing} core document${missing!==1?"s":""} still outstanding and ${pending} awaiting review. Inspection readiness is ${ri}/100 for ${activeStudy.study_id}.`;
+      setChatMessages(prev=>[...prev,{role:"ai",text:summary,isHealthCard:true,sourceTags:["Gap analysis","Inspection readiness","Document tracker"]}]);
+      setChatLoading(false);
+      return;
+    }
+
+    // "Why was this flagged / rejected" lookups — scoped to the active study only
+    if(activeStudy&&/why/.test(lower)&&/(flag|reject)/.test(lower)){
+      const flaggedDoc=studyDocs.find(d=>d.status==="Draft"&&(d as any).rejection_reason);
+      if(flaggedDoc){
+        setChatMessages(prev=>[...prev,{role:"ai",text:`"${flaggedDoc.custom_file_name||flaggedDoc.artifact_name}" (${flaggedDoc.artifact_num}) was flagged for this reason:\n${(flaggedDoc as any).rejection_reason}`,sourceTags:["Document tracker","Audit trail"]}]);
+      }else{
+        setChatMessages(prev=>[...prev,{role:"ai",text:`There are no flagged documents in ${activeStudy.study_id} right now.`}]);
+      }
+      setChatLoading(false);
+      return;
+    }
+
+    // Document review / approve / flag / upload intent
+    if(activeStudy&&/(review|approve|classify|flag|upload)/.test(lower)&&/(doc|document|file|tracker)/.test(lower)){
+      presentClassification();
+      setChatLoading(false);
+      return;
+    }
+
     try{
-      const context=activeStudy?`Active study: ${activeStudy.study_id} (${activeStudy.protocol}). Documents filed: ${docs.length}.`:"No active study.";
+      const studyContext=activeStudy?`Active study: ${activeStudy.study_id} (${activeStudy.protocol}). Documents filed: ${docs.length}. TMF completeness: ${donePct}%. Inspection readiness score: ${ri}. Missing core documents: ${missing}. Documents pending review: ${pending}.`:"No active study.";
+      const recentTurns=chatMessages.slice(-6).map(m=>`${m.role==="user"?"User":"Trinity"}: ${m.text}`).join("\n");
+      const scopeNote=activeStudy?`Only answer using data for study ${activeStudy.study_id}. Never reference other studies or organisation-wide data.`:"";
+      const context=`${studyContext}\nRecent conversation:\n${recentTurns}\n${scopeNote}`;
       const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:userMsg,context})});
       const data=await res.json();
       setChatMessages(prev=>[...prev,{role:"ai",text:data.response||"I couldn't process that request."}]);
@@ -379,8 +447,8 @@ const[flagMsgIdx,setFlagMsgIdx]=useState<number|null>(null);
       <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"16px",padding:"2rem",width:"360px",boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
         <div style={{textAlign:"center",marginBottom:"1.5rem"}}>
           <div style={{fontSize:"24px",fontWeight:"500",color:P.text}}>TMF<span style={{color:P.primary}}>360</span></div>
-          <div style={{fontSize:"12px",color:P.textTert,marginTop:"4px"}}>Trial Master File Platform · Free for clinical research</div>
-          <div style={{fontSize:"11px",color:P.textTert,marginTop:"2px"}}>DIA TMF Reference Model v3.3.1 · ISO 14155 · 21 CFR Part 11</div>
+          <div style={{fontSize:"12px",color:P.textTert,marginTop:"4px"}}>Trial Master File Platform — Free for clinical research</div>
+          <div style={{fontSize:"11px",color:P.textTert,marginTop:"2px"}}>DIA TMF Reference Model v3.3.1 — ISO 14155 — 21 CFR Part 11</div>
         </div>
         <div style={{display:"flex",gap:"6px",marginBottom:"1.25rem"}}>
           {(["login","signup"] as const).map(m=>(
@@ -404,7 +472,7 @@ const[flagMsgIdx,setFlagMsgIdx]=useState<number|null>(null);
         <button onClick={handleAuth} style={{width:"100%",padding:"9px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",fontSize:"12px",fontWeight:"500",cursor:"pointer"}}>
           {authMode==="login"?"Log in":"Create account"}
         </button>
-        <p style={{fontSize:"10px",color:P.textTert,textAlign:"center",marginTop:"1rem"}}>Free forever · No credit card · 21 CFR Part 11 compliant</p>
+        <p style={{fontSize:"10px",color:P.textTert,textAlign:"center",marginTop:"1rem"}}>Free forever — No credit card — 21 CFR Part 11 compliant</p>
       </div>
     </div>
   );
@@ -416,7 +484,7 @@ const[flagMsgIdx,setFlagMsgIdx]=useState<number|null>(null);
       {/* Header */}
       <header style={{display:"flex",alignItems:"center",gap:"12px",padding:"0 1.25rem",height:"48px",borderBottom:`0.5px solid ${P.border}`,background:P.bg,flexShrink:0}}>
         <span style={{fontSize:"16px",fontWeight:"500"}}>TMF<span style={{color:P.primary}}>360</span></span>
-        <span style={{fontSize:"11px",color:P.textTert}}>Trial Master File Platform · DIA TMF RM v3.3.1</span>
+        <span style={{fontSize:"11px",color:P.textTert}}>Trial Master File Platform — DIA TMF RM v3.3.1</span>
         <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:"10px"}}>
           {studies.length>0&&(
             <select value={activeStudy?.study_id||""} onChange={e=>{const s=studies.find(x=>x.study_id===e.target.value);if(s){setActiveStudy(s);if(orgId)loadDocsWithOrg(s.study_id,orgId);}}} style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"6px",padding:"3px 8px",background:P.bg}}>
@@ -461,7 +529,7 @@ const[flagMsgIdx,setFlagMsgIdx]=useState<number|null>(null);
               </div>
               {!activeStudy?(
                 <div style={{textAlign:"center",padding:"3rem",color:P.textTert}}>
-                  <div style={{fontSize:"3rem",marginBottom:"12px"}}>📋</div>
+                  <div style={{fontSize:"3rem",marginBottom:"12px"}}>📂</div>
                   <div style={{fontSize:"13px",fontWeight:"500",marginBottom:"6px",color:P.text}}>No studies yet</div>
                   <div style={{fontSize:"12px",marginBottom:"1rem"}}>Create your first study to get started.</div>
                   {currentUserRole==="System Administrator"&&<button onClick={()=>setShowStudyModal(true)} style={{fontSize:"11px",padding:"8px 18px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ Create first study</button>}
@@ -503,7 +571,7 @@ const[flagMsgIdx,setFlagMsgIdx]=useState<number|null>(null);
                       </div>
                       <div style={{display:"flex",flexDirection:"column",gap:"4px"}}>
                         {gaps.crit.slice(0,2).map((g,i)=><div key={i} style={{fontSize:"11px",background:"#FEF2F2",color:"#991B1B",borderRadius:"6px",padding:"4px 8px"}}>⚠ {g.an}</div>)}
-                        {gaps.major.slice(0,2).map((g,i)=><div key={i} style={{fontSize:"11px",background:"#FFFBEB",color:"#92400E",borderRadius:"6px",padding:"4px 8px"}}>▲ {g.an}</div>)}
+                        {gaps.major.slice(0,2).map((g,i)=><div key={i} style={{fontSize:"11px",background:"#FFFBEB",color:"#92400E",borderRadius:"6px",padding:"4px 8px"}}>⚠ {g.an}</div>)}
                         {gaps.crit.length===0&&gaps.major.length===0&&<div style={{fontSize:"11px",color:P.success}}>✓ No critical or major findings</div>}
                       </div>
                     </div>
@@ -600,7 +668,7 @@ const[flagMsgIdx,setFlagMsgIdx]=useState<number|null>(null);
                         <span style={{fontSize:"12px",fontWeight:"500"}}>{d.artifact_name}</span>
                         {statusBadge(d.status)}
                       </div>
-                      <div style={{fontSize:"10px",color:P.textTert}}>Zone {d.zone} · {d.owner||"—"}</div>
+                      <div style={{fontSize:"10px",color:P.textTert}}>Zone {d.zone} — {d.owner||"—"}</div>
                     </div>
                     {d.file_path&&canDownload&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none"}}>Download</a>}
                   </div>
@@ -684,7 +752,7 @@ const[flagMsgIdx,setFlagMsgIdx]=useState<number|null>(null);
                         <span style={{fontSize:"13px",fontWeight:"500"}}>{d.artifact_name}</span>
                         {statusBadge(d.status)}
                       </div>
-                      <div style={{fontSize:"10px",color:P.textTert}}>Zone {d.zone} · Owner: {d.owner||"—"}</div>
+                      <div style={{fontSize:"10px",color:P.textTert}}>Zone {d.zone} — Owner: {d.owner||"—"}</div>
                     </div>
                     <div style={{display:"flex",gap:"6px"}}>
                       {d.file_path&&canPreview(d.file_name||"")&&<button onClick={()=>openPreview(d)} style={{fontSize:"9px",padding:"3px 8px",background:P.bgTert,border:`0.5px solid ${P.border}`,borderRadius:"4px",cursor:"pointer"}}>Preview</button>}
@@ -909,7 +977,7 @@ const[flagMsgIdx,setFlagMsgIdx]=useState<number|null>(null);
                       <h2 style={{fontSize:"11px",fontWeight:"500",marginBottom:"10px",color:P.textSec}}>Top findings</h2>
                       <div style={{display:"flex",flexDirection:"column",gap:"5px"}}>
                         {gaps.crit.slice(0,4).map((g:any,i:number)=><div key={i} style={{fontSize:"11px",background:"#FEF2F2",color:"#991B1B",borderRadius:"6px",padding:"6px 10px"}}>⚠ CRITICAL — {g.an}</div>)}
-                        {gaps.major.slice(0,3).map((g:any,i:number)=><div key={i} style={{fontSize:"11px",background:"#FFFBEB",color:"#92400E",borderRadius:"6px",padding:"6px 10px"}}>▲ MAJOR — {g.an}</div>)}
+                        {gaps.major.slice(0,3).map((g:any,i:number)=><div key={i} style={{fontSize:"11px",background:"#FFFBEB",color:"#92400E",borderRadius:"6px",padding:"6px 10px"}}>⚠ MAJOR — {g.an}</div>)}
                         {gaps.crit.length===0&&gaps.major.length===0&&<div style={{fontSize:"11px",color:P.success}}>✓ No critical or major findings</div>}
                       </div>
                     </div>
@@ -932,34 +1000,208 @@ const[flagMsgIdx,setFlagMsgIdx]=useState<number|null>(null);
 
           {/* AI CHAT */}
           {panel==="chat"&&(
-            <div style={{display:"flex",flexDirection:"column",height:"calc(100vh - 120px)",gap:"12px"}}>
-              <h1 style={{fontSize:"14px",fontWeight:"500"}}>Trinity · TMF AI specialist</h1>
-              <div style={{display:"flex",gap:"6px",flexWrap:"wrap" as const}}>
-                {["Where does a CTA go in the TMF?","Core docs before first patient?","Draft a Note to File for late IRB filing","What is Zone 5?","Explain ALCOA+","What is 21 CFR Part 11?"].map(q=>(
+            <div style={{display:"flex",flexDirection:"column",height:"calc(100vh - 64px)",gap:"0px",margin:"-1.25rem"}}>
+              <div style={{display:"flex",alignItems:"center",gap:"8px",height:"52px",padding:"0 1.25rem",borderBottom:`0.5px solid ${P.border}`,background:P.bg,flexShrink:0}}>
+                <span style={{width:"22px",height:"22px",borderRadius:"50%",background:P.primaryLight,display:"flex",alignItems:"center",justifyContent:"center",color:P.primary,flexShrink:0}}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c.5 3.6 2.2 6 6.5 6.5-4.3.5-6 2.9-6.5 6.5-.5-3.6-2.2-6-6.5-6.5C9.8 8 11.5 5.6 12 2Z"/><path d="M19 15c.25 1.6 1 2.3 2.6 2.5-1.6.25-2.3 1-2.6 2.6-.25-1.6-1-2.3-2.6-2.6 1.6-.2 2.3-.9 2.6-2.5Z"/></svg>
+                </span>
+                <span style={{fontSize:"13px",fontWeight:"600",color:P.text}}>Trinity</span>
+                {activeStudy&&<span style={{fontSize:"12px",color:P.textTert}}>· {activeStudy.study_id}</span>}
+                <span style={{marginLeft:"auto",fontSize:"10.5px",padding:"3px 10px",borderRadius:"20px",background:P.bgTert,color:P.textTert}}>Scoped to this study only</span>
+              </div>
+
+              <div style={{padding:"10px 1.25rem",display:"flex",gap:"6px",flexWrap:"wrap" as const,borderBottom:`0.5px solid ${P.border}`,background:P.bg}}>
+                {["What's my TMF health?","Review a pending document","Where does a CTA go in the TMF?","What normally goes in TMF Zone 8?","Explain ALCOA+","What is 21 CFR Part 11?"].map(q=>(
                   <button key={q} onClick={()=>setChatInput(q)} style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"20px",padding:"4px 10px",color:P.textSec,background:P.bg,cursor:"pointer"}}>{q}</button>
                 ))}
               </div>
-              <div style={{flex:1,background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",display:"flex",flexDirection:"column",overflow:"hidden"}}>
-                <div style={{flex:1,overflowY:"auto",padding:"1rem",display:"flex",flexDirection:"column",gap:"10px"}}>
+
+              <div style={{flex:1,overflowY:"auto",background:"linear-gradient(135deg,#E9ECFB 0%,#F5F6FC 45%,#FFFFFF 100%)",display:"flex",flexDirection:"column",alignItems:"center",padding:"20px 0 8px"}}>
+                <div style={{width:"100%",maxWidth:"760px",padding:"0 24px",display:"flex",flexDirection:"column",gap:"16px"}}>
                   {chatMessages.map((m,i)=>(
-                    <div key={i} style={{display:"flex",gap:"8px",flexDirection:m.role==="user"?"row-reverse":"row"}}>
-                      <div style={{width:"24px",height:"24px",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"9px",fontWeight:"500",flexShrink:0,background:m.role==="ai"?P.primaryLight:"#6366F1",color:m.role==="ai"?P.primary:"#fff"}}>{m.role==="ai"?"T":"You"}</div>
-                      <div style={{maxWidth:"85%",fontSize:"12px",borderRadius:"10px",padding:"8px 12px",lineHeight:"1.6",whiteSpace:"pre-wrap" as const,background:m.role==="ai"?P.bgSec:"#6366F1",color:m.role==="ai"?P.text:"#fff"}}>{m.text}</div>
+                    <div key={i} style={{display:"flex",gap:"10px",justifyContent:m.role==="user"?"flex-end":"flex-start"}}>
+                      {m.role==="ai"&&(
+                        <span style={{width:"26px",height:"26px",borderRadius:"50%",flexShrink:0,background:`linear-gradient(135deg,${P.primaryLight},#fff)`,border:`0.5px solid ${P.primaryLight}`,display:"flex",alignItems:"center",justifyContent:"center",color:P.primary}}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c.5 3.6 2.2 6 6.5 6.5-4.3.5-6 2.9-6.5 6.5-.5-3.6-2.2-6-6.5-6.5C9.8 8 11.5 5.6 12 2Z"/><path d="M19 15c.25 1.6 1 2.3 2.6 2.5-1.6.25-2.3 1-2.6 2.6-.25-1.6-1-2.3-2.6-2.6 1.6-.2 2.3-.9 2.6-2.5Z"/></svg>
+                        </span>
+                      )}
+                      <div style={{maxWidth:"78%",display:"flex",flexDirection:"column" as const,gap:"6px"}}>
+                        {m.role==="ai"&&<div style={{fontSize:"10.5px",color:P.textTert,fontWeight:"600",paddingLeft:"2px"}}>Trinity</div>}
+                        <div style={{fontSize:"12.8px",borderRadius:m.role==="ai"?"10px 10px 10px 4px":"10px 10px 4px 10px",padding:"10px 14px",lineHeight:"1.6",whiteSpace:"pre-wrap" as const,background:m.role==="ai"?P.bg:P.bgTert,border:m.role==="ai"?`0.5px solid ${P.border}`:"none",color:P.text}}>{m.text}</div>
+
+                        {m.classification&&(
+                          <>
+                            <div style={{border:`0.5px solid ${P.border}`,borderRadius:"10px",padding:"12px 14px",background:P.bg}}>
+                              <div style={{fontSize:"13px",fontWeight:"600",color:P.text,marginBottom:"4px"}}>{m.classification.zoneLine}</div>
+                              <span style={{display:"inline-block",fontSize:"10.5px",fontWeight:"600",padding:"2px 9px",borderRadius:"20px",background:m.classification.confidence>=80?P.successLight:P.warningLight,color:m.classification.confidence>=80?P.success:P.warning}}>Confidence {m.classification.confidence}%</span>
+                            </div>
+                            {m.classification.warning&&(
+                              <div style={{border:"0.5px solid #f3d9a6",background:P.warningLight,borderRadius:"10px",padding:"11px 14px",display:"flex",flexDirection:"column" as const,gap:"6px"}}>
+                                <div style={{fontSize:"11.5px",fontWeight:"600",color:P.warning,display:"flex",alignItems:"center",gap:"6px"}}>
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17h.01"/></svg>
+                                  Version mismatch detected
+                                </div>
+                                <div style={{fontSize:"12px",color:"#7a5205",lineHeight:"1.55"}}>{m.classification.warning.detail}</div>
+                                <div style={{fontSize:"11.5px",color:"#7a5205",background:"#fff",border:"0.5px solid #f3d9a6",borderRadius:"7px",padding:"7px 10px"}}>Suggested action: {m.classification.warning.action}</div>
+                              </div>
+                            )}
+                          </>
+                        )}
+
+                        {m.isHealthCard&&activeStudy&&(
+                          <>
+                            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"8px"}}>
+                              {[
+                                {val:`${donePct}%`,label:"TMF completeness",color:scoreColor(donePct)},
+                                {val:missing,label:"Missing documents",color:"#EF4444"},
+                                {val:`${ri}`,label:"Readiness score",color:scoreColor(ri)},
+                              ].map((s,si)=>(
+                                <div key={si} style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px"}}>
+                                  <div style={{fontSize:"16px",fontWeight:"500",color:s.color}}>{s.val}</div>
+                                  <div style={{fontSize:"10px",color:P.textSec}}>{s.label}</div>
+                                </div>
+                              ))}
+                            </div>
+                            {m.sourceTags&&(
+                              <div style={{display:"flex",gap:"6px",flexWrap:"wrap" as const}}>
+                                {m.sourceTags.map((t,ti)=>(
+                                  <span key={ti} style={{fontSize:"9px",padding:"2px 8px",borderRadius:"20px",background:P.bgTert,color:P.textTert}}>{t}</span>
+                                ))}
+                              </div>
+                            )}
+                          </>
+                        )}
+
+                        {chatDocAction&&chatDocAction.msgIdx===i&&!chatDocAction.disabled&&(
+                          <div style={{display:"flex",gap:"8px"}}>
+                            <button onClick={()=>{
+                              const doc=studyDocs.find(d=>d.id===m.docId);
+                              if(!doc)return;
+                              const zoneInfo=ZONES.find(z=>z.z===doc.zone);
+                              setApproveDocId(doc.id);setApproveStage(1);
+                              setChatMessages(prev=>[...prev,{role:"ai",text:`Zone ${padZone(doc.zone)} · ${zoneInfo?.zn||"Unclassified zone"}\nConfirm this is the correct zone for filing.`}]);
+                              setChatDocAction(prev=>prev?{...prev,disabled:true}:null);
+                            }} style={{fontSize:"12px",fontWeight:"600",padding:"6px 15px",background:P.success,color:"#fff",border:"none",borderRadius:"7px",cursor:"pointer"}}>Approve</button>
+                            <button onClick={()=>{
+                              const doc=studyDocs.find(d=>d.id===m.docId);
+                              if(!doc)return;
+                              setFlagDocId(doc.id);setFlagReason(detectFlagReason(doc));setFlagStage("form");setFlagMsgIdx(i);
+                              setChatMessages(prev=>[...prev,{role:"ai",text:"Flag initiated. Review the detected reason below and add context before submitting."}]);
+                              setChatDocAction(prev=>prev?{...prev,disabled:true}:null);
+                            }} style={{fontSize:"12px",fontWeight:"600",padding:"6px 15px",background:P.danger,color:"#fff",border:"none",borderRadius:"7px",cursor:"pointer"}}>Flag</button>
+                          </div>
+                        )}
+
+                        {approveStage===1&&i===chatMessages.length-1&&m.text.startsWith("Zone ")&&(
+                          <div style={{display:"flex",flexDirection:"column" as const,gap:"6px"}}>
+                            <div style={{border:`0.5px solid ${P.border}`,borderRadius:"10px",padding:"10px 14px",background:P.bg}}>
+                              <div style={{fontSize:"12.8px",fontWeight:"600"}}>{m.text.split("\n")[0]}</div>
+                              <div style={{fontSize:"11px",color:P.textTert,marginTop:"2px"}}>Confirm this is the correct zone for filing.</div>
+                            </div>
+                            <button onClick={()=>{
+                              const doc=studyDocs.find(d=>d.id===approveDocId);
+                              if(!doc)return;
+                              const art=TMF.find(a=>a.a===doc.artifact_num);
+                              setApproveStage(2);
+                              setChatMessages(prev=>[...prev,{role:"ai",text:`Artifact · ${art?.an||doc.artifact_name}\nConfirm this is the correct artifact type.`}]);
+                            }} style={{fontSize:"12px",fontWeight:"600",padding:"6px 15px",background:P.success,color:"#fff",border:"none",borderRadius:"7px",cursor:"pointer",alignSelf:"flex-start" as const}}>Approve</button>
+                          </div>
+                        )}
+
+                        {approveStage===2&&i===chatMessages.length-1&&m.text.startsWith("Artifact ·")&&(
+                          <div style={{display:"flex",flexDirection:"column" as const,gap:"6px"}}>
+                            <div style={{border:`0.5px solid ${P.border}`,borderRadius:"10px",padding:"10px 14px",background:P.bg}}>
+                              <div style={{fontSize:"12.8px",fontWeight:"600"}}>{m.text.split("\n")[0]}</div>
+                              <div style={{fontSize:"11px",color:P.textTert,marginTop:"2px"}}>Confirm this is the correct artifact type.</div>
+                            </div>
+                            <button onClick={async()=>{
+                              const doc=studyDocs.find(d=>d.id===approveDocId);
+                              if(!doc)return;
+                              const art=TMF.find(a=>a.a===doc.artifact_num);
+                              const now=new Date().toISOString();
+                              const{error}=await supabase.from("documents").update({status:"Approved",approved_by:user.email,approved_at:now,signature_reason:"Approved via Trinity AI specialist"}).eq("id",doc.id);
+                              if(!error){
+                                await logAudit("Document approved via Trinity",doc.id,doc.study_id,"status",doc.status,"Approved","Approved via Trinity AI specialist");
+                                setDocs(prev=>prev.map(d=>d.id===doc.id?{...d,status:"Approved",approved_by:user.email,approved_at:now,signature_reason:"Approved via Trinity AI specialist"}:d));
+                              }
+                              setChatMessages(prev=>[...prev,
+                                {role:"ai",text:`__FILED__Filed to Zone ${padZone(doc.zone)} · Section ${formatSection(art?.s||"")}\nAudit trail entry recorded.`},
+                                {role:"ai",text:"Your document has been successfully filed."}
+                              ]);
+                              setApproveStage(0);setApproveDocId(null);
+                            }} style={{fontSize:"12px",fontWeight:"600",padding:"6px 15px",background:P.success,color:"#fff",border:"none",borderRadius:"7px",cursor:"pointer",alignSelf:"flex-start" as const}}>Approve</button>
+                          </div>
+                        )}
+
+                        {m.text.startsWith("__FILED__")&&(
+                          <div style={{display:"flex",alignItems:"flex-start",gap:"9px",border:"0.5px solid #bfe6d4",background:P.successLight,borderRadius:"10px",padding:"11px 14px"}}>
+                            <span style={{color:P.success,flexShrink:0,marginTop:"1px"}}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.5 2.5 5.5-6"/></svg>
+                            </span>
+                            <div style={{display:"flex",flexDirection:"column" as const,gap:"2px"}}>
+                              <div style={{fontSize:"12.5px",fontWeight:"600",color:"#0a6b4f"}}>{m.text.replace("__FILED__","").split("\n")[0]}</div>
+                              <div style={{fontSize:"11.5px",color:"#0a6b4f",opacity:0.85}}>{m.text.replace("__FILED__","").split("\n")[1]}</div>
+                            </div>
+                          </div>
+                        )}
+
+                        {flagStage==="form"&&i===chatMessages.length-1&&m.text.includes("Flag initiated")&&(
+                          <div style={{background:P.dangerLight,border:"0.5px solid #f3c9c7",borderRadius:"10px",padding:"12px 14px",display:"flex",flexDirection:"column" as const,gap:"10px"}}>
+                            <div>
+                              <div style={{fontSize:"11px",fontWeight:"600",color:P.textTert,marginBottom:"4px",textTransform:"uppercase" as const,letterSpacing:".03em"}}>Reason for flag (auto-generated)</div>
+                              <div style={{fontSize:"12px",background:"#fff",border:`0.5px solid ${P.border}`,borderRadius:"7px",padding:"8px 10px",color:P.textSec}}>{flagReason}</div>
+                            </div>
+                            <div>
+                              <div style={{fontSize:"11px",fontWeight:"600",color:P.textTert,marginBottom:"4px",textTransform:"uppercase" as const,letterSpacing:".03em"}}>Your comment</div>
+                              <textarea value={flagComment} onChange={e=>setFlagComment(e.target.value)} rows={2} placeholder="Add context for the reviewer..." style={{width:"100%",fontSize:"12.5px",border:`0.5px solid ${P.border}`,borderRadius:"7px",padding:"8px 10px",resize:"vertical" as const,background:"#fff"}}/>
+                            </div>
+                            <button disabled={flagComment.trim().length===0} onClick={async()=>{
+                              if(!flagDocId)return;
+                              const doc=studyDocs.find(d=>d.id===flagDocId);
+                              if(!doc)return;
+                              const now=new Date().toISOString();
+                              const comment=flagComment.trim();
+                              const{error}=await supabase.from("documents").update({status:"Draft",rejection_reason:flagReason,rejected_by:user.email,rejected_at:now}).eq("id",doc.id);
+                              if(!error){
+                                await logAudit("Document flagged via Trinity",doc.id,doc.study_id,"status",doc.status,"Draft",flagReason);
+                                setDocs(prev=>prev.map(d=>d.id===doc.id?{...d,status:"Draft",rejection_reason:flagReason,rejected_by:user.email,rejected_at:now} as any:d));
+                              }
+                              setChatMessages(prev=>[...prev,{role:"ai",text:`Moved to Flagged on the dashboard.\nReason and your comment are attached for the reviewer.\nComment: ${comment}`}]);
+                              setFlagStage("idle");setFlagMsgIdx(null);setFlagComment("");setFlagDocId(null);setFlagReason("");
+                            }} style={{fontSize:"12px",fontWeight:"600",padding:"6px 15px",background:P.danger,color:"#fff",border:"none",borderRadius:"7px",cursor:flagComment.trim().length===0?"not-allowed":"pointer",alignSelf:"flex-start" as const,opacity:flagComment.trim().length===0?0.5:1}}>Submit flag</button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                   {chatLoading&&(
-                    <div style={{display:"flex",gap:"8px"}}>
-                      <div style={{width:"24px",height:"24px",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"9px",background:P.primaryLight,color:P.primary}}>T</div>
-                      <div style={{background:P.bgSec,borderRadius:"10px",padding:"8px 12px",display:"flex",gap:"4px",alignItems:"center"}}>
-                        {[0,1,2].map(i=><span key={i} style={{width:"6px",height:"6px",borderRadius:"50%",background:P.primary,display:"inline-block",animation:"bounce 0.9s infinite",animationDelay:`${i*0.15}s`}}/>)}
+                    <div style={{display:"flex",gap:"10px"}}>
+                      <span style={{width:"26px",height:"26px",borderRadius:"50%",background:`linear-gradient(135deg,${P.primaryLight},#fff)`,border:`0.5px solid ${P.primaryLight}`,display:"flex",alignItems:"center",justifyContent:"center",color:P.primary}}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c.5 3.6 2.2 6 6.5 6.5-4.3.5-6 2.9-6.5 6.5-.5-3.6-2.2-6-6.5-6.5C9.8 8 11.5 5.6 12 2Z"/></svg>
+                      </span>
+                      <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"10px",padding:"10px 14px",display:"flex",gap:"4px",alignItems:"center"}}>
+                        {[0,1,2].map(i=><span key={i} style={{width:"5px",height:"5px",borderRadius:"50%",background:P.textTert,display:"inline-block",animation:"bounce 0.9s infinite",animationDelay:`${i*0.15}s`}}/>)}
                       </div>
                     </div>
                   )}
                   <div ref={messagesEnd}/>
                 </div>
-                <div style={{borderTop:`0.5px solid ${P.border}`,padding:"10px 12px",display:"flex",gap:"8px"}}>
-                  <input value={chatInput} onChange={e=>setChatInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendChat()} placeholder="Ask Trinity or drop a document..." style={{flex:1,fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/>
-                  <button onClick={sendChat} disabled={chatLoading} style={{fontSize:"12px",padding:"7px 16px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",opacity:chatLoading?0.5:1}}>Send</button>
+              </div>
+
+              <div style={{display:"flex",justifyContent:"center",padding:"14px 0 18px",background:"linear-gradient(135deg,#E9ECFB 0%,#F5F6FC 45%,#FFFFFF 100%)",flexShrink:0}}>
+                <div style={{width:"100%",maxWidth:"760px",margin:"0 24px",display:"flex",alignItems:"center",gap:"8px",background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"26px",padding:"6px 8px 6px 14px"}}>
+                  <input ref={chatFileInputRef} type="file" style={{display:"none"}} onChange={()=>{
+                    setChatMessages(prev=>[...prev,{role:"user",text:"Uploaded a document and this month's version tracker"}]);
+                    presentClassification();
+                    if(chatFileInputRef.current)chatFileInputRef.current.value="";
+                  }}/>
+                  <button aria-label="Attach document or version tracker" onClick={()=>chatFileInputRef.current?.click()} style={{width:"32px",height:"32px",borderRadius:"50%",border:"none",background:"transparent",color:P.textTert,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.5 12.5 12 21a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8"/></svg>
+                  </button>
+                  <input value={chatInput} onChange={e=>setChatInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendChat()} placeholder="Ask Trinity or drop a document" aria-label="Message Trinity" style={{flex:1,border:"none",outline:"none",fontSize:"13px",background:"transparent",color:P.text,padding:"8px 2px"}}/>
+                  <button aria-label="Send message" onClick={sendChat} disabled={chatLoading} style={{width:"32px",height:"32px",borderRadius:"50%",flexShrink:0,background:chatLoading?P.bgTert:P.primary,border:"none",color:chatLoading?P.textTert:"#fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:chatLoading?"not-allowed":"pointer"}}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                  </button>
                 </div>
               </div>
             </div>
@@ -970,7 +1212,7 @@ const[flagMsgIdx,setFlagMsgIdx]=useState<number|null>(null);
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
               <h1 style={{fontSize:"14px",fontWeight:"500"}}>Audit trail — 21 CFR Part 11 compliant</h1>
               <div style={{background:"#FFFBEB",border:"0.5px solid #FDE68A",borderRadius:"10px",padding:"10px 14px",fontSize:"11px",color:"#92400E"}}>
-                ⚠ This audit trail is read-only and tamper-evident in compliance with 21 CFR Part 11. All document actions, electronic signatures, and approvals are permanently recorded.
+                🔒 This audit trail is read-only and tamper-evident in compliance with 21 CFR Part 11. All document actions, electronic signatures, and approvals are permanently recorded.
               </div>
               <AuditTrail user={user} activeStudy={activeStudy} P={P}/>
             </div>
@@ -1042,8 +1284,8 @@ const[flagMsgIdx,setFlagMsgIdx]=useState<number|null>(null);
               <div onDragOver={e=>{e.preventDefault();setDragOver(true);}} onDragLeave={()=>setDragOver(false)} onDrop={e=>{e.preventDefault();setDragOver(false);const f=e.dataTransfer.files[0];if(f)handleFileUpload(f);}} onClick={()=>fileInputRef.current?.click()} style={{border:`1.5px dashed ${dragOver?P.primary:P.border}`,borderRadius:"10px",padding:"1.5rem",textAlign:"center",cursor:"pointer",background:dragOver?P.primaryLight:P.bgSec}}>
                 <input ref={fileInputRef} type="file" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)handleFileUpload(f);}}/>
                 {uploading?<div style={{fontSize:"12px",color:P.primary}}>{uploadProgress}</div>
-                :selectedFile?<div style={{fontSize:"12px"}}><div style={{fontSize:"1.5rem",marginBottom:"4px"}}>{fileIcon(selectedFile.name)}</div><div style={{fontWeight:"500"}}>{selectedFile.name}</div><div style={{color:P.textTert,fontSize:"11px"}}>{formatSize(selectedFile.size)} · {uploadProgress}</div></div>
-                :<div style={{fontSize:"12px",color:P.textTert}}><div style={{fontSize:"1.5rem",marginBottom:"4px"}}>📁</div>Drag & drop or click to browse</div>}
+                :selectedFile?<div style={{fontSize:"12px"}}><div style={{fontSize:"1.5rem",marginBottom:"4px"}}>{fileIcon(selectedFile.name)}</div><div style={{fontWeight:"500"}}>{selectedFile.name}</div><div style={{color:P.textTert,fontSize:"11px"}}>{formatSize(selectedFile.size)} — {uploadProgress}</div></div>
+                :<div style={{fontSize:"12px",color:P.textTert}}><div style={{fontSize:"1.5rem",marginBottom:"4px"}}>📤</div>Drag & drop or click to browse</div>}
               </div>
             </div>
             <div style={{marginBottom:"10px"}}>
@@ -1241,7 +1483,7 @@ function QualityPanel({docs,P,supabase,setDocs}:{docs:any[],P:any,supabase:any,s
               <span style={{fontSize:"11px",color:P.textTert,marginLeft:"8px"}}>{affected.length} document{affected.length!==1?"s":""}</span>
               <div style={{fontSize:"10px",color:P.textTert,marginTop:"2px"}}>Fix: {f.fix}</div>
             </div>
-            <span style={{fontSize:"11px",fontWeight:"500",color:f.color,flexShrink:0}}>−{flag==="NO_FILE"?20:flag==="EXPIRED"?15:flag==="DUPLICATE"?15:flag==="VERSION_CONFLICT"?10:flag==="MISSING_CUSTOM_NAME"?5:10} pts each</span>
+            <span style={{fontSize:"11px",fontWeight:"500",color:f.color,flexShrink:0}}>-{flag==="NO_FILE"?20:flag==="EXPIRED"?15:flag==="DUPLICATE"?15:flag==="VERSION_CONFLICT"?10:flag==="MISSING_CUSTOM_NAME"?5:10} pts each</span>
           </div>
         );
       })}
@@ -1748,7 +1990,7 @@ function MessagesPanel({user, P, supabase, activeStudy}: {user: any, P: any, sup
             </div>
             <div>
               <div style={{fontSize:"13px",fontWeight:"500",color:P.text}}>{getConvName(activeConv)}</div>
-              <div style={{fontSize:"10px",color:P.textTert}}>{activeConv.is_group?"Group chat":"Direct message"} · {activeStudy?.study_id}</div>
+              <div style={{fontSize:"10px",color:P.textTert}}>{activeConv.is_group?"Group chat":"Direct message"} — {activeStudy?.study_id}</div>
             </div>
           </div>
 
@@ -1849,4 +2091,3 @@ function MessagesPanel({user, P, supabase, activeStudy}: {user: any, P: any, sup
     </div>
   );
 }
-
