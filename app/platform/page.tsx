@@ -419,8 +419,8 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
   const expiring=studyDocs.filter(d=>d.expiry_date&&new Date(d.expiry_date)<new Date(Date.now()+90*86400000)).length;
   const pending=studyDocs.filter(d=>d.status==="Under Review").length;
 
-  const totalW=ZONES.reduce((s,{z})=>{const w=critZones.includes(z)?3:majZones.includes(z)?2:1;return s+w;},[0] as any);
-  const earnedW=ZONES.reduce((s,{z})=>{const w=critZones.includes(z)?3:majZones.includes(z)?2:1;return s+(zoneComp(z)/100)*w;},[0] as any);
+  const totalW=ZONES.reduce((s,{z})=>{const w=critZones.includes(z)?3:majZones.includes(z)?2:1;return s+w;},0);
+  const earnedW=ZONES.reduce((s,{z})=>{const w=critZones.includes(z)?3:majZones.includes(z)?2:1;return s+(zoneComp(z)/100)*w;},0);
   const ri=totalW?Math.round((earnedW/totalW)*100):0;
 
   function statusBadge(s:string){
