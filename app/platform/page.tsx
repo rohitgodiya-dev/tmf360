@@ -1,4 +1,4 @@
-Ôªø"use client";
+"use client";
 import{useState,useEffect,useRef}from"react";
 import{supabase}from"../../lib/supabase";
 
@@ -69,14 +69,14 @@ const ZONE_COLORS:Record<string,string>={
 };
 
 const FILE_ICONS:Record<string,string>={
-  pdf:"üìÑ",doc:"üìù",docx:"üìù",xls:"üìä",xlsx:"üìä",ppt:"üìΩ",pptx:"üìΩ",
-  png:"üñº",jpg:"üñº",jpeg:"üñº",gif:"üñº",mp4:"üé¨",zip:"üóú",csv:"üìä",txt:"üìÉ",
+  pdf:"??",doc:"??",docx:"??",xls:"??",xlsx:"??",ppt:"??",pptx:"??",
+  png:"??",jpg:"??",jpeg:"??",gif:"??",mp4:"??",zip:"??",csv:"??",txt:"??",
 };
 
 interface Study{study_id:string;protocol:string;phase:string;status:string;sponsor:string;user_id:string;org_id?:string;}
 interface Doc{id?:string;study_id:string;user_id:string;org_id?:string;artifact_num:string;artifact_name:string;zone:string;version:string;status:string;owner:string;effective_date:string;expiry_date:string;file_path:string;file_name:string;custom_file_name:string;file_type:string;file_size:number;comments:string;approved_by?:string;approved_at?:string;signature_reason?:string;submission_reason?:string;rejection_reason?:string;rejected_by?:string;rejected_at?:string;appeal_reason?:string;quality_score?:number;quality_flags?:string[];}
 
-function fileIcon(n:string){return FILE_ICONS[n.split(".").pop()?.toLowerCase()||""]||"üìÑ";}
+function fileIcon(n:string){return FILE_ICONS[n.split(".").pop()?.toLowerCase()||""]||"??";}
 function canPreview(n:string){return["pdf","png","jpg","jpeg","gif","webp"].includes(n.split(".").pop()?.toLowerCase()||"");}
 function formatSize(b:number){if(b<1024)return b+" B";if(b<1024*1024)return(b/1024).toFixed(1)+" KB";return(b/(1024*1024)).toFixed(1)+" MB";}
 function scoreColor(s:number){return s>=80?"#10B981":s>=60?"#F59E0B":"#EF4444";}
@@ -141,7 +141,7 @@ export default function Platform(){
   const[commentText,setCommentText]=useState("");
   const[previewUrl,setPreviewUrl]=useState<string|null>(null);
   const[previewName,setPreviewName]=useState("");
-  const[chatMessages,setChatMessages]=useState<{role:string;text:string;isHealthCard?:boolean;docId?:string;sourceTags?:string[];classification?:{zoneLine:string;confidence:number;warning?:{detail:string;action:string}}}[]>([{role:"ai",text:"Hi, I'm Trinity ‚Äî your TMF AI specialist for this study. I can classify uploaded documents against the tracker, and answer questions about this study's trial master file."}]);
+  const[chatMessages,setChatMessages]=useState<{role:string;text:string;isHealthCard?:boolean;docId?:string;sourceTags?:string[];classification?:{zoneLine:string;confidence:number;warning?:{detail:string;action:string}}}[]>([{role:"ai",text:"Hi, I'm Trinity ó your TMF AI specialist for this study. I can classify uploaded documents against the tracker, and answer questions about this study's trial master file."}]);
   const[chatInput,setChatInput]=useState("");
   const[chatLoading,setChatLoading]=useState(false);
 const[chatDocAction,setChatDocAction]=useState<{msgIdx:number,stage:number,disabled:boolean}|null>(null);
@@ -257,7 +257,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
     const{error:upErr}=await supabase.storage.from("Documents").upload(path,file);
     if(upErr){setUploadProgress("Upload failed: "+upErr.message);setUploading(false);return;}
     setPendingFilePath(path);setPendingFileName(file.name);setPendingFileType(file.type);setPendingFileSize(file.size);
-    setSelectedFile(file);setUploadProgress("‚úì "+file.name+" ready");setUploading(false);
+    setSelectedFile(file);setUploadProgress("? "+file.name+" ready");setUploading(false);
   }
 
   async function addDocument(){
@@ -300,7 +300,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
   async function handleAddComment(){
     if(!selectedDoc||!commentText.trim())return;
     const existing=selectedDoc.comments||"";
-    const newComment=`${existing}${existing?"\n":""}[${new Date().toLocaleString()} ‚Äî ${user.email}]: ${commentText.trim()}`;
+    const newComment=`${existing}${existing?"\n":""}[${new Date().toLocaleString()} ó ${user.email}]: ${commentText.trim()}`;
     const{error}=await supabase.from("documents").update({comments:newComment}).eq("id",selectedDoc.id);
     if(!error){
       await logAudit("Comment added",selectedDoc.id,selectedDoc.study_id,"comments","",commentText.trim());
@@ -315,9 +315,9 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
   }
 
   function detectFlagReason(doc:Doc){
-    if(!doc.version||doc.version.trim()===""){return "Missing version ‚Äî no version number is on file for this document.";}
-    if(doc.expiry_date&&new Date(doc.expiry_date)<new Date()){return `Document expired ‚Äî the effective document expired on ${doc.expiry_date}.`;}
-    return `Version mismatch ‚Äî document version ${doc.version} does not match the current tracked version for this artifact.`;
+    if(!doc.version||doc.version.trim()===""){return "Missing version ó no version number is on file for this document.";}
+    if(doc.expiry_date&&new Date(doc.expiry_date)<new Date()){return `Document expired ó the effective document expired on ${doc.expiry_date}.`;}
+    return `Version mismatch ó document version ${doc.version} does not match the current tracked version for this artifact.`;
   }
 
   function presentClassification(){
@@ -329,7 +329,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
     }
     const art=TMF.find(a=>a.a===pendingDoc.artifact_num);
     const{score:confidence,flags}=calcQuality(pendingDoc);
-    const zoneLine=`Zone ${padZone(pendingDoc.zone)} ¬∑ Section ${formatSection(art?.s||"")} ¬∑ ${art?.an||pendingDoc.artifact_name}`;
+    const zoneLine=`Zone ${padZone(pendingDoc.zone)} ∑ Section ${formatSection(art?.s||"")} ∑ ${art?.an||pendingDoc.artifact_name}`;
     const warning=flags.length>0?{detail:detectFlagReason(pendingDoc),action:"Request the current version from the site before filing, or flag this for reviewer follow-up."}:undefined;
     setChatMessages(prev=>{
       const idx=prev.length;
@@ -356,7 +356,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
       return;
     }
 
-    // "Why was this flagged / rejected" lookups ‚Äî scoped to the active study only
+    // "Why was this flagged / rejected" lookups ó scoped to the active study only
     if(activeStudy&&/why/.test(lower)&&/(flag|reject)/.test(lower)){
       const flaggedDoc=studyDocs.find(d=>d.status==="Draft"&&(d as any).rejection_reason);
       if(flaggedDoc){
@@ -447,8 +447,8 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
       <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"16px",padding:"2rem",width:"360px",boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
         <div style={{textAlign:"center",marginBottom:"1.5rem"}}>
           <div style={{fontSize:"24px",fontWeight:"500",color:P.text}}>TMF<span style={{color:P.primary}}>360</span></div>
-          <div style={{fontSize:"12px",color:P.textTert,marginTop:"4px"}}>Trial Master File Platform ‚Äî Free for clinical research</div>
-          <div style={{fontSize:"11px",color:P.textTert,marginTop:"2px"}}>DIA TMF Reference Model v3.3.1 ‚Äî ISO 14155 ‚Äî 21 CFR Part 11</div>
+          <div style={{fontSize:"12px",color:P.textTert,marginTop:"4px"}}>Trial Master File Platform ó Free for clinical research</div>
+          <div style={{fontSize:"11px",color:P.textTert,marginTop:"2px"}}>DIA TMF Reference Model v3.3.1 ó ISO 14155 ó 21 CFR Part 11</div>
         </div>
         <div style={{display:"flex",gap:"6px",marginBottom:"1.25rem"}}>
           {(["login","signup"] as const).map(m=>(
@@ -464,15 +464,15 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
         <div style={{marginBottom:"1rem"}}>
           <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>Password</label>
           <div style={{position:"relative" as const}}>
-            <input value={password} onChange={e=>setPassword(e.target.value)} type={showLoginPwd?"text":"password"} placeholder="‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢" style={{width:"100%",fontSize:"12px",padding:"8px 36px 8px 10px",border:`0.5px solid ${P.border}`,borderRadius:"8px"}} onKeyDown={e=>e.key==="Enter"&&handleAuth()}/>
-            <button onClick={()=>setShowLoginPwd(!showLoginPwd)} style={{position:"absolute" as const,right:"8px",top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",fontSize:"14px",color:P.textTert}}>{showLoginPwd?"üôà":"üëÅ"}</button>
+            <input value={password} onChange={e=>setPassword(e.target.value)} type={showLoginPwd?"text":"password"} placeholder="ïïïïïïïï" style={{width:"100%",fontSize:"12px",padding:"8px 36px 8px 10px",border:`0.5px solid ${P.border}`,borderRadius:"8px"}} onKeyDown={e=>e.key==="Enter"&&handleAuth()}/>
+            <button onClick={()=>setShowLoginPwd(!showLoginPwd)} style={{position:"absolute" as const,right:"8px",top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",fontSize:"14px",color:P.textTert}}>{showLoginPwd?"??":"??"}</button>
           </div>
         </div>
         {authError&&<div style={{fontSize:"11px",marginBottom:"12px",padding:"8px 10px",borderRadius:"8px",background:authError.includes("created")||authError.includes("Check")?P.successLight:P.dangerLight,color:authError.includes("created")||authError.includes("Check")?P.success:P.danger}}>{authError}</div>}
         <button onClick={handleAuth} style={{width:"100%",padding:"9px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",fontSize:"12px",fontWeight:"500",cursor:"pointer"}}>
           {authMode==="login"?"Log in":"Create account"}
         </button>
-        <p style={{fontSize:"10px",color:P.textTert,textAlign:"center",marginTop:"1rem"}}>Free forever ‚Äî No credit card ‚Äî 21 CFR Part 11 compliant</p>
+        <p style={{fontSize:"10px",color:P.textTert,textAlign:"center",marginTop:"1rem"}}>Free forever ó No credit card ó 21 CFR Part 11 compliant</p>
       </div>
     </div>
   );
@@ -484,7 +484,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
       {/* Header */}
       <header style={{display:"flex",alignItems:"center",gap:"12px",padding:"0 1.25rem",height:"48px",borderBottom:`0.5px solid ${P.border}`,background:P.bg,flexShrink:0}}>
         <span style={{fontSize:"16px",fontWeight:"500"}}>TMF<span style={{color:P.primary}}>360</span></span>
-        <span style={{fontSize:"11px",color:P.textTert}}>Trial Master File Platform ‚Äî DIA TMF RM v3.3.1</span>
+        <span style={{fontSize:"11px",color:P.textTert}}>Trial Master File Platform ó DIA TMF RM v3.3.1</span>
         <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:"10px"}}>
           {studies.length>0&&(
             <select value={activeStudy?.study_id||""} onChange={e=>{const s=studies.find(x=>x.study_id===e.target.value);if(s){setActiveStudy(s);if(orgId)loadDocsWithOrg(s.study_id,orgId);}}} style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"6px",padding:"3px 8px",background:P.bg}}>
@@ -524,12 +524,12 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {panel==="dashboard"&&(
             <div style={{display:"flex",flexDirection:"column",gap:"1rem"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                <h1 style={{fontSize:"14px",fontWeight:"500"}}>Dashboard {activeStudy?`‚Äî ${activeStudy.study_id}`:""}</h1>
+                <h1 style={{fontSize:"14px",fontWeight:"500"}}>Dashboard {activeStudy?`ó ${activeStudy.study_id}`:""}</h1>
                 {currentUserRole==="System Administrator"&&<button onClick={()=>setShowStudyModal(true)} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ New study</button>}
               </div>
               {!activeStudy?(
                 <div style={{textAlign:"center",padding:"3rem",color:P.textTert}}>
-                  <div style={{fontSize:"3rem",marginBottom:"12px"}}>üìÇ</div>
+                  <div style={{fontSize:"3rem",marginBottom:"12px"}}>??</div>
                   <div style={{fontSize:"13px",fontWeight:"500",marginBottom:"6px",color:P.text}}>No studies yet</div>
                   <div style={{fontSize:"12px",marginBottom:"1rem"}}>Create your first study to get started.</div>
                   {currentUserRole==="System Administrator"&&<button onClick={()=>setShowStudyModal(true)} style={{fontSize:"11px",padding:"8px 18px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ Create first study</button>}
@@ -570,9 +570,9 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                         <div style={{width:"100%",height:"6px",background:P.bgTert,borderRadius:"6px",marginTop:"8px",overflow:"hidden"}}><div style={{width:`${ri}%`,height:"100%",background:scoreColor(ri),borderRadius:"6px"}}/></div>
                       </div>
                       <div style={{display:"flex",flexDirection:"column",gap:"4px"}}>
-                        {gaps.crit.slice(0,2).map((g,i)=><div key={i} style={{fontSize:"11px",background:"#FEF2F2",color:"#991B1B",borderRadius:"6px",padding:"4px 8px"}}>‚ö† {g.an}</div>)}
-                        {gaps.major.slice(0,2).map((g,i)=><div key={i} style={{fontSize:"11px",background:"#FFFBEB",color:"#92400E",borderRadius:"6px",padding:"4px 8px"}}>‚ö† {g.an}</div>)}
-                        {gaps.crit.length===0&&gaps.major.length===0&&<div style={{fontSize:"11px",color:P.success}}>‚úì No critical or major findings</div>}
+                        {gaps.crit.slice(0,2).map((g,i)=><div key={i} style={{fontSize:"11px",background:"#FEF2F2",color:"#991B1B",borderRadius:"6px",padding:"4px 8px"}}>? {g.an}</div>)}
+                        {gaps.major.slice(0,2).map((g,i)=><div key={i} style={{fontSize:"11px",background:"#FFFBEB",color:"#92400E",borderRadius:"6px",padding:"4px 8px"}}>? {g.an}</div>)}
+                        {gaps.crit.length===0&&gaps.major.length===0&&<div style={{fontSize:"11px",color:P.success}}>? No critical or major findings</div>}
                       </div>
                     </div>
                   </div>
@@ -585,8 +585,8 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {panel==="completeness-detail"&&(
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
               <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
-                <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:P.bg,cursor:"pointer"}}>‚Üê Back</button>
-                <h1 style={{fontSize:"14px",fontWeight:"500"}}>TMF completeness ‚Äî {activeStudy?.study_id}</h1>
+                <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:P.bg,cursor:"pointer"}}>? Back</button>
+                <h1 style={{fontSize:"14px",fontWeight:"500"}}>TMF completeness ó {activeStudy?.study_id}</h1>
               </div>
               <div style={{background:"#EFF6FF",border:"0.5px solid #BFDBFE",borderRadius:"10px",padding:"10px 14px",fontSize:"11px",color:"#1E40AF"}}>Showing all Core artifacts. Green = approved document filed. Red = missing.</div>
               {ZONES.map(({z,zn})=>{
@@ -595,7 +595,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                 return(
                   <div key={z} style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",overflow:"hidden"}}>
                     <div style={{display:"flex",alignItems:"center",gap:"10px",padding:"10px 14px",borderBottom:`0.5px solid ${P.border}`}}>
-                      <span style={{fontSize:"12px",fontWeight:"500"}}>Zone {z} ‚Äî {zn}</span>
+                      <span style={{fontSize:"12px",fontWeight:"500"}}>Zone {z} ó {zn}</span>
                       <div style={{flex:1,height:"4px",background:P.bgTert,borderRadius:"4px",overflow:"hidden"}}><div style={{width:`${pct}%`,height:"100%",background:ZONE_COLORS[z]||P.primary}}/></div>
                       <span style={{fontSize:"11px",fontWeight:"500",color:scoreColor(pct)}}>{pct}%</span>
                     </div>
@@ -603,7 +603,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                       const filed=studyDocs.find(d=>d.artifact_num===a.a&&d.status==="Approved");
                       return(
                         <div key={a.a} style={{display:"flex",alignItems:"center",gap:"10px",padding:"8px 14px",borderBottom:`0.5px solid ${P.bgTert}`}}>
-                          <span style={{fontSize:"14px"}}>{filed?"‚úÖ":"‚ùå"}</span>
+                          <span style={{fontSize:"14px"}}>{filed?"?":"?"}</span>
                           <span style={{fontFamily:"monospace",fontSize:"9px",color:P.textTert,flexShrink:0}}>{a.a}</span>
                           <span style={{fontSize:"11px",flex:1,color:filed?P.text:P.textSec}}>{a.an}</span>
                           {filed&&filed.file_path&&canDownload&&(
@@ -624,8 +624,8 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {panel==="missing-detail"&&(
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
               <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
-                <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:P.bg,cursor:"pointer"}}>‚Üê Back</button>
-                <h1 style={{fontSize:"14px",fontWeight:"500"}}>Missing documents ‚Äî {activeStudy?.study_id}</h1>
+                <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:P.bg,cursor:"pointer"}}>? Back</button>
+                <h1 style={{fontSize:"14px",fontWeight:"500"}}>Missing documents ó {activeStudy?.study_id}</h1>
               </div>
               <div style={{background:"#FEF2F2",border:"0.5px solid #FECACA",borderRadius:"10px",padding:"10px 14px",fontSize:"11px",color:"#991B1B"}}>These Core artifacts have no document filed. CRITICAL gaps in Zones 3, 4, 5 are inspection risks.</div>
               {["CRITICAL","MAJOR","MINOR"].map(sev=>{
@@ -636,10 +636,10 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                 const c=colors[sev];
                 return(
                   <div key={sev} style={{border:`0.5px solid ${c.border}`,borderRadius:"12px",overflow:"hidden"}}>
-                    <div style={{background:c.bg,color:c.color,padding:"8px 14px",fontSize:"11px",fontWeight:"500"}}>{sev} ‚Äî {items.length} gap{items.length!==1?"s":""}</div>
+                    <div style={{background:c.bg,color:c.color,padding:"8px 14px",fontSize:"11px",fontWeight:"500"}}>{sev} ó {items.length} gap{items.length!==1?"s":""}</div>
                     {items.map((a,i)=>(
                       <div key={i} style={{borderTop:`0.5px solid ${P.bgTert}`,padding:"8px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",background:P.bg}}>
-                        <div><div style={{fontSize:"12px",fontWeight:"500"}}>{a.an}</div><div style={{fontSize:"10px",color:P.textTert,marginTop:"2px"}}>Zone {a.z} ‚Äî {a.zn}</div></div>
+                        <div><div style={{fontSize:"12px",fontWeight:"500"}}>{a.an}</div><div style={{fontSize:"10px",color:P.textTert,marginTop:"2px"}}>Zone {a.z} ó {a.zn}</div></div>
                         <div style={{textAlign:"right",flexShrink:0}}><div style={{fontFamily:"monospace",fontSize:"10px",color:P.textTert}}>{a.a}</div>{a.iso&&<div style={{fontFamily:"monospace",fontSize:"10px",color:P.blue}}>{a.iso}</div>}</div>
                       </div>
                     ))}
@@ -653,8 +653,8 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {panel==="notapproved-detail"&&(
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
               <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
-                <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:P.bg,cursor:"pointer"}}>‚Üê Back</button>
-                <h1 style={{fontSize:"14px",fontWeight:"500"}}>Not approved ‚Äî {activeStudy?.study_id}</h1>
+                <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:P.bg,cursor:"pointer"}}>? Back</button>
+                <h1 style={{fontSize:"14px",fontWeight:"500"}}>Not approved ó {activeStudy?.study_id}</h1>
               </div>
               <div style={{background:"#FEF2F2",border:"0.5px solid #FECACA",borderRadius:"10px",padding:"10px 14px",fontSize:"11px",color:"#991B1B"}}>These documents were rejected. Review the rejection reason and appeal if needed.</div>
               {studyDocs.filter(d=>d.status==="Draft"&&(d as any).rejection_reason).length===0?(
@@ -668,7 +668,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                         <span style={{fontSize:"12px",fontWeight:"500"}}>{d.artifact_name}</span>
                         {statusBadge(d.status)}
                       </div>
-                      <div style={{fontSize:"10px",color:P.textTert}}>Zone {d.zone} ‚Äî {d.owner||"‚Äî"}</div>
+                      <div style={{fontSize:"10px",color:P.textTert}}>Zone {d.zone} ó {d.owner||"ó"}</div>
                     </div>
                     {d.file_path&&canDownload&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none"}}>Download</a>}
                   </div>
@@ -704,8 +704,8 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {panel==="expiring-detail"&&(
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
               <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
-                <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:P.bg,cursor:"pointer"}}>‚Üê Back</button>
-                <h1 style={{fontSize:"14px",fontWeight:"500"}}>Expiring documents ‚Äî {activeStudy?.study_id}</h1>
+                <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:P.bg,cursor:"pointer"}}>? Back</button>
+                <h1 style={{fontSize:"14px",fontWeight:"500"}}>Expiring documents ó {activeStudy?.study_id}</h1>
               </div>
               {studyDocs.filter(d=>d.expiry_date&&new Date(d.expiry_date)<new Date(Date.now()+90*86400000)).length===0?(
                 <div style={{textAlign:"center",padding:"2rem",color:P.textTert,fontSize:"12px"}}>No documents expiring within 90 days.</div>
@@ -737,8 +737,8 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {panel==="pending-detail"&&(
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
               <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
-                <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:P.bg,cursor:"pointer"}}>‚Üê Back</button>
-                <h1 style={{fontSize:"14px",fontWeight:"500"}}>Pending review ‚Äî {activeStudy?.study_id}</h1>
+                <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:P.bg,cursor:"pointer"}}>? Back</button>
+                <h1 style={{fontSize:"14px",fontWeight:"500"}}>Pending review ó {activeStudy?.study_id}</h1>
               </div>
               <div style={{background:P.primaryLight,border:`0.5px solid #C7D2FE`,borderRadius:"10px",padding:"10px 14px",fontSize:"11px",color:"#3730A3"}}>Review submitted documents. Approve with electronic signature or reject with a reason.</div>
               {studyDocs.filter(d=>d.status==="Under Review").length===0?(
@@ -752,7 +752,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                         <span style={{fontSize:"13px",fontWeight:"500"}}>{d.artifact_name}</span>
                         {statusBadge(d.status)}
                       </div>
-                      <div style={{fontSize:"10px",color:P.textTert}}>Zone {d.zone} ‚Äî Owner: {d.owner||"‚Äî"}</div>
+                      <div style={{fontSize:"10px",color:P.textTert}}>Zone {d.zone} ó Owner: {d.owner||"ó"}</div>
                     </div>
                     <div style={{display:"flex",gap:"6px"}}>
                       {d.file_path&&canPreview(d.file_name||"")&&<button onClick={()=>openPreview(d)} style={{fontSize:"9px",padding:"3px 8px",background:P.bgTert,border:`0.5px solid ${P.border}`,borderRadius:"4px",cursor:"pointer"}}>Preview</button>}
@@ -769,9 +769,9 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                     <div style={{display:"flex",flexDirection:"column" as const,gap:"6px",flexShrink:0}}>
                       <button onClick={async()=>{
                         const ta=document.getElementById(`review-comment-${d.id}`) as HTMLTextAreaElement;
-                        if(ta?.value.trim()){const existing=d.comments||"";const newComment=`${existing}${existing?"\n":""}[${new Date().toLocaleString()} ‚Äî ${user.email}]: ${ta.value.trim()}`;await supabase.from("documents").update({comments:newComment}).eq("id",d.id);setDocs(prev=>prev.map(doc=>doc.id===d.id?{...doc,comments:newComment}:doc));ta.value="";}
+                        if(ta?.value.trim()){const existing=d.comments||"";const newComment=`${existing}${existing?"\n":""}[${new Date().toLocaleString()} ó ${user.email}]: ${ta.value.trim()}`;await supabase.from("documents").update({comments:newComment}).eq("id",d.id);setDocs(prev=>prev.map(doc=>doc.id===d.id?{...doc,comments:newComment}:doc));ta.value="";}
                         setSelectedDoc(d);setShowApproveModal(true);
-                      }} style={{fontSize:"11px",padding:"7px 14px",background:P.success,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>‚úì Approve</button>
+                      }} style={{fontSize:"11px",padding:"7px 14px",background:P.success,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>? Approve</button>
                       <button onClick={async()=>{
                         const ta=document.getElementById(`review-comment-${d.id}`) as HTMLTextAreaElement;
                         const reason=ta?.value.trim();
@@ -779,7 +779,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                         const now=new Date().toISOString();
                         const{error}=await supabase.from("documents").update({status:"Draft",rejection_reason:reason,rejected_by:user.email,rejected_at:now}).eq("id",d.id);
                         if(!error){await logAudit("Document rejected",d.id,d.study_id,"status","Under Review","Draft",reason);setDocs(prev=>prev.map(doc=>doc.id===d.id?{...doc,status:"Draft",rejection_reason:reason,rejected_by:user.email,rejected_at:now} as any:doc));}
-                      }} style={{fontSize:"11px",padding:"7px 14px",background:"#FEF2F2",color:"#991B1B",border:"0.5px solid #FECACA",borderRadius:"8px",cursor:"pointer"}}>‚úó Reject</button>
+                      }} style={{fontSize:"11px",padding:"7px 14px",background:"#FEF2F2",color:"#991B1B",border:"0.5px solid #FECACA",borderRadius:"8px",cursor:"pointer"}}>? Reject</button>
                     </div>
                   </div>
                 </div>
@@ -813,7 +813,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {panel==="documents"&&(
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                <h1 style={{fontSize:"14px",fontWeight:"500"}}>Documents ‚Äî {activeStudy?.study_id||"No study selected"}</h1>
+                <h1 style={{fontSize:"14px",fontWeight:"500"}}>Documents ó {activeStudy?.study_id||"No study selected"}</h1>
                 {activeStudy&&canUploadDownload&&<button onClick={()=>setShowDocModal(true)} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ Add document</button>}
               </div>
               <div style={{display:"flex",gap:"8px",flexWrap:"wrap" as const,alignItems:"center"}}>
@@ -842,13 +842,13 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                               <span>{fileIcon(d.file_name||"")}</span>
                               <span style={{fontSize:"11px",color:P.textSec,maxWidth:"100px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{d.custom_file_name||d.file_name}</span>
                             </div>
-                          ):<span style={{color:P.textTert}}>‚Äî</span>}
+                          ):<span style={{color:P.textTert}}>ó</span>}
                         </td>
-                        <td style={{padding:"8px 10px",fontSize:"11px"}}>{d.version||"‚Äî"}</td>
-                        <td style={{padding:"8px 10px",fontSize:"11px"}}>{d.effective_date||"‚Äî"}</td>
-                        <td style={{padding:"8px 10px",fontSize:"11px",color:d.expiry_date&&new Date(d.expiry_date)<new Date()?"#EF4444":"inherit"}}>{d.expiry_date||"‚Äî"}</td>
+                        <td style={{padding:"8px 10px",fontSize:"11px"}}>{d.version||"ó"}</td>
+                        <td style={{padding:"8px 10px",fontSize:"11px"}}>{d.effective_date||"ó"}</td>
+                        <td style={{padding:"8px 10px",fontSize:"11px",color:d.expiry_date&&new Date(d.expiry_date)<new Date()?"#EF4444":"inherit"}}>{d.expiry_date||"ó"}</td>
                         <td style={{padding:"8px 10px"}}>{statusBadge(d.status)}</td>
-                        <td style={{padding:"8px 10px",fontSize:"11px",color:P.textSec}}>{d.owner||"‚Äî"}</td>
+                        <td style={{padding:"8px 10px",fontSize:"11px",color:P.textSec}}>{d.owner||"ó"}</td>
                         <td style={{padding:"8px 10px"}}>
                           <div style={{display:"flex",gap:"4px",flexWrap:"wrap" as const}}>
                             {d.file_path&&canPreview(d.file_name||"")&&<button onClick={()=>openPreview(d)} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,border:`0.5px solid ${P.border}`,borderRadius:"4px",cursor:"pointer"}}>Preview</button>}
@@ -857,8 +857,8 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                             {d.status==="Under Review"&&<button onClick={()=>{setSelectedDoc(d);setShowApproveModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:"#ECFDF5",color:"#065F46",border:"0.5px solid #A7F3D0",borderRadius:"4px",cursor:"pointer"}}>Review</button>}
                             <button onClick={()=>{setSelectedDoc(d);setCommentText("");setShowCommentModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,border:`0.5px solid ${P.border}`,borderRadius:"4px",cursor:"pointer"}}>Comment</button>
                           </div>
-                          {d.comments&&<div style={{fontSize:"9px",color:P.textTert,marginTop:"3px"}}>üí¨ Has comments</div>}
-                          {d.approved_by&&<div style={{fontSize:"9px",color:"#065F46",marginTop:"2px"}}>‚úì {d.approved_by}</div>}
+                          {d.comments&&<div style={{fontSize:"9px",color:P.textTert,marginTop:"3px"}}>?? Has comments</div>}
+                          {d.approved_by&&<div style={{fontSize:"9px",color:"#065F46",marginTop:"2px"}}>? {d.approved_by}</div>}
                         </td>
                       </tr>
                     ))}
@@ -871,12 +871,12 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {/* ARTIFACT BROWSER */}
           {panel==="artifacts"&&(
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
-              <h1 style={{fontSize:"14px",fontWeight:"500"}}>Artifact browser ‚Äî DIA TMF Reference Model v3.3.1</h1>
+              <h1 style={{fontSize:"14px",fontWeight:"500"}}>Artifact browser ó DIA TMF Reference Model v3.3.1</h1>
               <div style={{display:"flex",gap:"8px"}}>
                 <input value={artSearch} onChange={e=>setArtSearch(e.target.value)} placeholder="Search artifacts..." style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"6px 10px",flex:1}}/>
                 <select value={artZone} onChange={e=>setArtZone(e.target.value)} style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"6px 10px"}}>
                   <option value="">All zones</option>
-                  {ZONES.map(({z,zn})=><option key={z} value={z}>Zone {z} ‚Äî {zn}</option>)}
+                  {ZONES.map(({z,zn})=><option key={z} value={z}>Zone {z} ó {zn}</option>)}
                 </select>
                 <select value={artCl} onChange={e=>setArtCl(e.target.value)} style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"6px 10px"}}>
                   <option value="">Core + Recommended</option>
@@ -893,7 +893,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                       <div style={{display:"flex",alignItems:"center",gap:"8px",padding:"10px 14px",cursor:"pointer"}} onClick={()=>setExpandedArt(expandedArt===a.a?null:a.a)}>
                         <span style={{fontFamily:"monospace",fontSize:"9px",color:P.textTert,flexShrink:0}}>{a.a}</span>
                         <span style={{fontSize:"12px",fontWeight:"500",flex:1}}>{a.an}</span>
-                        {approvedDocs.length>0&&<span style={{fontSize:"9px",padding:"2px 8px",borderRadius:"20px",background:"#ECFDF5",color:"#065F46",fontWeight:"500"}}>‚úì Filed</span>}
+                        {approvedDocs.length>0&&<span style={{fontSize:"9px",padding:"2px 8px",borderRadius:"20px",background:"#ECFDF5",color:"#065F46",fontWeight:"500"}}>? Filed</span>}
                         <span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"10px",background:a.cl==="Core"?P.dangerLight:"#F3F4F6",color:a.cl==="Core"?"#991B1B":P.textTert}}>{a.cl}</span>
                       </div>
                       {expandedArt===a.a&&(
@@ -926,13 +926,13 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {/* GAP ANALYSIS */}
           {panel==="gap"&&(
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
-              <h1 style={{fontSize:"14px",fontWeight:"500"}}>Gap analysis ‚Äî {activeStudy?.study_id||"No study selected"}</h1>
+              <h1 style={{fontSize:"14px",fontWeight:"500"}}>Gap analysis ó {activeStudy?.study_id||"No study selected"}</h1>
               {!activeStudy?<div style={{fontSize:"12px",color:P.textTert}}>Select a study first.</div>:(
                 <>
                   <p style={{fontSize:"12px",color:P.textSec}}>Comparing filed documents against all Core artifacts in DIA TMF Reference Model v3.3.1</p>
                   <select value={gapZone} onChange={e=>setGapZone(e.target.value)} style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"6px 10px",width:"220px"}}>
                     <option value="">All zones</option>
-                    {ZONES.map(({z,zn})=><option key={z} value={z}>Zone {z} ‚Äî {zn}</option>)}
+                    {ZONES.map(({z,zn})=><option key={z} value={z}>Zone {z} ó {zn}</option>)}
                   </select>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"10px"}}>
                     {[{val:gaps.crit.length,label:"Critical",color:"#EF4444",bg:"#FEF2F2"},{val:gaps.major.length,label:"Major",color:"#F59E0B",bg:"#FFFBEB"},{val:gaps.minor.length,label:"Minor",color:P.textSec,bg:P.bgSec}].map((s,i)=>(
@@ -947,10 +947,10 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                     {items:gaps.minor.filter((g:any)=>!gapZone||g.z===gapZone),label:"MINOR",color:"#374151",bg:"#F9FAFB",border:"#E5E7EB"},
                   ].map(({items,label,color,bg,border})=>items.length>0&&(
                     <div key={label} style={{border:`0.5px solid ${border}`,borderRadius:"12px",overflow:"hidden"}}>
-                      <div style={{background:bg,color,padding:"8px 12px",fontSize:"11px",fontWeight:"500"}}>{label} ‚Äî {items.length} gap{items.length!==1?"s":""}</div>
+                      <div style={{background:bg,color,padding:"8px 12px",fontSize:"11px",fontWeight:"500"}}>{label} ó {items.length} gap{items.length!==1?"s":""}</div>
                       {items.map((g:any,i:number)=>(
                         <div key={i} style={{borderTop:`0.5px solid ${P.bgTert}`,padding:"8px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",background:P.bg}}>
-                          <div><div style={{fontSize:"12px",fontWeight:"500"}}>{g.an}</div><div style={{fontSize:"10px",color:P.textTert,marginTop:"2px"}}>Zone {g.z} ‚Äî {g.zn}</div></div>
+                          <div><div style={{fontSize:"12px",fontWeight:"500"}}>{g.an}</div><div style={{fontSize:"10px",color:P.textTert,marginTop:"2px"}}>Zone {g.z} ó {g.zn}</div></div>
                           <div style={{textAlign:"right",flexShrink:0}}><div style={{fontFamily:"monospace",fontSize:"10px",color:P.textTert}}>{g.a}</div>{g.iso&&<div style={{fontFamily:"monospace",fontSize:"10px",color:P.blue}}>{g.iso}</div>}</div>
                         </div>
                       ))}
@@ -964,7 +964,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {/* INSPECTION READINESS */}
           {panel==="readiness"&&(
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
-              <h1 style={{fontSize:"14px",fontWeight:"500"}}>Inspection readiness ‚Äî {activeStudy?.study_id||"No study selected"}</h1>
+              <h1 style={{fontSize:"14px",fontWeight:"500"}}>Inspection readiness ó {activeStudy?.study_id||"No study selected"}</h1>
               {!activeStudy?<div style={{fontSize:"12px",color:P.textTert}}>Select a study first.</div>:(
                 <>
                   <div style={{display:"grid",gridTemplateColumns:"160px 1fr",gap:"12px"}}>
@@ -976,9 +976,9 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                     <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"14px"}}>
                       <h2 style={{fontSize:"11px",fontWeight:"500",marginBottom:"10px",color:P.textSec}}>Top findings</h2>
                       <div style={{display:"flex",flexDirection:"column",gap:"5px"}}>
-                        {gaps.crit.slice(0,4).map((g:any,i:number)=><div key={i} style={{fontSize:"11px",background:"#FEF2F2",color:"#991B1B",borderRadius:"6px",padding:"6px 10px"}}>‚ö† CRITICAL ‚Äî {g.an}</div>)}
-                        {gaps.major.slice(0,3).map((g:any,i:number)=><div key={i} style={{fontSize:"11px",background:"#FFFBEB",color:"#92400E",borderRadius:"6px",padding:"6px 10px"}}>‚ö† MAJOR ‚Äî {g.an}</div>)}
-                        {gaps.crit.length===0&&gaps.major.length===0&&<div style={{fontSize:"11px",color:P.success}}>‚úì No critical or major findings</div>}
+                        {gaps.crit.slice(0,4).map((g:any,i:number)=><div key={i} style={{fontSize:"11px",background:"#FEF2F2",color:"#991B1B",borderRadius:"6px",padding:"6px 10px"}}>? CRITICAL ó {g.an}</div>)}
+                        {gaps.major.slice(0,3).map((g:any,i:number)=><div key={i} style={{fontSize:"11px",background:"#FFFBEB",color:"#92400E",borderRadius:"6px",padding:"6px 10px"}}>? MAJOR ó {g.an}</div>)}
+                        {gaps.crit.length===0&&gaps.major.length===0&&<div style={{fontSize:"11px",color:P.success}}>? No critical or major findings</div>}
                       </div>
                     </div>
                   </div>
@@ -1006,7 +1006,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c.5 3.6 2.2 6 6.5 6.5-4.3.5-6 2.9-6.5 6.5-.5-3.6-2.2-6-6.5-6.5C9.8 8 11.5 5.6 12 2Z"/><path d="M19 15c.25 1.6 1 2.3 2.6 2.5-1.6.25-2.3 1-2.6 2.6-.25-1.6-1-2.3-2.6-2.6 1.6-.2 2.3-.9 2.6-2.5Z"/></svg>
                 </span>
                 <span style={{fontSize:"13px",fontWeight:"600",color:P.text}}>Trinity</span>
-                {activeStudy&&<span style={{fontSize:"12px",color:P.textTert}}>¬∑ {activeStudy.study_id}</span>}
+                {activeStudy&&<span style={{fontSize:"12px",color:P.textTert}}>∑ {activeStudy.study_id}</span>}
                 <span style={{marginLeft:"auto",fontSize:"10.5px",padding:"3px 10px",borderRadius:"20px",background:P.bgTert,color:P.textTert}}>Scoped to this study only</span>
               </div>
 
@@ -1078,8 +1078,8 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                               const doc=studyDocs.find(d=>d.id===m.docId);
                               if(!doc)return;
                               const zoneInfo=ZONES.find(z=>z.z===doc.zone);
-                              setApproveDocId(doc.id);setApproveStage(1);
-                              setChatMessages(prev=>[...prev,{role:"ai",text:`Zone ${padZone(doc.zone)} ¬∑ ${zoneInfo?.zn||"Unclassified zone"}\nConfirm this is the correct zone for filing.`}]);
+                              setApproveDocId(doc.id||null);setApproveStage(1);
+                              setChatMessages(prev=>[...prev,{role:"ai",text:`Zone ${padZone(doc.zone)} ∑ ${zoneInfo?.zn||"Unclassified zone"}\nConfirm this is the correct zone for filing.`}]);
                               setChatDocAction(prev=>prev?{...prev,disabled:true}:null);
                             }} style={{fontSize:"12px",fontWeight:"600",padding:"6px 15px",background:P.success,color:"#fff",border:"none",borderRadius:"7px",cursor:"pointer"}}>Approve</button>
                             <button onClick={()=>{
@@ -1103,12 +1103,12 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                               if(!doc)return;
                               const art=TMF.find(a=>a.a===doc.artifact_num);
                               setApproveStage(2);
-                              setChatMessages(prev=>[...prev,{role:"ai",text:`Artifact ¬∑ ${art?.an||doc.artifact_name}\nConfirm this is the correct artifact type.`}]);
+                              setChatMessages(prev=>[...prev,{role:"ai",text:`Artifact ∑ ${art?.an||doc.artifact_name}\nConfirm this is the correct artifact type.`}]);
                             }} style={{fontSize:"12px",fontWeight:"600",padding:"6px 15px",background:P.success,color:"#fff",border:"none",borderRadius:"7px",cursor:"pointer",alignSelf:"flex-start" as const}}>Approve</button>
                           </div>
                         )}
 
-                        {approveStage===2&&i===chatMessages.length-1&&m.text.startsWith("Artifact ¬∑")&&(
+                        {approveStage===2&&i===chatMessages.length-1&&m.text.startsWith("Artifact ∑")&&(
                           <div style={{display:"flex",flexDirection:"column" as const,gap:"6px"}}>
                             <div style={{border:`0.5px solid ${P.border}`,borderRadius:"10px",padding:"10px 14px",background:P.bg}}>
                               <div style={{fontSize:"12.8px",fontWeight:"600"}}>{m.text.split("\n")[0]}</div>
@@ -1125,7 +1125,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                                 setDocs(prev=>prev.map(d=>d.id===doc.id?{...d,status:"Approved",approved_by:user.email,approved_at:now,signature_reason:"Approved via Trinity AI specialist"}:d));
                               }
                               setChatMessages(prev=>[...prev,
-                                {role:"ai",text:`__FILED__Filed to Zone ${padZone(doc.zone)} ¬∑ Section ${formatSection(art?.s||"")}\nAudit trail entry recorded.`},
+                                {role:"ai",text:`__FILED__Filed to Zone ${padZone(doc.zone)} ∑ Section ${formatSection(art?.s||"")}\nAudit trail entry recorded.`},
                                 {role:"ai",text:"Your document has been successfully filed."}
                               ]);
                               setApproveStage(0);setApproveDocId(null);
@@ -1210,9 +1210,9 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {/* AUDIT TRAIL */}
           {panel==="audit"&&(
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
-              <h1 style={{fontSize:"14px",fontWeight:"500"}}>Audit trail ‚Äî 21 CFR Part 11 compliant</h1>
+              <h1 style={{fontSize:"14px",fontWeight:"500"}}>Audit trail ó 21 CFR Part 11 compliant</h1>
               <div style={{background:"#FFFBEB",border:"0.5px solid #FDE68A",borderRadius:"10px",padding:"10px 14px",fontSize:"11px",color:"#92400E"}}>
-                üîí This audit trail is read-only and tamper-evident in compliance with 21 CFR Part 11. All document actions, electronic signatures, and approvals are permanently recorded.
+                ?? This audit trail is read-only and tamper-evident in compliance with 21 CFR Part 11. All document actions, electronic signatures, and approvals are permanently recorded.
               </div>
               <AuditTrail user={user} activeStudy={activeStudy} P={P}/>
             </div>
@@ -1221,7 +1221,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {/* QUALITY CHECKS */}
           {panel==="quality"&&(
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
-              <h1 style={{fontSize:"14px",fontWeight:"500"}}>Quality checks ‚Äî {activeStudy?.study_id||"No study selected"}</h1>
+              <h1 style={{fontSize:"14px",fontWeight:"500"}}>Quality checks ó {activeStudy?.study_id||"No study selected"}</h1>
               {!activeStudy?<div style={{fontSize:"12px",color:P.textTert}}>Select a study first.</div>:(<QualityPanel docs={studyDocs} P={P} supabase={supabase} setDocs={setDocs}/>)}
             </div>
           )}
@@ -1270,13 +1270,13 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
             <div style={{marginBottom:"10px"}}>
               <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Zone</label>
               <select value={fZone} onChange={e=>{setFZone(e.target.value);const arts=TMF.filter(a=>a.z===e.target.value);setZoneArts(arts);setFArtifact(arts[0]?`${arts[0].a}|${arts[0].an}|${arts[0].z}`:"");}} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}>
-                {ZONES.map(({z,zn})=><option key={z} value={z}>Zone {z} ‚Äî {zn}</option>)}
+                {ZONES.map(({z,zn})=><option key={z} value={z}>Zone {z} ó {zn}</option>)}
               </select>
             </div>
             <div style={{marginBottom:"10px"}}>
               <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Artifact</label>
               <select value={fArtifact} onChange={e=>setFArtifact(e.target.value)} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}>
-                {(zoneArts.length>0?zoneArts:TMF.filter(a=>a.z===fZone)).map(a=><option key={a.a} value={`${a.a}|${a.an}|${a.z}`}>{a.a} ‚Äî {a.an}</option>)}
+                {(zoneArts.length>0?zoneArts:TMF.filter(a=>a.z===fZone)).map(a=><option key={a.a} value={`${a.a}|${a.an}|${a.z}`}>{a.a} ó {a.an}</option>)}
               </select>
             </div>
             <div style={{marginBottom:"10px"}}>
@@ -1284,8 +1284,8 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
               <div onDragOver={e=>{e.preventDefault();setDragOver(true);}} onDragLeave={()=>setDragOver(false)} onDrop={e=>{e.preventDefault();setDragOver(false);const f=e.dataTransfer.files[0];if(f)handleFileUpload(f);}} onClick={()=>fileInputRef.current?.click()} style={{border:`1.5px dashed ${dragOver?P.primary:P.border}`,borderRadius:"10px",padding:"1.5rem",textAlign:"center",cursor:"pointer",background:dragOver?P.primaryLight:P.bgSec}}>
                 <input ref={fileInputRef} type="file" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)handleFileUpload(f);}}/>
                 {uploading?<div style={{fontSize:"12px",color:P.primary}}>{uploadProgress}</div>
-                :selectedFile?<div style={{fontSize:"12px"}}><div style={{fontSize:"1.5rem",marginBottom:"4px"}}>{fileIcon(selectedFile.name)}</div><div style={{fontWeight:"500"}}>{selectedFile.name}</div><div style={{color:P.textTert,fontSize:"11px"}}>{formatSize(selectedFile.size)} ‚Äî {uploadProgress}</div></div>
-                :<div style={{fontSize:"12px",color:P.textTert}}><div style={{fontSize:"1.5rem",marginBottom:"4px"}}>üì§</div>Drag & drop or click to browse</div>}
+                :selectedFile?<div style={{fontSize:"12px"}}><div style={{fontSize:"1.5rem",marginBottom:"4px"}}>{fileIcon(selectedFile.name)}</div><div style={{fontWeight:"500"}}>{selectedFile.name}</div><div style={{color:P.textTert,fontSize:"11px"}}>{formatSize(selectedFile.size)} ó {uploadProgress}</div></div>
+                :<div style={{fontSize:"12px",color:P.textTert}}><div style={{fontSize:"1.5rem",marginBottom:"4px"}}>??</div>Drag & drop or click to browse</div>}
               </div>
             </div>
             <div style={{marginBottom:"10px"}}>
@@ -1336,7 +1336,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
       {showApproveModal&&selectedDoc&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
           <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"420px",border:`0.5px solid ${P.border}`}}>
-            <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"4px"}}>Electronic signature ‚Äî 21 CFR Part 11</h2>
+            <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"4px"}}>Electronic signature ó 21 CFR Part 11</h2>
             <p style={{fontSize:"11px",color:P.textSec,marginBottom:"1rem"}}>21 CFR Part 11 requires identity verification before approval.</p>
             <div style={{background:"#EFF6FF",border:"0.5px solid #BFDBFE",borderRadius:"8px",padding:"10px 12px",marginBottom:"1rem",fontSize:"11px",color:"#1E40AF"}}>
               <strong>Approver:</strong> {user?.email}<br/>
@@ -1344,12 +1344,12 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
               <strong>Document:</strong> {selectedDoc.custom_file_name||selectedDoc.file_name||selectedDoc.artifact_name}<br/>
               <strong>Meaning:</strong> I approve this document as accurate and complete
             </div>
-            <div style={{marginBottom:"10px"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Enter your password to sign</label><input type="password" value={approvePassword} onChange={e=>setApprovePassword(e.target.value)} placeholder="‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/></div>
+            <div style={{marginBottom:"10px"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Enter your password to sign</label><input type="password" value={approvePassword} onChange={e=>setApprovePassword(e.target.value)} placeholder="ïïïïïïïï" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/></div>
             <div style={{marginBottom:"1rem"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Reason for approval</label>
               <select value={approveReason} onChange={e=>setApproveReason(e.target.value)} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}>
                 <option value="">Select reason...</option>
-                <option>Reviewed and approved ‚Äî document is accurate and complete</option>
-                <option>QC review complete ‚Äî no findings</option>
+                <option>Reviewed and approved ó document is accurate and complete</option>
+                <option>QC review complete ó no findings</option>
                 <option>Regulatory review complete</option>
                 <option>Final approval for TMF filing</option>
               </select>
@@ -1392,7 +1392,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
               <div style={{display:"flex",gap:"8px"}}>
                 <a href={previewUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:"11px",padding:"5px 12px",background:P.bgTert,color:P.textSec,borderRadius:"6px",textDecoration:"none"}}>Open</a>
                 <a href={previewUrl} download style={{fontSize:"11px",padding:"5px 12px",background:P.bgTert,color:P.textSec,borderRadius:"6px",textDecoration:"none"}}>Download</a>
-                <button onClick={()=>setPreviewUrl(null)} style={{fontSize:"11px",padding:"5px 12px",background:"#FEF2F2",color:"#991B1B",border:"none",borderRadius:"6px",cursor:"pointer"}}>‚úï Close</button>
+                <button onClick={()=>setPreviewUrl(null)} style={{fontSize:"11px",padding:"5px 12px",background:"#FEF2F2",color:"#991B1B",border:"none",borderRadius:"6px",cursor:"pointer"}}>? Close</button>
               </div>
             </div>
             <div style={{flex:1,overflow:"auto"}}>
@@ -1490,7 +1490,7 @@ function QualityPanel({docs,P,supabase,setDocs}:{docs:any[],P:any,supabase:any,s
 
       {/* Document list */}
       <div style={{background:"#fff",border:`0.5px solid ${P.border}`,borderRadius:"12px",overflow:"hidden"}}>
-        <div style={{padding:"10px 14px",borderBottom:`0.5px solid ${P.border}`,fontSize:"11px",fontWeight:"500",color:P.textSec}}>All documents ‚Äî sorted by quality score</div>
+        <div style={{padding:"10px 14px",borderBottom:`0.5px solid ${P.border}`,fontSize:"11px",fontWeight:"500",color:P.textSec}}>All documents ó sorted by quality score</div>
         <table style={{width:"100%",fontSize:"11px",borderCollapse:"collapse"}}>
           <thead><tr style={{borderBottom:`0.5px solid ${P.border}`}}>
             {["Score","Artifact","Zone","File","Issues","Status"].map(h=>(
@@ -1512,10 +1512,10 @@ function QualityPanel({docs,P,supabase,setDocs}:{docs:any[],P:any,supabase:any,s
                   <div style={{fontSize:"11px",fontWeight:"500"}}>{d.custom_file_name||d.artifact_name}</div>
                 </td>
                 <td style={{padding:"8px 10px",fontSize:"11px",color:P.textSec}}>Zone {d.zone}</td>
-                <td style={{padding:"8px 10px",fontSize:"11px",color:P.textSec}}>{d.file_name?`${fileIcon(d.file_name)} ${d.file_name}`:"‚Äî"}</td>
+                <td style={{padding:"8px 10px",fontSize:"11px",color:P.textSec}}>{d.file_name?`${fileIcon(d.file_name)} ${d.file_name}`:"ó"}</td>
                 <td style={{padding:"8px 10px"}}>
                   {d.qualityFlags.length===0?(
-                    <span style={{fontSize:"10px",color:"#10B981"}}>‚úì No issues</span>
+                    <span style={{fontSize:"10px",color:"#10B981"}}>? No issues</span>
                   ):(
                     <div style={{display:"flex",gap:"3px",flexWrap:"wrap" as const}}>
                       {d.qualityFlags.map((f:string,fi:number)=>(
@@ -1558,11 +1558,11 @@ function AuditTrail({user,activeStudy,P}:{user:any,activeStudy:any,P:any}){
               <td style={{padding:"7px 10px",fontFamily:"monospace",fontSize:"10px",color:P.textTert,whiteSpace:"nowrap"}}>{new Date(l.created_at).toLocaleString()}</td>
               <td style={{padding:"7px 10px",color:P.textSec}}>{l.user_email}</td>
               <td style={{padding:"7px 10px"}}><span style={{fontSize:"10px",padding:"2px 7px",borderRadius:"8px",background:l.action.includes("approved")?P.successLight:P.primaryLight,color:l.action.includes("approved")?"#065F46":P.primary}}>{l.action}</span></td>
-              <td style={{padding:"7px 10px",color:P.textSec,fontSize:"10px"}}>{l.document_id?.slice(0,8)||"‚Äî"}</td>
-              <td style={{padding:"7px 10px",color:P.textTert}}>{l.field_changed||"‚Äî"}</td>
-              <td style={{padding:"7px 10px",color:P.textTert}}>{l.old_value||"‚Äî"}</td>
-              <td style={{padding:"7px 10px",color:P.textSec}}>{l.new_value||"‚Äî"}</td>
-              <td style={{padding:"7px 10px",color:P.textSec,fontSize:"10px"}}>{l.signature_reason||"‚Äî"}</td>
+              <td style={{padding:"7px 10px",color:P.textSec,fontSize:"10px"}}>{l.document_id?.slice(0,8)||"ó"}</td>
+              <td style={{padding:"7px 10px",color:P.textTert}}>{l.field_changed||"ó"}</td>
+              <td style={{padding:"7px 10px",color:P.textTert}}>{l.old_value||"ó"}</td>
+              <td style={{padding:"7px 10px",color:P.textSec}}>{l.new_value||"ó"}</td>
+              <td style={{padding:"7px 10px",color:P.textSec,fontSize:"10px"}}>{l.signature_reason||"ó"}</td>
             </tr>
           ))}
         </tbody>
@@ -1645,7 +1645,7 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
             :users.length===0?<tr><td colSpan={6} style={{textAlign:"center",padding:"2rem",color:P.textTert}}>No users yet.</td></tr>
             :users.map((u)=>(
               <tr key={u.id} style={{borderBottom:`0.5px solid ${P.bgTert}`}}>
-                <td style={{padding:"10px 14px"}}><div style={{fontWeight:"500"}}>{u.full_name||"‚Äî"}</div><div style={{fontSize:"11px",color:P.textSec}}>{u.email}</div></td>
+                <td style={{padding:"10px 14px"}}><div style={{fontWeight:"500"}}>{u.full_name||"ó"}</div><div style={{fontSize:"11px",color:P.textSec}}>{u.email}</div></td>
                 <td style={{padding:"10px 14px"}}>
                   {isAdmin?<select value={u.role} onChange={e=>updateRole(u.id,e.target.value)} style={{fontSize:"11px",padding:"4px 8px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:(RC[u.role]||"#6366F1")+"22",color:RC[u.role]||"#6366F1",fontWeight:"500"}}>{ROLES.map(r=><option key={r} value={r}>{r}</option>)}</select>:<span style={{fontSize:"11px",padding:"3px 10px",borderRadius:"20px",background:(RC[u.role]||"#6366F1")+"22",color:RC[u.role]||"#6366F1",fontWeight:"500"}}>{u.role}</span>}
                 </td>
@@ -1772,15 +1772,15 @@ function ProfilePanel({user, P, supabase}: {user: any, P: any, supabase: any}) {
         <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
           <div>
             <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>Current Password</label>
-            <div style={{position:"relative" as const}}><input type={showCurrentPwd?"text":"password"} value={currentPassword} onChange={e=>setCurrentPassword(e.target.value)} placeholder="‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 36px 8px 10px"}}/><button onClick={()=>setShowCurrentPwd(!showCurrentPwd)} style={{position:"absolute" as const,right:"8px",top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:P.textTert,fontSize:"14px"}}>{showCurrentPwd?"üôà":"üëÅ"}</button></div>
+            <div style={{position:"relative" as const}}><input type={showCurrentPwd?"text":"password"} value={currentPassword} onChange={e=>setCurrentPassword(e.target.value)} placeholder="ïïïïïïïï" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 36px 8px 10px"}}/><button onClick={()=>setShowCurrentPwd(!showCurrentPwd)} style={{position:"absolute" as const,right:"8px",top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:P.textTert,fontSize:"14px"}}>{showCurrentPwd?"??":"??"}</button></div>
           </div>
           <div>
             <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>New Password</label>
-            <div style={{position:"relative" as const}}><input type={showNewPwd?"text":"password"} value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 36px 8px 10px"}}/><button onClick={()=>setShowNewPwd(!showNewPwd)} style={{position:"absolute" as const,right:"8px",top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:P.textTert,fontSize:"14px"}}>{showNewPwd?"üôà":"üëÅ"}</button></div>
+            <div style={{position:"relative" as const}}><input type={showNewPwd?"text":"password"} value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="ïïïïïïïï" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 36px 8px 10px"}}/><button onClick={()=>setShowNewPwd(!showNewPwd)} style={{position:"absolute" as const,right:"8px",top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:P.textTert,fontSize:"14px"}}>{showNewPwd?"??":"??"}</button></div>
           </div>
           <div>
             <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>Confirm New Password</label>
-            <div style={{position:"relative" as const}}><input type={showConfirmPwd?"text":"password"} value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 36px 8px 10px"}}/><button onClick={()=>setShowConfirmPwd(!showConfirmPwd)} style={{position:"absolute" as const,right:"8px",top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:P.textTert,fontSize:"14px"}}>{showConfirmPwd?"üôà":"üëÅ"}</button></div>
+            <div style={{position:"relative" as const}}><input type={showConfirmPwd?"text":"password"} value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="ïïïïïïïï" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 36px 8px 10px"}}/><button onClick={()=>setShowConfirmPwd(!showConfirmPwd)} style={{position:"absolute" as const,right:"8px",top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:P.textTert,fontSize:"14px"}}>{showConfirmPwd?"??":"??"}</button></div>
           </div>
           <button onClick={changePassword} disabled={saving} style={{fontSize:"12px",padding:"9px 16px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",opacity:saving?0.6:1,alignSelf:"flex-start"}}>
             {saving?"Changing...":"Change Password"}
@@ -1978,7 +1978,7 @@ function MessagesPanel({user, P, supabase, activeStudy}: {user: any, P: any, sup
       {/* Chat area */}
       {!activeConv?(
         <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:"8px",color:P.textTert}}>
-          <div style={{fontSize:"2rem"}}>üí¨</div>
+          <div style={{fontSize:"2rem"}}>??</div>
           <div style={{fontSize:"12px"}}>Select a conversation or start a new one</div>
         </div>
       ):(
@@ -1990,7 +1990,7 @@ function MessagesPanel({user, P, supabase, activeStudy}: {user: any, P: any, sup
             </div>
             <div>
               <div style={{fontSize:"13px",fontWeight:"500",color:P.text}}>{getConvName(activeConv)}</div>
-              <div style={{fontSize:"10px",color:P.textTert}}>{activeConv.is_group?"Group chat":"Direct message"} ‚Äî {activeStudy?.study_id}</div>
+              <div style={{fontSize:"10px",color:P.textTert}}>{activeConv.is_group?"Group chat":"Direct message"} ó {activeStudy?.study_id}</div>
             </div>
           </div>
 
@@ -2010,7 +2010,7 @@ function MessagesPanel({user, P, supabase, activeStudy}: {user: any, P: any, sup
                       <div key={att.id} style={{marginTop:"4px"}}>
                         <a href={supabase.storage.from("Documents").getPublicUrl(att.file_path).data.publicUrl} target="_blank" rel="noopener noreferrer"
                           style={{display:"flex",alignItems:"center",gap:"6px",padding:"6px 10px",background:isMe?"rgba(255,255,255,0.2)":P.bgTert,borderRadius:"8px",textDecoration:"none",color:isMe?"#fff":P.text,fontSize:"11px"}}>
-                          üìé {att.file_name}
+                          ?? {att.file_name}
                         </a>
                       </div>
                     ))}
@@ -2025,10 +2025,10 @@ function MessagesPanel({user, P, supabase, activeStudy}: {user: any, P: any, sup
           {/* Input */}
           <div style={{padding:"10px 12px",borderTop:`0.5px solid ${P.border}`,display:"flex",gap:"8px",alignItems:"flex-end"}}>
             <input ref={fileInputRef} type="file" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)setSelectedFile(f);}}/>
-            <button onClick={()=>fileInputRef.current?.click()} style={{padding:"8px",background:P.bgTert,border:`0.5px solid ${P.border}`,borderRadius:"8px",cursor:"pointer",fontSize:"14px"}}>üìé</button>
+            <button onClick={()=>fileInputRef.current?.click()} style={{padding:"8px",background:P.bgTert,border:`0.5px solid ${P.border}`,borderRadius:"8px",cursor:"pointer",fontSize:"14px"}}>??</button>
             <div style={{flex:1}}>
               {selectedFile&&<div style={{fontSize:"10px",color:P.primary,marginBottom:"4px",padding:"3px 8px",background:P.primaryLight,borderRadius:"4px",display:"flex",justifyContent:"space-between"}}>
-                üìé {selectedFile.name} <button onClick={()=>setSelectedFile(null)} style={{background:"none",border:"none",cursor:"pointer",color:P.danger,fontSize:"10px"}}>‚úï</button>
+                ?? {selectedFile.name} <button onClick={()=>setSelectedFile(null)} style={{background:"none",border:"none",cursor:"pointer",color:P.danger,fontSize:"10px"}}>?</button>
               </div>}
               <input value={newMessage} onChange={e=>setNewMessage(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&sendMessage()}
                 placeholder="Type a message..." style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px"}}/>
@@ -2049,7 +2049,7 @@ function MessagesPanel({user, P, supabase, activeStudy}: {user: any, P: any, sup
               {allUsers.map((u:any)=>(
                 <div key={u.user_id} onClick={()=>startDM(u)} style={{display:"flex",alignItems:"center",gap:"10px",padding:"10px 12px",borderRadius:"8px",border:`0.5px solid ${P.border}`,cursor:"pointer",background:P.bgSec}}>
                   <div style={{width:"32px",height:"32px",borderRadius:"50%",background:P.primary,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"11px",color:"#fff"}}>{getInitials(u.full_name||u.email)}</div>
-                  <div><div style={{fontSize:"12px",fontWeight:"500"}}>{u.full_name||"‚Äî"}</div><div style={{fontSize:"10px",color:P.textSec}}>{u.email}</div></div>
+                  <div><div style={{fontSize:"12px",fontWeight:"500"}}>{u.full_name||"ó"}</div><div style={{fontSize:"10px",color:P.textSec}}>{u.email}</div></div>
                 </div>
               ))}
             </div>
@@ -2074,7 +2074,7 @@ function MessagesPanel({user, P, supabase, activeStudy}: {user: any, P: any, sup
                   <div key={u.user_id} onClick={()=>setSelectedUsers(prev=>prev.includes(u.user_id)?prev.filter(id=>id!==u.user_id):[...prev,u.user_id])}
                     style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"6px",border:`0.5px solid ${selectedUsers.includes(u.user_id)?P.primary:P.border}`,cursor:"pointer",background:selectedUsers.includes(u.user_id)?P.primaryLight:P.bgSec}}>
                     <div style={{width:"16px",height:"16px",borderRadius:"3px",border:`1.5px solid ${selectedUsers.includes(u.user_id)?P.primary:P.border}`,background:selectedUsers.includes(u.user_id)?P.primary:"transparent",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",color:"#fff"}}>
-                      {selectedUsers.includes(u.user_id)?"‚úì":""}
+                      {selectedUsers.includes(u.user_id)?"?":""}
                     </div>
                     <div style={{fontSize:"12px"}}>{u.full_name||u.email}</div>
                   </div>
