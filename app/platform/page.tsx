@@ -516,6 +516,8 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {navItem("users","User management","ti-users")}
           {navItem("profile","My profile","ti-user-circle")}
           {navItem("messages","Messages","ti-message-2")}
+          <p style={{fontSize:"9px",fontWeight:"500",color:P.textTert,padding:"10px 10px 4px",textTransform:"uppercase",letterSpacing:".06em"}}>Settings</p>
+          {navItem("tmfconfig","TMF Configuration","ti-adjustments")}
         </aside>
 
         <main style={{flex:1,overflowY:"auto",padding:"1.25rem"}}>
@@ -2097,3 +2099,374 @@ function MessagesPanel({user, P, supabase, activeStudy}: {user: any, P: any, sup
 
 
 
+
+
+function TmfConfigPanel({user,P,supabase,activeStudy,orgId,currentUserRole,logAudit}:{user:any,P:any,supabase:any,activeStudy:any,orgId:string,currentUserRole:string,logAudit:any}){
+  const[tab,setTab]=useState<"zones"|"artifacts"|"subartifacts">("zones");
+  const[config,setConfig]=useState<any[]>([]);
+  const[loading,setLoading]=useState(true);
+  const[showAddZone,setShowAddZone]=useState(false);
+  const[showAddArtifact,setShowAddArtifact]=useState(false);
+  const[showAddSub,setShowAddSub]=useState(false);
+  const[showDisableModal,setShowDisableModal]=useState(false);
+  const[disableTarget,setDisableTarget]=useState<any>(null);
+  const[disableReason,setDisableReason]=useState("");
+  const[msg,setMsg]=useState("");
+  const[newZoneNum,setNewZoneNum]=useState("");
+  const[newZoneName,setNewZoneName]=useState("");
+  const[newArtNum,setNewArtNum]=useState("");
+  const[newArtName,setNewArtName]=useState("");
+  const[newArtZone,setNewArtZone]=useState("");
+  const[newArtSection,setNewArtSection]=useState("");
+  const[newArtCl,setNewArtCl]=useState("Core");
+  const[newArtIso,setNewArtIso]=useState("");
+  const[newSubNum,setNewSubNum]=useState("");
+  const[newSubName,setNewSubName]=useState("");
+  const[newSubParent,setNewSubParent]=useState("");
+  const[newSubZone,setNewSubZone]=useState("");
+
+  const isAdmin=currentUserRole==="System Administrator"||currentUserRole==="TMF Lead";
+
+  useEffect(()=>{if(activeStudy&&orgId)loadConfig();},[activeStudy,orgId]);
+
+  async function loadConfig(){
+    setLoading(true);
+    const{data}=await supabase.from("tmf_config").select("*").eq("org_id",orgId).eq("study_id",activeStudy.study_id).order("zone_num",{ascending:true});
+    if(data)setConfig(data);
+    setLoading(false);
+  }
+
+  async function seedIfEmpty(){
+    const{data}=await supabase.from("tmf_config").select("id").eq("org_id",orgId).eq("study_id",activeStudy.study_id).limit(1);
+    if(data&&data.length>0)return;
+    const TMF_SEED=[
+      {zone_num:"1",zone_name:"Trial Management",type:"zone"},
+      {zone_num:"2",zone_name:"Central Trial Team & Investigator",type:"zone"},
+      {zone_num:"3",zone_name:"Regulatory",type:"zone"},
+      {zone_num:"4",zone_name:"IRB/IEC",type:"zone"},
+      {zone_num:"5",zone_name:"Site Management",type:"zone"},
+      {zone_num:"6",zone_name:"Informed Consent",type:"zone"},
+      {zone_num:"7",zone_name:"Product Accountability",type:"zone"},
+      {zone_num:"8",zone_name:"Safety Reporting",type:"zone"},
+      {zone_num:"9",zone_name:"Statistics",type:"zone"},
+      {zone_num:"10",zone_name:"Data Management",type:"zone"},
+      {zone_num:"11",zone_name:"Central & Reference Labs",type:"zone"},
+      {zone_num:"1",artifact_num:"01.01.04",artifact_name:"List of SOPs Current During Trial",section_num:"1.01",classification:"Core",type:"artifact"},
+      {zone_num:"1",artifact_num:"01.01.08",artifact_name:"Monitoring Plan",section_num:"1.01",classification:"Core",iso_ref:"6.7, 7.3, 9.2.4.1",type:"artifact"},
+      {zone_num:"1",artifact_num:"01.02.01",artifact_name:"Delegation of Authority Log",section_num:"1.02",classification:"Core",iso_ref:"6.2, 9.2",type:"artifact"},
+      {zone_num:"1",artifact_num:"01.02.02",artifact_name:"Staff CVs and Training Records",section_num:"1.02",classification:"Core",iso_ref:"6.2",type:"artifact"},
+      {zone_num:"1",artifact_num:"01.03.01",artifact_name:"CRO Agreement",section_num:"1.03",classification:"Core",iso_ref:"6.1",type:"artifact"},
+      {zone_num:"1",artifact_num:"01.04.01",artifact_name:"Monitoring Visit Report",section_num:"1.04",classification:"Core",iso_ref:"9.2.4",type:"artifact"},
+      {zone_num:"1",artifact_num:"01.04.02",artifact_name:"Follow-Up Letter",section_num:"1.04",classification:"Core",iso_ref:"9.2.4",type:"artifact"},
+      {zone_num:"1",artifact_num:"01.05.01",artifact_name:"Risk Management Plan",section_num:"1.05",classification:"Core",iso_ref:"5.1",type:"artifact"},
+      {zone_num:"1",artifact_num:"01.06.01",artifact_name:"Trial Status Report",section_num:"1.06",classification:"Recommended",type:"artifact"},
+      {zone_num:"2",artifact_num:"02.01.01",artifact_name:"Investigator CV",section_num:"2.01",classification:"Core",iso_ref:"6.2",type:"artifact"},
+      {zone_num:"2",artifact_num:"02.01.02",artifact_name:"Investigator Licence / GCP Certificate",section_num:"2.01",classification:"Core",iso_ref:"6.2",type:"artifact"},
+      {zone_num:"2",artifact_num:"02.02.01",artifact_name:"Sub-Investigator CVs",section_num:"2.02",classification:"Core",iso_ref:"6.2",type:"artifact"},
+      {zone_num:"2",artifact_num:"02.03.01",artifact_name:"Financial Disclosure Form",section_num:"2.03",classification:"Core",type:"artifact"},
+      {zone_num:"3",artifact_num:"03.01.01",artifact_name:"IDE/IND Application",section_num:"3.01",classification:"Core",type:"artifact"},
+      {zone_num:"3",artifact_num:"03.01.02",artifact_name:"Regulatory Authority Approval",section_num:"3.01",classification:"Core",type:"artifact"},
+      {zone_num:"3",artifact_num:"03.02.01",artifact_name:"Protocol",section_num:"3.02",classification:"Core",iso_ref:"3.1",type:"artifact"},
+      {zone_num:"3",artifact_num:"03.02.02",artifact_name:"Protocol Amendment",section_num:"3.02",classification:"Core",iso_ref:"3.1",type:"artifact"},
+      {zone_num:"3",artifact_num:"03.03.01",artifact_name:"Investigator Brochure",section_num:"3.03",classification:"Core",iso_ref:"6.7",type:"artifact"},
+      {zone_num:"3",artifact_num:"03.04.01",artifact_name:"Device Description",section_num:"3.04",classification:"Core",iso_ref:"3.6",type:"artifact"},
+      {zone_num:"3",artifact_num:"03.04.02",artifact_name:"Instructions for Use",section_num:"3.04",classification:"Core",iso_ref:"3.6",type:"artifact"},
+      {zone_num:"3",artifact_num:"03.05.01",artifact_name:"Device Labelling",section_num:"3.05",classification:"Core",iso_ref:"3.7",type:"artifact"},
+      {zone_num:"4",artifact_num:"04.01.01",artifact_name:"IRB/IEC Submission",section_num:"4.01",classification:"Core",type:"artifact"},
+      {zone_num:"4",artifact_num:"04.01.02",artifact_name:"IRB/IEC Approval Letter",section_num:"4.01",classification:"Core",type:"artifact"},
+      {zone_num:"4",artifact_num:"04.02.01",artifact_name:"Continuing Review Approval",section_num:"4.02",classification:"Core",type:"artifact"},
+      {zone_num:"4",artifact_num:"04.03.01",artifact_name:"IRB/IEC Amendment Approval",section_num:"4.03",classification:"Core",type:"artifact"},
+      {zone_num:"5",artifact_num:"05.01.01",artifact_name:"Site Feasibility Questionnaire",section_num:"5.01",classification:"Core",iso_ref:"9.1",type:"artifact"},
+      {zone_num:"5",artifact_num:"05.01.02",artifact_name:"Site Selection Visit Report",section_num:"5.01",classification:"Core",iso_ref:"9.1",type:"artifact"},
+      {zone_num:"5",artifact_num:"05.02.01",artifact_name:"Site Initiation Visit Report",section_num:"5.02",classification:"Core",iso_ref:"9.2",type:"artifact"},
+      {zone_num:"5",artifact_num:"05.02.02",artifact_name:"Site Initiation Visit Certificate",section_num:"5.02",classification:"Core",iso_ref:"9.2",type:"artifact"},
+      {zone_num:"5",artifact_num:"05.03.01",artifact_name:"Monitoring Visit Report",section_num:"5.03",classification:"Core",iso_ref:"9.2.4",type:"artifact"},
+      {zone_num:"5",artifact_num:"05.03.02",artifact_name:"Site Monitoring Log",section_num:"5.03",classification:"Core",iso_ref:"9.2.4",type:"artifact"},
+      {zone_num:"5",artifact_num:"05.04.01",artifact_name:"Site Close-Out Visit Report",section_num:"5.04",classification:"Core",iso_ref:"9.3",type:"artifact"},
+      {zone_num:"6",artifact_num:"06.01.01",artifact_name:"Informed Consent Form",section_num:"6.01",classification:"Core",iso_ref:"4.8, 9.2.3.6",type:"artifact"},
+      {zone_num:"6",artifact_num:"06.01.02",artifact_name:"IRB-Approved ICF",section_num:"6.01",classification:"Core",iso_ref:"4.8",type:"artifact"},
+      {zone_num:"6",artifact_num:"06.02.01",artifact_name:"Consent Log",section_num:"6.02",classification:"Core",iso_ref:"4.8",type:"artifact"},
+      {zone_num:"7",artifact_num:"07.01.01",artifact_name:"Device Accountability Log",section_num:"7.01",classification:"Core",iso_ref:"9.2.3.5",type:"artifact"},
+      {zone_num:"7",artifact_num:"07.01.02",artifact_name:"Device Shipping Records",section_num:"7.01",classification:"Core",type:"artifact"},
+      {zone_num:"7",artifact_num:"07.02.01",artifact_name:"Device Maintenance Log",section_num:"7.02",classification:"Core",type:"artifact"},
+      {zone_num:"8",artifact_num:"08.01.01",artifact_name:"Adverse Event Log",section_num:"8.01",classification:"Core",iso_ref:"8.1",type:"artifact"},
+      {zone_num:"8",artifact_num:"08.01.02",artifact_name:"SAE Report",section_num:"8.01",classification:"Core",iso_ref:"8.2",type:"artifact"},
+      {zone_num:"8",artifact_num:"08.02.01",artifact_name:"DSMB Charter",section_num:"8.02",classification:"Recommended",type:"artifact"},
+      {zone_num:"8",artifact_num:"08.02.02",artifact_name:"DSMB Meeting Minutes",section_num:"8.02",classification:"Recommended",type:"artifact"},
+      {zone_num:"9",artifact_num:"09.01.01",artifact_name:"Statistical Analysis Plan",section_num:"9.01",classification:"Core",type:"artifact"},
+      {zone_num:"9",artifact_num:"09.01.02",artifact_name:"Randomisation Procedure",section_num:"9.01",classification:"Core",type:"artifact"},
+      {zone_num:"9",artifact_num:"09.02.01",artifact_name:"Statistical Analysis Report",section_num:"9.02",classification:"Core",type:"artifact"},
+      {zone_num:"10",artifact_num:"10.01.01",artifact_name:"Data Management Plan",section_num:"10.01",classification:"Core",type:"artifact"},
+      {zone_num:"10",artifact_num:"10.01.02",artifact_name:"CRF / eCRF",section_num:"10.01",classification:"Core",type:"artifact"},
+      {zone_num:"10",artifact_num:"10.02.01",artifact_name:"Database Lock Certificate",section_num:"10.02",classification:"Core",type:"artifact"},
+      {zone_num:"11",artifact_num:"11.01.01",artifact_name:"Lab Certification / Accreditation",section_num:"11.01",classification:"Core",type:"artifact"},
+      {zone_num:"11",artifact_num:"11.01.02",artifact_name:"Lab Normal Ranges",section_num:"11.01",classification:"Core",type:"artifact"},
+    ].map(r=>({...r,org_id:orgId,study_id:activeStudy.study_id,is_enabled:true,is_locked:false,is_custom:false,created_by:user.email}));
+    await supabase.from("tmf_config").insert(TMF_SEED);
+    await loadConfig();
+  }
+
+  useEffect(()=>{if(activeStudy&&orgId&&!loading&&config.length===0)seedIfEmpty();},[loading]);
+
+  async function toggleEnabled(item:any){
+    if(!item.is_enabled){
+      const{error}=await supabase.from("tmf_config").update({is_enabled:true,disabled_reason:null,disabled_by:null,disabled_at:null}).eq("id",item.id);
+      if(!error){await logAudit("TMF config enabled",undefined,activeStudy.study_id,"is_enabled","false","true");loadConfig();}
+    }else{
+      setDisableTarget(item);setDisableReason("");setShowDisableModal(true);
+    }
+  }
+
+  async function submitDisable(){
+    if(!disableReason.trim()){setMsg("Reason is required.");return;}
+    const now=new Date().toISOString();
+    const{error}=await supabase.from("tmf_config").update({is_enabled:false,disabled_reason:disableReason.trim(),disabled_by:user.email,disabled_at:now}).eq("id",disableTarget.id);
+    if(!error){
+      await logAudit("TMF config disabled",undefined,activeStudy.study_id,"is_enabled","true","false",disableReason.trim());
+      setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfig();
+    }
+  }
+
+  async function toggleLock(item:any){
+    const{error}=await supabase.from("tmf_config").update({is_locked:!item.is_locked}).eq("id",item.id);
+    if(!error){await logAudit(item.is_locked?"TMF artifact unlocked":"TMF artifact locked",undefined,activeStudy.study_id,"is_locked",String(item.is_locked),String(!item.is_locked));loadConfig();}
+  }
+
+  async function addZone(){
+    if(!newZoneNum.trim()||!newZoneName.trim())return;
+    const{error}=await supabase.from("tmf_config").insert([{org_id:orgId,study_id:activeStudy.study_id,type:"zone",zone_num:newZoneNum.trim(),zone_name:newZoneName.trim(),is_enabled:true,is_locked:false,is_custom:true,created_by:user.email}]);
+    if(!error){await logAudit("Custom zone added",undefined,activeStudy.study_id,"zone_num","",newZoneNum.trim());setShowAddZone(false);setNewZoneNum("");setNewZoneName("");loadConfig();setMsg("Zone added.");}
+  }
+
+  async function addArtifact(){
+    if(!newArtNum.trim()||!newArtName.trim()||!newArtZone.trim())return;
+    const{error}=await supabase.from("tmf_config").insert([{org_id:orgId,study_id:activeStudy.study_id,type:"artifact",zone_num:newArtZone.trim(),section_num:newArtSection.trim(),artifact_num:newArtNum.trim(),artifact_name:newArtName.trim(),classification:newArtCl,iso_ref:newArtIso.trim(),is_enabled:true,is_locked:false,is_custom:true,created_by:user.email}]);
+    if(!error){await logAudit("Custom artifact added",undefined,activeStudy.study_id,"artifact_num","",newArtNum.trim());setShowAddArtifact(false);setNewArtNum("");setNewArtName("");setNewArtZone("");setNewArtSection("");setNewArtIso("");loadConfig();setMsg("Artifact added.");}
+  }
+
+  async function addSubArtifact(){
+    if(!newSubNum.trim()||!newSubName.trim()||!newSubParent.trim())return;
+    const{error}=await supabase.from("tmf_config").insert([{org_id:orgId,study_id:activeStudy.study_id,type:"sub_artifact",zone_num:newSubZone.trim(),artifact_num:newSubNum.trim(),artifact_name:newSubName.trim(),parent_artifact_num:newSubParent.trim(),classification:"Core",is_enabled:true,is_locked:false,is_custom:true,created_by:user.email}]);
+    if(!error){await logAudit("Custom sub-artifact added",undefined,activeStudy.study_id,"artifact_num","",newSubNum.trim());setShowAddSub(false);setNewSubNum("");setNewSubName("");setNewSubParent("");setNewSubZone("");loadConfig();setMsg("Sub-artifact added.");}
+  }
+
+  async function resetToDefault(){
+    if(!confirm("This will delete all custom config and reset to DIA standard. Continue?"))return;
+    await supabase.from("tmf_config").delete().eq("org_id",orgId).eq("study_id",activeStudy.study_id);
+    await logAudit("TMF config reset to DIA standard",undefined,activeStudy.study_id,"config","custom","default");
+    await seedIfEmpty();
+    setMsg("Reset to DIA TMF Reference Model v3.3.1.");
+  }
+
+  const zones=config.filter(c=>c.type==="zone").sort((a,b)=>parseFloat(a.zone_num)-parseFloat(b.zone_num));
+  const artifacts=config.filter(c=>c.type==="artifact").sort((a,b)=>a.artifact_num?.localeCompare(b.artifact_num));
+  const subartifacts=config.filter(c=>c.type==="sub_artifact").sort((a,b)=>a.artifact_num?.localeCompare(b.artifact_num));
+
+  const clBadge=(cl:string)=>{
+    const c:Record<string,any>={Core:{bg:"#FEF2F2",color:"#991B1B"},Recommended:{bg:"#FFFBEB",color:"#92400E"},Optional:{bg:"#F0FDF4",color:"#065F46"}};
+    const s=c[cl]||c.Core;
+    return<span style={{fontSize:"9px",padding:"2px 7px",borderRadius:"20px",background:s.bg,color:s.color,fontWeight:"500"}}>{cl}</span>;
+  };
+
+  if(!activeStudy)return<div style={{fontSize:"12px",color:P.textTert}}>Select a study first.</div>;
+
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div>
+          <h1 style={{fontSize:"14px",fontWeight:"500"}}>TMF Configuration - {activeStudy.study_id}</h1>
+          <p style={{fontSize:"11px",color:P.textTert,marginTop:"2px"}}>Manage zones, artifacts, and sub-artifacts for this study. Changes are scoped to this study only.</p>
+        </div>
+        {isAdmin&&<button onClick={resetToDefault} style={{fontSize:"11px",padding:"6px 14px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:P.bg,cursor:"pointer",color:P.textSec}}>Reset to DIA standard</button>}
+      </div>
+
+      {msg&&<div style={{padding:"8px 12px",borderRadius:"8px",fontSize:"12px",background:P.successLight,color:P.success}}>{msg}</div>}
+
+      <div style={{background:"#EFF6FF",border:"0.5px solid #BFDBFE",borderRadius:"10px",padding:"10px 14px",fontSize:"11px",color:"#1E40AF"}}>
+        DIA TMF Reference Model v3.3.1 - Disabled zones count as 100% complete. All changes are logged to the audit trail.
+      </div>
+
+      {/* Tabs */}
+      <div style={{display:"flex",gap:"6px",borderBottom:`0.5px solid ${P.border}`,paddingBottom:"0"}}>
+        {(["zones","artifacts","subartifacts"] as const).map(t=>(
+          <button key={t} onClick={()=>setTab(t)} style={{fontSize:"12px",padding:"8px 16px",border:"none",borderBottom:tab===t?`2px solid ${P.primary}`:"2px solid transparent",background:"transparent",color:tab===t?P.primary:P.textSec,cursor:"pointer",fontWeight:tab===t?"500":"400"}}>
+            {t==="zones"?"Zones":t==="artifacts"?"Artifacts":"Sub-artifacts"}
+            <span style={{marginLeft:"6px",fontSize:"10px",padding:"1px 6px",borderRadius:"20px",background:P.bgTert,color:P.textTert}}>
+              {t==="zones"?zones.length:t==="artifacts"?artifacts.length:subartifacts.length}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* ZONES TAB */}
+      {tab==="zones"&&(
+        <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
+          {isAdmin&&<button onClick={()=>setShowAddZone(true)} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",alignSelf:"flex-start"}}>+ Add zone</button>}
+          {loading?<div style={{fontSize:"12px",color:P.textTert}}>Loading...</div>:zones.map(z=>(
+            <div key={z.id} style={{background:P.bg,border:`0.5px solid ${z.is_enabled?P.border:"#FCA5A5"}`,borderRadius:"12px",padding:"14px",display:"flex",alignItems:"flex-start",gap:"12px"}}>
+              <div style={{width:"32px",height:"32px",borderRadius:"8px",background:z.is_enabled?P.primaryLight:"#FEF2F2",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",fontWeight:"600",color:z.is_enabled?P.primary:"#EF4444",flexShrink:0}}>{z.zone_num}</div>
+              <div style={{flex:1}}>
+                <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"4px"}}>
+                  <span style={{fontSize:"13px",fontWeight:"500",color:P.text}}>{z.zone_name}</span>
+                  {z.is_custom&&<span style={{fontSize:"9px",padding:"2px 7px",borderRadius:"20px",background:"#F0FDF4",color:"#065F46",fontWeight:"500"}}>Custom</span>}
+                  <span style={{fontSize:"9px",padding:"2px 7px",borderRadius:"20px",background:z.is_enabled?"#ECFDF5":"#FEF2F2",color:z.is_enabled?"#065F46":"#991B1B",fontWeight:"500"}}>{z.is_enabled?"Enabled":"Disabled"}</span>
+                </div>
+                {!z.is_enabled&&z.disabled_reason&&(
+                  <div style={{fontSize:"11px",color:"#991B1B",background:"#FEF2F2",borderRadius:"6px",padding:"6px 10px",marginTop:"4px"}}>
+                    Disabled: {z.disabled_reason} <span style={{color:P.textTert}}>by {z.disabled_by}</span>
+                  </div>
+                )}
+              </div>
+              {isAdmin&&(
+                <button onClick={()=>toggleEnabled(z)} style={{fontSize:"11px",padding:"5px 12px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:z.is_enabled?"#FEF2F2":"#ECFDF5",color:z.is_enabled?"#991B1B":"#065F46",cursor:"pointer",flexShrink:0}}>
+                  {z.is_enabled?"Disable":"Enable"}
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ARTIFACTS TAB */}
+      {tab==="artifacts"&&(
+        <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+          {isAdmin&&<button onClick={()=>setShowAddArtifact(true)} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",alignSelf:"flex-start"}}>+ Add artifact</button>}
+          {loading?<div style={{fontSize:"12px",color:P.textTert}}>Loading...</div>:artifacts.map(a=>(
+            <div key={a.id} style={{background:P.bg,border:`0.5px solid ${a.is_enabled?P.border:"#FCA5A5"}`,borderRadius:"10px",padding:"12px 14px",display:"flex",alignItems:"flex-start",gap:"10px"}}>
+              <div style={{flex:1}}>
+                <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"3px",flexWrap:"wrap" as const}}>
+                  <span style={{fontFamily:"monospace",fontSize:"10px",color:P.textTert}}>{a.artifact_num}</span>
+                  <span style={{fontSize:"12px",fontWeight:"500",color:P.text}}>{a.artifact_name}</span>
+                  {clBadge(a.classification||"Core")}
+                  {a.is_custom&&<span style={{fontSize:"9px",padding:"2px 7px",borderRadius:"20px",background:"#F0FDF4",color:"#065F46",fontWeight:"500"}}>Custom</span>}
+                  {a.is_locked&&<span style={{fontSize:"9px",padding:"2px 7px",borderRadius:"20px",background:"#F3F4F6",color:"#374151",fontWeight:"500"}}>Locked</span>}
+                  <span style={{fontSize:"9px",padding:"2px 7px",borderRadius:"20px",background:a.is_enabled?"#ECFDF5":"#FEF2F2",color:a.is_enabled?"#065F46":"#991B1B",fontWeight:"500"}}>{a.is_enabled?"Enabled":"Disabled"}</span>
+                </div>
+                <div style={{fontSize:"10px",color:P.textTert}}>Zone {a.zone_num}{a.section_num?` - Section ${a.section_num}`:""}{a.iso_ref?` - ISO: ${a.iso_ref}`:""}</div>
+                {!a.is_enabled&&a.disabled_reason&&(
+                  <div style={{fontSize:"11px",color:"#991B1B",background:"#FEF2F2",borderRadius:"6px",padding:"5px 9px",marginTop:"4px"}}>
+                    Disabled: {a.disabled_reason} <span style={{color:P.textTert}}>by {a.disabled_by}</span>
+                  </div>
+                )}
+              </div>
+              {isAdmin&&(
+                <div style={{display:"flex",gap:"6px",flexShrink:0}}>
+                  <button onClick={()=>toggleLock(a)} style={{fontSize:"10px",padding:"4px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:a.is_locked?"#FFFBEB":"#F9FAFB",color:a.is_locked?"#92400E":P.textSec,cursor:"pointer"}}>
+                    {a.is_locked?"Unlock":"Lock"}
+                  </button>
+                  <button onClick={()=>toggleEnabled(a)} style={{fontSize:"10px",padding:"4px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:a.is_enabled?"#FEF2F2":"#ECFDF5",color:a.is_enabled?"#991B1B":"#065F46",cursor:"pointer"}}>
+                    {a.is_enabled?"Disable":"Enable"}
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* SUB-ARTIFACTS TAB */}
+      {tab==="subartifacts"&&(
+        <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+          {isAdmin&&<button onClick={()=>setShowAddSub(true)} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",alignSelf:"flex-start"}}>+ Add sub-artifact</button>}
+          {loading?<div style={{fontSize:"12px",color:P.textTert}}>Loading...</div>:subartifacts.length===0?(
+            <div style={{textAlign:"center",padding:"2rem",color:P.textTert,fontSize:"12px"}}>No sub-artifacts yet. Add one to get started.</div>
+          ):subartifacts.map(s=>(
+            <div key={s.id} style={{background:P.bg,border:`0.5px solid ${s.is_enabled?P.border:"#FCA5A5"}`,borderRadius:"10px",padding:"12px 14px",display:"flex",alignItems:"flex-start",gap:"10px"}}>
+              <div style={{flex:1}}>
+                <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"3px",flexWrap:"wrap" as const}}>
+                  <span style={{fontFamily:"monospace",fontSize:"10px",color:P.textTert}}>{s.artifact_num}</span>
+                  <span style={{fontSize:"12px",fontWeight:"500",color:P.text}}>{s.artifact_name}</span>
+                  <span style={{fontSize:"9px",padding:"2px 7px",borderRadius:"20px",background:s.is_enabled?"#ECFDF5":"#FEF2F2",color:s.is_enabled?"#065F46":"#991B1B",fontWeight:"500"}}>{s.is_enabled?"Enabled":"Disabled"}</span>
+                </div>
+                <div style={{fontSize:"10px",color:P.textTert}}>Zone {s.zone_num} - Parent: {s.parent_artifact_num}</div>
+                {!s.is_enabled&&s.disabled_reason&&(
+                  <div style={{fontSize:"11px",color:"#991B1B",background:"#FEF2F2",borderRadius:"6px",padding:"5px 9px",marginTop:"4px"}}>
+                    Disabled: {s.disabled_reason} <span style={{color:P.textTert}}>by {s.disabled_by}</span>
+                  </div>
+                )}
+              </div>
+              {isAdmin&&(
+                <button onClick={()=>toggleEnabled(s)} style={{fontSize:"10px",padding:"4px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:s.is_enabled?"#FEF2F2":"#ECFDF5",color:s.is_enabled?"#991B1B":"#065F46",cursor:"pointer",flexShrink:0}}>
+                  {s.is_enabled?"Disable":"Enable"}
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* DISABLE MODAL */}
+      {showDisableModal&&disableTarget&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
+          <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"420px",border:`0.5px solid ${P.border}`}}>
+            <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"4px"}}>Disable {disableTarget.type==="zone"?"zone":"artifact"}</h2>
+            <p style={{fontSize:"11px",color:P.textSec,marginBottom:"1rem"}}>{disableTarget.zone_name||disableTarget.artifact_name}</p>
+            <div style={{background:"#FFFBEB",border:"0.5px solid #FDE68A",borderRadius:"8px",padding:"10px 12px",marginBottom:"1rem",fontSize:"11px",color:"#92400E"}}>
+              {disableTarget.type==="zone"?"Disabled zones are counted as 100% complete in the TMF dashboard.":"Disabled artifacts are excluded from gap analysis and completeness calculations."}
+            </div>
+            <div style={{marginBottom:"1rem"}}>
+              <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Reason for disabling (required)</label>
+              <textarea value={disableReason} onChange={e=>setDisableReason(e.target.value)} placeholder="e.g. Not applicable to this study type - no device involved" rows={3} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px",resize:"vertical" as const}}/>
+            </div>
+            <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
+              <button onClick={()=>{setShowDisableModal(false);setDisableTarget(null);setDisableReason("");}} style={{fontSize:"11px",padding:"6px 14px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>Cancel</button>
+              <button onClick={submitDisable} style={{fontSize:"11px",padding:"6px 14px",background:"#EF4444",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Confirm disable</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADD ZONE MODAL */}
+      {showAddZone&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
+          <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"400px",border:`0.5px solid ${P.border}`}}>
+            <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"1rem"}}>Add custom zone</h2>
+            <div style={{marginBottom:"10px"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Zone number</label><input value={newZoneNum} onChange={e=>setNewZoneNum(e.target.value)} placeholder="e.g. 12" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/></div>
+            <div style={{marginBottom:"1rem"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Zone name</label><input value={newZoneName} onChange={e=>setNewZoneName(e.target.value)} placeholder="e.g. Quality Management" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/></div>
+            <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
+              <button onClick={()=>setShowAddZone(false)} style={{fontSize:"11px",padding:"6px 14px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>Cancel</button>
+              <button onClick={addZone} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Add zone</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADD ARTIFACT MODAL */}
+      {showAddArtifact&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
+          <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"460px",border:`0.5px solid ${P.border}`,maxHeight:"90vh",overflowY:"auto"}}>
+            <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"1rem"}}>Add custom artifact</h2>
+            {[{l:"Zone number",v:newArtZone,s:setNewArtZone,p:"e.g. 1"},{l:"Section number",v:newArtSection,s:setNewArtSection,p:"e.g. 1.07"},{l:"Artifact number",v:newArtNum,s:setNewArtNum,p:"e.g. 01.07.01"},{l:"Artifact name",v:newArtName,s:setNewArtName,p:"e.g. Training Log"},{l:"ISO 14155 reference",v:newArtIso,s:setNewArtIso,p:"e.g. 6.2 (optional)"}].map(f=>(
+              <div key={f.l} style={{marginBottom:"10px"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>{f.l}</label><input value={f.v} onChange={e=>f.s(e.target.value)} placeholder={f.p} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/></div>
+            ))}
+            <div style={{marginBottom:"1rem"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Classification</label>
+              <select value={newArtCl} onChange={e=>setNewArtCl(e.target.value)} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}>
+                <option>Core</option><option>Recommended</option><option>Optional</option>
+              </select>
+            </div>
+            <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
+              <button onClick={()=>setShowAddArtifact(false)} style={{fontSize:"11px",padding:"6px 14px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>Cancel</button>
+              <button onClick={addArtifact} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Add artifact</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADD SUB-ARTIFACT MODAL */}
+      {showAddSub&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
+          <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"440px",border:`0.5px solid ${P.border}`}}>
+            <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"1rem"}}>Add sub-artifact</h2>
+            {[{l:"Zone number",v:newSubZone,s:setNewSubZone,p:"e.g. 1"},{l:"Parent artifact number",v:newSubParent,s:setNewSubParent,p:"e.g. 01.04.01"},{l:"Sub-artifact number",v:newSubNum,s:setNewSubNum,p:"e.g. 01.04.01.01"},{l:"Sub-artifact name",v:newSubName,s:setNewSubName,p:"e.g. Remote Monitoring Visit Report"}].map(f=>(
+              <div key={f.l} style={{marginBottom:"10px"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>{f.l}</label><input value={f.v} onChange={e=>f.s(e.target.value)} placeholder={f.p} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/></div>
+            ))}
+            <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
+              <button onClick={()=>setShowAddSub(false)} style={{fontSize:"11px",padding:"6px 14px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>Cancel</button>
+              <button onClick={addSubArtifact} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Add sub-artifact</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
