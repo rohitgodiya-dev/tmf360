@@ -1085,7 +1085,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                             <button onClick={()=>{
                               const doc=studyDocs.find(d=>d.id===m.docId);
                               if(!doc)return;
-                              setFlagDocId(doc.id);setFlagReason(detectFlagReason(doc));setFlagStage("form");setFlagMsgIdx(i);
+                              setFlagDocId(doc.id||null);setFlagReason(detectFlagReason(doc));setFlagStage("form");setFlagMsgIdx(i);
                               setChatMessages(prev=>[...prev,{role:"ai",text:"Flag initiated. Review the detected reason below and add context before submitting."}]);
                               setChatDocAction(prev=>prev?{...prev,disabled:true}:null);
                             }} style={{fontSize:"12px",fontWeight:"600",padding:"6px 15px",background:P.danger,color:"#fff",border:"none",borderRadius:"7px",cursor:"pointer"}}>Flag</button>
@@ -2091,3 +2091,4 @@ function MessagesPanel({user, P, supabase, activeStudy}: {user: any, P: any, sup
     </div>
   );
 }
+
