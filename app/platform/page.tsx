@@ -81,6 +81,11 @@ function canPreview(n:string){return["pdf","png","jpg","jpeg","gif","webp"].incl
 function formatSize(b:number){if(b<1024)return b+" B";if(b<1024*1024)return(b/1024).toFixed(1)+" KB";return(b/(1024*1024)).toFixed(1)+" MB";}
 function scoreColor(s:number){return s>=80?"#10B981":s>=60?"#F59E0B":"#EF4444";}
 function padZone(z:string){return z.padStart(2,"0");}
+const ZONE_ICONS:Record<string,string>={
+  "1":"ti-clipboard-list","2":"ti-users","3":"ti-shield-check","4":"ti-certificate",
+  "5":"ti-building","6":"ti-file-check","7":"ti-package","8":"ti-alert-triangle",
+  "9":"ti-chart-bar","10":"ti-database","11":"ti-flask",
+};
 function formatSection(s:string){const parts=(s||"").split(".");if(parts.length<2)return s||"00.00";return `${parts[0].padStart(2,"0")}.${parts[1]}`;}
 
 export default function Platform(){
@@ -157,7 +162,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
   const chatFileInputRef=useRef<HTMLInputElement>(null);
 
   const P={
-    primary:"#6366F1",primaryLight:"#EEF2FF",primaryDark:"#4F46E5",
+    primary:"#F97316",primaryLight:"#FFEDD5",primaryDark:"#EA580C",
     text:"#111827",textSec:"#374151",textTert:"#6B7280",textMuted:"#9CA3AF",
     bg:"#FFFFFF",bgSec:"#F9FAFB",bgTert:"#F3F4F6",
     border:"#E5E7EB",borderSec:"#D1D5DB",
@@ -434,6 +439,31 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
     return<span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"20px",background:st.bg,color:st.color,fontWeight:"500"}}>{s}</span>;
   }
 
+  const miniRing=(pct:number,color:string,size=48,stroke=5)=>{
+    const r=(size-stroke)/2,c=2*Math.PI*r,off=c-(Math.min(pct,100)/100)*c;
+    return(
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{transform:"rotate(-90deg)",flexShrink:0}}>
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={P.bgTert} strokeWidth={stroke}/>
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={off} strokeLinecap="round"/>
+      </svg>
+    );
+  };
+
+  const readinessGauge=(pct:number,size=180,stroke=16)=>{
+    const r=(size-stroke)/2,cx=size/2,cy=size/2;
+    const sweep=270,startAngle=135;
+    const polar=(ang:number)=>{const rad=(ang-90)*Math.PI/180;return{x:cx+r*Math.cos(rad),y:cy+r*Math.sin(rad)};};
+    const arcPath=(a0:number,a1:number)=>{const p0=polar(a0),p1=polar(a1);const large=a1-a0<=180?0:1;return`M ${p0.x} ${p0.y} A ${r} ${r} 0 ${large} 1 ${p1.x} ${p1.y}`;};
+    const endAngle=startAngle+sweep*(Math.min(pct,100)/100);
+    const color=pct>=80?P.success:pct>=50?P.primary:P.danger;
+    return(
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <path d={arcPath(startAngle,startAngle+sweep)} fill="none" stroke={P.bgTert} strokeWidth={stroke} strokeLinecap="round"/>
+        <path d={arcPath(startAngle,endAngle)} fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round"/>
+      </svg>
+    );
+  };
+
   const navItem=(id:string,label:string,icon:string)=>(
     <button key={id} onClick={()=>{setPanel(id);if(activeStudy&&user&&orgId)loadDocsWithOrg(activeStudy.study_id,orgId);}}
       style={{display:"flex",alignItems:"center",gap:"8px",padding:"7px 10px",borderRadius:"8px",border:"none",cursor:"pointer",width:"100%",textAlign:"left",fontSize:"12px",background:panel===id?P.primaryLight:"transparent",color:panel===id?P.primary:P.textSec,fontWeight:panel===id?"500":"400"}}>
@@ -524,57 +554,112 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
 
           {/* DASHBOARD */}
           {panel==="dashboard"&&(
-            <div style={{display:"flex",flexDirection:"column",gap:"1rem"}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                <h1 style={{fontSize:"14px",fontWeight:"500"}}>Dashboard {activeStudy?`- ${activeStudy.study_id}`:""}</h1>
-                {currentUserRole==="System Administrator"&&<button onClick={()=>setShowStudyModal(true)} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ New study</button>}
+            <div style={{display:"flex",flexDirection:"column",gap:"1.1rem"}}>
+              <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
+                <div>
+                  <h1 style={{fontSize:"20px",fontWeight:"700",color:P.text}}>Dashboard {activeStudy?`- ${activeStudy.study_id}`:""}</h1>
+                  <p style={{fontSize:"12px",color:P.textTert,marginTop:"2px"}}>Welcome back! Here's what's happening with your TMF.</p>
+                </div>
+                {currentUserRole==="System Administrator"&&<button onClick={()=>setShowStudyModal(true)} style={{display:"flex",alignItems:"center",gap:"6px",fontSize:"12px",fontWeight:"500",padding:"9px 16px",background:P.primary,color:"#fff",border:"none",borderRadius:"10px",cursor:"pointer",boxShadow:`0 1px 2px rgba(0,0,0,0.06)`}}><i className="ti ti-circle-plus" style={{fontSize:"14px"}}/>New study</button>}
               </div>
               {!activeStudy?(
-                <div style={{textAlign:"center",padding:"3rem",color:P.textTert}}>
-                  <div style={{fontSize:"3rem",marginBottom:"12px"}}></div>
+                <div style={{textAlign:"center",padding:"3rem",color:P.textTert,background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"14px"}}>
                   <div style={{fontSize:"13px",fontWeight:"500",marginBottom:"6px",color:P.text}}>No studies yet</div>
                   <div style={{fontSize:"12px",marginBottom:"1rem"}}>Create your first study to get started.</div>
                   {currentUserRole==="System Administrator"&&<button onClick={()=>setShowStudyModal(true)} style={{fontSize:"11px",padding:"8px 18px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ Create first study</button>}
                 </div>
               ):(
                 <>
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"10px"}}>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:"12px"}}>
                     {[
-                      {val:`${donePct}%`,label:"TMF completeness",color:scoreColor(donePct),bg:P.bg,page:"completeness-detail"},
-                      {val:missing,label:"Missing documents",color:"#EF4444",bg:"#FEF2F2",page:"missing-detail"},
-                      {val:studyDocs.filter(d=>d.status!=="Approved"&&d.status!=="Archived").length,label:"Not approved",color:"#F59E0B",bg:"#FFFBEB",page:"notapproved-detail"},
-                      {val:expiring,label:"Expiring (90 days)",color:"#EF4444",bg:"#FEF2F2",page:"expiring-detail"},
-                      {val:pending,label:"Pending review",color:P.primary,bg:P.primaryLight,page:"pending-detail"},
+                      {val:donePct,suffix:"%",label:"TMF completeness",sub:"Overall progress",color:P.blue,tint:"#EFF6FF",icon:"ti-chart-donut",link:"View progress",page:"completeness-detail",ring:true},
+                      {val:missing,suffix:"",label:"Missing documents",sub:"Require attention",color:P.danger,tint:P.dangerLight,icon:"ti-file-alert",link:"View gaps",page:"missing-detail"},
+                      {val:studyDocs.filter(d=>d.status!=="Approved"&&d.status!=="Archived").length,suffix:"",label:"Not approved",sub:"Pending approval",color:P.warning,tint:P.warningLight,icon:"ti-shield-half",link:"Review now",page:"notapproved-detail"},
+                      {val:expiring,suffix:"",label:"Expiring (90 days)",sub:"Upcoming expirations",color:P.danger,tint:P.dangerLight,icon:"ti-calendar-exclamation",link:"View expiring",page:"expiring-detail"},
+                      {val:pending,suffix:"",label:"Pending review",sub:"Awaiting review",color:P.blue,tint:P.blueLight,icon:"ti-clock",link:"View items",page:"pending-detail"},
                     ].map((m,i)=>(
-                      <div key={i} onClick={()=>setPanel((m as any).page)} style={{background:m.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"14px",cursor:"pointer"}}>
-                        <div style={{fontSize:"24px",fontWeight:"500",color:m.color}}>{m.val}</div>
-                        <div style={{fontSize:"11px",color:P.textSec,marginTop:"3px"}}>{m.label}</div>
+                      <div key={i} style={{background:m.tint,border:`0.5px solid ${P.border}`,borderRadius:"14px",padding:"14px",display:"flex",flexDirection:"column",gap:"10px"}}>
+                        <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                          {m.ring?(
+                            <div style={{position:"relative",width:"48px",height:"48px",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                              {miniRing(m.val,m.color)}
+                              <span style={{position:"absolute",fontSize:"10px",fontWeight:"700",color:m.color}}>{m.val}%</span>
+                            </div>
+                          ):(
+                            <div style={{width:"40px",height:"40px",borderRadius:"50%",background:P.bg,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,border:`0.5px solid ${P.border}`}}>
+                              <i className={`ti ${m.icon}`} style={{fontSize:"18px",color:m.color}}/>
+                            </div>
+                          )}
+                          <div>
+                            <div style={{fontSize:"22px",fontWeight:"700",color:m.color,lineHeight:1}}>{m.val}{m.suffix}</div>
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{fontSize:"12px",fontWeight:"600",color:P.text}}>{m.label}</div>
+                          <div style={{fontSize:"11px",color:P.textTert,marginTop:"1px"}}>{m.sub}</div>
+                        </div>
+                        <button onClick={()=>setPanel(m.page)} style={{background:"none",border:"none",padding:0,textAlign:"left",fontSize:"11px",fontWeight:"600",color:m.color,cursor:"pointer",display:"flex",alignItems:"center",gap:"3px"}}>{m.link} <i className="ti ti-arrow-right" style={{fontSize:"12px"}}/></button>
                       </div>
                     ))}
                   </div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px"}}>
-                    <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"14px"}}>
-                      <h2 style={{fontSize:"11px",fontWeight:"500",marginBottom:"12px",color:P.textSec}}>TMF completeness by zone</h2>
-                      {ZONES.map(({z,zn})=>{const p=zoneComp(z);return(
-                        <div key={z} style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"6px"}}>
-                          <span style={{fontSize:"9px",color:P.textTert,width:"14px"}}>{z}</span>
-                          <span style={{fontSize:"11px",color:P.textSec,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{zn}</span>
-                          <div style={{width:"80px",height:"4px",background:P.bgTert,borderRadius:"4px",overflow:"hidden"}}><div style={{width:`${p}%`,height:"100%",background:ZONE_COLORS[z]||P.primary,borderRadius:"4px"}}/></div>
-                          <span style={{fontSize:"10px",fontWeight:"500",width:"28px",textAlign:"right",color:scoreColor(p)}}>{p}%</span>
+                  <div style={{display:"grid",gridTemplateColumns:"1.15fr 1fr",gap:"12px",alignItems:"start"}}>
+                    <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"14px",padding:"16px"}}>
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"14px"}}>
+                        <h2 style={{fontSize:"13px",fontWeight:"700",color:P.text}}>TMF completeness by zone</h2>
+                        <button onClick={()=>setPanel("completeness-detail")} style={{fontSize:"11px",fontWeight:"600",color:P.blue,background:P.blueLight,border:`0.5px solid #BFDBFE`,borderRadius:"7px",padding:"5px 10px",cursor:"pointer",display:"flex",alignItems:"center",gap:"4px"}}>View all zones <i className="ti ti-arrow-right" style={{fontSize:"12px"}}/></button>
+                      </div>
+                      {ZONES.map(({z,zn})=>{const p=zoneComp(z);const barColor=p>=75?P.success:p>=50?P.blue:p>=25?P.warning:p>0?P.danger:P.bgTert;return(
+                        <div key={z} style={{display:"flex",alignItems:"center",gap:"9px",padding:"6px 0"}}>
+                          <span style={{fontSize:"11px",color:P.textTert,width:"14px"}}>{z}</span>
+                          <i className={`ti ${ZONE_ICONS[z]||"ti-file"}`} style={{fontSize:"14px",color:P.textTert,flexShrink:0}}/>
+                          <span style={{fontSize:"12px",fontWeight:"500",color:P.text,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{zn}</span>
+                          <div style={{width:"140px",height:"6px",background:P.bgTert,borderRadius:"6px",overflow:"hidden"}}><div style={{width:`${p}%`,height:"100%",background:barColor,borderRadius:"6px"}}/></div>
+                          <span style={{fontSize:"11px",fontWeight:"700",width:"32px",textAlign:"right",color:barColor}}>{p}%</span>
                         </div>
                       );})}
-                    </div>
-                    <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"14px"}}>
-                      <h2 style={{fontSize:"11px",fontWeight:"500",marginBottom:"12px",color:P.textSec}}>Inspection readiness</h2>
-                      <div style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:"16px"}}>
-                        <span style={{fontSize:"48px",fontWeight:"500",color:scoreColor(ri)}}>{ri}</span>
-                        <span style={{fontSize:"11px",color:P.textTert,marginTop:"2px"}}>Readiness score</span>
-                        <div style={{width:"100%",height:"6px",background:P.bgTert,borderRadius:"6px",marginTop:"8px",overflow:"hidden"}}><div style={{width:`${ri}%`,height:"100%",background:scoreColor(ri),borderRadius:"6px"}}/></div>
+                      <div style={{display:"flex",flexWrap:"wrap" as const,gap:"14px",marginTop:"14px",paddingTop:"12px",borderTop:`0.5px solid ${P.border}`}}>
+                        {[{c:P.success,l:"\u2265 75%"},{c:P.blue,l:"50 \u2013 74%"},{c:P.warning,l:"25 \u2013 49%"},{c:P.danger,l:"< 25%"},{c:P.bgTert,l:"0%"}].map((leg,i)=>(
+                          <div key={i} style={{display:"flex",alignItems:"center",gap:"5px"}}>
+                            <span style={{width:"8px",height:"8px",borderRadius:"50%",background:leg.c,display:"inline-block"}}/>
+                            <span style={{fontSize:"10px",color:P.textTert}}>{leg.l}</span>
+                          </div>
+                        ))}
                       </div>
-                      <div style={{display:"flex",flexDirection:"column",gap:"4px"}}>
-                        {gaps.crit.slice(0,2).map((g,i)=><div key={i} style={{fontSize:"11px",background:"#FEF2F2",color:"#991B1B",borderRadius:"6px",padding:"4px 8px"}}>! {g.an}</div>)}
-                        {gaps.major.slice(0,2).map((g,i)=><div key={i} style={{fontSize:"11px",background:"#FFFBEB",color:"#92400E",borderRadius:"6px",padding:"4px 8px"}}>! {g.an}</div>)}
-                        {gaps.crit.length===0&&gaps.major.length===0&&<div style={{fontSize:"11px",color:P.success}}>No critical or major findings</div>}
+                    </div>
+                    <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"14px",padding:"16px",display:"flex",flexDirection:"column",gap:"14px"}}>
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                        <h2 style={{fontSize:"13px",fontWeight:"700",color:P.text}}>Inspection readiness</h2>
+                        <button onClick={()=>setPanel("readiness")} style={{fontSize:"11px",fontWeight:"600",color:P.blue,background:P.blueLight,border:`0.5px solid #BFDBFE`,borderRadius:"7px",padding:"5px 10px",cursor:"pointer",display:"flex",alignItems:"center",gap:"4px"}}>View details <i className="ti ti-arrow-right" style={{fontSize:"12px"}}/></button>
+                      </div>
+                      <div style={{display:"flex",gap:"16px"}}>
+                        <div style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",width:"180px"}}>
+                          <div style={{position:"relative",width:"180px",height:"140px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                            {readinessGauge(ri)}
+                            <div style={{position:"absolute",top:"52px",display:"flex",flexDirection:"column",alignItems:"center"}}>
+                              <span style={{fontSize:"30px",fontWeight:"700",color:P.text}}>{ri}%</span>
+                            </div>
+                          </div>
+                          <div style={{fontSize:"11px",color:P.textTert,marginTop:"-6px",display:"flex",alignItems:"center",gap:"4px"}}>Readiness score <i className="ti ti-info-circle" style={{fontSize:"12px"}}/></div>
+                          <span style={{fontSize:"10px",fontWeight:"600",color:P.danger,background:P.dangerLight,borderRadius:"20px",padding:"3px 10px",marginTop:"8px"}}>{ri>=80?"Inspection ready":ri>=50?"Needs attention":"At risk"}</span>
+                        </div>
+                        <div style={{flex:1,display:"flex",flexDirection:"column",gap:"8px",justifyContent:"center"}}>
+                          {[...gaps.crit.slice(0,2).map(g=>({...g,sev:"Missing"})),...gaps.major.slice(0,2).map(g=>({...g,sev:"Partial"}))].slice(0,4).map((g,i)=>(
+                            <div key={i} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",background:g.sev==="Missing"?P.dangerLight:P.warningLight,borderRadius:"9px"}}>
+                              <i className="ti ti-alert-triangle" style={{fontSize:"14px",color:g.sev==="Missing"?P.danger:P.warning,flexShrink:0}}/>
+                              <span style={{fontSize:"11px",fontWeight:"500",color:P.text,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{g.an}</span>
+                              <span style={{fontSize:"10px",fontWeight:"700",color:g.sev==="Missing"?P.danger:"#B45309",flexShrink:0}}>{g.sev}</span>
+                            </div>
+                          ))}
+                          {gaps.crit.length===0&&gaps.major.length===0&&<div style={{fontSize:"11px",color:P.success,padding:"8px 10px"}}>No critical or major findings</div>}
+                        </div>
+                      </div>
+                      <div style={{display:"flex",alignItems:"center",gap:"12px",background:P.blueLight,border:`0.5px solid #BFDBFE`,borderRadius:"12px",padding:"12px 14px"}}>
+                        <i className="ti ti-bulb" style={{fontSize:"20px",color:P.blue,flexShrink:0}}/>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:"12px",fontWeight:"700",color:P.text}}>Improve your readiness score</div>
+                          <div style={{fontSize:"11px",color:P.textTert,marginTop:"1px"}}>Address missing and partial items to be inspection ready.</div>
+                        </div>
+                        <button onClick={()=>setPanel("gap")} style={{fontSize:"11px",fontWeight:"600",color:"#fff",background:P.primary,border:"none",borderRadius:"8px",padding:"8px 14px",cursor:"pointer",whiteSpace:"nowrap" as const}}>View action plan</button>
                       </div>
                     </div>
                   </div>
@@ -2475,5 +2560,3 @@ function TmfConfigPanel({user,P,supabase,activeStudy,orgId,currentUserRole,logAu
     </div>
   );
 }
-
-
