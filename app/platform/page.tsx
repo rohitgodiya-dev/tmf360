@@ -1233,6 +1233,11 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
             <MessagesPanel user={user} P={P} supabase={supabase} activeStudy={activeStudy}/>
           )}
 
+          {/* TMF CONFIG */}
+          {panel==="tmfconfig"&&(
+            <TmfConfigPanel user={user} P={P} supabase={supabase} activeStudy={activeStudy} orgId={orgId} currentUserRole={currentUserRole} logAudit={logAudit}/>
+          )}
+
           {/* USER MANAGEMENT */}
           {panel==="users"&&(
             <UserManagementPanel user={user} P={P} supabase={supabase}/>
@@ -2470,3 +2475,4 @@ function TmfConfigPanel({user,P,supabase,activeStudy,orgId,currentUserRole,logAu
     </div>
   );
 }
+
