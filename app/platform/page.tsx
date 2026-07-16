@@ -217,7 +217,7 @@ const[tmfConfig,setTmfConfig]=useState<any[]>([]);
   async function loadDocsWithOrg(studyId:string,oid:string){
     const{data}=await supabase.from("documents").select("*").eq("study_id",studyId).eq("org_id",oid).order("created_at",{ascending:false});
     if(data)setDocs(data);
-  }
+    loadTmfConfig(studyId,oid);
 
   async function loadTmfConfig(studyId:string,oid:string){
     const{data}=await supabase.from('tmf_config').select('*').eq('org_id',oid).eq('study_id',studyId).eq('is_enabled',true);
@@ -2566,6 +2566,7 @@ function TmfConfigPanel({user,P,supabase,activeStudy,orgId,currentUserRole,logAu
     </div>
   );
 }
+
 
 
 
