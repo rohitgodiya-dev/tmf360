@@ -1121,7 +1121,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                 <h1 style={{fontSize:"14px",fontWeight:"500"}}>Documents - {activeStudy?.study_id||"No study selected"}</h1>
-                {activeStudy&&canUploadDownload&&<button onClick={()=>{const firstZone=activeZONES[0]?.z||"1";const initialArts=activeTMF.filter(a=>a.z===firstZone);setZoneArts(initialArts);setFZone(firstZone);setFArtifact(initialArts[0]?`${initialArts[0].a}|${initialArts[0].an}|${initialArts[0].z}`:"");setFOwner(userFullName||user?.email||"");setShowDocModal(true);}} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ Add document</button>}
+                {activeStudy&&canUploadDownload&&<button onClick={()=>{const firstZone=activeZONES[0]?.z||"1";const initialArts=activeTMF.filter(a=>a.z===firstZone).sort((a,b)=>a.a.localeCompare(b.a));setZoneArts(initialArts);setFZone(firstZone);setFArtifact(initialArts[0]?`${initialArts[0].a}|${initialArts[0].an}|${initialArts[0].z}`:"");setFOwner(userFullName||user?.email||"");setShowDocModal(true);}} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ Add document</button>}
               </div>
               <div style={{display:"flex",gap:"8px",flexWrap:"wrap" as const,alignItems:"center"}}>
                 <input value={docSearch} onChange={e=>setDocSearch(e.target.value)} placeholder="Search documents..." style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"6px 10px",width:"200px"}}/>
@@ -1581,7 +1581,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
             <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"1rem"}}>Add document</h2>
             <div style={{marginBottom:"10px"}}>
               <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Zone</label>
-              <select value={fZone} onChange={e=>{setFZone(e.target.value);const allArts=activeTMF.filter(a=>a.z===e.target.value);setZoneArts(allArts);setFArtifact(allArts[0]?`${allArts[0].a}|${allArts[0].an}|${allArts[0].z}`:"");}} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}>
+              <select value={fZone} onChange={e=>{setFZone(e.target.value);const allArts=activeTMF.filter(a=>a.z===e.target.value).sort((a,b)=>a.a.localeCompare(b.a));setZoneArts(allArts);setFArtifact(allArts[0]?`${allArts[0].a}|${allArts[0].an}|${allArts[0].z}`:"");}} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}>
                 {activeZONES.map(({z,zn})=><option key={z} value={z}>Zone {z} - {zn}</option>)}
               </select>
             </div>
@@ -3003,6 +3003,7 @@ setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfi
     </div>
   );
 }
+
 
 
 
