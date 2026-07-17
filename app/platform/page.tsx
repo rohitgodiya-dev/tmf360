@@ -2429,6 +2429,9 @@ function TmfConfigPanel({user,P,supabase,activeStudy,orgId,currentUserRole,logAu
   const[newSubName,setNewSubName]=useState("");
   const[newSubParent,setNewSubParent]=useState("");
   const[newSubZone,setNewSubZone]=useState("");
+const[showEditModal,setShowEditModal]=useState(false);
+const[editTarget,setEditTarget]=useState<any>(null);
+const[editName,setEditName]=useState("");
 
   const isAdmin=currentUserRole==="System Administrator"||currentUserRole==="TMF Lead";
 
@@ -2755,6 +2758,16 @@ function TmfConfigPanel({user,P,supabase,activeStudy,orgId,currentUserRole,logAu
     if(!error){await logAudit("Custom sub-artifact added",undefined,activeStudy.study_id,"artifact_num","",newSubNum.trim());setShowAddSub(false);setNewSubNum("");setNewSubName("");setNewSubParent("");setNewSubZone("");loadConfig();setMsg("Sub-artifact added.");}
   }
 
+  async function saveEdit(){
+    if(!editName.trim()||!editTarget)return;
+    const field=editTarget.type==="zone"?"zone_name":"artifact_name";
+    const{error}=await supabase.from("tmf_config").update({[field]:editName.trim()}).eq("id",editTarget.id);
+    if(!error){
+      await logAudit("TMF config name edited",undefined,activeStudy.study_id,field,editTarget[field]||"",editName.trim());
+      setShowEditModal(false);setEditTarget(null);setEditName("");loadConfig();setMsg("Name updated.");
+    }
+  }
+
   async function resetToDefault(){
     if(!confirm("This will delete all custom config and reset to DIA standard. Continue?"))return;
     await supabase.from("tmf_config").delete().eq("org_id",orgId).eq("study_id",activeStudy.study_id);
@@ -2900,6 +2913,24 @@ function TmfConfigPanel({user,P,supabase,activeStudy,orgId,currentUserRole,logAu
         </div>
       )}
 
+      {/* EDIT MODAL */}
+      {showEditModal&&editTarget&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
+          <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"420px",border:`0.5px solid ${P.border}`}}>
+            <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"4px"}}>Edit {editTarget.type==="zone"?"zone":"artifact"} name</h2>
+            <p style={{fontSize:"11px",color:P.textSec,marginBottom:"1rem"}}>{editTarget.zone_name||editTarget.artifact_name}</p>
+            <div style={{marginBottom:"1rem"}}>
+              <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>New name</label>
+              <input value={editName} onChange={e=>setEditName(e.target.value)} placeholder="Enter new name..." style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px"}} onKeyDown={e=>e.key==="Enter"&&saveEdit()}/>
+            </div>
+            <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
+              <button onClick={()=>{setShowEditModal(false);setEditTarget(null);setEditName("");}} style={{fontSize:"11px",padding:"6px 14px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>Cancel</button>
+              <button onClick={saveEdit} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* DISABLE MODAL */}
       {showDisableModal&&disableTarget&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
@@ -2975,5 +3006,11 @@ function TmfConfigPanel({user,P,supabase,activeStudy,orgId,currentUserRole,logAu
     </div>
   );
 }
+
+
+
+
+
+
 
 
