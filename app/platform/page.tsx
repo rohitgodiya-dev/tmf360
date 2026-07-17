@@ -1883,6 +1883,9 @@ function AuditTrail({user,activeStudy,P}:{user:any,activeStudy:any,P:any}){
   );
 }
 
+const ROLES=["System Administrator","Sponsor Admin","TMF Lead","CRA","CTA","QA","Trial Manager","Regulatory","Site Team","Auditor"];
+const RC:Record<string,string>={"System Administrator":"#7C3AED","Sponsor Admin":"#2563EB","TMF Lead":"#0891B2","CRA":"#059669","CTA":"#D97706","QA":"#DC2626","Trial Manager":"#7C3AED","Regulatory":"#0891B2","Site Team":"#059669","Auditor":"#6B7280"};
+
 function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: any}) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
@@ -3043,6 +3046,7 @@ setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfi
     </div>
   );
 }
+
 
 
 
