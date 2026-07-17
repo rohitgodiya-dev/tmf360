@@ -1885,11 +1885,6 @@ function AuditTrail({user,activeStudy,P}:{user:any,activeStudy:any,P:any}){
 
 function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: any}) {
   const [isAdmin, setIsAdmin] = useState(false);
-  useEffect(() => {
-    supabase.from("user_roles").select("role").eq("user_id", user?.id).single().then(({data}:any) => {
-      if (["System Administrator","Sponsor Admin","TMF Lead"].includes(data?.role)) setIsAdmin(true);
-    });
-  }, [user]);
   const [users, setUsers] = useState<any[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -1902,14 +1897,20 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
   const [pwdTargetUser, setPwdTargetUser] = useState<any>(null);
   const [newPwd, setNewPwd] = useState("");
   const [pwdMsg, setPwdMsg] = useState("");
+
+  useEffect(() => {
+    supabase.from("user_roles").select("role").eq("user_id", user?.id).single().then(({data}:any) => {
+      if (["System Administrator","Sponsor Admin","TMF Lead"].includes(data?.role)) setIsAdmin(true);
+    });
+    loadUsers();
+  }, [user]);
+
   async function loadUsers() {
-
-
-
     const {data} = await supabase.from("user_roles").select("*").order("created_at",{ascending:false});
     if (data) setUsers(data);
     setLoading(false);
   }
+
   async function addUser() {
     if (!inviteEmail.trim()) return;
     setMessage("Sending invitation...");
@@ -1921,26 +1922,39 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
     } catch(e: any) { setMessage("Error: "+e.message); }
     setTimeout(()=>setMessage(""),4000);
   }
+
   async function updateRole(id: string, role: string) {
     await supabase.from("user_roles").update({role}).eq("id",id);
     loadUsers();
   }
+
   async function toggleActive(id: string, current: boolean) {
     await supabase.from("user_roles").update({is_active:!current}).eq("id",id);
     loadUsers();
   }
+
   async function toggleDocAccess(id: string, current: boolean) {
     await supabase.from("user_roles").update({can_upload_download:!current}).eq("id",id);
     loadUsers();
   }
+
   async function toggleDownload(id: string, current: boolean) {
     await supabase.from("user_roles").update({can_download:!current}).eq("id",id);
     loadUsers();
   }
+
   async function toggleNotifications(id: string, current: boolean) {
     await supabase.from("user_roles").update({notifications_enabled:!current}).eq("id",id);
     loadUsers();
   }
+
+  async function changeUserPassword() {
+    if(!newPwd.trim()||newPwd.length<6){setPwdMsg("Password must be at least 6 characters.");return;}
+    const res=await fetch("/api/change-password",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userId:pwdTargetUser.user_id,newPassword:newPwd})});
+    const data=await res.json();
+    if(data.error){setPwdMsg("Error: "+data.error);}else{setPwdMsg("Password changed successfully.");setTimeout(()=>{setShowPwdModal(false);setPwdTargetUser(null);setNewPwd("");setPwdMsg("");},1500);}
+  }
+
   return (
     <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
@@ -1957,8 +1971,8 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
             {["Name / Email","Role","Status","Added","Notifications","Upload","Download","Actions"].map(h=><th key={h} style={{textAlign:"left",padding:"10px 14px",fontSize:"11px",fontWeight:"500",color:P.textSec}}>{h}</th>)}
           </tr></thead>
           <tbody>
-            {loading?<tr><td colSpan={6} style={{textAlign:"center",padding:"2rem",color:P.textTert}}>Loading...</td></tr>
-            :users.length===0?<tr><td colSpan={6} style={{textAlign:"center",padding:"2rem",color:P.textTert}}>No users yet.</td></tr>
+            {loading?<tr><td colSpan={8} style={{textAlign:"center",padding:"2rem",color:P.textTert}}>Loading...</td></tr>
+            :users.length===0?<tr><td colSpan={8} style={{textAlign:"center",padding:"2rem",color:P.textTert}}>No users yet.</td></tr>
             :users.map((u)=>(
               <tr key={u.id} style={{borderBottom:`0.5px solid ${P.bgTert}`}}>
                 <td style={{padding:"10px 14px"}}><div style={{fontWeight:"500"}}>{u.full_name||"-"}</div><div style={{fontSize:"11px",color:P.textSec}}>{u.email}</div></td>
@@ -1970,14 +1984,12 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
                 <td style={{padding:"10px 14px"}}>{isAdmin?<button onClick={()=>toggleDocAccess(u.id,u.can_upload_download)} style={{fontSize:"10px",padding:"3px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:u.can_upload_download?"#ECFDF5":"#FEF2F2",cursor:"pointer",color:u.can_upload_download?"#10B981":"#EF4444",fontWeight:"500"}}>{u.can_upload_download?"YES":"NO"}</button>:<span style={{fontSize:"10px",color:u.can_upload_download?"#10B981":"#EF4444",fontWeight:"500"}}>{u.can_upload_download?"YES":"NO"}</span>}</td>
                 <td style={{padding:"10px 14px"}}>{isAdmin?<button onClick={()=>toggleDownload(u.id,u.can_download)} style={{fontSize:"10px",padding:"3px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:u.can_download?"#ECFDF5":"#FEF2F2",cursor:"pointer",color:u.can_download?"#10B981":"#EF4444",fontWeight:"500"}}>{u.can_download?"YES":"NO"}</button>:<span style={{fontSize:"10px",color:u.can_download?"#10B981":"#EF4444",fontWeight:"500"}}>{u.can_download?"YES":"NO"}</span>}</td>
                 <td style={{padding:"10px 14px"}}>{isAdmin?<button onClick={()=>toggleNotifications(u.id,u.notifications_enabled)} style={{fontSize:"10px",padding:"3px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:u.notifications_enabled?"#ECFDF5":"#FEF2F2",cursor:"pointer",color:u.notifications_enabled?"#10B981":"#EF4444",fontWeight:"500"}}>{u.notifications_enabled?"ON":"OFF"}</button>:<span style={{fontSize:"10px",color:u.notifications_enabled?"#10B981":"#EF4444",fontWeight:"500"}}>{u.notifications_enabled?"ON":"OFF"}</span>}</td>
-                <td style={{padding:"10px 14px",display:"flex",gap:"6px",flexWrap:"wrap" as const}}>{isAdmin&&<button onClick={()=>toggleActive(u.id,u.is_active)} style={{fontSize:"10px",padding:"3px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:"transparent",cursor:"pointer",color:u.is_active?P.danger:P.success}}>{u.is_active?"Deactivate":"Activate"}</button>}{isAdmin&&<button onClick={()=>{setPwdTargetUser(u);setNewPwd("");setPwdMsg("");setShowPwdModal(true);}} style={{fontSize:"10px",padding:"3px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:"transparent",cursor:"pointer",color:P.primary}}>Change Pwd</button>}</td>
-              </tr>
-
-
-
-
-
-
+                <td style={{padding:"10px 14px"}}>
+                  <div style={{display:"flex",gap:"6px",flexWrap:"wrap" as const}}>
+                    {isAdmin&&<button onClick={()=>toggleActive(u.id,u.is_active)} style={{fontSize:"10px",padding:"3px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:"transparent",cursor:"pointer",color:u.is_active?P.danger:P.success}}>{u.is_active?"Deactivate":"Activate"}</button>}
+                    {isAdmin&&<button onClick={()=>{setPwdTargetUser(u);setNewPwd("");setPwdMsg("");setShowPwdModal(true);}} style={{fontSize:"10px",padding:"3px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:"transparent",cursor:"pointer",color:P.primary}}>Change Pwd</button>}
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -2002,24 +2014,24 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
           </div>
         </div>
       )}
-    </div>
-    {showPwdModal&&pwdTargetUser&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
-        <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"400px",border:`0.5px solid ${P.border}`}}>
-          <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"4px"}}>Change Password</h2>
-          <p style={{fontSize:"11px",color:P.textSec,marginBottom:"1rem"}}>{pwdTargetUser.full_name||pwdTargetUser.email}</p>
-          <div style={{marginBottom:"1rem"}}>
-            <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>New Password</label>
-            <input type="password" value={newPwd} onChange={e=>setNewPwd(e.target.value)} placeholder="Min 6 characters" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px"}} onKeyDown={e=>e.key==="Enter"&&changeUserPassword()}/>
-          </div>
-          {pwdMsg&&<div style={{fontSize:"11px",marginBottom:"10px",padding:"8px 10px",borderRadius:"8px",background:pwdMsg.includes("Error")?P.dangerLight:P.successLight,color:pwdMsg.includes("Error")?P.danger:P.success}}>{pwdMsg}</div>}
-          <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
-            <button onClick={()=>{setShowPwdModal(false);setPwdTargetUser(null);setNewPwd("");setPwdMsg("");}} style={{fontSize:"11px",padding:"6px 14px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>Cancel</button>
-            <button onClick={changeUserPassword} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Change Password</button>
+      {showPwdModal&&pwdTargetUser&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
+          <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"400px",border:`0.5px solid ${P.border}`}}>
+            <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"4px"}}>Change Password</h2>
+            <p style={{fontSize:"11px",color:P.textSec,marginBottom:"1rem"}}>{pwdTargetUser.full_name||pwdTargetUser.email}</p>
+            <div style={{marginBottom:"1rem"}}>
+              <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>New Password</label>
+              <input type="password" value={newPwd} onChange={e=>setNewPwd(e.target.value)} placeholder="Min 6 characters" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px"}} onKeyDown={e=>e.key==="Enter"&&changeUserPassword()}/>
+            </div>
+            {pwdMsg&&<div style={{fontSize:"11px",marginBottom:"10px",padding:"8px 10px",borderRadius:"8px",background:pwdMsg.includes("Error")?P.dangerLight:P.successLight,color:pwdMsg.includes("Error")?P.danger:P.success}}>{pwdMsg}</div>}
+            <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
+              <button onClick={()=>{setShowPwdModal(false);setPwdTargetUser(null);setNewPwd("");setPwdMsg("");}} style={{fontSize:"11px",padding:"6px 14px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>Cancel</button>
+              <button onClick={changeUserPassword} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Change Password</button>
+            </div>
           </div>
         </div>
-      </div>
-    )}
+      )}
+    </div>
   );
 }
 
