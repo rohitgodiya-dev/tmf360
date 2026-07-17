@@ -1121,7 +1121,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                 <h1 style={{fontSize:"14px",fontWeight:"500"}}>Documents - {activeStudy?.study_id||"No study selected"}</h1>
-                {activeStudy&&canUploadDownload&&<button onClick={()=>{setShowDocModal(true);setFOwner(userFullName||user?.email||"");}} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ Add document</button>}
+                {activeStudy&&canUploadDownload&&<button onClick={()=>{const firstZone=activeZONES[0]?.z||"1";const initialArts=activeTMF.filter(a=>a.z===firstZone);setZoneArts(initialArts);setFZone(firstZone);setFArtifact(initialArts[0]?`${initialArts[0].a}|${initialArts[0].an}|${initialArts[0].z}`:"");setFOwner(userFullName||user?.email||"");setShowDocModal(true);}} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ Add document</button>}
               </div>
               <div style={{display:"flex",gap:"8px",flexWrap:"wrap" as const,alignItems:"center"}}>
                 <input value={docSearch} onChange={e=>setDocSearch(e.target.value)} placeholder="Search documents..." style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"6px 10px",width:"200px"}}/>
@@ -3003,5 +3003,6 @@ setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfi
     </div>
   );
 }
+
 
 
