@@ -2725,7 +2725,7 @@ function TmfConfigPanel({user,P,supabase,activeStudy,orgId,currentUserRole,logAu
   async function toggleEnabled(item:any){
     if(!item.is_enabled){
       const{error}=await supabase.from("tmf_config").update({is_enabled:true,disabled_reason:null,disabled_by:null,disabled_at:null}).eq("id",item.id);
-      if(!error){await logAudit("TMF config enabled",undefined,activeStudy.study_id,"is_enabled","false","true");loadConfig();}
+      if(!error){if(item.type==="zone"){supabase.from("tmf_config").update({is_enabled:true,disabled_reason:null,disabled_by:null,disabled_at:null}).eq("org_id",orgId).eq("study_id",activeStudy.study_id).eq("zone_num",item.zone_num).eq("type","artifact").then(()=>{});}await logAudit("TMF config enabled",undefined,activeStudy.study_id,"is_enabled","false","true");loadConfig();}
     }else{
       setDisableTarget(item);setDisableReason("");setShowDisableModal(true);
     }
