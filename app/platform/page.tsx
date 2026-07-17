@@ -158,7 +158,7 @@ const[flagReason,setFlagReason]=useState("");
 const[approveStage,setApproveStage]=useState<0|1|2|3>(0);
 const[approveDocId,setApproveDocId]=useState<string|null>(null);
   const messagesEnd=useRef<HTMLDivElement>(null);
-const[tmfConfig,setTmfConfig]=useState<any[]>([]);
+  const[tmfConfig,setTmfConfig]=useState<any[]>([]);
   const fileInputRef=useRef<HTMLInputElement>(null);
   const chatFileInputRef=useRef<HTMLInputElement>(null);
 
