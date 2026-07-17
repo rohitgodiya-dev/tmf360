@@ -2414,7 +2414,10 @@ function TmfConfigPanel({user,P,supabase,activeStudy,orgId,currentUserRole,logAu
   const[showAddArtifact,setShowAddArtifact]=useState(false);
   const[showAddSub,setShowAddSub]=useState(false);
   const[showDisableModal,setShowDisableModal]=useState(false);
+  const[showEditModal,setShowEditModal]=useState(false);
   const[disableTarget,setDisableTarget]=useState<any>(null);
+  const[editTarget,setEditTarget]=useState<any>(null);
+  const[editName,setEditName]=useState("");
   const[disableReason,setDisableReason]=useState("");
   const[msg,setMsg]=useState("");
   const[newZoneNum,setNewZoneNum]=useState("");
@@ -2429,9 +2432,6 @@ function TmfConfigPanel({user,P,supabase,activeStudy,orgId,currentUserRole,logAu
   const[newSubName,setNewSubName]=useState("");
   const[newSubParent,setNewSubParent]=useState("");
   const[newSubZone,setNewSubZone]=useState("");
-const[showEditModal,setShowEditModal]=useState(false);
-const[editTarget,setEditTarget]=useState<any>(null);
-const[editName,setEditName]=useState("");
 
   const isAdmin=currentUserRole==="System Administrator"||currentUserRole==="TMF Lead";
 
@@ -2447,6 +2447,7 @@ const[editName,setEditName]=useState("");
   async function seedIfEmpty(){
     const{data}=await supabase.from("tmf_config").select("id").eq("org_id",orgId).eq("study_id",activeStudy.study_id).limit(1);
     if(data&&data.length>0)return;
+
     const TMF_SEED=[
       {zone_num:"1",zone_name:"Trial Management",type:"zone"},
       {zone_num:"2",zone_name:"Central Trial Documents",type:"zone"},
@@ -2740,6 +2741,16 @@ const[editName,setEditName]=useState("");
     if(!error){await logAudit(item.is_locked?"TMF artifact unlocked":"TMF artifact locked",undefined,activeStudy.study_id,"is_locked",String(item.is_locked),String(!item.is_locked));loadConfig();}
   }
 
+  async function saveEdit(){
+    if(!editName.trim()||!editTarget)return;
+    const field=editTarget.type==="zone"?"zone_name":"artifact_name";
+    const{error}=await supabase.from("tmf_config").update({[field]:editName.trim()}).eq("id",editTarget.id);
+    if(!error){
+      await logAudit("TMF config name edited",undefined,activeStudy.study_id,field,editTarget[field]||"",editName.trim());
+      setShowEditModal(false);setEditTarget(null);setEditName("");loadConfig();setMsg("Name updated.");
+    }
+  }
+
   async function addZone(){
     if(!newZoneNum.trim()||!newZoneName.trim())return;
     const{error}=await supabase.from("tmf_config").insert([{org_id:orgId,study_id:activeStudy.study_id,type:"zone",zone_num:newZoneNum.trim(),zone_name:newZoneName.trim(),is_enabled:true,is_locked:false,is_custom:true,created_by:user.email}]);
@@ -2756,16 +2767,6 @@ const[editName,setEditName]=useState("");
     if(!newSubNum.trim()||!newSubName.trim()||!newSubParent.trim())return;
     const{error}=await supabase.from("tmf_config").insert([{org_id:orgId,study_id:activeStudy.study_id,type:"sub_artifact",zone_num:newSubZone.trim(),artifact_num:newSubNum.trim(),artifact_name:newSubName.trim(),parent_artifact_num:newSubParent.trim(),classification:"Core",is_enabled:true,is_locked:false,is_custom:true,created_by:user.email}]);
     if(!error){await logAudit("Custom sub-artifact added",undefined,activeStudy.study_id,"artifact_num","",newSubNum.trim());setShowAddSub(false);setNewSubNum("");setNewSubName("");setNewSubParent("");setNewSubZone("");loadConfig();setMsg("Sub-artifact added.");}
-  }
-
-  async function saveEdit(){
-    if(!editName.trim()||!editTarget)return;
-    const field=editTarget.type==="zone"?"zone_name":"artifact_name";
-    const{error}=await supabase.from("tmf_config").update({[field]:editName.trim()}).eq("id",editTarget.id);
-    if(!error){
-      await logAudit("TMF config name edited",undefined,activeStudy.study_id,field,editTarget[field]||"",editName.trim());
-      setShowEditModal(false);setEditTarget(null);setEditName("");loadConfig();setMsg("Name updated.");
-    }
   }
 
   async function resetToDefault(){
@@ -2804,8 +2805,7 @@ const[editName,setEditName]=useState("");
         DIA TMF Reference Model v3.3.1 - Disabled zones count as 100% complete. All changes are logged to the audit trail.
       </div>
 
-      {/* Tabs */}
-      <div style={{display:"flex",gap:"6px",borderBottom:`0.5px solid ${P.border}`,paddingBottom:"0"}}>
+      <div style={{display:"flex",gap:"6px",borderBottom:`0.5px solid ${P.border}`}}>
         {(["zones","artifacts","subartifacts"] as const).map(t=>(
           <button key={t} onClick={()=>setTab(t)} style={{fontSize:"12px",padding:"8px 16px",border:"none",borderBottom:tab===t?`2px solid ${P.primary}`:"2px solid transparent",background:"transparent",color:tab===t?P.primary:P.textSec,cursor:"pointer",fontWeight:tab===t?"500":"400"}}>
             {t==="zones"?"Zones":t==="artifacts"?"Artifacts":"Sub-artifacts"}
@@ -2816,7 +2816,6 @@ const[editName,setEditName]=useState("");
         ))}
       </div>
 
-      {/* ZONES TAB */}
       {tab==="zones"&&(
         <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
           {isAdmin&&<button onClick={()=>setShowAddZone(true)} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",alignSelf:"flex-start"}}>+ Add zone</button>}
@@ -2838,17 +2837,14 @@ const[editName,setEditName]=useState("");
               {isAdmin&&(
                 <div style={{display:"flex",gap:"6px",flexShrink:0}}>
                   <button onClick={()=>{setEditTarget(z);setEditName(z.zone_name||"");setShowEditModal(true);}} style={{fontSize:"11px",padding:"5px 12px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:P.bgTert,color:P.textSec,cursor:"pointer"}}>Edit</button>
-                  <button onClick={()=>toggleEnabled(z)} style={{fontSize:"11px",padding:"5px 12px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:z.is_enabled?"#FEF2F2":"#ECFDF5",color:z.is_enabled?"#991B1B":"#065F46",cursor:"pointer"}}>
-                    {z.is_enabled?"Disable":"Enable"}
-                  </button>
+                  <button onClick={()=>toggleEnabled(z)} style={{fontSize:"11px",padding:"5px 12px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:z.is_enabled?"#FEF2F2":"#ECFDF5",color:z.is_enabled?"#991B1B":"#065F46",cursor:"pointer"}}>{z.is_enabled?"Disable":"Enable"}</button>
                 </div>
               )}
-          )}
+            </div>
+          ))}
         </div>
       )}
 
-
-      {/* ARTIFACTS TAB */}
       {tab==="artifacts"&&(
         <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
           {isAdmin&&<button onClick={()=>setShowAddArtifact(true)} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",alignSelf:"flex-start"}}>+ Add artifact</button>}
@@ -2873,11 +2869,8 @@ const[editName,setEditName]=useState("");
               {isAdmin&&(
                 <div style={{display:"flex",gap:"6px",flexShrink:0}}>
                   <button onClick={()=>{setEditTarget(a);setEditName(a.artifact_name||"");setShowEditModal(true);}} style={{fontSize:"10px",padding:"4px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:P.bgTert,color:P.textSec,cursor:"pointer"}}>Edit</button>
-                  <button onClick={()=>toggleLock(a)} style={{fontSize:"10px",padding:"4px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:a.is_locked?"#FFFBEB":"#F9FAFB",color:a.is_locked?"#92400E":P.textSec,cursor:"pointer"}}>
-                  </button>
-                  <button onClick={()=>toggleEnabled(a)} style={{fontSize:"10px",padding:"4px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:a.is_enabled?"#FEF2F2":"#ECFDF5",color:a.is_enabled?"#991B1B":"#065F46",cursor:"pointer"}}>
-                    {a.is_enabled?"Disable":"Enable"}
-                  </button>
+                  <button onClick={()=>toggleLock(a)} style={{fontSize:"10px",padding:"4px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:a.is_locked?"#FFFBEB":"#F9FAFB",color:a.is_locked?"#92400E":P.textSec,cursor:"pointer"}}>{a.is_locked?"Unlock":"Lock"}</button>
+                  <button onClick={()=>toggleEnabled(a)} style={{fontSize:"10px",padding:"4px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:a.is_enabled?"#FEF2F2":"#ECFDF5",color:a.is_enabled?"#991B1B":"#065F46",cursor:"pointer"}}>{a.is_enabled?"Disable":"Enable"}</button>
                 </div>
               )}
             </div>
@@ -2885,7 +2878,6 @@ const[editName,setEditName]=useState("");
         </div>
       )}
 
-      {/* SUB-ARTIFACTS TAB */}
       {tab==="subartifacts"&&(
         <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
           {isAdmin&&<button onClick={()=>setShowAddSub(true)} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",alignSelf:"flex-start"}}>+ Add sub-artifact</button>}
@@ -2909,14 +2901,14 @@ const[editName,setEditName]=useState("");
               {isAdmin&&(
                 <div style={{display:"flex",gap:"6px",flexShrink:0}}>
                   <button onClick={()=>{setEditTarget(s);setEditName(s.artifact_name||"");setShowEditModal(true);}} style={{fontSize:"10px",padding:"4px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:P.bgTert,color:P.textSec,cursor:"pointer"}}>Edit</button>
-                  <button onClick={()=>toggleEnabled(s)} style={{fontSize:"10px",padding:"4px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:s.is_enabled?"#FEF2F2":"#ECFDF5",color:s.is_enabled?"#991B1B":"#065F46",cursor:"pointer"}}>
-                    {s.is_enabled?"Disable":"Enable"}
-                  </button>
+                  <button onClick={()=>toggleEnabled(s)} style={{fontSize:"10px",padding:"4px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:s.is_enabled?"#FEF2F2":"#ECFDF5",color:s.is_enabled?"#991B1B":"#065F46",cursor:"pointer"}}>{s.is_enabled?"Disable":"Enable"}</button>
                 </div>
               )}
+            </div>
+          ))}
+        </div>
+      )}
 
-
-      {/* EDIT MODAL */}
       {showEditModal&&editTarget&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
           <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"420px",border:`0.5px solid ${P.border}`}}>
@@ -2934,25 +2926,6 @@ const[editName,setEditName]=useState("");
         </div>
       )}
 
-      {/* EDIT MODAL */}
-      {showEditModal&&editTarget&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
-          <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"420px",border:`0.5px solid ${P.border}`}}>
-            <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"4px"}}>Edit {editTarget.type==="zone"?"zone":"artifact"} name</h2>
-            <p style={{fontSize:"11px",color:P.textSec,marginBottom:"1rem"}}>{editTarget.zone_name||editTarget.artifact_name}</p>
-            <div style={{marginBottom:"1rem"}}>
-              <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>New name</label>
-              <input value={editName} onChange={e=>setEditName(e.target.value)} placeholder="Enter new name..." style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px"}} onKeyDown={e=>e.key==="Enter"&&saveEdit()}/>
-            </div>
-            <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
-              <button onClick={()=>{setShowEditModal(false);setEditTarget(null);setEditName("");}} style={{fontSize:"11px",padding:"6px 14px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>Cancel</button>
-              <button onClick={saveEdit} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Save</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* DISABLE MODAL */}
       {showDisableModal&&disableTarget&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
           <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"420px",border:`0.5px solid ${P.border}`}}>
@@ -2973,7 +2946,6 @@ const[editName,setEditName]=useState("");
         </div>
       )}
 
-      {/* ADD ZONE MODAL */}
       {showAddZone&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
           <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"400px",border:`0.5px solid ${P.border}`}}>
@@ -2988,7 +2960,6 @@ const[editName,setEditName]=useState("");
         </div>
       )}
 
-      {/* ADD ARTIFACT MODAL */}
       {showAddArtifact&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
           <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"460px",border:`0.5px solid ${P.border}`,maxHeight:"90vh",overflowY:"auto"}}>
@@ -3009,7 +2980,6 @@ const[editName,setEditName]=useState("");
         </div>
       )}
 
-      {/* ADD SUB-ARTIFACT MODAL */}
       {showAddSub&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
           <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"440px",border:`0.5px solid ${P.border}`}}>
@@ -3027,11 +2997,3 @@ const[editName,setEditName]=useState("");
     </div>
   );
 }
-
-
-
-
-
-
-
-
