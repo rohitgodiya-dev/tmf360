@@ -2836,13 +2836,13 @@ const[editName,setEditName]=useState("");
                 )}
               </div>
               {isAdmin&&(
-                <button onClick={()=>toggleEnabled(z)} style={{fontSize:"11px",padding:"5px 12px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:z.is_enabled?"#FEF2F2":"#ECFDF5",color:z.is_enabled?"#991B1B":"#065F46",cursor:"pointer",flexShrink:0}}>
-                  {z.is_enabled?"Disable":"Enable"}
-                </button>
+                <div style={{display:"flex",gap:"6px",flexShrink:0}}>
+                  <button onClick={()=>{setEditTarget(z);setEditName(z.zone_name||"");setShowEditModal(true);}} style={{fontSize:"11px",padding:"5px 12px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:P.bgTert,color:P.textSec,cursor:"pointer"}}>Edit</button>
+                  <button onClick={()=>toggleEnabled(z)} style={{fontSize:"11px",padding:"5px 12px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:z.is_enabled?"#FEF2F2":"#ECFDF5",color:z.is_enabled?"#991B1B":"#065F46",cursor:"pointer"}}>
+                    {z.is_enabled?"Disable":"Enable"}
+                  </button>
+                </div>
               )}
-            </div>
-          ))}
-        </div>
       )}
 
       {/* ARTIFACTS TAB */}
@@ -2869,8 +2869,8 @@ const[editName,setEditName]=useState("");
               </div>
               {isAdmin&&(
                 <div style={{display:"flex",gap:"6px",flexShrink:0}}>
+                  <button onClick={()=>{setEditTarget(a);setEditName(a.artifact_name||"");setShowEditModal(true);}} style={{fontSize:"10px",padding:"4px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:P.bgTert,color:P.textSec,cursor:"pointer"}}>Edit</button>
                   <button onClick={()=>toggleLock(a)} style={{fontSize:"10px",padding:"4px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:a.is_locked?"#FFFBEB":"#F9FAFB",color:a.is_locked?"#92400E":P.textSec,cursor:"pointer"}}>
-                    {a.is_locked?"Unlock":"Lock"}
                   </button>
                   <button onClick={()=>toggleEnabled(a)} style={{fontSize:"10px",padding:"4px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:a.is_enabled?"#FEF2F2":"#ECFDF5",color:a.is_enabled?"#991B1B":"#065F46",cursor:"pointer"}}>
                     {a.is_enabled?"Disable":"Enable"}
@@ -2904,12 +2904,30 @@ const[editName,setEditName]=useState("");
                 )}
               </div>
               {isAdmin&&(
-                <button onClick={()=>toggleEnabled(s)} style={{fontSize:"10px",padding:"4px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:s.is_enabled?"#FEF2F2":"#ECFDF5",color:s.is_enabled?"#991B1B":"#065F46",cursor:"pointer",flexShrink:0}}>
-                  {s.is_enabled?"Disable":"Enable"}
-                </button>
+                <div style={{display:"flex",gap:"6px",flexShrink:0}}>
+                  <button onClick={()=>{setEditTarget(s);setEditName(s.artifact_name||"");setShowEditModal(true);}} style={{fontSize:"10px",padding:"4px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:P.bgTert,color:P.textSec,cursor:"pointer"}}>Edit</button>
+                  <button onClick={()=>toggleEnabled(s)} style={{fontSize:"10px",padding:"4px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:s.is_enabled?"#FEF2F2":"#ECFDF5",color:s.is_enabled?"#991B1B":"#065F46",cursor:"pointer"}}>
+                    {s.is_enabled?"Disable":"Enable"}
+                  </button>
+                </div>
               )}
+      )}
+
+      {/* EDIT MODAL */}
+      {showEditModal&&editTarget&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
+          <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"420px",border:`0.5px solid ${P.border}`}}>
+            <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"4px"}}>Edit {editTarget.type==="zone"?"zone":"artifact"} name</h2>
+            <p style={{fontSize:"11px",color:P.textSec,marginBottom:"1rem"}}>{editTarget.zone_name||editTarget.artifact_name}</p>
+            <div style={{marginBottom:"1rem"}}>
+              <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>New name</label>
+              <input value={editName} onChange={e=>setEditName(e.target.value)} placeholder="Enter new name..." style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px"}} onKeyDown={e=>e.key==="Enter"&&saveEdit()}/>
             </div>
-          ))}
+            <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
+              <button onClick={()=>{setShowEditModal(false);setEditTarget(null);setEditName("");}} style={{fontSize:"11px",padding:"6px 14px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>Cancel</button>
+              <button onClick={saveEdit} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Save</button>
+            </div>
+          </div>
         </div>
       )}
 
