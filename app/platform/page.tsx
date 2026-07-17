@@ -368,6 +368,7 @@ const[approveStage,setApproveStage]=useState<0|1|2|3>(0);
 const[approveDocId,setApproveDocId]=useState<string|null>(null);
   const messagesEnd=useRef<HTMLDivElement>(null);
   const[tmfConfig,setTmfConfig]=useState<any[]>([]);
+  const[userFullName,setUserFullName]=useState("");
   const fileInputRef=useRef<HTMLInputElement>(null);
   const chatFileInputRef=useRef<HTMLInputElement>(null);
 
@@ -408,11 +409,12 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
   useEffect(()=>{messagesEnd.current?.scrollIntoView({behavior:"smooth"});},[chatMessages]);
 
   async function loadUserRole(uid:string){
-    const{data}=await supabase.from("user_roles").select("role,can_upload_download,can_download,org_id").eq("user_id",uid).single();
+    const{data}=await supabase.from("user_roles").select("role,can_upload_download,can_download,org_id,full_name").eq("user_id",uid).single();
     if(data){
       setCurrentUserRole(data.role);
       setCanUploadDownload(data.can_upload_download!==false);
       setCanDownload(data.can_download!==false);
+      setUserFullName(data.full_name||"");
       if(data.org_id){setOrgId(data.org_id);loadStudiesWithOrg(data.org_id);}
     }
   }
@@ -1119,7 +1121,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                 <h1 style={{fontSize:"14px",fontWeight:"500"}}>Documents - {activeStudy?.study_id||"No study selected"}</h1>
-                {activeStudy&&canUploadDownload&&<button onClick={()=>setShowDocModal(true)} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ Add document</button>}
+                {activeStudy&&canUploadDownload&&<button onClick={()=>{setShowDocModal(true);setFOwner(userFullName||user?.email||"");}} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ Add document</button>}
               </div>
               <div style={{display:"flex",gap:"8px",flexWrap:"wrap" as const,alignItems:"center"}}>
                 <input value={docSearch} onChange={e=>setDocSearch(e.target.value)} placeholder="Search documents..." style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"6px 10px",width:"200px"}}/>
@@ -1579,14 +1581,14 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
             <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"1rem"}}>Add document</h2>
             <div style={{marginBottom:"10px"}}>
               <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Zone</label>
-              <select value={fZone} onChange={e=>{setFZone(e.target.value);const arts=TMF.filter(a=>a.z===e.target.value);const customArts=tmfConfig.filter(c=>c.type==="artifact"&&c.zone_num===e.target.value&&!arts.some(b=>b.a===c.artifact_num)).map(c=>({a:c.artifact_num,an:c.artifact_name,z:c.zone_num}));const allArts=[...arts,...customArts];setZoneArts(allArts);setFArtifact(allArts[0]?`${allArts[0].a}|${allArts[0].an}|${allArts[0].z}`:"");}} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}>
+              <select value={fZone} onChange={e=>{setFZone(e.target.value);const allArts=activeTMF.filter(a=>a.z===e.target.value);setZoneArts(allArts);setFArtifact(allArts[0]?`${allArts[0].a}|${allArts[0].an}|${allArts[0].z}`:"");}} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}>
                 {activeZONES.map(({z,zn})=><option key={z} value={z}>Zone {z} - {zn}</option>)}
               </select>
             </div>
             <div style={{marginBottom:"10px"}}>
               <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Artifact</label>
               <select value={fArtifact} onChange={e=>setFArtifact(e.target.value)} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}>
-                {(()=>{const base=zoneArts.length>0?zoneArts:TMF.filter(a=>a.z===fZone);const custom=tmfConfig.filter(c=>c.type==="artifact"&&c.zone_num===fZone&&!base.some(b=>b.a===c.artifact_num)).map(c=>({a:c.artifact_num,an:c.artifact_name,z:c.zone_num}));return[...base,...custom].map(a=><option key={a.a} value={`${a.a}|${a.an}|${a.z}`}>{a.a} - {a.an}</option>);})()}
+                {(zoneArts.length>0?zoneArts:activeTMF.filter(a=>a.z===fZone)).map(a=><option key={a.a} value={`${a.a}|${a.an}|${a.z}`}>{a.a} - {a.an}</option>)}
               </select>
             </div>
             <div style={{marginBottom:"10px"}}>
@@ -2735,7 +2737,8 @@ function TmfConfigPanel({user,P,supabase,activeStudy,orgId,currentUserRole,logAu
     const{error}=await supabase.from("tmf_config").update({is_enabled:false,disabled_reason:disableReason.trim(),disabled_by:user.email,disabled_at:now}).eq("id",disableTarget.id);
     if(!error){
       await logAudit("TMF config disabled",undefined,activeStudy.study_id,"is_enabled","true","false",disableReason.trim());
-      setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfig();
+      if(disableTarget.type==="zone"){supabase.from("tmf_config").update({is_enabled:false,disabled_reason:"Parent zone disabled",disabled_by:user.email,disabled_at:now}).eq("org_id",orgId).eq("study_id",activeStudy.study_id).eq("zone_num",disableTarget.zone_num).eq("type","artifact").then(()=>{});}
+setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfig();
     }
   }
 
