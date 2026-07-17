@@ -1239,7 +1239,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                     <option value="">All zones</option>
                     {activeZONES.map(({z,zn})=><option key={z} value={z}>Zone {z} - {zn}</option>)}
                   </select>
-
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"10px"}}>
                     {[{val:gaps.crit.length,label:"Critical",color:"#EF4444",bg:"#FEF2F2"},{val:gaps.major.length,label:"Major",color:"#F59E0B",bg:"#FFFBEB"},{val:gaps.minor.length,label:"Minor",color:P.textSec,bg:P.bgSec}].map((s,i)=>(
                       <div key={i} style={{background:s.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"14px"}}>
                         <div style={{fontSize:"28px",fontWeight:"500",color:s.color}}>{s.val}</div>
