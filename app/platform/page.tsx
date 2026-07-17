@@ -1887,7 +1887,7 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
   const [isAdmin, setIsAdmin] = useState(false);
   useEffect(() => {
     supabase.from("user_roles").select("role").eq("user_id", user?.id).single().then(({data}:any) => {
-      if (data?.role === "System Administrator") setIsAdmin(true);
+      if (["System Administrator","Sponsor Admin","TMF Lead"].includes(data?.role)) setIsAdmin(true);
     });
   }, [user]);
   const [users, setUsers] = useState<any[]>([]);
@@ -1898,10 +1898,10 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
   const [invitePassword, setInvitePassword] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
-  const ROLES = ["System Administrator","Sponsor Admin","TMF Lead","Clinical Trial Manager","Clinical Trial Associate","CRA","Regulatory","Quality Assurance","Medical Monitor","Site Coordinator","Investigator","Auditor","Inspector"];
-  const RC: Record<string,string> = {"System Administrator":"#6366F1","Sponsor Admin":"#8B5CF6","TMF Lead":"#10B981","Clinical Trial Manager":"#3B82F6","Clinical Trial Associate":"#06B6D4","CRA":"#F59E0B","Regulatory":"#EF4444","Quality Assurance":"#EC4899","Medical Monitor":"#14B8A6","Site Coordinator":"#84CC16","Investigator":"#F97316","Auditor":"#6B7280","Inspector":"#DC2626"};
-  useEffect(() => { loadUsers(); }, []);
-  async function loadUsers() {
+  const [showPwdModal, setShowPwdModal] = useState(false);
+  const [pwdTargetUser, setPwdTargetUser] = useState<any>(null);
+  const [newPwd, setNewPwd] = useState("");
+  const [pwdMsg, setPwdMsg] = useState("");
     const {data} = await supabase.from("user_roles").select("*").order("created_at",{ascending:false});
     if (data) setUsers(data);
     setLoading(false);
@@ -1966,7 +1966,14 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
                 <td style={{padding:"10px 14px"}}>{isAdmin?<button onClick={()=>toggleDocAccess(u.id,u.can_upload_download)} style={{fontSize:"10px",padding:"3px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:u.can_upload_download?"#ECFDF5":"#FEF2F2",cursor:"pointer",color:u.can_upload_download?"#10B981":"#EF4444",fontWeight:"500"}}>{u.can_upload_download?"YES":"NO"}</button>:<span style={{fontSize:"10px",color:u.can_upload_download?"#10B981":"#EF4444",fontWeight:"500"}}>{u.can_upload_download?"YES":"NO"}</span>}</td>
                 <td style={{padding:"10px 14px"}}>{isAdmin?<button onClick={()=>toggleDownload(u.id,u.can_download)} style={{fontSize:"10px",padding:"3px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:u.can_download?"#ECFDF5":"#FEF2F2",cursor:"pointer",color:u.can_download?"#10B981":"#EF4444",fontWeight:"500"}}>{u.can_download?"YES":"NO"}</button>:<span style={{fontSize:"10px",color:u.can_download?"#10B981":"#EF4444",fontWeight:"500"}}>{u.can_download?"YES":"NO"}</span>}</td>
                 <td style={{padding:"10px 14px"}}>{isAdmin?<button onClick={()=>toggleNotifications(u.id,u.notifications_enabled)} style={{fontSize:"10px",padding:"3px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:u.notifications_enabled?"#ECFDF5":"#FEF2F2",cursor:"pointer",color:u.notifications_enabled?"#10B981":"#EF4444",fontWeight:"500"}}>{u.notifications_enabled?"ON":"OFF"}</button>:<span style={{fontSize:"10px",color:u.notifications_enabled?"#10B981":"#EF4444",fontWeight:"500"}}>{u.notifications_enabled?"ON":"OFF"}</span>}</td>
-                <td style={{padding:"10px 14px"}}>{isAdmin?<button onClick={()=>toggleActive(u.id,u.is_active)} style={{fontSize:"10px",padding:"3px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:"transparent",cursor:"pointer",color:u.is_active?P.danger:P.success}}>{u.is_active?"Deactivate":"Activate"}</button>:<span style={{fontSize:"10px",color:u.is_active?"#10B981":"#EF4444",fontWeight:"500"}}>{u.is_active?"Active":"Inactive"}</span>}</td>
+                <td style={{padding:"10px 14px",display:"flex",gap:"6px",flexWrap:"wrap" as const}}>{isAdmin&&<button onClick={()=>toggleActive(u.id,u.is_active)} style={{fontSize:"10px",padding:"3px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:"transparent",cursor:"pointer",color:u.is_active?P.danger:P.success}}>{u.is_active?"Deactivate":"Activate"}</button>}{isAdmin&&<button onClick={()=>{setPwdTargetUser(u);setNewPwd("");setPwdMsg("");setShowPwdModal(true);}} style={{fontSize:"10px",padding:"3px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:"transparent",cursor:"pointer",color:P.primary}}>Change Pwd</button>}</td>
+  async function changeUserPassword() {
+    if(!newPwd.trim()||newPwd.length<6){setPwdMsg("Password must be at least 6 characters.");return;}
+    const res=await fetch("/api/change-password",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userId:pwdTargetUser.user_id,newPassword:newPwd})});
+    const data=await res.json();
+    if(data.error){setPwdMsg("Error: "+data.error);}else{setPwdMsg("Password changed successfully.");setTimeout(()=>{setShowPwdModal(false);setPwdTargetUser(null);setNewPwd("");setPwdMsg("");},1500);}
+  }
+
               </tr>
             ))}
           </tbody>
