@@ -2843,7 +2843,7 @@ const[editName,setEditName]=useState("");
                   </button>
                 </div>
               )}
-      )}
+
 
       {/* ARTIFACTS TAB */}
       {tab==="artifacts"&&(
@@ -2911,7 +2911,7 @@ const[editName,setEditName]=useState("");
                   </button>
                 </div>
               )}
-      )}
+
 
       {/* EDIT MODAL */}
       {showEditModal&&editTarget&&(
