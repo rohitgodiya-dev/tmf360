@@ -2843,9 +2843,9 @@ const[editName,setEditName]=useState("");
                   </button>
                 </div>
               )}
+          )}
         </div>
       )}
-
 
 
       {/* ARTIFACTS TAB */}
