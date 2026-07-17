@@ -608,12 +608,15 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
   }
 
   const studyDocs=docs;
+  const activeZONES=tmfConfig.filter(c=>c.type==="zone").sort((a,b)=>parseFloat(a.zone_num)-parseFloat(b.zone_num)).map(c=>({z:c.zone_num,zn:c.zone_name}));
+  const activeTMF=tmfConfig.filter(c=>c.type==="artifact").map(c=>({z:c.zone_num,zn:c.zone_name||"",s:c.section_num||"",sn:"",a:c.artifact_num,an:c.artifact_name,cl:c.classification||"Core",iso:c.iso_ref||""}));
+
   const filteredDocs=studyDocs.filter(d=>{
     if(docFilter!=="all"&&d.status!==docFilter)return false;
     if(docSearch&&!d.artifact_name?.toLowerCase().includes(docSearch.toLowerCase())&&!d.custom_file_name?.toLowerCase().includes(docSearch.toLowerCase()))return false;
     return true;
   });
-  const filteredArts=TMF.filter(a=>{
+  const filteredArts=activeTMF.filter(a=>{
     if(artZone&&a.z!==artZone)return false;
     if(artCl&&a.cl!==artCl)return false;
     if(artSearch&&!a.an.toLowerCase().includes(artSearch.toLowerCase())&&!a.a.includes(artSearch))return false;
@@ -621,16 +624,16 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
   });
   const filedNames=studyDocs.filter(d=>d.status==="Approved").map(d=>d.artifact_num);
   const zoneComp=(z:string)=>{
-    const total=TMF.filter(a=>a.cl==="Core"&&a.z===z).length;
-    const filed=studyDocs.filter(d=>d.status==="Approved"&&TMF.some(a=>a.a===d.artifact_num&&a.z===z)).length;
+    const total=activeTMF.filter(a=>a.cl==="Core"&&a.z===z).length;
+    const filed=studyDocs.filter(d=>d.status==="Approved"&&activeTMF.some(a=>a.a===d.artifact_num&&a.z===z)).length;
     return total?Math.round((filed/total)*100):0;
   };
-  const coreArts=TMF.filter(a=>a.cl==="Core");
+  const coreArts=activeTMF.filter(a=>a.cl==="Core");
   const critZones=["3","4","5"];const majZones=["1","2","7"];
   const gaps={
-    crit:coreArts.filter(a=>critZones.includes(a.z)&&!filedNames.includes(a.a)).map(a=>({...a,zn:ZONES.find(z=>z.z===a.z)?.zn||""})),
-    major:coreArts.filter(a=>majZones.includes(a.z)&&!filedNames.includes(a.a)).map(a=>({...a,zn:ZONES.find(z=>z.z===a.z)?.zn||""})),
-    minor:coreArts.filter(a=>!critZones.includes(a.z)&&!majZones.includes(a.z)&&!filedNames.includes(a.a)).map(a=>({...a,zn:ZONES.find(z=>z.z===a.z)?.zn||""})),
+    crit:activeTMF.filter(a=>a.cl==="Core"&&critZones.includes(a.z)&&!filedNames.includes(a.a)).map(a=>({...a,zn:activeZONES.find(z=>z.z===a.z)?.zn||""})),
+    major:activeTMF.filter(a=>a.cl==="Core"&&majZones.includes(a.z)&&!filedNames.includes(a.a)).map(a=>({...a,zn:activeZONES.find(z=>z.z===a.z)?.zn||""})),
+    minor:activeTMF.filter(a=>a.cl==="Core"&&!critZones.includes(a.z)&&!majZones.includes(a.z)&&!filedNames.includes(a.a)).map(a=>({...a,zn:activeZONES.find(z=>z.z===a.z)?.zn||""})),
   };
   const totalCore=coreArts.length;
   const filedCore=coreArts.filter(a=>filedNames.includes(a.a)).length;
@@ -823,7 +826,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                         <h2 style={{fontSize:"13px",fontWeight:"700",color:P.text}}>TMF completeness by zone</h2>
                         <button onClick={()=>setPanel("completeness-detail")} style={{fontSize:"11px",fontWeight:"600",color:P.blue,background:P.blueLight,border:`0.5px solid #BFDBFE`,borderRadius:"7px",padding:"5px 10px",cursor:"pointer",display:"flex",alignItems:"center",gap:"4px"}}>View all zones <i className="ti ti-arrow-right" style={{fontSize:"12px"}}/></button>
                       </div>
-                      {ZONES.map(({z,zn})=>{const p=zoneComp(z);const barColor=p>=75?P.success:p>=50?P.blue:p>=25?P.warning:p>0?P.danger:P.bgTert;return(
+                      {activeZONES.map(({z,zn})=>{const p=zoneComp(z);const barColor=p>=75?P.success:p>=50?P.blue:p>=25?P.warning:p>0?P.danger:P.bgTert;return(
                         <div key={z} style={{display:"flex",alignItems:"center",gap:"9px",padding:"6px 0"}}>
                           <span style={{fontSize:"11px",color:P.textTert,width:"14px"}}>{z}</span>
                           <i className={`ti ${ZONE_ICONS[z]||"ti-file"}`} style={{fontSize:"14px",color:P.textTert,flexShrink:0}}/>
@@ -891,7 +894,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                 <h1 style={{fontSize:"14px",fontWeight:"500"}}>TMF completeness - {activeStudy?.study_id}</h1>
               </div>
               <div style={{background:"#EFF6FF",border:"0.5px solid #BFDBFE",borderRadius:"10px",padding:"10px 14px",fontSize:"11px",color:"#1E40AF"}}>Showing all Core artifacts. Green = approved document filed. Red = missing.</div>
-              {ZONES.map(({z,zn})=>{
+              {activeZONES.map(({z,zn})=>{
                 const zoneArtsAll=TMF.filter(a=>a.cl==="Core"&&a.z===z);
                 const pct=zoneComp(z);
                 return(
@@ -1178,7 +1181,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                 <input value={artSearch} onChange={e=>setArtSearch(e.target.value)} placeholder="Search artifacts..." style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"6px 10px",flex:1}}/>
                 <select value={artZone} onChange={e=>setArtZone(e.target.value)} style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"6px 10px"}}>
                   <option value="">All zones</option>
-                  {[...ZONES,...tmfConfig.filter(c=>c.type==="zone"&&!ZONES.some(z=>z.z===c.zone_num)).map(c=>({z:c.zone_num,zn:c.zone_name}))].map(({z,zn})=><option key={z} value={z}>Zone {z} - {zn}</option>)}
+                  {[...activeZONES,...tmfConfig.filter(c=>c.type==="zone"&&!activeZONES.some(z=>z.z===c.zone_num)).map(c=>({z:c.zone_num,zn:c.zone_name})).filter(c=>c.type==="zone"&&!ZONES.some(z=>z.z===c.zone_num)).map(c=>({z:c.zone_num,zn:c.zone_name}))].map(({z,zn})=><option key={z} value={z}>Zone {z} - {zn}</option>)}
                 </select>
                 <select value={artCl} onChange={e=>setArtCl(e.target.value)} style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"6px 10px"}}>
                   <option value="">Core + Recommended</option>
@@ -1234,7 +1237,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                   <p style={{fontSize:"12px",color:P.textSec}}>Comparing filed documents against all Core artifacts in DIA TMF Reference Model v3.3.1</p>
                   <select value={gapZone} onChange={e=>setGapZone(e.target.value)} style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"6px 10px",width:"220px"}}>
                     <option value="">All zones</option>
-                    {[...ZONES,...tmfConfig.filter(c=>c.type==="zone"&&!ZONES.some(z=>z.z===c.zone_num)).map(c=>({z:c.zone_num,zn:c.zone_name}))].map(({z,zn})=><option key={z} value={z}>Zone {z} - {zn}</option>)}
+                    {[...activeZONES,...tmfConfig.filter(c=>c.type==="zone"&&!activeZONES.some(z=>z.z===c.zone_num)).map(c=>({z:c.zone_num,zn:c.zone_name})).filter(c=>c.type==="zone"&&!ZONES.some(z=>z.z===c.zone_num)).map(c=>({z:c.zone_num,zn:c.zone_name}))].map(({z,zn})=><option key={z} value={z}>Zone {z} - {zn}</option>)}
                   </select>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"10px"}}>
                     {[{val:gaps.crit.length,label:"Critical",color:"#EF4444",bg:"#FEF2F2"},{val:gaps.major.length,label:"Major",color:"#F59E0B",bg:"#FFFBEB"},{val:gaps.minor.length,label:"Minor",color:P.textSec,bg:P.bgSec}].map((s,i)=>(
@@ -1286,7 +1289,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                   </div>
                   <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"14px"}}>
                     <h2 style={{fontSize:"11px",fontWeight:"500",marginBottom:"12px",color:P.textSec}}>Zone readiness breakdown</h2>
-                    {ZONES.map(({z,zn})=>{const p=zoneComp(z);return(
+                    {activeZONES.map(({z,zn})=>{const p=zoneComp(z);return(
                       <div key={z} style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"8px"}}>
                         <span style={{fontSize:"9px",color:P.textTert,width:"14px"}}>{z}</span>
                         <span style={{fontSize:"11px",color:P.textSec,width:"180px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{zn}</span>
@@ -1577,7 +1580,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
             <div style={{marginBottom:"10px"}}>
               <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Zone</label>
               <select value={fZone} onChange={e=>{setFZone(e.target.value);const arts=TMF.filter(a=>a.z===e.target.value);const customArts=tmfConfig.filter(c=>c.type==="artifact"&&c.zone_num===e.target.value&&!arts.some(b=>b.a===c.artifact_num)).map(c=>({a:c.artifact_num,an:c.artifact_name,z:c.zone_num}));const allArts=[...arts,...customArts];setZoneArts(allArts);setFArtifact(allArts[0]?`${allArts[0].a}|${allArts[0].an}|${allArts[0].z}`:"");}} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}>
-                {[...ZONES,...tmfConfig.filter(c=>c.type==="zone"&&!ZONES.some(z=>z.z===c.zone_num)).map(c=>({z:c.zone_num,zn:c.zone_name}))].map(({z,zn})=><option key={z} value={z}>Zone {z} - {zn}</option>)}
+                {[...activeZONES,...tmfConfig.filter(c=>c.type==="zone"&&!activeZONES.some(z=>z.z===c.zone_num)).map(c=>({z:c.zone_num,zn:c.zone_name})).filter(c=>c.type==="zone"&&!ZONES.some(z=>z.z===c.zone_num)).map(c=>({z:c.zone_num,zn:c.zone_name}))].map(({z,zn})=><option key={z} value={z}>Zone {z} - {zn}</option>)}
               </select>
             </div>
             <div style={{marginBottom:"10px"}}>
@@ -2997,3 +3000,5 @@ function TmfConfigPanel({user,P,supabase,activeStudy,orgId,currentUserRole,logAu
     </div>
   );
 }
+
+
