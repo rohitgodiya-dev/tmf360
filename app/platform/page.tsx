@@ -1181,7 +1181,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                 <input value={artSearch} onChange={e=>setArtSearch(e.target.value)} placeholder="Search artifacts..." style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"6px 10px",flex:1}}/>
                 <select value={artZone} onChange={e=>setArtZone(e.target.value)} style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"6px 10px"}}>
                   <option value="">All zones</option>
-                  {[...activeZONES,...tmfConfig.filter(c=>c.type==="zone"&&!activeZONES.some(z=>z.z===c.zone_num)).map(c=>({z:c.zone_num,zn:c.zone_name})).filter(c=>c.type==="zone"&&!ZONES.some(z=>z.z===c.zone_num)).map(c=>({z:c.zone_num,zn:c.zone_name}))].map(({z,zn})=><option key={z} value={z}>Zone {z} - {zn}</option>)}
+                  {activeZONES.map(({z,zn})=><option key={z} value={z}>Zone {z} - {zn}</option>)}
                 </select>
                 <select value={artCl} onChange={e=>setArtCl(e.target.value)} style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"6px 10px"}}>
                   <option value="">Core + Recommended</option>
@@ -1238,7 +1238,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                   <select value={gapZone} onChange={e=>setGapZone(e.target.value)} style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"6px 10px",width:"220px"}}>
                     <option value="">All zones</option>
                     {[...activeZONES,...tmfConfig.filter(c=>c.type==="zone"&&!activeZONES.some(z=>z.z===c.zone_num)).map(c=>({z:c.zone_num,zn:c.zone_name})).filter(c=>c.type==="zone"&&!ZONES.some(z=>z.z===c.zone_num)).map(c=>({z:c.zone_num,zn:c.zone_name}))].map(({z,zn})=><option key={z} value={z}>Zone {z} - {zn}</option>)}
-                  </select>
+                    {activeZONES.map(({z,zn})=><option key={z} value={z}>Zone {z} - {zn}</option>)}
                   <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"10px"}}>
                     {[{val:gaps.crit.length,label:"Critical",color:"#EF4444",bg:"#FEF2F2"},{val:gaps.major.length,label:"Major",color:"#F59E0B",bg:"#FFFBEB"},{val:gaps.minor.length,label:"Minor",color:P.textSec,bg:P.bgSec}].map((s,i)=>(
                       <div key={i} style={{background:s.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"14px"}}>
@@ -1581,7 +1581,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
               <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Zone</label>
               <select value={fZone} onChange={e=>{setFZone(e.target.value);const arts=TMF.filter(a=>a.z===e.target.value);const customArts=tmfConfig.filter(c=>c.type==="artifact"&&c.zone_num===e.target.value&&!arts.some(b=>b.a===c.artifact_num)).map(c=>({a:c.artifact_num,an:c.artifact_name,z:c.zone_num}));const allArts=[...arts,...customArts];setZoneArts(allArts);setFArtifact(allArts[0]?`${allArts[0].a}|${allArts[0].an}|${allArts[0].z}`:"");}} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}>
                 {[...activeZONES,...tmfConfig.filter(c=>c.type==="zone"&&!activeZONES.some(z=>z.z===c.zone_num)).map(c=>({z:c.zone_num,zn:c.zone_name})).filter(c=>c.type==="zone"&&!ZONES.some(z=>z.z===c.zone_num)).map(c=>({z:c.zone_num,zn:c.zone_name}))].map(({z,zn})=><option key={z} value={z}>Zone {z} - {zn}</option>)}
-              </select>
+                {activeZONES.map(({z,zn})=><option key={z} value={z}>Zone {z} - {zn}</option>)}
             </div>
             <div style={{marginBottom:"10px"}}>
               <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Artifact</label>
