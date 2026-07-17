@@ -1902,6 +1902,10 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
   const [pwdTargetUser, setPwdTargetUser] = useState<any>(null);
   const [newPwd, setNewPwd] = useState("");
   const [pwdMsg, setPwdMsg] = useState("");
+
+
+
+
     const {data} = await supabase.from("user_roles").select("*").order("created_at",{ascending:false});
     if (data) setUsers(data);
     setLoading(false);
