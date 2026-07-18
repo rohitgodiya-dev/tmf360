@@ -619,7 +619,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
     if(docSearch&&!d.artifact_name?.toLowerCase().includes(docSearch.toLowerCase())&&!d.custom_file_name?.toLowerCase().includes(docSearch.toLowerCase()))return false;
     return true;
   });
-  const filteredArts=activeTMF.filter(a=>{
+  const filteredArts=activeTMF.slice().sort((a,b)=>a.a.localeCompare(b.a,undefined,{numeric:true,sensitivity:"base"})).filter(a=>{
     if(artZone&&a.z!==artZone)return false;
     if(artCl&&a.cl!==artCl)return false;
     if(artSearch&&!a.an.toLowerCase().includes(artSearch.toLowerCase())&&!a.a.includes(artSearch))return false;
@@ -3407,6 +3407,7 @@ setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfi
     </div>
   );
 }
+
 
 
 
