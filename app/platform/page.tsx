@@ -2368,7 +2368,7 @@ function TmfAuditorPanel({user,P,supabase,activeStudy,orgId,currentUserRole,acti
         </div>
         <div style={{flex:1,overflowY:"auto"}}>
           {activeZONES.map(({z,zn}) => {
-            const zoneArts = activeTMF.filter(a => a.z === z);
+            const zoneArts = activeTMF.filter(a => a.z === z).slice().sort((a,b)=>a.a.localeCompare(b.a,undefined,{numeric:true,sensitivity:"base"}));
             const zStatus = getZoneStatus(z);
             const isExpanded = expandedZones.has(z);
             return (
@@ -3687,6 +3687,7 @@ setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfi
     </div>
   );
 }
+
 
 
 
