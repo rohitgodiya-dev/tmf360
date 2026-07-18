@@ -298,7 +298,8 @@ const ZONE_ICONS:Record<string,string>={
 function formatSection(s:string){const parts=(s||"").split(".");if(parts.length<2)return s||"00.00";return `${parts[0].padStart(2,"0")}.${parts[1]}`;}
 
 export default function Platform(){
-  const[panel,setPanel]=useState("auth");
+  const[panel,setPanelRaw]=useState("auth");
+  function setPanel(p:string){setPanelRaw(p);if(p!=="auth")try{localStorage.setItem("tmf_panel",p);}catch{}}
   const[user,setUser]=useState<any>(null);
   const[currentUserRole,setCurrentUserRole]=useState<string>("");
   const[canUploadDownload,setCanUploadDownload]=useState<boolean>(true);
@@ -389,7 +390,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
         setUser(session.user);
         supabase.from("user_roles").select("org_id").eq("user_id",session.user.id).single().then(({data})=>{
           if(!data||!data.org_id){window.location.href="/setup";}
-          else{setPanel("dashboard");loadUserRole(session.user.id);}
+          else{const saved=typeof window!=="undefined"?localStorage.getItem("tmf_panel"):null;setPanel(saved&&saved!=="auth"?saved:"dashboard");loadUserRole(session.user.id);}
         });
       }
     });
@@ -398,7 +399,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
         setUser(session.user);
         supabase.from("user_roles").select("org_id").eq("user_id",session.user.id).single().then(({data})=>{
           if(!data||!data.org_id){window.location.href="/setup";}
-          else{setPanel("dashboard");loadUserRole(session.user.id);}
+          else{const saved=typeof window!=="undefined"?localStorage.getItem("tmf_panel"):null;setPanel(saved&&saved!=="auth"?saved:"dashboard");loadUserRole(session.user.id);}
         });
       }else{
         setUser(null);setPanel("auth");setStudies([]);setDocs([]);setActiveStudy(null);
