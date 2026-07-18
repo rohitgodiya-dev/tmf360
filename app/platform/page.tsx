@@ -867,6 +867,16 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                           <div style={{fontSize:"11px",color:P.textTert,marginTop:"-6px",display:"flex",alignItems:"center",gap:"4px"}}>Readiness score <i className="ti ti-info-circle" style={{fontSize:"12px"}}/></div>
                           <span style={{fontSize:"10px",fontWeight:"600",color:P.danger,background:P.dangerLight,borderRadius:"20px",padding:"3px 10px",marginTop:"8px"}}>{ri>=80?"Inspection ready":ri>=50?"Needs attention":"At risk"}</span>
                         </div>
+                        <div style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",width:"180px"}}>
+                          <div style={{position:"relative",width:"180px",height:"140px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                            {readinessGauge(auditorScore)}
+                            <div style={{position:"absolute",top:"52px",display:"flex",flexDirection:"column",alignItems:"center"}}>
+                              <span style={{fontSize:"30px",fontWeight:"700",color:P.text}}>{auditorScore}%</span>
+                            </div>
+                          </div>
+                          <div style={{fontSize:"11px",color:P.textTert,marginTop:"-6px",display:"flex",alignItems:"center",gap:"4px"}}>Auditor score <i className="ti ti-info-circle" style={{fontSize:"12px"}}/></div>
+                          <span style={{fontSize:"10px",fontWeight:"600",color:auditorScore>=80?P.success:auditorScore>=50?P.warning:P.danger,background:auditorScore>=80?P.successLight:auditorScore>=50?P.warningLight:P.dangerLight,borderRadius:"20px",padding:"3px 10px",marginTop:"8px"}}>{auditorScore>=80?"Fully reviewed":auditorScore>=50?"Partially reviewed":"Needs review"}</span>
+                        </div>
                         <div style={{flex:1,display:"flex",flexDirection:"column",gap:"8px",justifyContent:"center"}}>
                           {[...gaps.crit.slice(0,2).map(g=>({...g,sev:"Missing"})),...gaps.major.slice(0,2).map(g=>({...g,sev:"Partial"}))].slice(0,4).map((g,i)=>(
                             <div key={i} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",background:g.sev==="Missing"?P.dangerLight:P.warningLight,borderRadius:"9px"}}>
