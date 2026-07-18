@@ -648,6 +648,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
   const totalW=activeZONES.reduce((s,{z})=>{const w=critZones.includes(z)?3:majZones.includes(z)?2:1;return s+w;},0);
   const earnedW=activeZONES.reduce((s,{z})=>{const w=critZones.includes(z)?3:majZones.includes(z)?2:1;return s+(zoneComp(z)/100)*w;},0);
   const ri=totalW?Math.round((earnedW/totalW)*100):0;
+  const auditorScore=studyDocs.length?Math.round((studyDocs.filter(d=>d.status==="Approved").length/studyDocs.length)*100):0;
 
   function statusBadge(s:string){
     const c:Record<string,any>={
@@ -826,7 +827,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                       </div>
                     ))}
                   </div>
-                  <div style={{display:"grid",gridTemplateColumns:"1.15fr 1fr",gap:"12px",alignItems:"start"}}>
+                  <div style={{display:"grid",gridTemplateColumns:"1.15fr 1.4fr",gap:"12px",alignItems:"start"}}>
                     <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"14px",padding:"16px"}}>
                       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"14px"}}>
                         <h2 style={{fontSize:"13px",fontWeight:"700",color:P.text}}>TMF completeness by zone</h2>
