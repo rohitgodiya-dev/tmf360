@@ -648,7 +648,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
   const totalW=activeZONES.reduce((s,{z})=>{const w=critZones.includes(z)?3:majZones.includes(z)?2:1;return s+w;},0);
   const earnedW=activeZONES.reduce((s,{z})=>{const w=critZones.includes(z)?3:majZones.includes(z)?2:1;return s+(zoneComp(z)/100)*w;},0);
   const ri=totalW?Math.round((earnedW/totalW)*100):0;
-  const auditorScore=studyDocs.length?Math.round((studyDocs.filter(d=>d.status==="Approved").length/studyDocs.length)*100):0;
+  const auditorScore=totalCore?Math.round((studyDocs.filter(d=>d.status==="Approved"&&coreArts.some((a:any)=>a.a===d.artifact_num)).length/totalCore)*100):0;
 
   function statusBadge(s:string){
     const c:Record<string,any>={
@@ -3698,6 +3698,7 @@ setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfi
     </div>
   );
 }
+
 
 
 
