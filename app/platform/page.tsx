@@ -761,8 +761,6 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           <p style={{fontSize:"9px",fontWeight:"500",color:P.textTert,padding:"10px 10px 4px",textTransform:"uppercase",letterSpacing:".06em"}}>Intelligence</p>
           {navItem("readiness","Inspection readiness","ti-shield-check")}
           {navItem("report","Report","ti-file-analytics")}
-          {navItem("report","Report","ti-file-analytics")}
-          {navItem("report","Report","ti-file-analytics")}
           {navItem("chat","AI specialist","ti-message-circle")}
           {navItem("audit","Audit trail","ti-lock")}
           {navItem("quality","Quality checks","ti-clipboard-list")}
@@ -3252,6 +3250,7 @@ setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfi
     </div>
   );
 }
+
 
 
 
