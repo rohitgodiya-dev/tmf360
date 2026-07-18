@@ -598,7 +598,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
     }
 
     try{
-      const studyContext=activeStudy?`Active study: ${activeStudy.study_id} (${activeStudy.protocol}). Documents filed: ${docs.length}. TMF completeness: ${donePct}%. Inspection readiness score: ${ri}. Missing core documents: ${missing}. Documents pending review: ${pending}.`:"No active study.";
+      const missingList=gaps.crit.concat(gaps.major).concat(gaps.minor).map((g:any)=>`${g.a} - ${g.an} (Zone ${g.z})`).join("\n");const studyContext=activeStudy?`Active study: ${activeStudy.study_id} (${activeStudy.protocol}). Documents filed: ${docs.length}. TMF completeness: ${donePct}%. Inspection readiness score: ${ri}. Missing core documents (${missing} total):\n${missingList}\n\nDocuments pending review: ${pending}.`:"No active study.";
       const recentTurns=chatMessages.slice(-6).map(m=>`${m.role==="user"?"User":"Trinity"}: ${m.text}`).join("\n");
       const scopeNote=activeStudy?`Only answer using data for study ${activeStudy.study_id}. Never reference other studies or organisation-wide data.`:"";
       const context=`${studyContext}\nRecent conversation:\n${recentTurns}\n${scopeNote}`;
@@ -3126,6 +3126,7 @@ setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfi
     </div>
   );
 }
+
 
 
 
