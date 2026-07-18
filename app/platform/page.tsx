@@ -1422,7 +1422,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                                 const{data:docData,error:docErr}=await supabase.from("documents").insert([{
                                   study_id:activeStudy!.study_id,user_id:user.id,org_id:orgId,
                                   artifact_num:cl.artifact_num,artifact_name:cl.artifact_name,zone:cl.zone_num,
-                                  version:"1.0",status:docStatus,owner:userFullName||user.email,
+                                  version:"",status:docStatus,owner:userFullName||user.email,
                                   file_path:filePath,file_name:cl.fileName,custom_file_name:cl.fileName,
                                   file_type:"application/pdf",file_size:0,
                                   comments:"Auto-classified by Trinity AI. Confidence: "+cl.confidence+"%",
@@ -3250,6 +3250,7 @@ setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfi
     </div>
   );
 }
+
 
 
 
