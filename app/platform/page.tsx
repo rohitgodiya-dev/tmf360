@@ -2313,7 +2313,7 @@ function TmfAuditorPanel({user,P,supabase,activeStudy,orgId,currentUserRole,acti
     return "empty";
   }
 
-  async async function handleAction() {
+  async function handleAction() {
     if (!selectedDoc || !actionType || !actionComment.trim()) return;
     setSaving(true);
     const newStatus = actionType === "approve" ? "Approved" : "Under Review";
@@ -2322,7 +2322,6 @@ function TmfAuditorPanel({user,P,supabase,activeStudy,orgId,currentUserRole,acti
     const updateData: any = {
       status: newStatus,
       comments: (selectedDoc.comments||"") + (selectedDoc.comments?"\n":"") + "[" + new Date().toLocaleString() + " - " + user.email + "]: " + actionComment.trim()
-    };
     };
     
     if (actionType === "approve") {
