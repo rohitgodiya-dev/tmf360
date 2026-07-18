@@ -1410,7 +1410,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                                 const ia=new Uint8Array(ab);
                                 for(let j=0;j<byteString.length;j++)ia[j]=byteString.charCodeAt(j);
                                 const blob=new Blob([ab],{type:"application/pdf"});
-                                const filePath=`${user.id}/${activeStudy.study_id}/${Date.now()}_${cl.fileName}`;
+                                const filePath=`${user.id}/${activeStudy!.study_id}/${Date.now()}_${cl.fileName}`;
                                 const{error:upErr}=await supabase.storage.from("Documents").upload(filePath,blob);
                                 if(upErr)throw new Error(upErr.message);
                                 // Create document record
@@ -3126,6 +3126,7 @@ setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfi
     </div>
   );
 }
+
 
 
 
