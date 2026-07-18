@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic();
@@ -6,22 +6,15 @@ const client = new Anthropic();
 export async function POST(req: NextRequest) {
   try {
     const { message, context } = await req.json();
-
     const response = await client.messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 1024,
-      system: `You are Trinity, an expert TMF (Trial Master File) AI specialist for clinical research. You help TMF Leads, CRAs, Sponsors, and QA teams manage their Trial Master Files in compliance with DIA TMF Reference Model v3.3.1, ICH E6(R3), ISO 14155:2020, and 21 CFR Part 11.
+      system: `You are Trinity, a TMF AI specialist. You ONLY answer using the study data provided below. NEVER invent, assume, or hallucinate document names, artifact numbers, or study details. If asked about missing documents, list ONLY what is in the context provided. Do not use your training data to fill in gaps.
 
-You answer questions about TMF zones, artifacts, regulatory requirements, ICH guidelines, ALCOA+ principles, inspection readiness, and clinical trial documentation best practices.
-
-Always be concise, accurate, and clinically professional. When referencing specific zones or artifacts, use the DIA TMF Reference Model numbering.
-
-${context || ""}`,
-      messages: [
-        { role: "user", content: message }
-      ]
+STUDY DATA:
+${context || "No study data provided."}`,
+      messages: [{ role: "user", content: message }]
     });
-
     const text = response.content[0].type === "text" ? response.content[0].text : "";
     return NextResponse.json({ response: text });
   } catch (error: any) {
