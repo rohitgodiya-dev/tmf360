@@ -671,7 +671,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
 
   const readinessGauge=(pct:number,size=180,stroke=16)=>{
     const r=(size-stroke)/2,cx=size/2,cy=size/2;
-    const sweep=270,startAngle=135;
+    const sweep=270,startAngle=225;
     const polar=(ang:number)=>{const rad=(ang-90)*Math.PI/180;return{x:cx+r*Math.cos(rad),y:cy+r*Math.sin(rad)};};
     const arcPath=(a0:number,a1:number)=>{const p0=polar(a0),p1=polar(a1);const large=a1-a0<=180?0:1;return`M ${p0.x} ${p0.y} A ${r} ${r} 0 ${large} 1 ${p1.x} ${p1.y}`;};
     const endAngle=startAngle+sweep*(Math.min(pct,100)/100);
@@ -3046,6 +3046,7 @@ setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfi
     </div>
   );
 }
+
 
 
 
