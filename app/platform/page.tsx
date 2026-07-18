@@ -1582,15 +1582,15 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                     reader.readAsDataURL(file);
                     if(chatFileInputRef.current)chatFileInputRef.current.value="";
                   }}/>
+          {panel==="audit"&&(
+            <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+              <h1 style={{fontSize:"14px",fontWeight:"500"}}>Audit trail - 21 CFR Part 11 compliant</h1>
               <div style={{background:"#FFFBEB",border:"0.5px solid #FDE68A",borderRadius:"10px",padding:"10px 14px",fontSize:"11px",color:"#92400E"}}>
                 This audit trail is read-only and tamper-evident in compliance with 21 CFR Part 11. All document actions, electronic signatures, and approvals are permanently recorded.
               </div>
+              <AuditTrail user={user} activeStudy={activeStudy} P={P}/>
             </div>
           )}
-
-          {/* QUALITY CHECKS */}
-          {panel==="quality"&&(
-            <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
               <h1 style={{fontSize:"14px",fontWeight:"500"}}>Quality checks - {activeStudy?.study_id||"No study selected"}</h1>
               {!activeStudy?<div style={{fontSize:"12px",color:P.textTert}}>Select a study first.</div>:(<QualityPanel docs={studyDocs} P={P} supabase={supabase} setDocs={setDocs}/>)}
             </div>
