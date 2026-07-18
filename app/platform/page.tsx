@@ -1590,10 +1590,10 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
               </div>
               <AuditTrail user={user} activeStudy={activeStudy} P={P}/>
             </div>
+            </div>
+          )}
           {panel==="quality"&&(
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
-              {!activeStudy?<div style={{fontSize:"12px",color:P.textTert}}>Select a study first.</div>:(<QualityPanel docs={studyDocs} P={P} supabase={supabase} setDocs={setDocs}/>)}
-            </div>
           )}
 
           {/* MESSAGES */}
