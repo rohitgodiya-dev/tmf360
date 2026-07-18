@@ -1428,7 +1428,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                                 }]).select();
                                 if(docErr)throw new Error(docErr.message);
                                 setDocs(prev=>[docData[0],...prev]);
-                                await logAudit("Document auto-classified by Trinity",docData[0].id,activeStudy.study_id,"status","",docStatus,"Trinity AI classification");
+                                await logAudit("Document auto-classified by Trinity",docData[0].id,activeStudy!.study_id,"status","",docStatus,"Trinity AI classification");
                                 const statusMsg=hasIssues
                                   ? `⚠️ Document filed to **Not Approved** due to issues detected:\n${rejectionReason}\n\nIt has been saved and can be reviewed in the Documents panel.`
                                   : `✅ Document successfully filed to **Zone ${cl.zone_num} - ${cl.zone_name}** under artifact **${cl.artifact_num} - ${cl.artifact_name}**.\n\nStatus: Under Review. A TMF Lead or System Administrator can now approve it.`;
@@ -3126,6 +3126,7 @@ setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfi
     </div>
   );
 }
+
 
 
 
