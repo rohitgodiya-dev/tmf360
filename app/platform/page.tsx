@@ -1379,6 +1379,69 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                           </>
                         )}
 
+                        {(m as any).classStage==="zone"&&(m as any).pendingClassification&&(
+                          <div style={{display:"flex",gap:"8px",marginTop:"8px"}}>
+                            <button onClick={async()=>{
+                              const cl=(m as any).pendingClassification;
+                              setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,classStage:"done_zone"} as any:msg));
+                              setChatMessages(prev=>[...prev,{
+                                role:"ai",
+                                text:`Zone ${cl.zone_num} - ${cl.zone_name} approved.\n\nNow for the artifact:\n📄 ${cl.artifact_num} - ${cl.artifact_name}\n\n${cl.issues?.length>0?"⚠️ Issues detected:\n"+cl.issues.join("\n"):"No issues detected."}\n${cl.missing_fields?.length>0?"Missing fields: "+cl.missing_fields.join(", "):""}\n\nDo you approve this artifact?`,
+                                pendingClassification:cl,
+                                classStage:"artifact"
+                              } as any]);
+                            }} style={{fontSize:"12px",fontWeight:"600",padding:"6px 15px",background:P.success,color:"#fff",border:"none",borderRadius:"7px",cursor:"pointer"}}>✓ Approve Zone</button>
+                            <button onClick={()=>{
+                              setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,classStage:"done_zone"} as any:msg));
+                              setChatMessages(prev=>[...prev,{role:"ai",text:"Zone rejected. Please tell me which zone this document belongs to and I'll reclassify."}]);
+                            }} style={{fontSize:"12px",fontWeight:"600",padding:"6px 15px",background:P.danger,color:"#fff",border:"none",borderRadius:"7px",cursor:"pointer"}}>✗ Reject Zone</button>
+                          </div>
+                        )}
+                        {(m as any).classStage==="artifact"&&(m as any).pendingClassification&&(
+                          <div style={{display:"flex",gap:"8px",marginTop:"8px"}}>
+                            <button onClick={async()=>{
+                              const cl=(m as any).pendingClassification;
+                              setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,classStage:"done_artifact"} as any:msg));
+                              setChatLoading(true);
+                              try{
+                                // Upload file to Supabase storage
+                                const byteString=atob(cl.base64);
+                                const ab=new ArrayBuffer(byteString.length);
+                                const ia=new Uint8Array(ab);
+                                for(let j=0;j<byteString.length;j++)ia[j]=byteString.charCodeAt(j);
+                                const blob=new Blob([ab],{type:"application/pdf"});
+                                const filePath=`${user.id}/${activeStudy.study_id}/${Date.now()}_${cl.fileName}`;
+                                const{error:upErr}=await supabase.storage.from("Documents").upload(filePath,blob);
+                                if(upErr)throw new Error(upErr.message);
+                                // Create document record
+                                const hasIssues=(cl.issues?.length>0||cl.missing_fields?.length>0);
+                                const docStatus=hasIssues?"Draft":"Under Review";
+                                const rejectionReason=hasIssues?[...(cl.issues||[]),...(cl.missing_fields?.map((f:string)=>"Missing: "+f)||[])].join("; "):undefined;
+                                const{data:docData,error:docErr}=await supabase.from("documents").insert([{
+                                  study_id:activeStudy.study_id,user_id:user.id,org_id:orgId,
+                                  artifact_num:cl.artifact_num,artifact_name:cl.artifact_name,zone:cl.zone_num,
+                                  version:"1.0",status:docStatus,owner:userFullName||user.email,
+                                  file_path:filePath,file_name:cl.fileName,custom_file_name:cl.fileName,
+                                  file_type:"application/pdf",file_size:0,
+                                  comments:"Auto-classified by Trinity AI. Confidence: "+cl.confidence+"%",
+                                  rejection_reason:rejectionReason||null,
+                                }]).select();
+                                if(docErr)throw new Error(docErr.message);
+                                setDocs(prev=>[docData[0],...prev]);
+                                await logAudit("Document auto-classified by Trinity",docData[0].id,activeStudy.study_id,"status","",docStatus,"Trinity AI classification");
+                                const statusMsg=hasIssues
+                                  ? `⚠️ Document filed to **Not Approved** due to issues detected:\n${rejectionReason}\n\nIt has been saved and can be reviewed in the Documents panel.`
+                                  : `✅ Document successfully filed to **Zone ${cl.zone_num} - ${cl.zone_name}** under artifact **${cl.artifact_num} - ${cl.artifact_name}**.\n\nStatus: Under Review. A TMF Lead or System Administrator can now approve it.`;
+                                setChatMessages(prev=>[...prev,{role:"ai",text:statusMsg}]);
+                              }catch(err:any){setChatMessages(prev=>[...prev,{role:"ai",text:"Filing error: "+err.message}]);}
+                              setChatLoading(false);
+                            }} style={{fontSize:"12px",fontWeight:"600",padding:"6px 15px",background:P.success,color:"#fff",border:"none",borderRadius:"7px",cursor:"pointer"}}>✓ Approve & File</button>
+                            <button onClick={()=>{
+                              setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,classStage:"done_artifact"} as any:msg));
+                              setChatMessages(prev=>[...prev,{role:"ai",text:"Artifact rejected. Please tell me which artifact this document should be filed under."}]);
+                            }} style={{fontSize:"12px",fontWeight:"600",padding:"6px 15px",background:P.danger,color:"#fff",border:"none",borderRadius:"7px",cursor:"pointer"}}>✗ Reject Artifact</button>
+                          </div>
+                        )}
                         {chatDocAction&&chatDocAction.msgIdx===i&&!chatDocAction.disabled&&(
                           <div style={{display:"flex",gap:"8px"}}>
                             <button onClick={()=>{
@@ -1497,28 +1560,28 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
 
               <div style={{display:"flex",justifyContent:"center",padding:"14px 0 18px",background:"linear-gradient(135deg,#E9ECFB 0%,#F5F6FC 45%,#FFFFFF 100%)",flexShrink:0}}>
                 <div style={{width:"100%",maxWidth:"760px",margin:"0 24px",display:"flex",alignItems:"center",gap:"8px",background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"26px",padding:"6px 8px 6px 14px"}}>
-                  <input ref={chatFileInputRef} type="file" style={{display:"none"}} onChange={()=>{
-                    setChatMessages(prev=>[...prev,{role:"user",text:"Uploaded a document and this month's version tracker"}]);
-                    presentClassification();
+                  <input ref={chatFileInputRef} type="file" accept=".pdf" style={{display:"none"}} onChange={async(e)=>{
+                    const file=e.target.files?.[0];
+                    if(!file)return;
+                    if(!activeStudy){setChatMessages(prev=>[...prev,{role:"ai",text:"Please select a study first before uploading a document."}]);return;}
+                    setChatMessages(prev=>[...prev,{role:"user",text:`Uploaded: ${file.name}`}]);
+                    setChatLoading(true);
+                    const reader=new FileReader();
+                    reader.onload=async(ev)=>{
+                      const base64=((ev.target?.result as string)||"").split(",")[1];
+                      setChatMessages(prev=>[...prev,{role:"ai",text:"Reading your document... I will analyse the content and suggest the correct TMF zone and artifact."}]);
+                      try{
+                        const res=await fetch("/api/classify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pdfBase64:base64,fileName:file.name,activeZONES,activeTMF})});
+                        const data=await res.json();
+                        if(data.error){setChatMessages(prev=>[...prev,{role:"ai",text:"I could not classify this document: "+data.error}]);setChatLoading(false);return;}
+                        const classResult={file,base64,fileName:file.name,...data};
+                        setChatMessages(prev=>[...prev,{role:"ai",text:`I have analysed your document.\n\n${data.reasoning}\n\nSuggested Zone:\n\uD83D\uDCC1 Zone ${data.zone_num} - ${data.zone_name}\n\nConfidence: ${data.confidence}%\n\nDo you approve this zone?`,pendingClassification:classResult,classStage:"zone"} as any]);
+                      }catch(err:any){setChatMessages(prev=>[...prev,{role:"ai",text:"Classification error: "+err.message}]);}
+                      setChatLoading(false);
+                    };
+                    reader.readAsDataURL(file);
                     if(chatFileInputRef.current)chatFileInputRef.current.value="";
                   }}/>
-                  <button aria-label="Attach document or version tracker" onClick={()=>chatFileInputRef.current?.click()} style={{width:"32px",height:"32px",borderRadius:"50%",border:"none",background:"transparent",color:P.textTert,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.5 12.5 12 21a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8"/></svg>
-                  </button>
-                  <input value={chatInput} onChange={e=>setChatInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendChat()} placeholder="Ask Trinity or drop a document" aria-label="Message Trinity" style={{flex:1,border:"none",outline:"none",fontSize:"13px",background:"transparent",color:P.text,padding:"8px 2px"}}/>
-                  <button aria-label="Send message" onClick={sendChat} disabled={chatLoading} style={{width:"32px",height:"32px",borderRadius:"50%",flexShrink:0,background:chatLoading?P.bgTert:P.primary,border:"none",color:chatLoading?P.textTert:"#fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:chatLoading?"not-allowed":"pointer"}}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* AUDIT TRAIL */}
-          {panel==="audit"&&(
-            <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
-              <h1 style={{fontSize:"14px",fontWeight:"500"}}>Audit trail - 21 CFR Part 11 compliant</h1>
-              <div style={{background:"#FFFBEB",border:"0.5px solid #FDE68A",borderRadius:"10px",padding:"10px 14px",fontSize:"11px",color:"#92400E"}}>
                 This audit trail is read-only and tamper-evident in compliance with 21 CFR Part 11. All document actions, electronic signatures, and approvals are permanently recorded.
               </div>
               <AuditTrail user={user} activeStudy={activeStudy} P={P}/>
