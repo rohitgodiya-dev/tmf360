@@ -1612,7 +1612,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {/* AUDIT TRAIL */}
           {panel==="audit"&&(
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
-              <h1 style={{fontSize:"14px",fontWeight:"500"}}>Audit trail - 21 CFR Part 11 compliant</h1>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}><h1 style={{fontSize:"14px",fontWeight:"500"}}>Audit trail - 21 CFR Part 11 compliant</h1><button onClick={async()=>{const{data}=await supabase.from("audit_trail").select("*").eq("study_id",activeStudy?.study_id||"").order("created_at",{ascending:false});if(!data)return;const headers=["Timestamp","User","Action","Document ID","Field","Old Value","New Value","Signature Reason"];const rows=data.map((l:any)=>[new Date(l.created_at).toLocaleString(),l.user_email,l.action,l.document_id||"",l.field_changed||"",l.old_value||"",l.new_value||"",l.signature_reason||""]);const csv=[headers,...rows].map(r=>r.map((v:string)=>JSON.stringify(v)).join(",")).join("\n");const blob=new Blob([csv],{type:"text/csv"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`AuditTrail_${activeStudy?.study_id||"export"}_${Date.now()}.csv`;a.click();URL.revokeObjectURL(url);}} style={{fontSize:"11px",fontWeight:"500",padding:"6px 14px",background:P.success,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",display:"flex",alignItems:"center",gap:"6px"}}><i className="ti ti-download" style={{fontSize:"13px"}}/>Download CSV</button></div>
               <div style={{background:"#FFFBEB",border:"0.5px solid #FDE68A",borderRadius:"10px",padding:"10px 14px",fontSize:"11px",color:"#92400E"}}>
                 This audit trail is read-only and tamper-evident in compliance with 21 CFR Part 11. All document actions, electronic signatures, and approvals are permanently recorded.
               </div>
@@ -3698,6 +3698,7 @@ setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfi
     </div>
   );
 }
+
 
 
 
