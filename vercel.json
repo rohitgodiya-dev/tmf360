@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/tmf-report",
+      "schedule": "0 8 * * 1"
+    },
+    {
+      "path": "/api/cron/expiry-check",
+      "schedule": "0 7 * * *"
+    }
+  ]
+}
