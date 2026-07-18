@@ -486,7 +486,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
     if(!user||!activeStudy||!orgId)return;
     const[artNum,an,zone]=fArtifact.split("|");
     const d:Doc={
-      study_id:activeStudy.study_id,user_id:user.id,org_id:orgId,
+      study_id:activeStudy!.study_id,user_id:user.id,org_id:orgId,
       artifact_num:artNum,artifact_name:an,zone,
       version:fVersion,status:fDocStatus,owner:fOwner,
       effective_date:fEff,expiry_date:fExp,comments:fComments,
@@ -1418,7 +1418,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                                 const docStatus=hasIssues?"Draft":"Under Review";
                                 const rejectionReason=hasIssues?[...(cl.issues||[]),...(cl.missing_fields?.map((f:string)=>"Missing: "+f)||[])].join("; "):undefined;
                                 const{data:docData,error:docErr}=await supabase.from("documents").insert([{
-                                  study_id:activeStudy.study_id,user_id:user.id,org_id:orgId,
+                                  study_id:activeStudy!.study_id,user_id:user.id,org_id:orgId,
                                   artifact_num:cl.artifact_num,artifact_name:cl.artifact_name,zone:cl.zone_num,
                                   version:"1.0",status:docStatus,owner:userFullName||user.email,
                                   file_path:filePath,file_name:cl.fileName,custom_file_name:cl.fileName,
@@ -3126,6 +3126,7 @@ setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfi
     </div>
   );
 }
+
 
 
 
