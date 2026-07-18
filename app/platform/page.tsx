@@ -2321,8 +2321,8 @@ function TmfAuditorPanel({user,P,supabase,activeStudy,orgId,currentUserRole,acti
     
     const updateData: any = {
       status: newStatus,
-      comments: (selectedDoc.comments||"") + (selectedDoc.comments?"\n":"") + `[${new Date().toLocaleString()} - ${user.email}]: ${actionComment.trim()}`
-":"") + `[${new Date().toLocaleString()} - ${user.email}]: ${actionComment.trim()}`
+      comments: (selectedDoc.comments||"") + (selectedDoc.comments?"\n":"") + "[" + new Date().toLocaleString() + " - " + user.email + "]: " + actionComment.trim()
+    };
     };
     
     if (actionType === "approve") {
