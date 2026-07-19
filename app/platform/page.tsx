@@ -299,7 +299,7 @@ function formatSection(s:string){const parts=(s||"").split(".");if(parts.length<
 
 export default function Platform(){
   const[panel,setPanelRaw]=useState("auth");
-  function setPanel(p:string){setPanelRaw(p);if(p!=="auth")try{localStorage.setItem("tmf_panel",p);}catch{}}
+  function setPanel(p:string){setPanelRaw(p);if(p!=="auth"){try{localStorage.setItem("tmf_panel",p);}catch{}if(user)loadUserRole(user.id);}}
   const[user,setUser]=useState<any>(null);
   const[currentUserRole,setCurrentUserRole]=useState<string>("");
   const[canUploadDownload,setCanUploadDownload]=useState<boolean>(true);
@@ -3698,6 +3698,7 @@ setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfi
     </div>
   );
 }
+
 
 
 
