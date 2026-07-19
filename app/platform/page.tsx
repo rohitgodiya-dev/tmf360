@@ -2208,8 +2208,8 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
             {["Name / Email","Role","Status","Added","Upload","Download","Notifications","Action","Password"].map(h=><th key={h} style={{textAlign:"left",padding:"10px 14px",fontSize:"11px",fontWeight:"500",color:P.textSec}}>{h}</th>)}
           </tr></thead>
           <tbody>
-            {loading?<tr><td colSpan={8} style={{textAlign:"center",padding:"2rem",color:P.textTert}}>Loading...</td></tr>
-            :users.length===0?<tr><td colSpan={8} style={{textAlign:"center",padding:"2rem",color:P.textTert}}>No users yet.</td></tr>
+            {loading?<tr><td colSpan={9} style={{textAlign:"center",padding:"2rem",color:P.textTert}}>Loading...</td></tr>
+            :users.length===0?<tr><td colSpan={9} style={{textAlign:"center",padding:"2rem",color:P.textTert}}>No users yet.</td></tr>
             :users.map((u)=>(
               <tr key={u.id} style={{borderBottom:`0.5px solid ${P.bgTert}`}}>
                 <td style={{padding:"10px 14px"}}><div style={{fontWeight:"500"}}>{u.full_name||"-"}</div><div style={{fontSize:"11px",color:P.textSec}}>{u.email}</div></td>
