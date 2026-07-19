@@ -2205,7 +2205,7 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
       <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",overflow:"hidden"}}>
         <table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px"}}>
           <thead><tr style={{borderBottom:`0.5px solid ${P.border}`}}>
-            {["Name / Email","Role","Status","Added","Notifications","Upload","Download","Actions"].map(h=><th key={h} style={{textAlign:"left",padding:"10px 14px",fontSize:"11px",fontWeight:"500",color:P.textSec}}>{h}</th>)}
+            {["Name / Email","Role","Status","Added","Upload","Download","Notifications","Actions"].map(h=><th key={h} style={{textAlign:"left",padding:"10px 14px",fontSize:"11px",fontWeight:"500",color:P.textSec}}>{h}</th>)}
           </tr></thead>
           <tbody>
             {loading?<tr><td colSpan={8} style={{textAlign:"center",padding:"2rem",color:P.textTert}}>Loading...</td></tr>
@@ -3698,6 +3698,7 @@ setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfi
     </div>
   );
 }
+
 
 
 
