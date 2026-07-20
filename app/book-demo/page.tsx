@@ -189,7 +189,7 @@ export default function BookDemoPage() {
     function updateGauge(pct: number) {
       const arc = document.getElementById('gauge-arc'); const lbl = document.getElementById('gauge-pct');
       if (!arc || !lbl) return;
-      (arc as SVGPathElement).style.strokeDashoffset = String(Math.round(146*(1-pct/100))); lbl.textContent = pct + '%';
+      (arc as unknown as SVGPathElement).style.strokeDashoffset = String(Math.round(146*(1-pct/100))); lbl.textContent = pct + '%';
     }
 
     const initTimer = setTimeout(() => {
@@ -487,3 +487,4 @@ export default function BookDemoPage() {
     </>
   );
 }
+
