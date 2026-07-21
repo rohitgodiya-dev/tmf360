@@ -718,7 +718,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
         <button onClick={handleAuth} style={{width:"100%",padding:"9px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",fontSize:"12px",fontWeight:"500",cursor:"pointer"}}>
           {authMode==="login"?"Log in":"Create account"}
         </button>
-        <p style={{fontSize:"10px",color:P.textTert,textAlign:"center",marginTop:"1rem"}}>Free forever - No credit card - 21 CFR Part 11 compliant</p>
+        <p style={{fontSize:"10px",color:P.textTert,textAlign:"center",marginTop:"1rem"}}>21 CFR Part 11</p>
       </div>
     </div>
   );
