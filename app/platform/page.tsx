@@ -1997,8 +1997,7 @@ function QueriesPanel({user,P,supabase,orgId,activeStudy,currentUserRole,logAudi
   async function addReply(){
     if(!replyText.trim()||!selectedQuery)return;
     const existing=selectedQuery.replies||"";
-    const newReplies=existing+(existing?"
-":"")+"["+new Date().toLocaleString()+" - "+user.email+"]: "+replyText.trim();
+    const newReplies=existing+(existing?"\n":"")+"["+new Date().toLocaleString()+" - "+user.email+"]: "+replyText.trim();
     await supabase.from("document_queries").update({replies:newReplies}).eq("id",selectedQuery.id);
     await logAudit("Query reply added",selectedQuery.document_id,selectedQuery.study_id,"query_reply","",replyText.trim());
     setSelectedQuery((prev:any)=>({...prev,replies:newReplies}));
