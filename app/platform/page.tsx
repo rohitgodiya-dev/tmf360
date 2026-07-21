@@ -287,7 +287,7 @@ interface Study{study_id:string;protocol:string;phase:string;status:string;spons
 interface Doc{id?:string;study_id:string;user_id:string;org_id?:string;artifact_num:string;artifact_name:string;zone:string;version:string;status:string;owner:string;effective_date:string;expiry_date:string;file_path:string;file_name:string;custom_file_name:string;file_type:string;file_size:number;comments:string;approved_by?:string;approved_at?:string;signature_reason?:string;submission_reason?:string;rejection_reason?:string;rejected_by?:string;rejected_at?:string;appeal_reason?:string;quality_score?:number;quality_flags?:string[];}
 
 function fileIcon(n:string){return FILE_ICONS[n.split(".").pop()?.toLowerCase()||""]||"FILE";}
-function canPreview(n:string){return["pdf","png","jpg","jpeg","gif","webp"].includes(n.split(".").pop()?.toLowerCase()||"");}
+function canPreview(n:string){return["pdf","png","jpg","jpeg","gif","webp","doc","docx","xls","xlsx","ppt","pptx"].includes(n.split(".").pop()?.toLowerCase()||"");}
 function formatSize(b:number){if(b<1024)return b+" B";if(b<1024*1024)return(b/1024).toFixed(1)+" KB";return(b/(1024*1024)).toFixed(1)+" MB";}
 function scoreColor(s:number){return s>=80?"#10B981":s>=60?"#F59E0B":"#EF4444";}
 function padZone(z:string){return z.padStart(2,"0");}
@@ -1080,7 +1080,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                       <div style={{fontSize:"10px",color:P.textTert}}>Zone {d.zone} - Owner: {d.owner||"-"}</div>
                     </div>
                     <div style={{display:"flex",gap:"6px"}}>
-                      {d.file_path&&canPreview(d.file_name||"")&&<button onClick={()=>openPreview(d)} style={{fontSize:"9px",padding:"3px 8px",background:P.bgTert,border:`0.5px solid ${P.border}`,borderRadius:"4px",cursor:"pointer"}}>Preview</button>}
+                      {d.file_path&&<button onClick={()=>openPreview(d)} style={{fontSize:"9px",padding:"3px 8px",background:P.bgTert,border:`0.5px solid ${P.border}`,borderRadius:"4px",cursor:"pointer"}}>Preview</button>}
                       {d.file_path&&canDownload&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"9px",padding:"3px 8px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none"}}>Download</a>}
                     </div>
                   </div>
@@ -1176,7 +1176,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                         <td style={{padding:"8px 10px",fontSize:"11px",color:P.textSec}}>{d.owner||"-"}</td>
                         <td style={{padding:"8px 10px"}}>
                           <div style={{display:"flex",gap:"4px",flexWrap:"wrap" as const}}>
-                            {d.file_path&&canPreview(d.file_name||"")&&<button onClick={()=>openPreview(d)} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,border:`0.5px solid ${P.border}`,borderRadius:"4px",cursor:"pointer"}}>Preview</button>}
+                            {d.file_path&&<button onClick={()=>openPreview(d)} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,border:`0.5px solid ${P.border}`,borderRadius:"4px",cursor:"pointer"}}>Preview</button>}
                             {d.file_path&&canDownload&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none"}}>Download</a>}
                             {d.status==="Draft"&&<button onClick={()=>{setSelectedDoc(d);setShowSubmitModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:"#EFF6FF",color:"#1D4ED8",border:"0.5px solid #BFDBFE",borderRadius:"4px",cursor:"pointer"}}>Submit</button>}
                             {d.status==="Under Review"&&<button onClick={()=>{setSelectedDoc(d);setShowApproveModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:"#ECFDF5",color:"#065F46",border:"0.5px solid #A7F3D0",borderRadius:"4px",cursor:"pointer"}}>Review</button>}
@@ -2006,7 +2006,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
               </div>
             </div>
             <div style={{flex:1,overflow:"auto"}}>
-              {previewName.match(/\.(png|jpg|jpeg|gif|webp)$/i)?<img src={previewUrl} alt={previewName} style={{maxWidth:"100%",height:"auto"}}/>:<iframe src={previewUrl} style={{width:"100%",height:"70vh",border:"none"}}/>}
+              {previewName.match(/\.(png|jpg|jpeg|gif|webp)$/i)?<img src={previewUrl} alt={previewName} style={{maxWidth:"100%",height:"auto"}}/>:previewName.match(/\.(pdf)$/i)?<iframe src={previewUrl} style={{width:"100%",height:"70vh",border:"none"}}/>:<iframe src={"https://docs.google.com/viewer?url="+encodeURIComponent(previewUrl)+"&embedded=true"} style={{width:"100%",height:"70vh",border:"none"}}/>}
             </div>
           </div>
         </div>
