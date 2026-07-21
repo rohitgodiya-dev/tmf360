@@ -379,18 +379,6 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
   const[queryType,setQueryType]=useState("Question");
   const[queryPriority,setQueryPriority]=useState("Medium");
   const[queryDueDate,setQueryDueDate]=useState("");
-  const[showQueryModal,setShowQueryModal]=useState(false);
-  const[queryDoc,setQueryDoc]=useState<any>(null);
-  const[queryText,setQueryText]=useState("");
-  const[queryType,setQueryType]=useState("Question");
-  const[queryPriority,setQueryPriority]=useState("Medium");
-  const[queryDueDate,setQueryDueDate]=useState("");
-  const[showQueryModal,setShowQueryModal]=useState(false);
-  const[queryDoc,setQueryDoc]=useState<any>(null);
-  const[queryText,setQueryText]=useState("");
-  const[queryType,setQueryType]=useState("Question");
-  const[queryPriority,setQueryPriority]=useState("Medium");
-  const[queryDueDate,setQueryDueDate]=useState("");
 
   const P={
     primary:"#F97316",primaryLight:"#FFEDD5",primaryDark:"#EA580C",
