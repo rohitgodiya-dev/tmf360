@@ -988,7 +988,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                       </div>
                       <div style={{fontSize:"10px",color:P.textTert}}>Zone {d.zone} - {d.owner||"-"}</div>
                     </div>
-                    {d.file_path&&canDownload&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none"}}>Download</a>}
+                    {d.file_path&&canDownload&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none"}}>Download</a>}{canUploadDownload&&<button onClick={async()=>{if(!confirm("Delete this document?"))return;if(d.file_path){await supabase.storage.from("Documents").remove([d.file_path]);}await supabase.from("documents").delete().eq("id",d.id);setDocs(prev=>prev.filter(x=>x.id!==d.id));}} style={{fontSize:"9px",padding:"2px 6px",background:"#FEF2F2",color:"#991B1B",border:"0.5px solid #FECACA",borderRadius:"4px",cursor:"pointer"}}>Delete</button>}
                   </div>
                   <div style={{background:"#FEF2F2",borderRadius:"8px",padding:"10px 12px"}}>
                     <div style={{fontSize:"10px",fontWeight:"500",color:"#991B1B",marginBottom:"3px"}}>Rejection reason:</div>
