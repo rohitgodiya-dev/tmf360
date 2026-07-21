@@ -1984,7 +1984,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                   status:"Open",due_date:queryDueDate||null,
                 }]);
                 if(!error){
-                  await logAudit("Query raised",queryDoc.id,activeStudy.study_id,"query","",queryText.trim());
+                  await logAudit("Query raised",queryDoc.id,activeStudy?.study_id,"query","",queryText.trim());
                   setShowQueryModal(false);setQueryText("");setQueryType("Question");setQueryPriority("Medium");setQueryDueDate("");
                 }
               }} style={{fontSize:"11px",padding:"6px 14px",background:"#F97316",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Submit query</button>
@@ -4123,6 +4123,7 @@ setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfi
     </div>
   );
 }
+
 
 
 
