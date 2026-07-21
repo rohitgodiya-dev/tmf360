@@ -769,6 +769,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {navItem("audit","Audit trail","ti-lock")}
           {navItem("quality","Quality checks","ti-clipboard-list")}
           {navItem("tmfauditor","TMF Auditor","ti-checkup-list")}
+          {navItem("archived","Archived","ti-archive")}
           <p style={{fontSize:"9px",fontWeight:"500",color:P.textTert,padding:"10px 10px 4px",textTransform:"uppercase",letterSpacing:".06em"}}>Team</p>
           {navItem("users","User management","ti-users")}
           {navItem("profile","My profile","ti-user-circle")}
@@ -1758,6 +1759,11 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {/* TRACKER */}
           {panel==="tracker"&&(
             <TrackerPanel user={user} P={P} supabase={supabase} orgId={orgId} currentUserRole={currentUserRole}/>
+          )}
+
+          {/* ARCHIVED */}
+          {panel==="archived"&&(
+            <ArchivedPanel user={user} P={P} supabase={supabase} orgId={orgId} activeStudy={activeStudy} currentUserRole={currentUserRole} logAudit={logAudit} setDocs={setDocs}/>
           )}
 
           {/* TMF AUDITOR */}
@@ -4124,6 +4130,8 @@ setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfi
     </div>
   );
 }
+
+
 
 
 
