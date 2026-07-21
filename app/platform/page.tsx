@@ -699,7 +699,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
       <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"16px",padding:"2rem",width:"360px",boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
         <div style={{textAlign:"center",marginBottom:"1.5rem"}}>
           <div style={{fontSize:"24px",fontWeight:"500",color:P.text}}>TMF<span style={{color:P.primary}}>360</span></div>
-          <div style={{fontSize:"12px",color:P.textTert,marginTop:"4px"}}>Trial Master File Platform - Free for clinical research</div>
+          <div style={{fontSize:"12px",color:P.textTert,marginTop:"4px"}}>Trial Master File Platform</div>
           <div style={{fontSize:"11px",color:P.textTert,marginTop:"2px"}}>DIA TMF Reference Model v3.3.1 - ISO 14155 - 21 CFR Part 11</div>
         </div>
         <div style={{display:"flex",gap:"6px",marginBottom:"1.25rem"}}>
@@ -724,7 +724,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
         <button onClick={handleAuth} style={{width:"100%",padding:"9px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",fontSize:"12px",fontWeight:"500",cursor:"pointer"}}>
           {authMode==="login"?"Log in":"Create account"}
         </button>
-        <p style={{fontSize:"10px",color:P.textTert,textAlign:"center",marginTop:"1rem"}}>Free forever - No credit card - 21 CFR Part 11 compliant</p>
+        <p style={{fontSize:"10px",color:P.textTert,textAlign:"center",marginTop:"1rem"}}>ICH E6(R3) - DIA TMF Reference Model v3.3.1 - 21 CFR Part 11</p>
       </div>
     </div>
   );
@@ -3892,6 +3892,9 @@ setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfi
     </div>
   );
 }
+
+
+
 
 
 
