@@ -1,6 +1,7 @@
 ﻿"use client";
 import{useState,useEffect,useRef}from"react";
 import{supabase}from"../../lib/supabase";
+import JSZip from"jszip";
 
 
 
@@ -1173,6 +1174,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                             {d.status==="Draft"&&<button onClick={()=>{setSelectedDoc(d);setShowSubmitModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:"#EFF6FF",color:"#1D4ED8",border:"0.5px solid #BFDBFE",borderRadius:"4px",cursor:"pointer"}}>Submit</button>}
                             {d.status==="Under Review"&&<button onClick={()=>{setSelectedDoc(d);setShowApproveModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:"#ECFDF5",color:"#065F46",border:"0.5px solid #A7F3D0",borderRadius:"4px",cursor:"pointer"}}>Review</button>}
                             <button onClick={()=>{setSelectedDoc(d);setCommentText("");setShowCommentModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,border:`0.5px solid ${P.border}`,borderRadius:"4px",cursor:"pointer"}}>Comment</button>
+                            {canUploadDownload&&<button onClick={async()=>{if(!confirm("Delete this document?"))return;if(d.file_path){await supabase.storage.from("Documents").remove([d.file_path]);}await supabase.from("documents").delete().eq("id",d.id);setDocs(prev=>prev.filter(x=>x.id!==d.id));await logAudit("Document deleted",d.id,d.study_id,"status",d.status,"Deleted");}} style={{fontSize:"9px",padding:"2px 6px",background:"#FEF2F2",color:"#991B1B",border:"0.5px solid #FECACA",borderRadius:"4px",cursor:"pointer"}}>Delete</button>}
                           </div>
                           {d.comments&&<div style={{fontSize:"9px",color:P.textTert,marginTop:"3px"}}>Has comments</div>}
                           {d.approved_by&&<div style={{fontSize:"9px",color:"#065F46",marginTop:"2px"}}>{d.approved_by}</div>}
@@ -2391,7 +2393,7 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
       <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",overflow:"hidden"}}>
         <table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px"}}>
           <thead><tr style={{borderBottom:`0.5px solid ${P.border}`}}>
-            {["Name / Email","Role","Status","Added","Upload","Download","Notifications","Activate / Deactivate","Change Password"].map(h=><th key={h} style={{textAlign:"left",padding:"10px 14px",fontSize:"11px",fontWeight:"500",color:P.textSec}}>{h}</th>)}
+            {["Name / Email","Role","Status","Added","Upload","Download","Notifications","Can Delete","Activate / Deactivate","Change Password"].map(h=><th key={h} style={{textAlign:"left",padding:"10px 14px",fontSize:"11px",fontWeight:"500",color:P.textSec}}>{h}</th>)}
           </tr></thead>
           <tbody>
             {loading?<tr><td colSpan={8} style={{textAlign:"center",padding:"2rem",color:P.textTert}}>Loading...</td></tr>
@@ -2407,6 +2409,7 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
                 <td style={{padding:"10px 14px"}}>{isAdmin?<button onClick={()=>toggleDocAccess(u.id,u.can_upload_download)} style={{fontSize:"10px",padding:"3px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:u.can_upload_download?"#ECFDF5":"#FEF2F2",cursor:"pointer",color:u.can_upload_download?"#10B981":"#EF4444",fontWeight:"500"}}>{u.can_upload_download?"YES":"NO"}</button>:<span style={{fontSize:"10px",color:u.can_upload_download?"#10B981":"#EF4444",fontWeight:"500"}}>{u.can_upload_download?"YES":"NO"}</span>}</td>
                 <td style={{padding:"10px 14px"}}>{isAdmin?<button onClick={()=>toggleDownload(u.id,u.can_download)} style={{fontSize:"10px",padding:"3px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:u.can_download?"#ECFDF5":"#FEF2F2",cursor:"pointer",color:u.can_download?"#10B981":"#EF4444",fontWeight:"500"}}>{u.can_download?"YES":"NO"}</button>:<span style={{fontSize:"10px",color:u.can_download?"#10B981":"#EF4444",fontWeight:"500"}}>{u.can_download?"YES":"NO"}</span>}</td>
                 <td style={{padding:"10px 14px"}}>{isAdmin?<button onClick={()=>toggleNotifications(u.id,u.notifications_enabled)} style={{fontSize:"10px",padding:"3px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:u.notifications_enabled?"#ECFDF5":"#FEF2F2",cursor:"pointer",color:u.notifications_enabled?"#10B981":"#EF4444",fontWeight:"500"}}>{u.notifications_enabled?"ON":"OFF"}</button>:<span style={{fontSize:"10px",color:u.notifications_enabled?"#10B981":"#EF4444",fontWeight:"500"}}>{u.notifications_enabled?"ON":"OFF"}</span>}</td>
+                <td style={{padding:"10px 14px"}}>{isAdmin?<button onClick={()=>toggleDelete(u.id,u.can_delete)} style={{fontSize:"10px",padding:"3px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:u.can_delete?"#ECFDF5":"#FEF2F2",cursor:"pointer",color:u.can_delete?"#10B981":"#EF4444",fontWeight:"500"}}>{u.can_delete?"YES":"NO"}</button>:<span style={{fontSize:"10px",color:u.can_delete?"#10B981":"#EF4444",fontWeight:"500"}}>{u.can_delete?"YES":"NO"}</span>}</td>
                 <td style={{padding:"10px 14px"}}>
                   <div style={{display:"flex",gap:"6px",flexWrap:"wrap" as const}}>
                     {isAdmin&&<button onClick={()=>toggleActive(u.id,u.is_active)} style={{fontSize:"10px",padding:"3px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:"transparent",cursor:"pointer",color:u.is_active?P.danger:P.success}}>{u.is_active?"Deactivate":"Activate"}</button>}
@@ -2560,7 +2563,36 @@ function TmfAuditorPanel({user,P,supabase,activeStudy,orgId,currentUserRole,acti
       {/* Left tree panel */}
       <div style={{width:"320px",borderRight:`0.5px solid ${P.border}`,display:"flex",flexDirection:"column",flexShrink:0}}>
         <div style={{padding:"12px 14px",borderBottom:`0.5px solid ${P.border}`,background:P.bgSec}}>
-          <div style={{fontSize:"13px",fontWeight:"600",color:P.text}}>TMF Auditor</div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%"}}>
+            <div style={{fontSize:"13px",fontWeight:"600",color:P.text}}>TMF Auditor</div>
+            <button onClick={async()=>{
+              const zip=new JSZip();
+              for(const {z,zn} of activeZONES){
+                const zoneArts=activeTMF.filter(a=>a.z===z);
+                for(const a of zoneArts){
+                  const docs=studyDocs.filter(d=>d.artifact_num===a.a&&d.file_path);
+                  for(const d of docs){
+                    try{
+                      const url=supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl;
+                      const res=await fetch(url);
+                      const blob=await res.blob();
+                      const folderName=`Zone ${z.padStart(2,"0")} - ${zn}/${a.a} - ${a.an}`;
+                      zip.folder(folderName)?.file(d.file_name||d.custom_file_name||"document",blob);
+                    }catch(e){}
+                  }
+                }
+              }
+              const content=await zip.generateAsync({type:"blob"});
+              const url=URL.createObjectURL(content);
+              const anchor=document.createElement("a");
+              anchor.href=url;
+              anchor.download=`TMF360_${activeStudy.study_id}_${new Date().toISOString().slice(0,10)}.zip`;
+              anchor.click();
+              URL.revokeObjectURL(url);
+            }} style={{fontSize:"11px",padding:"5px 12px",background:"#F97316",color:"#fff",border:"none",borderRadius:"7px",cursor:"pointer",display:"flex",alignItems:"center",gap:"5px"}}>
+              <i className="ti ti-download" style={{fontSize:"13px"}}/>Download all
+            </button>
+          </div>
           <div style={{fontSize:"11px",color:P.textTert,marginTop:"2px"}}>{activeStudy.study_id} — Document review</div>
         </div>
         <div style={{flex:1,overflowY:"auto"}}>
@@ -3884,6 +3916,13 @@ setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfi
     </div>
   );
 }
+
+
+
+
+
+
+
 
 
 
