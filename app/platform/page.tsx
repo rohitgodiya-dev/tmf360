@@ -2368,7 +2368,7 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
     loadUsers();
   }
 
-  async function toggleNotifications(id: string, current: boolean) {
+  async function toggleDelete(id: string, current: boolean) { supabase.from("user_roles").update({can_delete:!current}).eq("id",id).then(()=>loadUsers()); }  async function toggleNotifications(id: string, current: boolean) {
     await supabase.from("user_roles").update({notifications_enabled:!current}).eq("id",id);
     loadUsers();
   }
@@ -3916,6 +3916,7 @@ setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfi
     </div>
   );
 }
+
 
 
 
