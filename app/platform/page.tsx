@@ -3056,7 +3056,7 @@ function TmfAuditorPanel({user,P,supabase,activeStudy,orgId,currentUserRole,acti
               {previewUrl ? (
                 selectedDoc.file_name?.match(/.(png|jpg|jpeg|gif|webp)$/i)
                   ? <img src={previewUrl} alt={selectedDoc.file_name} style={{maxWidth:"100%",height:"auto",borderRadius:"8px",boxShadow:"0 2px 12px rgba(0,0,0,0.1)"}}/>
-                  : <iframe src={previewUrl} style={{width:"100%",height:"calc(100vh - 300px)",border:"none",borderRadius:"8px",background:"#fff"}}/>
+                  : <iframe src={previewUrl} style={{width:"100%",height:"calc(100vh - 300px)",border:"none",borderRadius:"8px",background:"#fff"}} onError={()=>setPreviewUrl(null)}/>
               ) : (
                 <div style={{textAlign:"center",color:P.textTert}}>
                   <i className="ti ti-file-description" style={{fontSize:"48px",color:P.border}}/>
