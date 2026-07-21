@@ -2085,8 +2085,7 @@ function QueriesPanel({user,P,supabase,orgId,activeStudy,currentUserRole,logAudi
               {selectedQuery.replies&&(
                 <div>
                   <div style={{fontSize:"10px",fontWeight:"500",color:"#9CA3AF",marginBottom:"8px",textTransform:"uppercase" as const,letterSpacing:".05em"}}>Replies</div>
-                  {selectedQuery.replies.split("
-").map((r:string,i:number)=>(
+                  {selectedQuery.replies.split("\n").map((r:string,i:number)=>(
                     <div key={i} style={{background:"#F9FAFB",borderRadius:"8px",padding:"8px 12px",marginBottom:"6px",fontSize:"11px",color:"#374151",lineHeight:"1.55"}}>{r}</div>
                   ))}
                 </div>
