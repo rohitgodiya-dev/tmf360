@@ -356,6 +356,7 @@ export default function Platform(){
   const[approveError,setApproveError]=useState("");
   const[commentText,setCommentText]=useState("");
   const[previewUrl,setPreviewUrl]=useState<string|null>(null);
+  const[previewDoc,setPreviewDoc]=useState<any>(null);
   const[previewName,setPreviewName]=useState("");
   const[chatMessages,setChatMessages]=useState<{role:string;text:string;isHealthCard?:boolean;docId?:string;sourceTags?:string[];classification?:{zoneLine:string;confidence:number;warning?:{detail:string;action:string}}}[]>([{role:"ai",text:"Hi, I'm Trinity - your TMF AI specialist for this study. I can classify uploaded documents against the tracker, and answer questions about this study's trial master file."}]);
   const[chatInput,setChatInput]=useState("");
@@ -541,7 +542,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
 
   function openPreview(d:Doc){
     const url=supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl;
-    setPreviewUrl(url);setPreviewName(d.custom_file_name||d.file_name||"Document");
+    setPreviewUrl(url);setPreviewName(d.custom_file_name||d.file_name||"Document");setPreviewDoc(d);
   }
 
   function detectFlagReason(doc:Doc){
@@ -2002,7 +2003,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
               <div style={{display:"flex",gap:"8px"}}>
                 <a href={previewUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:"11px",padding:"5px 12px",background:P.bgTert,color:P.textSec,borderRadius:"6px",textDecoration:"none"}}>Open</a>
                 <a href={previewUrl} download style={{fontSize:"11px",padding:"5px 12px",background:P.bgTert,color:P.textSec,borderRadius:"6px",textDecoration:"none"}}>Download</a>
-                <button onClick={()=>setPreviewUrl(null)} style={{fontSize:"11px",padding:"5px 12px",background:"#FEF2F2",color:"#991B1B",border:"none",borderRadius:"6px",cursor:"pointer"}}>Close</button>
+                {previewDoc&&<button onClick={()=>{setQueryDoc(previewDoc);setShowQueryModal(true);}} style={{fontSize:"11px",padding:"5px 12px",background:"#EFF6FF",color:"#1D4ED8",border:"none",borderRadius:"6px",cursor:"pointer"}}>Query</button>}{previewDoc&&canUploadDownload&&<button onClick={async()=>{const reason=prompt("Reason for deletion:");if(!reason)return;if(!confirm("Delete this document?"))return;if(previewDoc.file_path){await supabase.storage.from("Documents").remove([previewDoc.file_path]);}await supabase.from("documents").delete().eq("id",previewDoc.id);setDocs((prev:any)=>prev.filter((x:any)=>x.id!==previewDoc.id));await logAudit("Document deleted",previewDoc.id,previewDoc.study_id,"status",previewDoc.status,"Deleted - "+reason);setPreviewUrl(null);setPreviewDoc(null);}} style={{fontSize:"11px",padding:"5px 12px",background:"#FEF2F2",color:"#991B1B",border:"none",borderRadius:"6px",cursor:"pointer"}}>Delete</button>}<button onClick={()=>{setPreviewUrl(null);setPreviewDoc(null);}} style={{fontSize:"11px",padding:"5px 12px",background:"#FEF2F2",color:"#991B1B",border:"none",borderRadius:"6px",cursor:"pointer"}}>Close</button>
               </div>
             </div>
             <div style={{flex:1,overflow:"auto"}}>
