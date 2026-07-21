@@ -2064,8 +2064,7 @@ function ArchivedPanel({user,P,supabase,orgId,activeStudy,currentUserRole,logAud
   function exportCSV(){
     const headers=["Document Name","Artifact","Zone","Archive Reason","Archived By","Archived At","Original Owner","Pre-Archive Status"];
     const rows=filtered.map((d:any)=>[d.custom_file_name||d.file_name||d.artifact_name,d.artifact_num,d.zone,d.archive_reason||"",d.archived_by||"",d.archived_at?new Date(d.archived_at).toLocaleString():"",d.owner||"",d.pre_archive_status||""]);
-    const csv=[headers,...rows].map(r=>r.map((v:string)=>JSON.stringify(v)).join(",")).join("
-");
+    const csv=[headers,...rows].map(r=>r.map((v:string)=>JSON.stringify(v)).join(",")).join("\n");
     const blob=new Blob([csv],{type:"text/csv"});
     const url=URL.createObjectURL(blob);
     const a=document.createElement("a");a.href=url;a.download="Archived_"+Date.now()+".csv";a.click();URL.revokeObjectURL(url);
