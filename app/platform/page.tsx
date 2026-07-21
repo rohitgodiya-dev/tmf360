@@ -767,6 +767,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {navItem("messages","Messages","ti-message-2")}
           <p style={{fontSize:"9px",fontWeight:"500",color:P.textTert,padding:"10px 10px 4px",textTransform:"uppercase",letterSpacing:".06em"}}>Settings</p>
           {navItem("tmfconfig","TMF Configuration","ti-adjustments")}
+          {navItem("ticket","Ticket","ti-ticket")}
         </aside>
 
         <main style={{flex:1,overflowY:"auto",padding:"1.25rem"}}>
@@ -1771,6 +1772,11 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
             <TmfConfigPanel user={user} P={P} supabase={supabase} activeStudy={activeStudy} orgId={orgId} currentUserRole={currentUserRole} logAudit={logAudit}/>
           )}
 
+          {/* TICKET */}
+          {panel==="ticket"&&(
+            <TicketPanel user={user} P={P} supabase={supabase} orgId={orgId} currentUserRole={currentUserRole}/>
+          )}
+
           {/* USER MANAGEMENT */}
           {panel==="users"&&(
             <UserManagementPanel user={user} P={P} supabase={supabase}/>
@@ -1937,6 +1943,192 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
             </div>
             <div style={{flex:1,overflow:"auto"}}>
               {previewName.match(/\.(png|jpg|jpeg|gif|webp)$/i)?<img src={previewUrl} alt={previewName} style={{maxWidth:"100%",height:"auto"}}/>:<iframe src={previewUrl} style={{width:"100%",height:"70vh",border:"none"}}/>}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TicketPanel({user, P, supabase, orgId, currentUserRole}: {user: any, P: any, supabase: any, orgId: string, currentUserRole: string}) {
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("All");
+  const [showModal, setShowModal] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState<any>(null);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState("Medium");
+  const [replyText, setReplyText] = useState("");
+  const [msg, setMsg] = useState("");
+
+  const canManage = ["System Administrator","Sponsor Admin","TMF Lead"].includes(currentUserRole);
+
+  useEffect(() => { if (user) loadTickets(); }, [user]);
+
+  async function loadTickets() {
+    setLoading(true);
+    const q = supabase.from("support_tickets").select("*").eq("org_id", orgId).order("created_at", {ascending: false});
+    const {data} = canManage ? await q : await q.eq("created_by", user.id);
+    if (data) setTickets(data);
+    setLoading(false);
+  }
+
+  async function createTicket() {
+    if (!title.trim() || !description.trim()) return;
+    const {error} = await supabase.from("support_tickets").insert([{
+      org_id: orgId, created_by: user.id, created_by_email: user.email,
+      title: title.trim(), description: description.trim(),
+      priority, status: "Open",
+    }]);
+    if (!error) { setShowModal(false); setTitle(""); setDescription(""); setPriority("Medium"); loadTickets(); setMsg("Ticket submitted."); setTimeout(()=>setMsg(""),3000); }
+  }
+
+  async function updateStatus(id: string, status: string) {
+    await supabase.from("support_tickets").update({status, resolved_at: status==="Resolved"?new Date().toISOString():null}).eq("id", id);
+    setSelectedTicket((prev: any) => prev ? {...prev, status} : null);
+    loadTickets();
+  }
+
+  async function addReply() {
+    if (!replyText.trim() || !selectedTicket) return;
+    const existing = selectedTicket.replies || "";
+    const newReplies = existing + (existing?"\n":"") + "[" + new Date().toLocaleString() + " - " + user.email + "]: " + replyText.trim();
+    await supabase.from("support_tickets").update({replies: newReplies}).eq("id", selectedTicket.id);
+    setSelectedTicket((prev: any) => ({...prev, replies: newReplies}));
+    setReplyText("");
+    loadTickets();
+  }
+
+  const filtered = filter==="All" ? tickets : tickets.filter(t=>t.status===filter);
+  const counts = {Open: tickets.filter(t=>t.status==="Open").length, "In progress": tickets.filter(t=>t.status==="In progress").length, Resolved: tickets.filter(t=>t.status==="Resolved").length};
+
+  const priorityColor = (p: string) => p==="High"?"#EF4444":p==="Medium"?"#F59E0B":"#10B981";
+  const statusBg = (s: string) => s==="Open"?"#EFF6FF":s==="In progress"?"#FFF7ED":"#ECFDF5";
+  const statusColor = (s: string) => s==="Open"?"#1D4ED8":s==="In progress"?"#C2410C":"#065F46";
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <h1 style={{fontSize:"14px",fontWeight:"500"}}>Support Tickets</h1>
+        <button onClick={()=>setShowModal(true)} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",display:"flex",alignItems:"center",gap:"6px"}}>
+          <i className="ti ti-plus" style={{fontSize:"13px"}}/>New ticket
+        </button>
+      </div>
+
+      {msg&&<div style={{padding:"8px 12px",borderRadius:"8px",fontSize:"12px",background:P.successLight,color:P.success}}>{msg}</div>}
+
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"10px"}}>
+        {[{label:"Open",color:"#1D4ED8",bg:"#EFF6FF"},{label:"In progress",color:"#C2410C",bg:"#FFF7ED"},{label:"Resolved",color:"#065F46",bg:"#ECFDF5"}].map(s=>(
+          <div key={s.label} style={{background:s.bg,border:`0.5px solid ${P.border}`,borderRadius:"10px",padding:"12px 14px"}}>
+            <div style={{fontSize:"22px",fontWeight:"500",color:s.color}}>{counts[s.label as keyof typeof counts]||0}</div>
+            <div style={{fontSize:"11px",color:P.textSec,marginTop:"2px"}}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{display:"flex",gap:"6px"}}>
+        {["All","Open","In progress","Resolved"].map(f=>(
+          <button key={f} onClick={()=>setFilter(f)} style={{fontSize:"11px",padding:"5px 12px",borderRadius:"20px",border:`0.5px solid ${filter===f?P.primary:P.border}`,background:filter===f?P.primaryLight:"transparent",color:filter===f?P.primary:P.textSec,cursor:"pointer"}}>{f}</button>
+        ))}
+      </div>
+
+      {loading?<div style={{fontSize:"12px",color:P.textTert}}>Loading...</div>
+      :filtered.length===0?<div style={{textAlign:"center",padding:"2rem",fontSize:"12px",color:P.textTert}}>No tickets found.</div>
+      :filtered.map(t=>(
+        <div key={t.id} onClick={()=>setSelectedTicket(t)} style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"10px",padding:"14px",cursor:"pointer"}}
+          onMouseEnter={e=>(e.currentTarget.style.borderColor=P.primary)} onMouseLeave={e=>(e.currentTarget.style.borderColor=P.border)}>
+          <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:"6px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+              <span style={{fontFamily:"monospace",fontSize:"9px",color:P.textMuted}}>TKT-{String(t.id).slice(-4).toUpperCase()}</span>
+              <span style={{fontSize:"13px",fontWeight:"500",color:P.text}}>{t.title}</span>
+            </div>
+            <span style={{fontSize:"10px",padding:"2px 9px",borderRadius:"20px",fontWeight:"500",background:statusBg(t.status),color:statusColor(t.status),flexShrink:0}}>{t.status}</span>
+          </div>
+          <div style={{fontSize:"11px",color:P.textSec,marginBottom:"8px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{t.description}</div>
+          <div style={{display:"flex",alignItems:"center",gap:"12px",fontSize:"10px",color:P.textMuted}}>
+            <span style={{display:"flex",alignItems:"center",gap:"4px"}}><span style={{width:"6px",height:"6px",borderRadius:"50%",background:priorityColor(t.priority),display:"inline-block"}}/>{t.priority}</span>
+            <span><i className="ti ti-calendar" style={{fontSize:"11px",verticalAlign:"-1px",marginRight:"3px"}}/>{new Date(t.created_at).toLocaleDateString()}</span>
+            <span><i className="ti ti-user" style={{fontSize:"11px",verticalAlign:"-1px",marginRight:"3px"}}/>{t.created_by_email}</span>
+          </div>
+        </div>
+      ))}
+
+      {selectedTicket&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
+          <div style={{background:P.bg,borderRadius:"16px",width:"560px",maxHeight:"90vh",display:"flex",flexDirection:"column",border:`0.5px solid ${P.border}`}}>
+            <div style={{padding:"14px 18px",borderBottom:`0.5px solid ${P.border}`,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div>
+                <span style={{fontFamily:"monospace",fontSize:"10px",color:P.textMuted}}>TKT-{String(selectedTicket.id).slice(-4).toUpperCase()}</span>
+                <div style={{fontSize:"14px",fontWeight:"500",color:P.text,marginTop:"2px"}}>{selectedTicket.title}</div>
+              </div>
+              <button onClick={()=>setSelectedTicket(null)} style={{background:"none",border:"none",fontSize:"18px",cursor:"pointer",color:P.textMuted}}>×</button>
+            </div>
+            <div style={{flex:1,overflowY:"auto",padding:"16px 18px",display:"flex",flexDirection:"column",gap:"12px"}}>
+              <div style={{display:"flex",gap:"8px",flexWrap:"wrap" as const}}>
+                <span style={{fontSize:"10px",padding:"3px 10px",borderRadius:"20px",fontWeight:"500",background:statusBg(selectedTicket.status),color:statusColor(selectedTicket.status)}}>{selectedTicket.status}</span>
+                <span style={{fontSize:"10px",padding:"3px 10px",borderRadius:"20px",fontWeight:"500",background:P.bgTert,color:priorityColor(selectedTicket.priority)}}>{selectedTicket.priority} priority</span>
+                <span style={{fontSize:"10px",color:P.textMuted,padding:"3px 0"}}>{new Date(selectedTicket.created_at).toLocaleString()}</span>
+              </div>
+              <div style={{background:P.bgSec,borderRadius:"8px",padding:"12px 14px"}}>
+                <div style={{fontSize:"10px",fontWeight:"500",color:P.textMuted,marginBottom:"4px",textTransform:"uppercase" as const,letterSpacing:".05em"}}>Description</div>
+                <div style={{fontSize:"12px",color:P.textSec,lineHeight:"1.6",whiteSpace:"pre-wrap" as const}}>{selectedTicket.description}</div>
+              </div>
+              {selectedTicket.replies&&(
+                <div>
+                  <div style={{fontSize:"10px",fontWeight:"500",color:P.textMuted,marginBottom:"8px",textTransform:"uppercase" as const,letterSpacing:".05em"}}>Replies</div>
+                  {selectedTicket.replies.split("\n").map((r: string,i: number)=>(
+                    <div key={i} style={{background:P.bgSec,borderRadius:"8px",padding:"8px 12px",marginBottom:"6px",fontSize:"11px",color:P.textSec,lineHeight:"1.55"}}>{r}</div>
+                  ))}
+                </div>
+              )}
+              <div>
+                <label style={{fontSize:"10px",fontWeight:"500",color:P.textMuted,display:"block",marginBottom:"5px",textTransform:"uppercase" as const,letterSpacing:".05em"}}>Add reply</label>
+                <textarea value={replyText} onChange={e=>setReplyText(e.target.value)} placeholder="Type your reply..." rows={3} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px",resize:"vertical" as const,fontFamily:"inherit"}}/>
+                <button onClick={addReply} disabled={!replyText.trim()} style={{marginTop:"6px",fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",opacity:replyText.trim()?1:0.4}}>Send reply</button>
+              </div>
+              {canManage&&(
+                <div style={{borderTop:`0.5px solid ${P.border}`,paddingTop:"12px"}}>
+                  <div style={{fontSize:"10px",fontWeight:"500",color:P.textMuted,marginBottom:"8px",textTransform:"uppercase" as const,letterSpacing:".05em"}}>Update status</div>
+                  <div style={{display:"flex",gap:"6px"}}>
+                    {["Open","In progress","Resolved"].map(s=>(
+                      <button key={s} onClick={()=>updateStatus(selectedTicket.id,s)} style={{fontSize:"11px",padding:"5px 12px",borderRadius:"20px",border:`0.5px solid ${selectedTicket.status===s?P.primary:P.border}`,background:selectedTicket.status===s?P.primaryLight:"transparent",color:selectedTicket.status===s?P.primary:P.textSec,cursor:"pointer",fontWeight:selectedTicket.status===s?"500":"400"}}>{s}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showModal&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
+          <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"460px",border:`0.5px solid ${P.border}`}}>
+            <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"1rem"}}>New support ticket</h2>
+            <div style={{marginBottom:"10px"}}>
+              <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Title</label>
+              <input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Brief summary of the issue" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px"}}/>
+            </div>
+            <div style={{marginBottom:"10px"}}>
+              <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Description</label>
+              <textarea value={description} onChange={e=>setDescription(e.target.value)} placeholder="Describe the issue in detail..." rows={4} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px",resize:"vertical" as const,fontFamily:"inherit"}}/>
+            </div>
+            <div style={{marginBottom:"1rem"}}>
+              <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"6px"}}>Priority</label>
+              <div style={{display:"flex",gap:"6px"}}>
+                {["Low","Medium","High"].map(p=>(
+                  <button key={p} onClick={()=>setPriority(p)} style={{flex:1,fontSize:"11px",padding:"6px",borderRadius:"8px",border:`0.5px solid ${priority===p?priorityColor(p):P.border}`,background:priority===p?priorityColor(p)+"22":"transparent",color:priority===p?priorityColor(p):P.textSec,cursor:"pointer",fontWeight:priority===p?"500":"400"}}>
+                    <span style={{width:"6px",height:"6px",borderRadius:"50%",background:priorityColor(p),display:"inline-block",marginRight:"5px"}}/>
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
+              <button onClick={()=>{setShowModal(false);setTitle("");setDescription("");setPriority("Medium");}} style={{fontSize:"11px",padding:"6px 14px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>Cancel</button>
+              <button onClick={createTicket} disabled={!title.trim()||!description.trim()} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",opacity:title.trim()&&description.trim()?1:0.4}}>Submit ticket</button>
             </div>
           </div>
         </div>
@@ -3692,6 +3884,9 @@ setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfi
     </div>
   );
 }
+
+
+
 
 
 
