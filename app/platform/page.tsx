@@ -699,7 +699,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
       <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"16px",padding:"2rem",width:"360px",boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
         <div style={{textAlign:"center",marginBottom:"1.5rem"}}>
           <div style={{fontSize:"24px",fontWeight:"500",color:P.text}}>TMF<span style={{color:P.primary}}>360</span></div>
-          <div style={{fontSize:"12px",color:P.textTert,marginTop:"4px"}}>Trial Master File Platform - Free for clinical research</div>
+          <div style={{fontSize:"12px",color:P.textTert,marginTop:"4px"}}>Trial Master File Platform</div>
           <div style={{fontSize:"11px",color:P.textTert,marginTop:"2px"}}>21 CFR Part 11</div>
         </div>
         
