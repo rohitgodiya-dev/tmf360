@@ -1977,7 +1977,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
               <button onClick={async()=>{
                 if(!queryText.trim())return;
                 const{error}=await supabase.from("document_queries").insert([{
-                  org_id:orgId,study_id:activeStudy.study_id,document_id:queryDoc.id,
+                  org_id:orgId,study_id:activeStudy?.study_id,document_id:queryDoc.id,
                   artifact_num:queryDoc.artifact_num,artifact_name:queryDoc.artifact_name,zone:queryDoc.zone,
                   query_type:queryType,priority:queryPriority,query_text:queryText.trim(),
                   raised_by:user.id,raised_by_email:user.email,owner_email:queryDoc.owner,
@@ -4123,6 +4123,7 @@ setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfi
     </div>
   );
 }
+
 
 
 
