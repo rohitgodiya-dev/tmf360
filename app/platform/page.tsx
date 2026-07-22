@@ -424,7 +424,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
       setCanUploadDownload(data.can_upload_download!==false);
       setCanDownload(data.can_download!==false);
       setUserFullName(data.full_name||"");
-      if(data.org_id){setOrgId(data.org_id);loadStudiesWithOrg(data.org_id);}
+      if(data.org_id){setOrgId(data.org_id);const savedStudyId=typeof window!=="undefined"?localStorage.getItem("tmf_active_study"):"";loadStudiesWithOrg(data.org_id,savedStudyId||undefined);}
     }
   }
 
@@ -477,7 +477,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
     if(!fId.trim()||!user||!orgId)return;
     const s={study_id:fId,protocol:fProtocol,phase:fPhase,status:fStatus,sponsor:fSponsor,user_id:user.id,org_id:orgId};
     const{data,error}=await supabase.from("studies").insert([s]).select();
-    if(!error&&data){const ns=data[0];setStudies(prev=>[ns,...prev]);setActiveStudy(ns);setDocs([]);}
+    if(!error&&data){const ns=data[0];setStudies(prev=>[ns,...prev]);setActiveStudy(ns);setDocs([]);localStorage.setItem("tmf_active_study",ns.study_id);}
     setShowStudyModal(false);setFId("");setFProtocol("");setFSponsor("");setPanel("dashboard");
   }
 
@@ -741,7 +741,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
         <span style={{fontSize:"11px",color:P.textTert}}>Trial Master File Platform</span>
         <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:"10px"}}>
           {studies.length>0&&(
-            <select value={activeStudy?.study_id||""} onChange={e=>{const s=studies.find(x=>x.study_id===e.target.value);if(s){setActiveStudy(s);if(orgId)loadDocsWithOrg(s.study_id,orgId);}}} style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"6px",padding:"3px 8px",background:P.bg}}>
+            <select value={activeStudy?.study_id||""} onChange={e=>{const s=studies.find(x=>x.study_id===e.target.value);if(s){setActiveStudy(s);localStorage.setItem("tmf_active_study",s.study_id);if(orgId)loadDocsWithOrg(s.study_id,orgId);}}} style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"6px",padding:"3px 8px",background:P.bg}}>
               {studies.map(s=><option key={s.study_id} value={s.study_id}>{s.study_id}</option>)}
             </select>
           )}
