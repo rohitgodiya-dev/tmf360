@@ -2879,7 +2879,7 @@ function TmfAuditorPanel({user,P,supabase,activeStudy,orgId,currentUserRole,acti
     if (!error) {
       await logAudit(
         actionType === "approve" ? "Document approved via TMF Auditor" : "Document moved to pending review via TMF Auditor",
-        selectedDoc.id, selectedDoc.study_id, "status", selectedDoc.status, newStatus, actionComment.trim()
+        selectedDoc.id, selectedDoc.study_id, "status", selectedDoc.status, newStatus, actionComment.trim(), selectedDoc.custom_file_name||selectedDoc.artifact_name
       );
       setDocs((prev: any[]) => prev.map(d => d.id === selectedDoc.id ? {...d, ...updateData} : d));
       setSelectedDoc((prev: any) => prev ? {...prev, ...updateData} : null);
