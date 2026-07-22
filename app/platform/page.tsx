@@ -505,7 +505,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
     const{data,error}=await supabase.from("documents").insert([d]).select();
     if(!error&&data){
       setDocs(prev=>[data[0],...prev]);
-      await logAudit("Document uploaded",data[0].id,activeStudy.study_id,"status","",fDocStatus);
+      await logAudit("Document uploaded",data[0].id,activeStudy.study_id,"status","",fDocStatus,"",fCustomName||pendingFileName||an);
       fetch("/api/notify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"document_uploaded",document_name:fCustomName||pendingFileName||an,artifact_name:an,zone,study_id:activeStudy.study_id,uploaded_by:user.email})});
     }
     setShowDocModal(false);setFArtifact("");setFVersion("");setFOwner("");setFEff("");setFExp("");setFComments("");setFCustomName("");setPendingFilePath("");setPendingFileName("");setPendingFileType("");setPendingFileSize(0);setSelectedFile(null);setUploadProgress("");
@@ -521,7 +521,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
     const now=new Date().toISOString();
     const{error}=await supabase.from("documents").update({status:"Approved",approved_by:user.email,approved_at:now,signature_reason:approveReason}).eq("id",selectedDoc.id);
     if(!error){
-      await logAudit("Document approved",selectedDoc.id,selectedDoc.study_id,"status","Under Review","Approved",approveReason);
+      await logAudit("Document approved",selectedDoc.id,selectedDoc.study_id,"status","Under Review","Approved",approveReason,selectedDoc.custom_file_name||selectedDoc.artifact_name);
       setDocs(prev=>prev.map(d=>d.id===selectedDoc.id?{...d,status:"Approved",approved_by:user.email,approved_at:now,signature_reason:approveReason}:d));
       setChatMessages(prev=>[...prev,{role:"ai",text:`"${selectedDoc.custom_file_name||selectedDoc.artifact_name}" has been approved and filed. Audit trail entry recorded.`}]);
       setShowApproveModal(false);setApprovePassword("");setApproveReason("");setSelectedDoc(null);
@@ -534,7 +534,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
     const newComment=`${existing}${existing?"\n":""}[${new Date().toLocaleString()} - ${user.email}]: ${commentText.trim()}`;
     const{error}=await supabase.from("documents").update({comments:newComment}).eq("id",selectedDoc.id);
     if(!error){
-      await logAudit("Comment added",selectedDoc.id,selectedDoc.study_id,"comments","",commentText.trim());
+      await logAudit("Comment added",selectedDoc.id,selectedDoc.study_id,"comments","",commentText.trim(),"",selectedDoc.custom_file_name||selectedDoc.artifact_name);
       setDocs(prev=>prev.map(d=>d.id===selectedDoc.id?{...d,comments:newComment}:d));
       setShowCommentModal(false);setCommentText("");setSelectedDoc(null);
     }
@@ -1183,7 +1183,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                             {d.status==="Draft"&&<button onClick={()=>{setSelectedDoc(d);setShowSubmitModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:"#EFF6FF",color:"#1D4ED8",border:"0.5px solid #BFDBFE",borderRadius:"4px",cursor:"pointer"}}>Submit</button>}
                             {d.status==="Under Review"&&<button onClick={()=>{setSelectedDoc(d);setShowApproveModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:"#ECFDF5",color:"#065F46",border:"0.5px solid #A7F3D0",borderRadius:"4px",cursor:"pointer"}}>Review</button>}
                             <button onClick={()=>{setSelectedDoc(d);setCommentText("");setShowCommentModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,border:`0.5px solid ${P.border}`,borderRadius:"4px",cursor:"pointer"}}>Comment</button>
-                            {canUploadDownload&&<button onClick={async()=>{const reason=prompt("Reason for archiving:");if(!reason)return;const now=new Date().toISOString();const{error}=await supabase.from("documents").update({status:"Archived",archived_by:user.email,archived_at:now,archive_reason:reason,pre_archive_status:d.status}).eq("id",d.id);if(!error){await logAudit("Document archived",d.id,d.study_id,"status",d.status,"Archived");setDocs(prev=>prev.map(x=>x.id===d.id?{...x,status:"Archived",archived_by:user.email,archived_at:now,archive_reason:reason}:x));}}} style={{fontSize:"9px",padding:"2px 6px",background:"#FFFBEB",color:"#92400E",border:"0.5px solid #FDE68A",borderRadius:"4px",cursor:"pointer"}}>Archive</button>}<button onClick={()=>{setQueryDoc(d);setShowQueryModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:"#EFF6FF",color:"#1D4ED8",border:"0.5px solid #BFDBFE",borderRadius:"4px",cursor:"pointer"}}>Query</button>
+                            {canUploadDownload&&<button onClick={async()=>{const reason=prompt("Reason for archiving:");if(!reason)return;const now=new Date().toISOString();const{error}=await supabase.from("documents").update({status:"Archived",archived_by:user.email,archived_at:now,archive_reason:reason,pre_archive_status:d.status}).eq("id",d.id);if(!error){await logAudit("Document archived",d.id,d.study_id,"status",d.status,"Archived","",d.custom_file_name||d.artifact_name);setDocs(prev=>prev.map(x=>x.id===d.id?{...x,status:"Archived",archived_by:user.email,archived_at:now,archive_reason:reason}:x));}}} style={{fontSize:"9px",padding:"2px 6px",background:"#FFFBEB",color:"#92400E",border:"0.5px solid #FDE68A",borderRadius:"4px",cursor:"pointer"}}>Archive</button>}<button onClick={()=>{setQueryDoc(d);setShowQueryModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:"#EFF6FF",color:"#1D4ED8",border:"0.5px solid #BFDBFE",borderRadius:"4px",cursor:"pointer"}}>Query</button>
                           </div>
                           {d.comments&&<div style={{fontSize:"9px",color:P.textTert,marginTop:"3px"}}>Has comments</div>}
                           {d.approved_by&&<div style={{fontSize:"9px",color:"#065F46",marginTop:"2px"}}>{d.approved_by}</div>}
@@ -1890,7 +1890,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
               <button onClick={async()=>{
                 if(!submissionReason.trim()){alert("Please add a reason for submission.");return;}
                 const{error}=await supabase.from("documents").update({status:"Under Review",submission_reason:submissionReason}).eq("id",selectedDoc.id);
-                if(!error){await logAudit("Document submitted for review",selectedDoc.id,selectedDoc.study_id,"status","Draft","Under Review");setDocs(prev=>prev.map(d=>d.id===selectedDoc.id?{...d,status:"Under Review",submission_reason:submissionReason} as any:d));}
+                if(!error){await logAudit("Document submitted for review",selectedDoc.id,selectedDoc.study_id,"status","Draft","Under Review","",selectedDoc.custom_file_name||selectedDoc.artifact_name);setDocs(prev=>prev.map(d=>d.id===selectedDoc.id?{...d,status:"Under Review",submission_reason:submissionReason} as any:d));}
                 setShowSubmitModal(false);setSubmissionReason("");setSelectedDoc(null);
               }} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Submit for review</button>
             </div>
@@ -1990,7 +1990,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                   status:"Open",due_date:queryDueDate||null,
                 }]);
                 if(!error){
-                  await logAudit("Query raised",queryDoc.id,activeStudy?.study_id||"","query","",queryText.trim());
+                  await logAudit("Query raised",queryDoc.id,activeStudy?.study_id||"","query","",queryText.trim(),"",queryDoc.custom_file_name||queryDoc.artifact_name);
                   setShowQueryModal(false);setQueryText("");setQueryType("Question");setQueryPriority("Medium");setQueryDueDate("");
                 }
               }} style={{fontSize:"11px",padding:"6px 14px",background:"#F97316",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Submit query</button>
@@ -2630,7 +2630,7 @@ function AuditTrail({user,activeStudy,P}:{user:any,activeStudy:any,P:any}){
               <td style={{padding:"7px 10px",fontFamily:"monospace",fontSize:"10px",color:P.textTert,whiteSpace:"nowrap"}}>{new Date(l.created_at).toLocaleString()}</td>
               <td style={{padding:"7px 10px",color:P.textSec}}>{l.user_email}</td>
               <td style={{padding:"7px 10px"}}><span style={{fontSize:"10px",padding:"2px 7px",borderRadius:"8px",background:l.action.includes("approved")?P.successLight:P.primaryLight,color:l.action.includes("approved")?"#065F46":P.primary}}>{l.action}</span></td>
-              <td style={{padding:"7px 10px",color:P.textSec,fontSize:"10px"}}>{l.document_id?.slice(0,8)||"-"}</td>
+              <td style={{padding:"7px 10px",color:P.textSec,fontSize:"10px",maxWidth:"140px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{l.document_name||l.document_id?.slice(0,8)||"-"}</td>
               <td style={{padding:"7px 10px",color:P.textTert}}>{l.field_changed||"-"}</td>
               <td style={{padding:"7px 10px",color:P.textTert}}>{l.old_value||"-"}</td>
               <td style={{padding:"7px 10px",color:P.textSec,maxWidth:"200px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{l.new_value||"-"}</td>
