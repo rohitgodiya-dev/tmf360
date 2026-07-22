@@ -31,6 +31,9 @@ export default function AdminPortal(){
   const[tickets,setTickets]=useState<any[]>([]);
   const[studies,setStudies]=useState<any[]>([]);
   const[tokens,setTokens]=useState<any[]>([]);
+  const[demos,setDemos]=useState<any[]>([]);
+  const[selectedDemo,setSelectedDemo]=useState<any>(null);
+  const[demoNotes,setDemoNotes]=useState("");
   const[stats,setStats]=useState<any>({orgs:0,users:0,studies:0,docs:0,tickets:0});
 
   // Token generator
@@ -143,6 +146,12 @@ export default function AdminPortal(){
     loadAllData();
   }
 
+  async function updateDemoStatus(id:string,status:string,notes?:string){
+    await supabase.from("demo_requests").update({status,notes:notes||null,confirmed_at:status==="Confirmed"?new Date().toISOString():null,confirmed_by:status==="Confirmed"?adminUser?.email:null}).eq("id",id);
+    setSelectedDemo((prev:any)=>prev?{...prev,status,notes:notes||prev.notes}:null);
+    loadAllData();
+  }
+
   async function revokeToken(id:string){
     if(!confirm("Revoke this token?"))return;
     await supabase.from("signup_tokens").update({used_at:new Date().toISOString()}).eq("id",id);
@@ -213,6 +222,8 @@ export default function AdminPortal(){
           <p style={{fontSize:"9px",fontWeight:"600",color:"#475569",padding:"10px 8px 4px",textTransform:"uppercase",letterSpacing:".06em"}}>Onboarding</p>
           {navItem("signup","Signup Links","ti-link")}
           {navItem("tokens","Token History","ti-history")}
+          <p style={{fontSize:"9px",fontWeight:"600",color:"#475569",padding:"10px 8px 4px",textTransform:"uppercase",letterSpacing:".06em"}}>Sales</p>
+          {navItem("demos","Demo Requests","ti-calendar-event",demos.filter(d=>d.status==="Pending").length||undefined)}
         </div>
         <div style={{borderTop:"1px solid #1E3A5F",paddingTop:"8px"}}>
           <div style={{fontSize:"11px",color:"#64748B",padding:"6px 8px"}}>{adminUser?.email}</div>
