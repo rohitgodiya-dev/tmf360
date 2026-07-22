@@ -2612,7 +2612,7 @@ function AuditTrail({user,activeStudy,P}:{user:any,activeStudy:any,P:any}){
   const [logs,setLogs]=useState<any[]>([]);
   useEffect(()=>{
     if(!user||!activeStudy)return;
-    supabase.from("audit_trail").select("*").eq("study_id",activeStudy.study_id).order("created_at",{ascending:false}).limit(100).then(({data})=>{if(data)setLogs(data);});
+    supabase.from("audit_trail").select("*, documents(artifact_name, custom_file_name, file_name)").eq("study_id",activeStudy.study_id).order("created_at",{ascending:false}).limit(100).then(({data})=>{if(data)setLogs(data);});
   },[user,activeStudy]);
   if(!activeStudy)return<div style={{fontSize:"12px",color:P.textTert}}>Select a study first.</div>;
   if(logs.length===0)return<div style={{fontSize:"12px",color:P.textTert}}>No audit events yet. Actions will appear here as documents are uploaded and approved.</div>;
@@ -2630,7 +2630,7 @@ function AuditTrail({user,activeStudy,P}:{user:any,activeStudy:any,P:any}){
               <td style={{padding:"7px 10px",fontFamily:"monospace",fontSize:"10px",color:P.textTert,whiteSpace:"nowrap"}}>{new Date(l.created_at).toLocaleString()}</td>
               <td style={{padding:"7px 10px",color:P.textSec}}>{l.user_email}</td>
               <td style={{padding:"7px 10px"}}><span style={{fontSize:"10px",padding:"2px 7px",borderRadius:"8px",background:l.action.includes("approved")?P.successLight:P.primaryLight,color:l.action.includes("approved")?"#065F46":P.primary}}>{l.action}</span></td>
-              <td style={{padding:"7px 10px",color:P.textSec,fontSize:"10px",maxWidth:"120px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{l.field_changed==="comments"||l.field_changed==="query"||l.field_changed==="query_reply"?l.new_value?.slice(0,40)+(l.new_value?.length>40?"...":""):l.document_id?.slice(0,8)||"-"}</td>
+              <td style={{padding:"7px 10px",color:P.textSec,fontSize:"10px",maxWidth:"140px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{l.documents?.custom_file_name||l.documents?.artifact_name||l.documents?.file_name||l.document_id?.slice(0,8)||"-"}</td>
               <td style={{padding:"7px 10px",color:P.textTert}}>{l.field_changed||"-"}</td>
               <td style={{padding:"7px 10px",color:P.textTert}}>{l.old_value||"-"}</td>
               <td style={{padding:"7px 10px",color:P.textSec,maxWidth:"200px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{l.new_value||"-"}</td>
