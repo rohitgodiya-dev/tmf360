@@ -466,7 +466,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
     setOrgId("");setCurrentUserRole("");
   }
 
-  async function logAudit(action:string,docId:string|undefined,studyId:string,field:string,oldVal:string,newVal:string,sigReason:string=""){
+  async function logAudit(action:string,docId:string|undefined,studyId:string,field:string,oldVal:string,newVal:string,sigReason:string="",docName:string=""){
     await supabase.from("audit_trail").insert([{
       user_id:user.id,user_email:user.email,action,document_id:docId,
       study_id:studyId,field_changed:field,old_value:oldVal,new_value:newVal,signature_reason:sigReason,
