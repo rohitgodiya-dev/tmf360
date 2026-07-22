@@ -2656,6 +2656,11 @@ const RC:Record<string,string>={"System Administrator":"#7C3AED","Sponsor Admin"
 
 function UserManagementPanel({user, P, supabase, activeStudy, orgId}: {user: any, P: any, supabase: any, activeStudy: any, orgId: string}) {
   const [isAdmin, setIsAdmin] = useState(false);
+  const [studyMembers, setStudyMembers] = useState<any[]>([]);
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [memberUserId, setMemberUserId] = useState("");
+  const [memberRole, setMemberRole] = useState("CRA");
+  const [memberMsg, setMemberMsg] = useState("");
   const [users, setUsers] = useState<any[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -2676,7 +2681,27 @@ function UserManagementPanel({user, P, supabase, activeStudy, orgId}: {user: any
     loadUsers();
   }, [user]);
 
-  async function loadUsers() {
+  useEffect(() => { if (activeStudy && orgId) loadStudyMembers(); }, [activeStudy]);
+
+  async function loadStudyMembers() {
+    const {data} = await supabase.from("study_members").select("*").eq("study_id", activeStudy?.study_id||"").eq("org_id", orgId).order("added_at", {ascending: false});
+    if (data) setStudyMembers(data);
+  }
+
+  async function addStudyMember() {
+    if (!memberUserId) return;
+    const u = users.find((x:any) => x.user_id === memberUserId);
+    if (!u) return;
+    const {error} = await supabase.from("study_members").upsert([{org_id:orgId,study_id:activeStudy?.study_id,user_id:memberUserId,email:u.email,full_name:u.full_name||u.email,role:memberRole,added_by:user?.email,is_active:true}]);
+    if (!error) { setMemberMsg("Member added successfully."); loadStudyMembers(); setShowAddMember(false); setTimeout(()=>setMemberMsg(""),3000); }
+  }
+
+  async function removeStudyMember(id: string) {
+    await supabase.from("study_members").update({is_active:false}).eq("id", id);
+    loadStudyMembers();
+  }
+
+    async function loadUsers() {
     const {data} = await supabase.from("user_roles").select("*").order("created_at",{ascending:false});
     if (data) setUsers(data);
     setLoading(false);
