@@ -34,6 +34,9 @@ export default function AdminPortal(){
   const[demos,setDemos]=useState<any[]>([]);
   const[selectedDemo,setSelectedDemo]=useState<any>(null);
   const[demoNotes,setDemoNotes]=useState("");
+  const[demos,setDemos]=useState<any[]>([]);
+  const[selectedDemo,setSelectedDemo]=useState<any>(null);
+  const[demoNotes,setDemoNotes]=useState("");
   const[stats,setStats]=useState<any>({orgs:0,users:0,studies:0,docs:0,tickets:0});
 
   // Token generator
@@ -99,6 +102,10 @@ export default function AdminPortal(){
     const{data:tokenData}=await supabase.from("signup_tokens").select("*").order("created_at",{ascending:false}).limit(20);
     if(tokenData)setTokens(tokenData);
 
+    // Load demo requests
+    const{data:demoData}=await supabase.from("demo_requests").select("*").order("created_at",{ascending:false});
+    if(demoData)setDemos(demoData);
+
     // Stats
     const[{count:orgCount},{count:userCount},{count:studyCount},{count:docCount},{count:ticketCount}]=await Promise.all([
       supabase.from("organizations").select("*",{count:"exact",head:true}),
@@ -143,6 +150,12 @@ export default function AdminPortal(){
   async function deactivateUser(userId:string){
     if(!confirm("Deactivate this user?"))return;
     await supabase.from("user_roles").update({is_active:false}).eq("user_id",userId);
+    loadAllData();
+  }
+
+  async function updateDemoStatus(id:string,status:string,notes?:string){
+    await supabase.from("demo_requests").update({status,notes:notes||null,confirmed_at:status==="Confirmed"?new Date().toISOString():null,confirmed_by:status==="Confirmed"?adminUser?.email:null}).eq("id",id);
+    setSelectedDemo((prev:any)=>prev?{...prev,status,notes:notes||prev.notes}:null);
     loadAllData();
   }
 
