@@ -34,9 +34,6 @@ export default function AdminPortal(){
   const[demos,setDemos]=useState<any[]>([]);
   const[selectedDemo,setSelectedDemo]=useState<any>(null);
   const[demoNotes,setDemoNotes]=useState("");
-  const[demos,setDemos]=useState<any[]>([]);
-  const[selectedDemo,setSelectedDemo]=useState<any>(null);
-  const[demoNotes,setDemoNotes]=useState("");
   const[stats,setStats]=useState<any>({orgs:0,users:0,studies:0,docs:0,tickets:0});
 
   // Token generator
