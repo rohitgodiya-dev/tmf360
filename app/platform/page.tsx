@@ -477,7 +477,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
     if(!fId.trim()||!user||!orgId)return;
     const s={study_id:fId,protocol:fProtocol,phase:fPhase,status:fStatus,sponsor:fSponsor,user_id:user.id,org_id:orgId};
     const{data,error}=await supabase.from("studies").insert([s]).select();
-    if(!error&&data){const ns=data[0];setStudies(prev=>[ns,...prev]);setActiveStudy(ns);setDocs([]);localStorage.setItem("tmf_active_study",ns.study_id);}
+    if(!error&&data){const ns=data[0];setStudies(prev=>[ns,...prev]);setActiveStudy(ns);setDocs([]);localStorage.setItem("tmf_active_study",ns.study_id);await supabase.from("study_members").insert([{org_id:orgId,study_id:ns.study_id,user_id:user.id,email:user.email,full_name:userFullName||user.email,role:currentUserRole,added_by:user.email,is_active:true}]);}
     setShowStudyModal(false);setFId("");setFProtocol("");setFSponsor("");setPanel("dashboard");
   }
 
@@ -1806,7 +1806,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
 
           {/* USER MANAGEMENT */}
           {panel==="users"&&(
-            <UserManagementPanel user={user} P={P} supabase={supabase}/>
+            <UserManagementPanel user={user} P={P} supabase={supabase} activeStudy={activeStudy} orgId={orgId}/>
           )}
 
           {/* MY PROFILE */}
@@ -2654,7 +2654,7 @@ function AuditTrail({user,activeStudy,P}:{user:any,activeStudy:any,P:any}){
 const ROLES=["System Administrator","Sponsor Admin","TMF Lead","CRA","CTA","QA","Trial Manager","Regulatory","Site Team","Auditor"];
 const RC:Record<string,string>={"System Administrator":"#7C3AED","Sponsor Admin":"#2563EB","TMF Lead":"#0891B2","CRA":"#059669","CTA":"#D97706","QA":"#DC2626","Trial Manager":"#7C3AED","Regulatory":"#0891B2","Site Team":"#059669","Auditor":"#6B7280"};
 
-function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: any}) {
+function UserManagementPanel({user, P, supabase, activeStudy, orgId}: {user: any, P: any, supabase: any, activeStudy: any, orgId: string}) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [showModal, setShowModal] = useState(false);
@@ -2786,6 +2786,63 @@ function UserManagementPanel({user, P, supabase}: {user: any, P: any, supabase: 
           </div>
         </div>
       )}
+      {/* Study Members Section */}
+      {activeStudy&&isAdmin&&(
+        <div style={{background:"#FFFFFF",border:"0.5px solid #E5E7EB",borderRadius:"12px",padding:"16px",marginTop:"8px"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"12px"}}>
+            <div>
+              <h2 style={{fontSize:"13px",fontWeight:"600"}}>Study Members - {activeStudy.study_id}</h2>
+              <p style={{fontSize:"11px",color:"#6B7280",marginTop:"2px"}}>Users with access to this study</p>
+            </div>
+            <button onClick={()=>setShowAddMember(true)} style={{fontSize:"11px",padding:"6px 14px",background:"#F97316",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ Add Member</button>
+          </div>
+          {memberMsg&&<div style={{padding:"8px 12px",borderRadius:"8px",fontSize:"12px",background:"#ECFDF5",color:"#10B981",marginBottom:"8px"}}>{memberMsg}</div>}
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:"11px"}}>
+            <thead><tr style={{borderBottom:"0.5px solid #E5E7EB"}}>
+              {["Name","Email","Role","Added By","Added At","Status","Action"].map(h=>(<th key={h} style={{textAlign:"left",padding:"7px 10px",fontSize:"10px",fontWeight:"500",color:"#6B7280"}}>{h}</th>))}
+            </tr></thead>
+            <tbody>
+              {studyMembers.length===0?<tr><td colSpan={7} style={{textAlign:"center",padding:"1.5rem",color:"#6B7280"}}>No members yet.</td></tr>
+              :studyMembers.map((m:any)=>(
+                <tr key={m.id} style={{borderBottom:"0.5px solid #F9FAFB"}}>
+                  <td style={{padding:"7px 10px",fontWeight:"500"}}>{m.full_name||"-"}</td>
+                  <td style={{padding:"7px 10px",color:"#374151"}}>{m.email}</td>
+                  <td style={{padding:"7px 10px"}}><span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"20px",background:"#FFEDD5",color:"#F97316",fontWeight:"500"}}>{m.role}</span></td>
+                  <td style={{padding:"7px 10px",color:"#6B7280"}}>{m.added_by}</td>
+                  <td style={{padding:"7px 10px",color:"#6B7280"}}>{new Date(m.added_at).toLocaleDateString()}</td>
+                  <td style={{padding:"7px 10px"}}><span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"20px",background:m.is_active?"#ECFDF5":"#F3F4F6",color:m.is_active?"#065F46":"#6B7280"}}>{m.is_active?"Active":"Removed"}</span></td>
+                  <td style={{padding:"7px 10px"}}>{m.is_active&&<button onClick={()=>removeStudyMember(m.id)} style={{fontSize:"10px",padding:"3px 8px",background:"#FEF2F2",color:"#991B1B",border:"0.5px solid #FECACA",borderRadius:"4px",cursor:"pointer"}}>Remove</button>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {showAddMember&&(
+            <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
+              <div style={{background:"#FFFFFF",borderRadius:"16px",padding:"1.5rem",width:"400px",border:"0.5px solid #E5E7EB"}}>
+                <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"1rem"}}>Add Study Member - {activeStudy.study_id}</h2>
+                <div style={{marginBottom:"10px"}}>
+                  <label style={{fontSize:"11px",color:"#374151",display:"block",marginBottom:"3px"}}>Select User</label>
+                  <select value={memberUserId} onChange={e=>setMemberUserId(e.target.value)} style={{width:"100%",fontSize:"12px",border:"0.5px solid #E5E7EB",borderRadius:"8px",padding:"7px 10px"}}>
+                    <option value="">Select a user...</option>
+                    {users.filter((u:any)=>!studyMembers.some((m:any)=>m.user_id===u.user_id&&m.is_active)).map((u:any)=>(<option key={u.user_id} value={u.user_id}>{u.full_name||u.email} ({u.role})</option>))}
+                  </select>
+                </div>
+                <div style={{marginBottom:"1rem"}}>
+                  <label style={{fontSize:"11px",color:"#374151",display:"block",marginBottom:"3px"}}>Role in this study</label>
+                  <select value={memberRole} onChange={e=>setMemberRole(e.target.value)} style={{width:"100%",fontSize:"12px",border:"0.5px solid #E5E7EB",borderRadius:"8px",padding:"7px 10px"}}>
+                    {["System Administrator","Sponsor Admin","TMF Lead","CRA","CTA","QA","Trial Manager","Regulatory","Site Team","Auditor"].map(r=>(<option key={r}>{r}</option>))}
+                  </select>
+                </div>
+                <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
+                  <button onClick={()=>setShowAddMember(false)} style={{fontSize:"11px",padding:"6px 14px",border:"0.5px solid #E5E7EB",borderRadius:"8px",background:"transparent",cursor:"pointer"}}>Cancel</button>
+                  <button onClick={addStudyMember} disabled={!memberUserId} style={{fontSize:"11px",padding:"6px 14px",background:"#F97316",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",opacity:memberUserId?1:0.4}}>Add Member</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {showPwdModal&&pwdTargetUser&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
           <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"400px",border:`0.5px solid ${P.border}`}}>
