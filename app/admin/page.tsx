@@ -156,12 +156,6 @@ export default function AdminPortal(){
     loadAllData();
   }
 
-  async function updateDemoStatus(id:string,status:string,notes?:string){
-    await supabase.from("demo_requests").update({status,notes:notes||null,confirmed_at:status==="Confirmed"?new Date().toISOString():null,confirmed_by:status==="Confirmed"?adminUser?.email:null}).eq("id",id);
-    setSelectedDemo((prev:any)=>prev?{...prev,status,notes:notes||prev.notes}:null);
-    loadAllData();
-  }
-
   async function revokeToken(id:string){
     if(!confirm("Revoke this token?"))return;
     await supabase.from("signup_tokens").update({used_at:new Date().toISOString()}).eq("id",id);
