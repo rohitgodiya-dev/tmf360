@@ -428,9 +428,9 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
     }
   }
 
-  async function loadStudiesWithOrg(oid:string){
+  async function loadStudiesWithOrg(oid:string,preserveStudyId?:string){
     const{data}=await supabase.from("studies").select("*").eq("org_id",oid).order("created_at",{ascending:false});
-    if(data&&data.length>0){setStudies(data);setActiveStudy(data[0]);loadDocsWithOrg(data[0].study_id,oid);}
+    if(data&&data.length>0){setStudies(data);const savedStudyId=preserveStudyId||(typeof window!=="undefined"?localStorage.getItem("tmf_active_study"):"");const toSelect=savedStudyId?data.find((s:any)=>s.study_id===savedStudyId)||data[0]:data[0];setActiveStudy(toSelect);loadDocsWithOrg(toSelect.study_id,oid);}
     else setStudies([]);
   }
 
