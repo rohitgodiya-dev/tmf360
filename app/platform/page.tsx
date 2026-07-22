@@ -1796,7 +1796,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
 
           {/* TICKET */}
           {panel==="ticket"&&(
-            <TicketPanel user={user} P={P} supabase={supabase} orgId={orgId} currentUserRole={currentUserRole}/>
+            <TicketPanel user={user} P={P} supabase={supabase} orgId={orgId} currentUserRole={currentUserRole} activeStudy={activeStudy}/>
           )}
 
           {/* QUERIES */}
@@ -2298,7 +2298,7 @@ function QueriesPanel({user,P,supabase,orgId,activeStudy,currentUserRole,logAudi
   );
 }
 
-function TicketPanel({user, P, supabase, orgId, currentUserRole}: {user: any, P: any, supabase: any, orgId: string, currentUserRole: string}) {
+function TicketPanel({user, P, supabase, orgId, currentUserRole, activeStudy}: {user: any, P: any, supabase: any, orgId: string, currentUserRole: string, activeStudy: any}) {
   const [tickets, setTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("All");
@@ -2312,11 +2312,12 @@ function TicketPanel({user, P, supabase, orgId, currentUserRole}: {user: any, P:
 
   const canManage = ["System Administrator","Sponsor Admin","TMF Lead"].includes(currentUserRole);
 
-  useEffect(() => { if (user) loadTickets(); }, [user]);
+  useEffect(() => { if (user) loadTickets(); }, [user, activeStudy]);
 
   async function loadTickets() {
     setLoading(true);
-    const q = supabase.from("support_tickets").select("*").eq("org_id", orgId).order("created_at", {ascending: false});
+    const studyId = activeStudy?.study_id||"";
+    const q = supabase.from("support_tickets").select("*").eq("org_id", orgId).eq("study_id", studyId).order("created_at", {ascending: false});
     const {data} = canManage ? await q : await q.eq("created_by", user.id);
     if (data) setTickets(data);
     setLoading(false);
@@ -2325,7 +2326,7 @@ function TicketPanel({user, P, supabase, orgId, currentUserRole}: {user: any, P:
   async function createTicket() {
     if (!title.trim() || !description.trim()) return;
     const {error} = await supabase.from("support_tickets").insert([{
-      org_id: orgId, created_by: user.id, created_by_email: user.email,
+      org_id: orgId, study_id: activeStudy?.study_id||"", created_by: user.id, created_by_email: user.email,
       title: title.trim(), description: description.trim(),
       priority, status: "Open",
     }]);
@@ -2358,7 +2359,7 @@ function TicketPanel({user, P, supabase, orgId, currentUserRole}: {user: any, P:
   return (
     <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <h1 style={{fontSize:"14px",fontWeight:"500"}}>Support Tickets</h1>
+        <h1 style={{fontSize:"14px",fontWeight:"500"}}>Support Tickets{activeStudy?" - "+activeStudy.study_id:""}</h1>
         <button onClick={()=>setShowModal(true)} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",display:"flex",alignItems:"center",gap:"6px"}}>
           <i className="ti ti-plus" style={{fontSize:"13px"}}/>New ticket
         </button>
