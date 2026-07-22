@@ -1989,7 +1989,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                   raised_by:user.id,raised_by_email:user.email,owner_email:queryDoc.owner,
                   status:"Open",due_date:queryDueDate||null,
                 }]);
-                if(!error){
+                if(!error){await logAudit("Query raised",queryDoc.id,activeStudy?.study_id||"","query","","Query: "+queryText.trim(),"",queryDoc.custom_file_name||queryDoc.artifact_name);
                   await logAudit("Query raised",queryDoc.id,activeStudy?.study_id||"","query","","Query: "+queryText.trim(),"",queryDoc.custom_file_name||queryDoc.artifact_name);
                   setShowQueryModal(false);setQueryText("");setQueryType("Question");setQueryPriority("Medium");setQueryDueDate("");
                 }
