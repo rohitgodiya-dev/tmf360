@@ -1,6 +1,6 @@
 "use client";
 import{useState,useEffect,useRef}from"react";
-import{supabase}from"../lib/supabase";
+import{supabase}from"../../lib/supabase";
 
 const P={
   primary:"#F97316",primaryLight:"#FFEDD5",primaryDark:"#EA580C",
