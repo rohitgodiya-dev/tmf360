@@ -27,7 +27,7 @@ export default function TrinityPage(){
   const[activeStudy,setActiveStudy]=useState<any>(null);
   const[userRole,setUserRole]=useState("");
   const[userFullName,setUserFullName]=useState("");
-  const[panel,setPanel]=useState<"chat"|"vault"|"findings"|"briefing">("chat");
+  const[panel,setPanel]=useState<"chat"|"vault"|"findings"|"briefing"|"checklist">("chat");
   const[loading,setLoading]=useState(true);
   const[docs,setDocs]=useState<any[]>([]);
   const[tmfConfig,setTmfConfig]=useState<any[]>([]);
@@ -55,6 +55,9 @@ export default function TrinityPage(){
   const[analysing,setAnalysing]=useState(false);
   const[briefing,setBriefing]=useState<any>(null);
   const[briefingLoading,setBriefingLoading]=useState(false);
+const[checklist,setChecklist]=useState<any[]>([]);
+const[checklistLoading,setChecklistLoading]=useState(false);
+const[checklistGenerated,setChecklistGenerated]=useState(false);
 
   useEffect(()=>{supabase.auth.getSession().then(({data:{session}})=>{if(session?.user){setUser(session.user);loadUserContext(session.user.id);}else{window.location.href="/platform";}});},[]);
   useEffect(()=>{messagesEnd.current?.scrollIntoView({behavior:"smooth"});},[chatMessages]);
@@ -77,6 +80,8 @@ export default function TrinityPage(){
       supabase.from("trinity_findings").select("*").eq("org_id",oid).eq("study_id",studyId).order("created_at",{ascending:false}),
     ]);
     if(docData)setDocs(docData);if(configData)setTmfConfig(configData);if(vaultData)setVaultDocs(vaultData as VaultDoc[]);if(findingData)setFindings(findingData as Finding[]);
+const{data:checklistData}=await supabase.from("study_checklist").select("*").eq("org_id",oid).eq("study_id",studyId).eq("is_active",true).order("generated_at",{ascending:false});
+if(checklistData&&checklistData.length>0){setChecklist(checklistData);setChecklistGenerated(true);}
   }
 
   function switchStudy(studyId:string){const s=studies.find(x=>x.study_id===studyId);if(s){setActiveStudy(s);localStorage.setItem("tmf_active_study",studyId);loadStudyData(studyId,orgId);setChatMessages([{role:"ai",text:`Switched to study ${studyId}. I've loaded the TMF data and vault documents for this study.`}]);}}
@@ -132,7 +137,29 @@ export default function TrinityPage(){
     setAnalysing(false);
   }
 
-  async function resolveFinding(id:string){await supabase.from("trinity_findings").update({status:"Resolved",resolved_at:new Date().toISOString(),resolved_by:user?.email}).eq("id",id);setFindings(prev=>prev.map(f=>f.id===id?{...f,status:"Resolved"}:f));}
+  async function resolveFinding(id:string){async function generateChecklist(){
+  if(!activeStudy||vaultDocs.length===0){alert("Upload at least one vault document first.");return;}
+  setChecklistLoading(true);
+  const protocol=vaultDocs.find(d=>d.document_type==="Protocol");
+  const vaultCtx=vaultDocs.map(d=>`[${d.document_type} - ${d.custom_name}]:\n${d.extracted_text?.slice(0,2000)||""}`).join("\n\n---\n\n");
+  const filedList=docs.filter(d=>d.status==="Approved").map(d=>`${d.artifact_num} - ${d.artifact_name}`).join("\n");
+  const prompt=`You are a clinical trial TMF expert. Read the following study vault documents and generate a study-specific expected document checklist.\n\nBased on what you find in the documents, identify study characteristics and list ALL expected TMF documents specific to this study. For each item specify why it is required based on the study characteristics.\n\nVAULT DOCUMENTS:\n${vaultCtx}\n\nALREADY FILED DOCUMENTS:\n${filedList||"None filed yet"}\n\nReturn a JSON array:\n[{"item_name":"document name","artifact_ref":"DIA artifact number if applicable","zone":"zone number","reason":"why this is required based on study characteristics","severity":"Critical|Major|Minor","status":"Filed|Missing"}]\n\nFocus on study-specific requirements such as:\n- Number of sites and countries mentioned\n- Device vs drug vs biologic\n- DSMB or safety committee presence\n- Blinded or open label\n- Central laboratory use\n- PK/PD sampling\n- Paediatric population\n- Vulnerable subjects\n- Compassionate use\n- Any other study-specific requirements you find\n\nReturn ONLY valid JSON array.`;
+  try{
+    const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:prompt,context:"You are a TMF checklist engine. Return only valid JSON."})});
+    const data=await res.json();
+    let items:any[]=[];
+    try{const raw=data.response?.replace(/```json|```/g,"").trim();items=JSON.parse(raw);}catch{items=[];}
+    if(items.length>0){
+      // Clear old checklist for this study
+      await supabase.from("study_checklist").update({is_active:false}).eq("org_id",orgId).eq("study_id",activeStudy.study_id);
+      const toInsert=items.map((item:any)=>({...item,org_id:orgId,study_id:activeStudy.study_id,is_active:true}));
+      const{data:saved}=await supabase.from("study_checklist").insert(toInsert).select();
+      if(saved){setChecklist(saved);setChecklistGenerated(true);}
+    }
+    setPanel("checklist");
+  }catch(e){alert("Checklist generation failed. Please try again.");}
+  setChecklistLoading(false);
+}await supabase.from("trinity_findings").update({status:"Resolved",resolved_at:new Date().toISOString(),resolved_by:user?.email}).eq("id",id);setFindings(prev=>prev.map(f=>f.id===id?{...f,status:"Resolved"}:f));}
 
   async function generateBriefing(){
     if(!activeStudy)return;
@@ -234,9 +261,10 @@ export default function TrinityPage(){
       </header>
 
       <div style={{display:"flex",alignItems:"center",borderBottom:`0.5px solid ${P.border}`,background:P.bg,paddingLeft:"1.5rem",flexShrink:0}}>
-        {[{id:"chat",label:"Chat",icon:"ti-message-circle"},{id:"vault",label:`Study Vault${vaultDocs.length>0?` (${vaultDocs.length})`:""}`,icon:"ti-database"},{id:"findings",label:`Findings${openFindings.length>0?` · ${openFindings.length} open`:""}`,icon:"ti-alert-triangle"},{id:"briefing",label:"Daily Briefing",icon:"ti-sun"}].map(t=>(<button key={t.id} onClick={()=>setPanel(t.id as any)} className={`trinity-tab${panel===t.id?" active":""}`}><i className={`ti ${t.icon}`} style={{fontSize:"13px",marginRight:"5px",verticalAlign:"-1px"}}/>{t.label}</button>))}
+        {[{id:"chat",label:"Chat",icon:"ti-message-circle"},{id:"vault",label:`Study Vault${vaultDocs.length>0?` (${vaultDocs.length})`:""}`,icon:"ti-database"},{id:"findings",label:`Findings${openFindings.length>0?` · ${openFindings.length} open`:""}`,icon:"ti-alert-triangle"},{id:"briefing",label:"Daily Briefing",icon:"ti-sun"},{id:"checklist",label:`Study Checklist${checklist.length>0?` (${checklist.length})`:""}`,icon:"ti-list-check"}].map(t=>(<button key={t.id} onClick={()=>setPanel(t.id as any)} className={`trinity-tab${panel===t.id?" active":""}`}><i className={`ti ${t.icon}`} style={{fontSize:"13px",marginRight:"5px",verticalAlign:"-1px"}}/>{t.label}</button>))}
         <div style={{marginLeft:"auto",paddingRight:"1.5rem",display:"flex",gap:"8px",alignItems:"center"}}>
-          {vaultDocs.length>0&&(<button onClick={runVaultAnalysis} disabled={analysing} style={{fontSize:"11px",padding:"5px 14px",background:P.purple,color:"#fff",border:"none",borderRadius:"8px",cursor:analysing?"not-allowed":"pointer",display:"flex",alignItems:"center",gap:"6px",opacity:analysing?0.7:1}}>{analysing?<i className="ti ti-loader" style={{fontSize:"13px",animation:"spin 1s linear infinite"}}/>:<i className="ti ti-brain" style={{fontSize:"13px"}}/>}{analysing?"Analysing...":"Run Analysis"}</button>)}
+          {vaultDocs.length>0&&(<button onClick={generateChecklist} disabled={checklistLoading} style={{fontSize:"11px",padding:"5px 14px",background:"#0891B2",color:"#fff",border:"none",borderRadius:"8px",cursor:checklistLoading?"not-allowed":"pointer",display:"flex",alignItems:"center",gap:"6px",opacity:checklistLoading?0.7:1}}>{checklistLoading?<i className="ti ti-loader" style={{fontSize:"13px",animation:"spin 1s linear infinite"}}/>:<i className="ti ti-list-check" style={{fontSize:"13px"}}/>}{checklistLoading?"Generating...":"Generate Checklist"}</button>)}
+{vaultDocs.length>0&&(<button onClick={runVaultAnalysis} disabled={analysing} style={{fontSize:"11px",padding:"5px 14px",background:P.purple,color:"#fff",border:"none",borderRadius:"8px",cursor:analysing?"not-allowed":"pointer",display:"flex",alignItems:"center",gap:"6px",opacity:analysing?0.7:1}}>{analysing?<i className="ti ti-loader" style={{fontSize:"13px",animation:"spin 1s linear infinite"}}/>:<i className="ti ti-brain" style={{fontSize:"13px"}}/>}{analysing?"Analysing...":"Run Analysis"}</button>)}
         </div>
       </div>
 
@@ -446,7 +474,89 @@ export default function TrinityPage(){
         </div>
       )}
 
-      {panel==="briefing"&&(
+      {panel==="briefing"&&({panel==="checklist"&&(
+  <div style={{flex:1,overflowY:"auto",padding:"1.5rem"}}>
+    <div style={{maxWidth:"900px",margin:"0 auto",display:"flex",flexDirection:"column",gap:"16px"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div>
+          <h2 style={{fontSize:"16px",fontWeight:"700",color:P.text}}>Study Checklist</h2>
+          <p style={{fontSize:"12px",color:P.textTert,marginTop:"3px"}}>Protocol-driven expected document list generated by Trinity from your vault documents.</p>
+        </div>
+        <button onClick={generateChecklist} disabled={checklistLoading||vaultDocs.length===0} style={{fontSize:"12px",padding:"8px 16px",background:"#0891B2",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",display:"flex",alignItems:"center",gap:"6px",opacity:checklistLoading||vaultDocs.length===0?0.5:1}}>
+          {checklistLoading?<i className="ti ti-loader" style={{fontSize:"13px",animation:"spin 1s linear infinite"}}/>:<i className="ti ti-refresh" style={{fontSize:"13px"}}/>}
+          {checklistLoading?"Generating...":"Regenerate"}
+        </button>
+      </div>
+
+      {vaultDocs.length===0&&(
+        <div style={{background:"#FFFBEB",border:"0.5px solid #FDE68A",borderRadius:"10px",padding:"12px 16px",fontSize:"11px",color:"#92400E"}}>
+          Upload your Protocol to the Study Vault first. Trinity will read it and generate a study-specific checklist.
+        </div>
+      )}
+
+      {!checklistGenerated&&vaultDocs.length>0&&(
+        <div style={{textAlign:"center",padding:"3rem",color:P.textTert,background:P.bgSec,borderRadius:"12px",border:`0.5px solid ${P.border}`}}>
+          <div style={{fontSize:"32px",marginBottom:"8px"}}>📋</div>
+          <div style={{fontSize:"13px",fontWeight:"500",color:P.textSec}}>No checklist generated yet</div>
+          <div style={{fontSize:"12px",marginTop:"4px",marginBottom:"1rem"}}>Click Generate Checklist to create a Protocol-driven expected document list.</div>
+          <button onClick={generateChecklist} disabled={checklistLoading} style={{fontSize:"12px",fontWeight:"600",padding:"10px 20px",background:"#0891B2",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Generate Checklist</button>
+        </div>
+      )}
+
+      {checklistGenerated&&checklist.length>0&&(
+        <>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"10px"}}>
+            {[
+              {label:"Total expected",color:"#0891B2",bg:"#ECFEFF",count:checklist.length},
+              {label:"Filed",color:P.success,bg:P.successLight,count:checklist.filter(c=>c.status==="Filed").length},
+              {label:"Missing",color:P.danger,bg:P.dangerLight,count:checklist.filter(c=>c.status==="Missing").length},
+            ].map((s,i)=>(
+              <div key={i} style={{background:s.bg,border:`0.5px solid ${P.border}`,borderRadius:"10px",padding:"14px"}}>
+                <div style={{fontSize:"26px",fontWeight:"700",color:s.color}}>{s.count}</div>
+                <div style={{fontSize:"11px",color:P.textSec,marginTop:"2px"}}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{background:"#ECFEFF",border:"0.5px solid #A5F3FC",borderRadius:"10px",padding:"12px 16px",fontSize:"11px",color:"#0E7490"}}>
+            <i className="ti ti-brain" style={{fontSize:"13px",marginRight:"6px"}}/>
+            This checklist was generated by Trinity based on your vault documents. It reflects study-specific requirements beyond the standard DIA TMF Reference Model.
+          </div>
+
+          {["Critical","Major","Minor"].map(sev=>{
+            const sevItems=checklist.filter(c=>c.severity===sev);
+            if(!sevItems.length)return null;
+            const missing=sevItems.filter(c=>c.status==="Missing").length;
+            return(
+              <div key={sev}>
+                <h3 style={{fontSize:"11px",fontWeight:"600",color:SEVERITY_COLOR(sev),textTransform:"uppercase",letterSpacing:".06em",marginBottom:"6px"}}>{sev} — {missing} missing of {sevItems.length}</h3>
+                {sevItems.map((item,idx)=>(
+                  <div key={idx} style={{background:P.bg,border:`0.5px solid ${item.status==="Missing"?SEVERITY_COLOR(item.severity):P.success}`,borderRadius:"10px",padding:"14px 16px",marginBottom:"6px",display:"flex",gap:"12px",alignItems:"flex-start"}}>
+                    <div style={{width:"28px",height:"28px",borderRadius:"50%",background:item.status==="Filed"?P.successLight:SEVERITY_BG(item.severity),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                      <span style={{fontSize:"14px"}}>{item.status==="Filed"?"✅":"⚠️"}</span>
+                    </div>
+                    <div style={{flex:1}}>
+                      <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"4px",flexWrap:"wrap"}}>
+                        <span style={{fontSize:"13px",fontWeight:"600",color:P.text}}>{item.item_name}</span>
+                        <span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"20px",background:item.status==="Filed"?P.successLight:SEVERITY_BG(item.severity),color:item.status==="Filed"?P.success:SEVERITY_COLOR(item.severity),fontWeight:"500"}}>{item.status}</span>
+                        {item.severity&&<span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"20px",background:SEVERITY_BG(item.severity),color:SEVERITY_COLOR(item.severity)}}>{item.severity}</span>}
+                      </div>
+                      <div style={{fontSize:"12px",color:P.textSec,lineHeight:"1.6",marginBottom:"4px"}}>{item.reason}</div>
+                      <div style={{display:"flex",gap:"10px",flexWrap:"wrap"}}>
+                        {item.artifact_ref&&<span style={{fontSize:"10px",fontFamily:"monospace",color:P.blue}}>Artifact: {item.artifact_ref}</span>}
+                        {item.zone&&<span style={{fontSize:"10px",color:P.textTert}}>Zone {item.zone}</span>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+        </>
+      )}
+    </div>
+  </div>
+)}
         <div style={{flex:1,overflowY:"auto",padding:"1.5rem"}}>
           <div style={{maxWidth:"800px",margin:"0 auto",display:"flex",flexDirection:"column",gap:"16px"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
