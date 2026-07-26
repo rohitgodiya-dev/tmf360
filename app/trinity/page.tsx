@@ -97,7 +97,7 @@ if(checklistData&&checklistData.length>0){setChecklist(checklistData);setCheckli
   const pending=docs.filter(d=>d.status==="Under Review").length;
   const expiring=docs.filter(d=>d.expiry_date&&new Date(d.expiry_date)<new Date(Date.now()+90*86400000)).length;
   const critZones=["3","4","5"];const majZones=["1","2","7"];
-  const gaps={crit:activeTMF.filter(a=>a.cl==="Core"&&critZones.includes(a.z)&&!filedNums.includes(a.a)),major:activeTMF.filter(a=>a.cl==="Core"&&majZones.includes(a.z)&&!filedNums.includes(a.a)),minor:activeTMF.filter(a=>a.cl==="Core"&&!critZones.includes(a.z)&&!majZones.includes(a.z)&&!filedNums.includes(a.a))};
+  const gaps={crit:activeTMF.filter(a=>a.cl==="Core"&&critZones.includes(a.z)&&!filedNums.includes(a.a)),major:activeTMF.filter(a=>a.cl==="Core"&&majZones.includes(a.z)&&!filedNums.includes(a.a)),minor:activeTMF.filter(a=>a.cl==="Core"&&!critZones.includes(a.z)&&!majZones.includes(a.z)&&!filedNums.includes(a.a))}
   const totalW=activeZONES.reduce((s,{z})=>{const w=critZones.includes(z)?3:majZones.includes(z)?2:1;return s+w;},0);
   const zoneComp=(z:string)=>{const t=activeTMF.filter(a=>a.cl==="Core"&&a.z===z).length;const f=docs.filter(d=>d.status==="Approved"&&activeTMF.some(a=>a.a===d.artifact_num&&a.z===z)).length;return t?Math.round((f/t)*100):0;};
   const earnedW=activeZONES.reduce((s,{z})=>{const w=critZones.includes(z)?3:majZones.includes(z)?2:1;return s+(zoneComp(z)/100)*w;},0);
@@ -474,7 +474,7 @@ if(checklistData&&checklistData.length>0){setChecklist(checklistData);setCheckli
         </div>
       )}
 
-      {panel==="briefing"&&({panel==="checklist"&&(
+      {panel==="briefing"&&(
   <div style={{flex:1,overflowY:"auto",padding:"1.5rem"}}>
     <div style={{maxWidth:"900px",margin:"0 auto",display:"flex",flexDirection:"column",gap:"16px"}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
