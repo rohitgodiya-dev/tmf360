@@ -765,7 +765,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {navItem("readiness","Inspection readiness","ti-shield-check")}
           {navItem("report","Report","ti-file-analytics")}
           {navItem("tracker","Tracker","ti-bell-ringing")}
-          {navItem("chat","AI specialist","ti-message-circle")}
+          <a href="/trinity" style={{display:"flex",alignItems:"center",gap:"8px",padding:"7px 10px",borderRadius:"8px",fontSize:"12px",color:P.textSec,textDecoration:"none"}}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>AI Specialist</a>
           {navItem("audit","Audit trail","ti-lock")}
           {navItem("quality","Quality checks","ti-clipboard-list")}
           {navItem("tmfauditor","TMF Auditor","ti-checkup-list")}
@@ -4344,6 +4344,7 @@ setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfi
     </div>
   );
 }
+
 
 
 
