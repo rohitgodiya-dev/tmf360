@@ -108,7 +108,7 @@
       btn.addEventListener('click',function(){
         var key=btn.dataset.key;
         var paper=allPapers.find(function(p){return(p.doi||p.title)===key;});
-        var citation=(paper.authors||'')+' ('+(paper.pubYear||'n.d.')+''). '+paper.title+'. '+(paper.journal||'')+'. '+(paper.doi?'https://doi.org/'+paper.doi:paper.url||'');
+        var citation=(paper.authors||'')+' ('+(paper.pubYear||'n.d.')+''+'). '+paper.title+'. '+(paper.journal||'')+'. '+(paper.doi?'https://doi.org/'+paper.doi:paper.url||'');
         navigator.clipboard.writeText(citation.trim()).then(function(){
           btn.textContent='Copied!';setTimeout(function(){btn.textContent='Cite';},1500);
         });
