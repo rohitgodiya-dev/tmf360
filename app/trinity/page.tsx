@@ -14,12 +14,52 @@ const P={
   purple:"#8B5CF6",purpleLight:"#F5F3FF",
   cyan:"#0891B2",cyanLight:"#ECFEFF",
   lavender:"#E9ECFB",
-  sidebar:"#FFFFFF",sidebarBorder:"#E5E7EB",sidebarActive:"#FFF7ED",sidebarText:"#6B7280",sidebarTextActive:"#F97316",
 };
 
-const VAULT_DOC_TYPES=["Protocol","Protocol Amendment","Investigator's Brochure","Statistical Analysis Plan","Monitoring Plan","Medical Monitoring Plan","IRB / IEC Decision","Regulatory Authority Decision","Clinical Trial Agreement","Informed Consent Form","Risk Management Plan","Quality Plan","Data Management Plan","Safety Management Plan","Other"];
+const DEFAULT_QUESTIONS=[
+  {question_text:"Does the TMF index match the actual folder/document structure, with no orphaned or misfiled documents?",category:"TMF Structure",severity:"Critical",sort_order:1},
+  {question_text:"Is every document's version number and effective date legible and consistent with the version referenced elsewhere in the TMF?",category:"Document Quality",severity:"Critical",sort_order:2},
+  {question_text:"Are superseded documents clearly marked as superseded (not deleted), with the date of supersession recorded?",category:"Document Quality",severity:"Major",sort_order:3},
+  {question_text:"Is the protocol filed with all amendments in sequence, and does each amendment have a clear effective date and corresponding IRB/EC approval?",category:"Protocol",severity:"Critical",sort_order:4},
+  {question_text:"Does the IRB/EC approval date for the protocol/amendment precede the date any related activity (enrollment, procedure change) took place at site?",category:"IRB/EC",severity:"Critical",sort_order:5},
+  {question_text:"Are all IRB/EC approved ICF versions filed, and do they match the version log used to track which subjects signed which version?",category:"IRB/EC",severity:"Critical",sort_order:6},
+  {question_text:"Is there a document showing continuing review/renewal of IRB/EC approval before the previous approval expired (no lapse in coverage)?",category:"IRB/EC",severity:"Critical",sort_order:7},
+  {question_text:"Are FDA Form 1572s signed, dated, and do the listed sub-investigators match the delegation log exactly?",category:"Investigator",severity:"Critical",sort_order:8},
+  {question_text:"Does the delegation log show start and end dates for each team member's assigned tasks, with no unauthorized person having performed a delegated task before being added?",category:"Investigator",severity:"Critical",sort_order:9},
+  {question_text:"Are CVs current (typically within 2 years) and do they cover the full period the individual was active on the study?",category:"Investigator",severity:"Major",sort_order:10},
+  {question_text:"Are medical licenses current and non-expired for the full duration of each individual's involvement?",category:"Investigator",severity:"Major",sort_order:11},
+  {question_text:"Is there documented evidence (certificate, sign-off log) that each staff member completed protocol-specific and GCP training before performing any study-related task?",category:"Training",severity:"Major",sort_order:12},
+  {question_text:"Are financial disclosure forms collected for all applicable personnel, and updated if there was a status change during the study?",category:"Investigator",severity:"Major",sort_order:13},
+  {question_text:"For every enrolled subject, is there a signed and dated ICF on file, and does the date precede the first study-specific procedure?",category:"Informed Consent",severity:"Critical",sort_order:14},
+  {question_text:"If there were protocol amendments requiring re-consent, is there documentation that every affected subject was re-consented, with no gaps?",category:"Informed Consent",severity:"Critical",sort_order:15},
+  {question_text:"Are assent forms (if applicable) present and correctly dated alongside parental/guardian consent?",category:"Informed Consent",severity:"Major",sort_order:16},
+  {question_text:"Is there a monitoring visit report for every visit conducted, filed within the sponsor's SOP-defined timeline?",category:"Monitoring",severity:"Critical",sort_order:17},
+  {question_text:"Do monitoring visit reports show follow-up items, and is there evidence those items were closed out (not just raised)?",category:"Monitoring",severity:"Major",sort_order:18},
+  {question_text:"Are monitoring visit report findings consistent with what's reflected in the protocol deviation log (no discrepancies between what was found and what was logged)?",category:"Monitoring",severity:"Major",sort_order:19},
+  {question_text:"Is the current monitoring plan on file, and does it match the actual monitoring frequency/method being used?",category:"Monitoring",severity:"Major",sort_order:20},
+  {question_text:"Are SAE/AE reports filed with documented submission dates, and do those dates meet required reporting timelines (e.g., 24 hours for SAEs)?",category:"Safety Reporting",severity:"Critical",sort_order:21},
+  {question_text:"Is there evidence of IRB/EC acknowledgment or receipt of safety reports?",category:"Safety Reporting",severity:"Major",sort_order:22},
+  {question_text:"Are SUSARs and IND safety reports filed with proof of distribution to all relevant sites/investigators?",category:"Safety Reporting",severity:"Critical",sort_order:23},
+  {question_text:"Are device/drug/material shipment records complete, with receipt confirmation signed and dated by site staff?",category:"Drug/Device Accountability",severity:"Critical",sort_order:24},
+  {question_text:"Do accountability logs reconcile (units received = units used + units returned/destroyed, with no unexplained variance)?",category:"Drug/Device Accountability",severity:"Critical",sort_order:25},
+  {question_text:"If temperature-sensitive materials are involved, are temperature logs continuous with no unexplained gaps, and are excursions documented with a corrective action?",category:"Drug/Device Accountability",severity:"Major",sort_order:26},
+  {question_text:"Is the protocol deviation/violation log complete, with each entry classified by severity and a CAPA documented where required?",category:"Protocol Deviations",severity:"Critical",sort_order:27},
+  {question_text:"Are deviations mentioned in monitoring reports, safety reports, or correspondence but missing from the deviation log (a common audit finding)?",category:"Protocol Deviations",severity:"Critical",sort_order:28},
+  {question_text:"Is there a communication log or correspondence file capturing key sponsor-site decisions, not just left in informal/unfiled emails?",category:"Correspondence",severity:"Major",sort_order:29},
+  {question_text:"Are audit or inspection findings (internal or regulatory) filed along with CAPA plans and evidence of CAPA closure?",category:"Audit/Inspection",severity:"Critical",sort_order:30},
+  {question_text:"For a sample of subjects, does the document trail move logically in sequence — consent, screening, enrollment, visit records, AE reporting, discontinuation/completion — with no missing steps?",category:"Subject Records",severity:"Critical",sort_order:31},
+  {question_text:"Do dates in the TMF documents align with dates in source documents/EDC audit trail, with no logical impossibilities (e.g., procedure dated before consent)?",category:"Subject Records",severity:"Critical",sort_order:32},
+  {question_text:"Are electronic signatures timestamped, attributable to a specific individual, and compliant with 21 CFR Part 11 where applicable?",category:"Electronic Records",severity:"Critical",sort_order:33},
+  {question_text:"If a subject withdrew or was discontinued, is there documentation of the reason, the date, and any required follow-up (e.g., safety follow-up)?",category:"Subject Records",severity:"Major",sort_order:34},
+  {question_text:"Is the close-out visit report filed, and does it confirm final drug/device accountability and final query resolution?",category:"Close-Out",severity:"Major",sort_order:35},
+  {question_text:"Is there a final IRB/EC notification of study closure on file?",category:"Close-Out",severity:"Major",sort_order:36},
+  {question_text:"Is there a documented archive and retention plan naming responsible parties and retention duration?",category:"Archive",severity:"Major",sort_order:37},
+  {question_text:"Are any documents missing signatures, dates, or have illegible/handwritten corrections without initials and dates (GCP documentation standard)?",category:"Document Quality",severity:"Critical",sort_order:38},
+];
+
 const SEVERITY_COLOR=(s:string)=>s==="Critical"?P.danger:s==="Major"?P.warning:P.blue;
 const SEVERITY_BG=(s:string)=>s==="Critical"?P.dangerLight:s==="Major"?P.warningLight:P.blueLight;
+const VAULT_DOC_TYPES=["Protocol","Protocol Amendment","Investigator's Brochure","Statistical Analysis Plan","Monitoring Plan","Medical Monitoring Plan","IRB / IEC Decision","Regulatory Authority Decision","Clinical Trial Agreement","Informed Consent Form","Risk Management Plan","Quality Plan","Data Management Plan","Safety Management Plan","Other"];
 
 const Ico={
   star:()=><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c.5 3.6 2.2 6 6.5 6.5-4.3.5-6 2.9-6.5 6.5-.5-3.6-2.2-6-6.5-6.5C9.8 8 11.5 5.6 12 2Z"/><path d="M19 15c.25 1.6 1 2.3 2.6 2.5-1.6.25-2.3 1-2.6 2.6-.25-1.6-1-2.3-2.6-2.6 1.6-.2 2.3-.9 2.6-2.5Z"/></svg>,
@@ -27,7 +67,7 @@ const Ico={
   db:()=><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>,
   alert:()=><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
   sun:()=><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>,
-  list:()=><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
+  shield:()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
   brain:()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.14Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-2.14Z"/></svg>,
   refresh:()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>,
   loader:()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{animation:"spin 1s linear infinite"}}><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>,
@@ -42,30 +82,31 @@ const Ico={
   download:()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
   chevDown:()=><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>,
   lightning:()=><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
-  shield:()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
   menu:()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>,
   back:()=><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>,
+  trash:()=><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>,
 };
 
 interface ChatMsg{role:"ai"|"user";text:string;isHealthCard?:boolean;sourceTags?:string[];classification?:{zoneLine:string;confidence:number;warning?:{detail:string;action:string}};pendingClassification?:any;classStage?:string;validation?:any;}
 interface VaultDoc{id:string;file_name:string;custom_name:string;document_type:string;file_path:string;file_size:number;extracted_text:string;uploaded_by:string;uploaded_at:string;is_active:boolean;}
 interface Finding{id:string;finding_type:string;severity:string;title:string;detail:string;source_doc:string;artifact_ref:string;status:string;created_at:string;}
-interface ChatSession{id:string;title:string;messages:ChatMsg[];is_pinned:boolean;document_id?:string;document_name?:string;created_at:string;updated_at:string;}
+interface ChatSession{id:string;title:string;messages:ChatMsg[];is_pinned:boolean;created_at:string;updated_at:string;}
 interface Memory{id:string;memory_text:string;created_at:string;}
 interface Suggestion{id:string;action_text:string;reason:string;urgency:string;}
+interface InspectionQuestion{id:string;question_text:string;category:string;severity:string;is_active:boolean;sort_order:number;}
 
 function SessionRow({s,active,onLoad,onPin,onDelete}:{s:ChatSession;active:boolean;onLoad:(s:ChatSession)=>void;onPin:(id:string,pinned:boolean)=>void;onDelete:(id:string)=>void}){
   const[hover,setHover]=useState(false);
   return(
-    <div onMouseEnter={()=>setHover(true)} onMouseLeave={()=>setHover(false)} style={{display:"flex",alignItems:"center",gap:"6px",padding:"6px 8px",borderRadius:"7px",cursor:"pointer",background:active?"#FFF7ED":hover?"#FFF7ED":"transparent",margin:"0 4px 1px"}}>
-      <div onClick={()=>onLoad(s)} style={{flex:1,minWidth:0}}>
-        <div style={{fontSize:"11px",color:active?"#F1F5F9":"#94A3B8",fontWeight:active?"500":"400",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.title||"New conversation"}</div>
-        <div style={{fontSize:"9px",color:"#6B7280",marginTop:"1px"}}>{new Date(s.updated_at).toLocaleDateString()}</div>
+    <div onMouseEnter={()=>setHover(true)} onMouseLeave={()=>setHover(false)} onClick={()=>onLoad(s)} style={{display:"flex",alignItems:"center",gap:"6px",padding:"7px 10px",borderRadius:"7px",cursor:"pointer",background:active?"#FFF7ED":hover?"#F9FAFB":"transparent",margin:"0 6px 1px",borderLeft:active?"2px solid #F97316":"2px solid transparent"}}>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:"12px",color:active?"#F97316":"#374151",fontWeight:active?"600":"400",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.title||"New conversation"}</div>
+        <div style={{fontSize:"10px",color:"#9CA3AF",marginTop:"1px"}}>{new Date(s.updated_at).toLocaleDateString()}</div>
       </div>
       {hover&&(
         <div style={{display:"flex",gap:"2px",flexShrink:0}}>
-          <button onClick={e=>{e.stopPropagation();onPin(s.id,s.is_pinned);}} style={{background:"none",border:"none",cursor:"pointer",color:s.is_pinned?"#F97316":"#475569",padding:"2px"}}><Ico.memory/></button>
-          <button onClick={e=>{e.stopPropagation();onDelete(s.id);}} style={{background:"none",border:"none",cursor:"pointer",color:"#6B7280",padding:"2px"}}><Ico.x/></button>
+          <button onClick={e=>{e.stopPropagation();onPin(s.id,s.is_pinned);}} style={{background:"none",border:"none",cursor:"pointer",color:s.is_pinned?"#F97316":"#9CA3AF",padding:"2px"}}><Ico.memory/></button>
+          <button onClick={e=>{e.stopPropagation();onDelete(s.id);}} style={{background:"none",border:"none",cursor:"pointer",color:"#9CA3AF",padding:"2px"}}><Ico.x/></button>
         </div>
       )}
     </div>
@@ -78,7 +119,7 @@ export default function TrinityPage(){
   const[studies,setStudies]=useState<any[]>([]);
   const[activeStudy,setActiveStudy]=useState<any>(null);
   const[userFullName,setUserFullName]=useState("");
-  const[panel,setPanel]=useState<"chat"|"vault"|"findings"|"briefing"|"checklist"|"inspection">("chat");
+  const[panel,setPanel]=useState<"chat"|"vault"|"findings"|"briefing"|"inspection">("chat");
   const[loading,setLoading]=useState(true);
   const[docs,setDocs]=useState<any[]>([]);
   const[tmfConfig,setTmfConfig]=useState<any[]>([]);
@@ -111,12 +152,15 @@ export default function TrinityPage(){
   const[analysing,setAnalysing]=useState(false);
   const[briefing,setBriefing]=useState<any>(null);
   const[briefingLoading,setBriefingLoading]=useState(false);
-  const[checklist,setChecklist]=useState<any[]>([]);
-  const[checklistLoading,setChecklistLoading]=useState(false);
-  const[checklistGenerated,setChecklistGenerated]=useState(false);
   const[studyIdentity,setStudyIdentity]=useState<any>(null);
   const[inspectionReport,setInspectionReport]=useState<any>(null);
   const[inspectionLoading,setInspectionLoading]=useState(false);
+  const[inspectionQuestions,setInspectionQuestions]=useState<InspectionQuestion[]>([]);
+  const[showAddQuestion,setShowAddQuestion]=useState(false);
+  const[newQuestionText,setNewQuestionText]=useState("");
+  const[newQuestionCategory,setNewQuestionCategory]=useState("General");
+  const[newQuestionSeverity,setNewQuestionSeverity]=useState("Major");
+  const[inspectionTab,setInspectionTab]=useState<"questions"|"report">("questions");
   const[memories,setMemories]=useState<Memory[]>([]);
   const[suggestions,setSuggestions]=useState<Suggestion[]>([]);
   const[showMemory,setShowMemory]=useState(false);
@@ -138,6 +182,7 @@ export default function TrinityPage(){
       await loadStudyData(active.study_id,data.org_id,uid);
       await loadSessions(active.study_id,data.org_id,uid);
       await loadMemories(active.study_id,data.org_id,uid);
+      await loadInspectionQuestions(data.org_id);
       await generateSuggestions(active.study_id,data.org_id);
     }
     setLoading(false);
@@ -154,10 +199,31 @@ export default function TrinityPage(){
     if(configData)setTmfConfig(configData);
     if(vaultData)setVaultDocs(vaultData as VaultDoc[]);
     if(findingData)setFindings(findingData as Finding[]);
-    const{data:checklistData}=await supabase.from("study_checklist").select("*").eq("org_id",oid).eq("study_id",studyId).eq("is_active",true).order("generated_at",{ascending:false});
-    if(checklistData&&checklistData.length>0){setChecklist(checklistData);setChecklistGenerated(true);}
     const{data:identityData}=await supabase.from("study_identity").select("*").eq("org_id",oid).eq("study_id",studyId).eq("is_active",true).order("extracted_at",{ascending:false}).limit(1).maybeSingle();
     if(identityData)setStudyIdentity(identityData);
+  }
+
+  async function loadInspectionQuestions(oid:string){
+    const{data}=await supabase.from("inspection_questions").select("*").eq("org_id",oid).eq("is_active",true).order("sort_order",{ascending:true});
+    if(data&&data.length>0){setInspectionQuestions(data as InspectionQuestion[]);}
+    else{
+      const toInsert=DEFAULT_QUESTIONS.map(q=>({...q,org_id:oid,is_active:true,is_default:true}));
+      const{data:inserted}=await supabase.from("inspection_questions").insert(toInsert).select();
+      if(inserted)setInspectionQuestions(inserted as InspectionQuestion[]);
+    }
+  }
+
+  async function addInspectionQuestion(){
+    if(!newQuestionText.trim()||!orgId)return;
+    const maxOrder=inspectionQuestions.reduce((m,q)=>Math.max(m,q.sort_order),0);
+    const{data}=await supabase.from("inspection_questions").insert([{org_id:orgId,question_text:newQuestionText.trim(),category:newQuestionCategory,severity:newQuestionSeverity,is_active:true,is_default:false,sort_order:maxOrder+1}]).select().single();
+    if(data)setInspectionQuestions(prev=>[...prev,data as InspectionQuestion]);
+    setNewQuestionText("");setShowAddQuestion(false);
+  }
+
+  async function removeInspectionQuestion(id:string){
+    await supabase.from("inspection_questions").update({is_active:false}).eq("id",id);
+    setInspectionQuestions(prev=>prev.filter(q=>q.id!==id));
   }
 
   async function loadSessions(studyId:string,oid:string,uid:string){
@@ -189,24 +255,27 @@ export default function TrinityPage(){
     setPanel("chat");setChatDocAction(null);setFlagStage("idle");setApproveStage(0);
   }
 
-  function scheduleSave(msgs:ChatMsg[]){
+  function scheduleSave(msgs:ChatMsg[],sid?:string){
     if(saveTimer.current)clearTimeout(saveTimer.current);
+    const sessionId=sid||activeSessionId;
     saveTimer.current=setTimeout(async()=>{
-      if(!activeSessionId)return;
-      await supabase.from("trinity_chats").update({messages:msgs,updated_at:new Date().toISOString()}).eq("id",activeSessionId);
-      setSessions(prev=>prev.map(s=>s.id===activeSessionId?{...s,messages:msgs,updated_at:new Date().toISOString()}:s));
+      if(!sessionId)return;
+      await supabase.from("trinity_chats").update({messages:msgs,updated_at:new Date().toISOString()}).eq("id",sessionId);
+      setSessions(prev=>prev.map(s=>s.id===sessionId?{...s,messages:msgs,updated_at:new Date().toISOString()}:s));
     },1500);
   }
 
   async function autoTitle(msgs:ChatMsg[],sessionId:string){
-    if(msgs.length<3)return;
-    const firstUserMsg=msgs.find(m=>m.role==="user");
-    if(!firstUserMsg)return;
+    const userMsgs=msgs.filter(m=>m.role==="user"&&m.text&&m.text.length>2);
+    if(userMsgs.length===0)return;
     try{
-      const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:`Generate a short 4-6 word title for a conversation that starts with: "${firstUserMsg.text}". Return ONLY the title, no quotes.`,context:"You generate short conversation titles."})});
+      const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:`Generate a short 4-6 word title for a clinical trial TMF conversation that starts with: "${userMsgs[0].text.slice(0,100)}". Return ONLY the title text, no quotes, no punctuation at end.`,context:"You generate short conversation titles for a clinical trial management platform. Return only the title."})});
       const data=await res.json();
-      const title=(data.response||"").trim().slice(0,60);
-      if(title){await supabase.from("trinity_chats").update({title}).eq("id",sessionId);setSessions(prev=>prev.map(s=>s.id===sessionId?{...s,title}:s));}
+      const title=(data.response||"").trim().replace(/^["']|["']$/g,"").slice(0,60);
+      if(title&&title.length>3){
+        await supabase.from("trinity_chats").update({title}).eq("id",sessionId);
+        setSessions(prev=>prev.map(s=>s.id===sessionId?{...s,title}:s));
+      }
     }catch{}
   }
 
@@ -219,7 +288,7 @@ export default function TrinityPage(){
     if(!confirm("Delete this conversation?"))return;
     await supabase.from("trinity_chats").update({is_active:false}).eq("id",sessionId);
     setSessions(prev=>prev.filter(s=>s.id!==sessionId));
-    if(activeSessionId===sessionId){const remaining=sessions.filter(s=>s.id!==sessionId);if(remaining.length>0){loadSession(remaining[0]);}else{await startNewChat();}}
+    if(activeSessionId===sessionId){const remaining=sessions.filter(s=>s.id!==sessionId);if(remaining.length>0)loadSession(remaining[0]);else await startNewChat();}
   }
 
   async function extractMemories(msgs:ChatMsg[]){
@@ -227,10 +296,9 @@ export default function TrinityPage(){
     const recentAI=msgs.filter(m=>m.role==="ai"&&m.text&&m.text.length>50).slice(-3).map(m=>m.text).join("\n");
     if(!recentAI)return;
     try{
-      const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:`Extract 1-3 key factual statements worth remembering about this study. Only concrete facts. Return JSON array of strings: ["fact1"]. If nothing, return []. Responses:\n${recentAI}`,context:"Return only valid JSON array."})});
+      const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:`Extract 1-3 key factual statements worth remembering. Only concrete facts. Return JSON array: ["fact1"]. If nothing, return []. Text:\n${recentAI}`,context:"Return only valid JSON array."})});
       const data=await res.json();
-      const raw=data.response?.replace(/```json|```/g,"").trim();
-      const facts:string[]=JSON.parse(raw);
+      const facts:string[]=JSON.parse((data.response||"[]").replace(/```json|```/g,"").trim());
       if(facts.length>0){
         const toInsert=facts.map(f=>({org_id:orgId,study_id:activeStudy.study_id,user_id:user.id,memory_text:f,source_chat_id:activeSessionId,is_active:true}));
         const{data:saved}=await supabase.from("trinity_memory").insert(toInsert).select();
@@ -253,15 +321,14 @@ export default function TrinityPage(){
       const suggs:Suggestion[]=[];
       if(expiring.length>0)suggs.push({id:"exp",action_text:`${expiring.length} document${expiring.length!==1?"s":""} expiring within 30 days`,reason:"Review and renew before expiry",urgency:"High"});
       if(pendingDocs.length>0)suggs.push({id:"pen",action_text:`${pendingDocs.length} document${pendingDocs.length!==1?"s":""} awaiting review`,reason:"Approve or reject pending documents",urgency:"Medium"});
-      suggs.push({id:"vault",action_text:"Upload Protocol to Study Vault",reason:"Enables study-specific gap detection",urgency:"Medium"});
+      suggs.push({id:"vault",action_text:"Upload Protocol to Study Vault",reason:"Enables identity verification and inspection readiness",urgency:"Medium"});
       setSuggestions(suggs);
     }catch{}
   }
 
   async function exportChatAsPDF(){
     if(!activeSessionId)return;
-    const session=sessions.find(s=>s.id===activeSessionId);
-    if(!session)return;
+    const session=sessions.find(s=>s.id===activeSessionId);if(!session)return;
     const msgs=session.messages||chatMessages;
     const hash=btoa(JSON.stringify(msgs)).slice(0,32);
     const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Trinity Chat Export</title><style>body{font-family:Arial,sans-serif;font-size:11px;margin:30px;color:#111}h1{color:#F97316}.msg{margin:10px 0;padding:8px 12px;border-radius:6px}.user{background:#F3F4F6}.ai{background:#EFF6FF;border-left:3px solid #F97316}.footer{margin-top:30px;font-size:9px;color:#9CA3AF;border-top:1px solid #E5E7EB;padding-top:10px}</style></head><body><h1>Trinity AI Chat Export</h1><p><strong>Study:</strong> ${activeStudy?.study_id||""} &nbsp;<strong>User:</strong> ${user?.email||""} &nbsp;<strong>Exported:</strong> ${new Date().toLocaleString()}</p><p><strong>Session:</strong> ${session.title||"Untitled"}</p><hr/>${msgs.map(m=>`<div class="msg ${m.role}">${m.role==="user"?"<strong>User</strong>":"<strong>Trinity AI</strong>"}: ${m.text||"[Action card]"}</div>`).join("")}<div class="footer">Hash: ${hash} · TMF360 Trinity AI · ${new Date().toISOString()}</div></body></html>`;
@@ -272,12 +339,12 @@ export default function TrinityPage(){
     const s=studies.find(x=>x.study_id===studyId);
     if(s&&user&&orgId){
       setActiveStudy(s);localStorage.setItem("tmf_active_study",studyId);
-      setDocs([]);setVaultDocs([]);setFindings([]);setChecklist([]);setChecklistGenerated(false);setBriefing(null);setMemories([]);setSuggestions([]);setStudyIdentity(null);setInspectionReport(null);
+      setDocs([]);setVaultDocs([]);setFindings([]);setBriefing(null);setMemories([]);setSuggestions([]);setStudyIdentity(null);setInspectionReport(null);
       loadStudyData(studyId,orgId,user.id);loadSessions(studyId,orgId,user.id);loadMemories(studyId,orgId,user.id);generateSuggestions(studyId,orgId);
     }
   }
 
-  const activeTMF=tmfConfig.filter(c=>c.type==="artifact").map(c=>({z:c.zone_num,zn:c.zone_name||"",s:c.section_num||"",a:c.artifact_num,an:c.artifact_name,cl:c.classification||"Core",iso:c.iso_ref||""}));
+  const activeTMF=tmfConfig.filter(c=>c.type==="artifact").map(c=>({z:c.zone_num,zn:c.zone_name||"",s:c.section_num||"",a:c.artifact_num,an:c.artifact_name,cl:c.classification||"Core"}));
   const activeZONES=tmfConfig.filter(c=>c.type==="zone").sort((a,b)=>parseFloat(a.zone_num)-parseFloat(b.zone_num)).map(c=>({z:c.zone_num,zn:c.zone_name}));
   const coreArts=activeTMF.filter(a=>a.cl==="Core");
   const filedNums=docs.filter(d=>d.status==="Approved").map(d=>d.artifact_num);
@@ -297,7 +364,7 @@ export default function TrinityPage(){
   function padZone(z:string){return z.padStart(2,"0");}
   function formatSection(s:string){const p=(s||"").split(".");if(p.length<2)return s||"00.00";return`${p[0].padStart(2,"0")}.${p[1]}`;}
   function detectFlagReason(doc:any){if(!doc.version||doc.version.trim()==="")return"Missing version.";if(doc.expiry_date&&new Date(doc.expiry_date)<new Date())return`Document expired on ${doc.expiry_date}.`;return`Version mismatch.`;}
-  function buildVaultContext(){if(vaultDocs.length===0)return"No vault documents uploaded.";return vaultDocs.map(d=>`[${d.document_type} - ${d.custom_name}]:\n${d.extracted_text?.slice(0,2000)||"No text extracted"}`).join("\n\n---\n\n");}
+  function buildVaultContext(){if(vaultDocs.length===0)return"No vault documents uploaded.";return vaultDocs.map(d=>`[${d.document_type} - ${d.custom_name}]:\n${d.extracted_text?.slice(0,3000)||"No text extracted"}`).join("\n\n---\n\n");}
 
   function presentClassification(){
     if(!activeStudy){setChatMessages(prev=>[...prev,{role:"ai",text:"Select a study first."}]);return;}
@@ -325,11 +392,6 @@ export default function TrinityPage(){
       const aiMsg:ChatMsg={role:"ai",text:`${donePct}% complete, with ${missing} core documents outstanding and ${pending} awaiting review. Inspection readiness is ${ri}/100 for ${activeStudy.study_id}.`,isHealthCard:true,sourceTags:["Gap analysis","Inspection readiness","Document tracker"]};
       const final=[...newMsgs,aiMsg];setChatMessages(final);scheduleSave(final);setChatLoading(false);return;
     }
-    if(activeStudy&&/why/.test(lower)&&/(flag|reject)/.test(lower)){
-      const flaggedDoc=docs.find(d=>d.status==="Draft"&&(d as any).rejection_reason);
-      const aiMsg:ChatMsg=flaggedDoc?{role:"ai",text:`"${flaggedDoc.custom_file_name||flaggedDoc.artifact_name}" was flagged:\n${(flaggedDoc as any).rejection_reason}`,sourceTags:["Document tracker","Audit trail"]}:{role:"ai",text:`No flagged documents in ${activeStudy.study_id} right now.`};
-      const final=[...newMsgs,aiMsg];setChatMessages(final);scheduleSave(final);setChatLoading(false);return;
-    }
     if(activeStudy&&/(review|approve|classify|flag|upload)/.test(lower)&&/(doc|document|file|tracker)/.test(lower)){presentClassification();setChatLoading(false);return;}
     try{
       const vaultCtx=buildVaultContext();
@@ -341,8 +403,12 @@ export default function TrinityPage(){
       const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:userMsg,context})});
       const data=await res.json();
       const aiMsg:ChatMsg={role:"ai",text:data.response||"I couldn't process that request."};
-      const final=[...newMsgs,aiMsg];setChatMessages(final);scheduleSave(final);
-      if(final.length===3&&activeSessionId)autoTitle(final,activeSessionId);
+      const final=[...newMsgs,aiMsg];
+      setChatMessages(final);
+      const currentSessionId=activeSessionId;
+      scheduleSave(final,currentSessionId||undefined);
+      const userMsgCount=final.filter(m=>m.role==="user").length;
+      if(userMsgCount===1&&currentSessionId)setTimeout(()=>autoTitle(final,currentSessionId),800);
       if(final.length%10===0)extractMemories(final);
     }catch{
       const errMsg:ChatMsg={role:"ai",text:"Error connecting. Please try again."};
@@ -363,14 +429,12 @@ export default function TrinityPage(){
       const hasHardFail=hardFails.length>0;
       const hasIssues=hasHardFail||validationResult?.overall==="fail"||(cl.issues?.length>0);
       const docStatus=hasIssues?"Draft":"Under Review";
-      const rejReason=hasIssues?[validationResult?.audit_narrative||validationResult?.summary,...(cl.issues||[])].filter(Boolean).join("; "):undefined;
-      const{data:docData,error:docErr}=await supabase.from("documents").insert([{study_id:activeStudy?.study_id,user_id:user?.id,org_id:orgId,artifact_num:cl.artifact_num,artifact_name:cl.artifact_name,zone:cl.zone_num,version:"",status:docStatus,owner:userFullName||user?.email,file_path:filePath,file_name:cl.fileName,custom_file_name:cl.fileName,file_type:"application/pdf",file_size:0,comments:"Auto-classified by Trinity AI. Vault validated.",rejection_reason:rejReason||null}]).select();
+      const rejReason=hasIssues?[validationResult?.audit_narrative,...(cl.issues||[])].filter(Boolean).join("; "):undefined;
+      const{data:docData,error:docErr}=await supabase.from("documents").insert([{study_id:activeStudy?.study_id,user_id:user?.id,org_id:orgId,artifact_num:cl.artifact_num,artifact_name:cl.artifact_name,zone:cl.zone_num,version:"",status:docStatus,owner:userFullName||user?.email,file_path:filePath,file_name:cl.fileName,custom_file_name:cl.fileName,file_type:"application/pdf",file_size:0,comments:"Auto-classified by Trinity AI.",rejection_reason:rejReason||null}]).select();
       if(docErr)throw new Error(docErr.message);
       setDocs(prev=>[docData[0],...prev]);
-      await supabase.from("audit_trail").insert([{user_id:user?.id,user_email:user?.email,action:"Document classified and vault-validated by Trinity",document_id:docData[0].id,study_id:activeStudy?.study_id,field_changed:"status",old_value:"",new_value:docStatus,signature_reason:"Trinity AI + vault validation",document_name:cl.fileName}]);
-      if(validationResult){
-        await supabase.from("document_validations").insert([{org_id:orgId,study_id:activeStudy?.study_id,document_id:docData[0].id,document_name:cl.fileName,artifact_num:cl.artifact_num,zone:cl.zone_num,identity_checks:validationResult.identity_checks||[],quality_checks:validationResult.quality_checks||[],consistency_checks:validationResult.consistency_checks||[],overall_result:validationResult.overall,audit_narrative:validationResult.audit_narrative,validated_by:user?.email,hash:validationResult.hash}]).select();
-      }
+      await supabase.from("audit_trail").insert([{user_id:user?.id,user_email:user?.email,action:"Document classified and vault-validated by Trinity",document_id:docData[0].id,study_id:activeStudy?.study_id,field_changed:"status",old_value:"",new_value:docStatus,signature_reason:"Trinity AI",document_name:cl.fileName}]);
+      if(validationResult)await supabase.from("document_validations").insert([{org_id:orgId,study_id:activeStudy?.study_id,document_id:docData[0].id,document_name:cl.fileName,artifact_num:cl.artifact_num,zone:cl.zone_num,identity_checks:validationResult.identity_checks||[],quality_checks:validationResult.quality_checks||[],consistency_checks:validationResult.consistency_checks||[],overall_result:validationResult.overall,audit_narrative:validationResult.audit_narrative,validated_by:user?.email,hash:validationResult.hash}]);
       const aiMsg:ChatMsg={role:"ai",text:hasHardFail?`REJECTED — Identity verification failed.\n${hardFails.map((c:any)=>c.detail).join("\n")}\n\nThis document cannot be filed into ${activeStudy?.study_id}.`:hasIssues?`Filed to Draft — issues detected:\n${rejReason}`:`__FILED__Filed to Zone ${cl.zone_num} — ${cl.artifact_name}\nIdentity verified, vault-validated, audit trail recorded.`};
       const final=[...chatMessages,aiMsg];setChatMessages(final);scheduleSave(final);
     }catch(err:any){const errMsg:ChatMsg={role:"ai",text:"Filing error: "+err.message};const final=[...chatMessages,errMsg];setChatMessages(final);scheduleSave(final);}
@@ -385,7 +449,7 @@ export default function TrinityPage(){
     if(upErr){setVaultProgress("Upload failed: "+upErr.message);setVaultUploading(false);return;}
     setVaultProgress("Extracting text...");
     let extractedText="";
-    try{const reader=new FileReader();const base64=await new Promise<string>((res,rej)=>{reader.onload=()=>res((reader.result as string).split(",")[1]);reader.onerror=rej;reader.readAsDataURL(vaultFile);});const resp=await fetch("/api/vault/extract",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pdfBase64:base64,fileName:vaultFile.name})});const data=await resp.json();extractedText=data.text||"";}catch(e){extractedText="";}
+    try{const reader=new FileReader();const base64=await new Promise<string>((res,rej)=>{reader.onload=()=>res((reader.result as string).split(",")[1]);reader.onerror=rej;reader.readAsDataURL(vaultFile);});const resp=await fetch("/api/vault/extract",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pdfBase64:base64,fileName:vaultFile.name})});const data=await resp.json();extractedText=data.text||"";}catch{extractedText="";}
     setVaultProgress("Saving...");
     const{data:inserted}=await supabase.from("study_vault").insert([{org_id:orgId,study_id:activeStudy.study_id,file_name:vaultFile.name,custom_name:vaultCustomName||vaultFile.name,document_type:vaultDocType,file_path:path,file_size:vaultFile.size,extracted_text:extractedText,uploaded_by:user?.email,is_active:true}]).select();
     if(inserted){
@@ -404,7 +468,7 @@ export default function TrinityPage(){
             if(savedIdentity)setStudyIdentity(savedIdentity);
             setVaultProgress("Done! Study identity profile extracted.");
           }
-        }catch(e){setVaultProgress("Done!");}
+        }catch{setVaultProgress("Done!");}
       }
       setTimeout(()=>{setVaultFile(null);setVaultCustomName("");setVaultProgress("");},3000);
     }
@@ -419,60 +483,51 @@ export default function TrinityPage(){
     try{
       const vaultContext=vaultDocs.map(d=>`[${d.document_type}] ${d.custom_name}:\n${d.extracted_text?.slice(0,3000)||"No text"}`).join("\n\n---\n\n");
       const missingList=gaps.crit.concat(gaps.major).concat(gaps.minor).map(g=>`${g.a} - ${g.an} (Zone ${g.z})`).join("\n");
-      const prompt=`You are a clinical trial TMF expert. Return JSON array:\n[{"finding_type":"gap","severity":"Critical","title":"short title","detail":"explanation","source_doc":"vault doc","artifact_ref":"DIA number"}]\n\nVAULT:\n${vaultContext}\n\nMISSING:\n${missingList}\n\nFILED:\n${docs.filter(d=>d.status==="Approved").map(d=>`${d.artifact_num} - ${d.artifact_name}`).join("\n")}\n\nReturn ONLY the JSON array.`;
+      const prompt=`You are a clinical trial TMF expert. Return JSON array:\n[{"finding_type":"gap","severity":"Critical","title":"short title","detail":"explanation","source_doc":"vault doc","artifact_ref":"DIA number"}]\n\nVAULT:\n${vaultContext}\n\nMISSING:\n${missingList}\n\nFILED:\n${docs.filter(d=>d.status==="Approved").map(d=>`${d.artifact_num} - ${d.artifact_name}`).join("\n")}\n\nReturn ONLY JSON array.`;
       const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:prompt,context:"Return only valid JSON."})});
       const data=await res.json();
       let newFindings:any[]=[];
-      try{const raw=data.response?.replace(/```json|```/g,"").trim();newFindings=JSON.parse(raw);}catch{newFindings=[];}
+      try{newFindings=JSON.parse((data.response||"[]").replace(/```json|```/g,"").trim());}catch{newFindings=[];}
       if(newFindings.length>0){const toInsert=newFindings.map((f:any)=>({...f,org_id:orgId,study_id:activeStudy.study_id,status:"Open"}));const{data:saved}=await supabase.from("trinity_findings").insert(toInsert).select();if(saved)setFindings(prev=>[...saved,...prev]);}
       setPanel("findings");
-    }catch(e){alert("Analysis failed.");}
+    }catch{alert("Analysis failed.");}
     setAnalysing(false);
   }
 
   async function resolveFinding(id:string){await supabase.from("trinity_findings").update({status:"Resolved",resolved_at:new Date().toISOString(),resolved_by:user?.email}).eq("id",id);setFindings(prev=>prev.map(f=>f.id===id?{...f,status:"Resolved"}:f));}
 
-  async function generateChecklist(){
-    if(!activeStudy||vaultDocs.length===0){alert("Upload at least one vault document first.");return;}
-    setChecklistLoading(true);
-    const vaultCtx=vaultDocs.map(d=>`[${d.document_type} - ${d.custom_name}]:\n${d.extracted_text?.slice(0,2000)||""}`).join("\n\n---\n\n");
-    const approvedDocs=docs.filter(d=>d.status==="Approved");
-    const filedArtifactNums=approvedDocs.map(d=>d.artifact_num).filter(Boolean);
-    const filedList=approvedDocs.map(d=>`${d.artifact_num} - ${d.artifact_name}`).join("\n");
-    const prompt=`You are a clinical trial TMF expert. Generate a study-specific expected document checklist based ONLY on the vault documents below.\n\nIMPORTANT RULES:\n- A document is "Filed" ONLY if its artifact_ref exactly matches one of these filed artifact numbers from the TMF artifact browser: [${filedArtifactNums.join(", ")||"none"}]\n- Do NOT mark a document as Filed just because it appears in the vault. The vault is Trinity's knowledge base only.\n- If artifact_ref is not in the filed list above, status must be "Missing".\n\nVAULT (knowledge base only - not the TMF):\n${vaultCtx}\n\nFILED ARTIFACT NUMBERS IN TMF:\n${filedList||"None filed yet"}\n\nReturn JSON array:\n[{"item_name":"string","artifact_ref":"string","zone":"string","reason":"string","severity":"Critical|Major|Minor","status":"Filed|Missing"}]\n\nReturn ONLY valid JSON array.`;
-    try{
-      const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:prompt,context:"Return only valid JSON."})});
-      const data=await res.json();
-      let items:any[]=[];
-      try{const raw=data.response?.replace(/```json|```/g,"").trim();items=JSON.parse(raw);}catch{items=[];}
-      if(items.length>0){
-        await supabase.from("study_checklist").update({is_active:false}).eq("org_id",orgId).eq("study_id",activeStudy.study_id);
-        const toInsert=items.map((item:any)=>({...item,org_id:orgId,study_id:activeStudy.study_id,is_active:true}));
-        const{data:saved}=await supabase.from("study_checklist").insert(toInsert).select();
-        if(saved){setChecklist(saved);setChecklistGenerated(true);}
-      }
-      setPanel("checklist");
-    }catch(e){alert("Checklist generation failed.");}
-    setChecklistLoading(false);
-  }
-
   async function generateInspectionReport(){
-    if(!activeStudy)return;
+    if(!activeStudy||inspectionQuestions.length===0)return;
     setInspectionLoading(true);
     try{
-      const res=await fetch("/api/trinity/inspect",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({filedDocs:docs,studyIdentity,activeStudy:activeStudy.study_id,orgId,vaultDocs:vaultDocs.map(d=>({document_type:d.document_type,custom_name:d.custom_name}))})});
+      const vaultContext=buildVaultContext();
+      const filedDocsList=docs.filter(d=>d.status==="Approved").map(d=>`${d.artifact_num} - ${d.artifact_name} (${d.custom_file_name||d.file_name})`).join("\n");
+      const questionsList=inspectionQuestions.map((q,i)=>`${i+1}. [${q.severity}][${q.category}] ${q.question_text}`).join("\n");
+      const prompt=`You are a senior FDA/EMA TMF auditor conducting a formal inspection.\n\nSTUDY: ${activeStudy.study_id}\nSPONSOR: ${activeStudy.sponsor||"Unknown"}\nPHASE: ${activeStudy.phase||"Unknown"}\n\nVAULT DOCUMENTS:\n${vaultContext}\n\nFILED TMF DOCUMENTS:\n${filedDocsList||"None filed"}\n\nINSPECTION QUESTIONS:\n${questionsList}\n\nFor each question, evaluate against vault and filed documents. Return JSON array:\n[{"question_number":1,"question_text":"exact text","category":"category","severity":"Critical|Major|Minor","verdict":"Pass|Fail|Partial|Unable to Verify","finding":"specific finding referencing actual documents","evidence":"which documents support this verdict or what is missing","regulatory_ref":"specific ICH E6(R3)/21 CFR/FDA citation","recommendation":"action required if not Pass"}]\n\nReturn ONLY valid JSON array.`;
+      const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:prompt,context:"You are a senior FDA/EMA auditor. Return only valid JSON array."})});
       const data=await res.json();
-      setInspectionReport(data);setPanel("inspection");
-    }catch(e){alert("Inspection simulation failed.");}
+      let results:any[]=[];
+      try{results=JSON.parse((data.response||"[]").replace(/```json|```/g,"").trim());}catch{results=[];}
+      const passing=results.filter((r:any)=>r.verdict==="Pass");
+      const failing=results.filter((r:any)=>r.verdict==="Fail");
+      const partial=results.filter((r:any)=>r.verdict==="Partial");
+      const unverifiable=results.filter((r:any)=>r.verdict==="Unable to Verify");
+      const criticalFails=failing.filter((r:any)=>r.severity==="Critical");
+      const majorFails=[...failing.filter((r:any)=>r.severity==="Major"),...partial.filter((r:any)=>r.severity==="Critical"||r.severity==="Major")];
+      const riskScore=Math.max(0,100-(criticalFails.length*12)-(majorFails.length*5)-(failing.filter((r:any)=>r.severity==="Minor").length*2)-(partial.length*2));
+      const narrativePrompt=`Write a 3-4 sentence formal inspection readiness assessment in FDA Form 483 style for study ${activeStudy.study_id}. ${criticalFails.length} critical failures, ${majorFails.length} major findings, ${passing.length} passing, ${unverifiable.length} unable to verify. Risk score: ${riskScore}/100. Be direct, use clinical regulatory language.`;
+      const narrativeRes=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:narrativePrompt,context:"You are a senior FDA auditor writing formal inspection narrative."})});
+      const narrativeData=await narrativeRes.json();
+      setInspectionReport({questions:results,passing,failing,partial,unverifiable,critical_fails:criticalFails,major_fails:majorFails,risk_score:riskScore,inspection_ready:criticalFails.length===0&&majorFails.length<3,summary:narrativeData.response||"",generated_at:new Date().toISOString()});
+    }catch{alert("Inspection simulation failed.");}
     setInspectionLoading(false);
   }
 
   async function generateBriefing(){
-    if(!activeStudy)return;
-    setBriefingLoading(true);
+    if(!activeStudy)return;setBriefingLoading(true);
     const vaultContext=vaultDocs.slice(0,3).map(d=>`[${d.document_type}]: ${d.extracted_text?.slice(0,1000)||""}`).join("\n\n");
     const prompt=`Generate a daily TMF briefing. Return JSON:\n{"summary":"2 sentence overview","priority_actions":[{"action":"string","reason":"string","urgency":"High|Medium|Low"}],"stats":{"completeness":${donePct},"missing":${missing},"pending":${pending},"expiring":${expiring},"ri":${ri}},"vault_insight":"one insight"}\n\nVAULT:\n${vaultContext}\n\nReturn ONLY valid JSON.`;
-    try{const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:prompt,context:"Return only valid JSON."})});const data=await res.json();const raw=data.response?.replace(/```json|```/g,"").trim();setBriefing(JSON.parse(raw));}catch{setBriefing(null);}
+    try{const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:prompt,context:"Return only valid JSON."})});const data=await res.json();setBriefing(JSON.parse((data.response||"{}").replace(/```json|```/g,"").trim()));}catch{setBriefing(null);}
     setBriefingLoading(false);
   }
 
@@ -483,34 +538,33 @@ export default function TrinityPage(){
   const pinnedSessions=sessions.filter(s=>s.is_pinned);
   const unpinnedSessions=sessions.filter(s=>!s.is_pinned);
   const filteredSessions=chatSearch?sessions.filter(s=>s.title?.toLowerCase().includes(chatSearch.toLowerCase())):null;
+  const categories=["TMF Structure","Document Quality","Protocol","IRB/EC","Investigator","Training","Informed Consent","Monitoring","Safety Reporting","Drug/Device Accountability","Protocol Deviations","Correspondence","Audit/Inspection","Subject Records","Electronic Records","Close-Out","Archive","General"];
 
   const NAV=[
     {id:"chat",label:"Chat",Icon:Ico.chat,badge:null},
     {id:"vault",label:"Study Vault",Icon:Ico.db,badge:vaultDocs.length>0?vaultDocs.length:null},
     {id:"findings",label:"Findings",Icon:Ico.alert,badge:openFindings.length>0?openFindings.length:null},
     {id:"briefing",label:"Daily Briefing",Icon:Ico.sun,badge:null},
-    {id:"checklist",label:"Study Checklist",Icon:Ico.list,badge:checklist.length>0?checklist.length:null},
     {id:"inspection",label:"Inspection Sim",Icon:Ico.shield,badge:null},
   ];
 
-  if(loading)return(<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#0F172A",fontFamily:"system-ui,-apple-system,sans-serif"}}><div style={{textAlign:"center"}}><div style={{width:"40px",height:"40px",borderRadius:"50%",background:"linear-gradient(135deg,#FFEDD5,#F97316)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px",color:"#fff"}}><Ico.star/></div><div style={{fontSize:"14px",color:"#6B7280"}}>Loading Trinity...</div></div></div>);
-
+  if(loading)return(<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#F9FAFB",fontFamily:"system-ui"}}><div style={{textAlign:"center"}}><div style={{width:"40px",height:"40px",borderRadius:"50%",background:"linear-gradient(135deg,#FFEDD5,#F97316)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px",color:"#fff"}}><Ico.star/></div><div style={{fontSize:"14px",color:"#6B7280"}}>Loading Trinity...</div></div></div>);
   return(
     <div style={{display:"flex",height:"100vh",fontFamily:"system-ui,-apple-system,sans-serif",background:P.bg,overflow:"hidden"}}>
       <style>{`@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}`}</style>
 
       {/* SIDEBAR */}
-      <div style={{width:sidebarCollapsed?"60px":"260px",background:"#FFFFFF",display:"flex",flexDirection:"column",flexShrink:0,transition:"width .2s ease",overflow:"hidden"}}>
-        <div style={{padding:"16px 12px 12px",borderBottom:"0.5px solid #E5E7EB",display:"flex",alignItems:"center",gap:"8px",flexShrink:0}}>
+      <div style={{width:sidebarCollapsed?"60px":"260px",background:"#FFFFFF",borderRight:"1px solid #E5E7EB",display:"flex",flexDirection:"column",flexShrink:0,transition:"width .2s ease",overflow:"hidden"}}>
+        <div style={{padding:"16px 12px 12px",borderBottom:"1px solid #E5E7EB",display:"flex",alignItems:"center",gap:"8px",flexShrink:0}}>
           <div style={{width:"28px",height:"28px",borderRadius:"8px",background:"linear-gradient(135deg,#F97316,#EA580C)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",flexShrink:0}}><Ico.star/></div>
-          {!sidebarCollapsed&&(<div style={{flex:1,minWidth:0}}><div style={{fontSize:"13px",fontWeight:"700",color:"#111827"}}>Trinity</div><div style={{fontSize:"10px",color:"#9CA3AF"}}>AI Specialist</div></div>)}
-          <button onClick={()=>setSidebarCollapsed(!sidebarCollapsed)} style={{background:"none",border:"none",cursor:"pointer",color:"#64748B",padding:"2px",flexShrink:0,display:"flex"}}><Ico.menu/></button>
+          {!sidebarCollapsed&&<div style={{flex:1,minWidth:0}}><div style={{fontSize:"13px",fontWeight:"700",color:"#111827"}}>Trinity</div><div style={{fontSize:"10px",color:"#9CA3AF"}}>AI Specialist</div></div>}
+          <button onClick={()=>setSidebarCollapsed(!sidebarCollapsed)} style={{background:"none",border:"none",cursor:"pointer",color:"#9CA3AF",padding:"2px",flexShrink:0,display:"flex"}}><Ico.menu/></button>
         </div>
 
         {!sidebarCollapsed&&(
-          <div style={{padding:"10px 12px",borderBottom:"0.5px solid #E5E7EB",flexShrink:0}}>
-            <div style={{fontSize:"9px",color:"#6B7280",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"6px"}}>Active Study</div>
-            <select value={activeStudy?.study_id||""} onChange={e=>switchStudy(e.target.value)} style={{width:"100%",fontSize:"11px",background:"#F9FAFB",color:"#111827",border:"0.5px solid #E5E7EB",borderRadius:"6px",padding:"6px 8px",fontFamily:"inherit"}}>
+          <div style={{padding:"10px 12px",borderBottom:"1px solid #E5E7EB",flexShrink:0}}>
+            <div style={{fontSize:"9px",color:"#9CA3AF",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"6px"}}>Active Study</div>
+            <select value={activeStudy?.study_id||""} onChange={e=>switchStudy(e.target.value)} style={{width:"100%",fontSize:"11px",background:"#F9FAFB",color:"#111827",border:"1px solid #E5E7EB",borderRadius:"6px",padding:"6px 8px",fontFamily:"inherit"}}>
               {studies.map(s=><option key={s.study_id} value={s.study_id}>{s.study_id}</option>)}
             </select>
             <div style={{display:"flex",alignItems:"center",gap:"6px",marginTop:"6px"}}>
@@ -521,16 +575,15 @@ export default function TrinityPage(){
         )}
 
         {studyIdentity&&!sidebarCollapsed&&(
-          <div style={{padding:"8px 12px",borderBottom:"0.5px solid #E5E7EB",flexShrink:0}}>
-            <div style={{fontSize:"9px",color:"#10B981",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"4px"}}>Identity Profile Active</div>
-            <div style={{fontSize:"10px",color:"#9CA3AF"}}>{studyIdentity.protocol_number||"Protocol #"} · {studyIdentity.phase||"Phase ?"}</div>
-            <div style={{fontSize:"10px",color:"#9CA3AF"}}>{studyIdentity.sponsor_name||""}</div>
+          <div style={{padding:"8px 12px",borderBottom:"1px solid #E5E7EB",flexShrink:0,background:"#ECFDF5"}}>
+            <div style={{fontSize:"9px",color:"#10B981",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"3px",fontWeight:"600"}}>Identity Verified</div>
+            <div style={{fontSize:"10px",color:"#374151"}}>{studyIdentity.protocol_number||""} · {studyIdentity.phase||""}</div>
           </div>
         )}
 
         <div style={{padding:"8px 8px 0",flexShrink:0}}>
           {NAV.map(n=>(
-            <button key={n.id} onClick={()=>setPanel(n.id as any)} style={{width:"100%",display:"flex",alignItems:"center",gap:"10px",padding:"8px",borderRadius:"8px",border:"none",cursor:"pointer",background:panel===n.id?"#FFF7ED":"transparent",color:panel===n.id?"#F97316":"#94A3B8",marginBottom:"2px",textAlign:"left",fontFamily:"inherit",transition:"all .15s"}}>
+            <button key={n.id} onClick={()=>setPanel(n.id as any)} style={{width:"100%",display:"flex",alignItems:"center",gap:"10px",padding:"8px 10px",borderRadius:"8px",border:"none",cursor:"pointer",background:panel===n.id?"#FFF7ED":"transparent",color:panel===n.id?"#F97316":"#374151",marginBottom:"2px",textAlign:"left",fontFamily:"inherit",transition:"all .15s"}}>
               <span style={{flexShrink:0}}><n.Icon/></span>
               {!sidebarCollapsed&&(<><span style={{fontSize:"12px",fontWeight:panel===n.id?"600":"400",flex:1}}>{n.label}</span>{n.badge&&<span style={{fontSize:"10px",padding:"1px 6px",borderRadius:"20px",background:panel===n.id?"#FFEDD5":"#F3F4F6",color:panel===n.id?"#F97316":"#6B7280"}}>{n.badge}</span>}</>)}
             </button>
@@ -538,206 +591,167 @@ export default function TrinityPage(){
         </div>
 
         {!sidebarCollapsed&&(
-          <div style={{padding:"8px",borderTop:"0.5px solid #E5E7EB",marginTop:"4px",display:"flex",gap:"4px",flexShrink:0}}>
-            <button onClick={generateChecklist} disabled={checklistLoading||vaultDocs.length===0} style={{flex:1,fontSize:"10px",padding:"5px",background:"#0891B2",color:"#fff",border:"none",borderRadius:"6px",cursor:"pointer",opacity:checklistLoading||vaultDocs.length===0?0.5:1,display:"flex",alignItems:"center",justifyContent:"center",gap:"4px"}}>{checklistLoading?<Ico.loader/>:<Ico.list/>}{checklistLoading?"...":"Checklist"}</button>
-            <button onClick={runVaultAnalysis} disabled={analysing||vaultDocs.length===0} style={{flex:1,fontSize:"10px",padding:"5px",background:"#8B5CF6",color:"#fff",border:"none",borderRadius:"6px",cursor:"pointer",opacity:analysing||vaultDocs.length===0?0.5:1,display:"flex",alignItems:"center",justifyContent:"center",gap:"4px"}}>{analysing?<Ico.loader/>:<Ico.brain/>}{analysing?"...":"Analyse"}</button>
-            <button onClick={generateInspectionReport} disabled={inspectionLoading} style={{flex:1,fontSize:"10px",padding:"5px",background:"#1E293B",color:"#94A3B8",border:"0.5px solid #334155",borderRadius:"6px",cursor:"pointer",opacity:inspectionLoading?0.5:1,display:"flex",alignItems:"center",justifyContent:"center",gap:"4px"}}>{inspectionLoading?<Ico.loader/>:<Ico.shield/>}{inspectionLoading?"...":"Inspect"}</button>
+          <div style={{padding:"8px",borderTop:"1px solid #E5E7EB",marginTop:"4px",display:"flex",gap:"4px",flexShrink:0}}>
+            <button onClick={runVaultAnalysis} disabled={analysing||vaultDocs.length===0} style={{flex:1,fontSize:"10px",padding:"6px",background:P.purple,color:"#fff",border:"none",borderRadius:"6px",cursor:"pointer",opacity:analysing||vaultDocs.length===0?0.5:1,display:"flex",alignItems:"center",justifyContent:"center",gap:"4px"}}>{analysing?<Ico.loader/>:<Ico.brain/>}{analysing?"...":"Analyse"}</button>
+            <button onClick={()=>{setPanel("inspection");setInspectionTab("report");generateInspectionReport();}} disabled={inspectionLoading} style={{flex:1,fontSize:"10px",padding:"6px",background:"#0F172A",color:"#fff",border:"none",borderRadius:"6px",cursor:"pointer",opacity:inspectionLoading?0.5:1,display:"flex",alignItems:"center",justifyContent:"center",gap:"4px"}}>{inspectionLoading?<Ico.loader/>:<Ico.shield/>}{inspectionLoading?"...":"Inspect"}</button>
           </div>
         )}
 
         {!sidebarCollapsed&&memories.length>0&&(
           <div style={{padding:"0 8px 4px",flexShrink:0}}>
-            <button onClick={()=>setShowMemory(!showMemory)} style={{width:"100%",display:"flex",alignItems:"center",gap:"8px",padding:"7px 8px",borderRadius:"8px",border:"none",cursor:"pointer",background:"transparent",color:"#64748B",fontFamily:"inherit"}}>
-              <Ico.memory/><span style={{fontSize:"11px",flex:1,textAlign:"left"}}>Memory ({memories.length})</span><Ico.chevDown/>
+            <button onClick={()=>setShowMemory(!showMemory)} style={{width:"100%",display:"flex",alignItems:"center",gap:"8px",padding:"7px 8px",borderRadius:"8px",border:"none",cursor:"pointer",background:"transparent",color:"#6B7280",fontFamily:"inherit"}}>
+              <Ico.memory/><span style={{fontSize:"11px",flex:1,textAlign:"left",color:"#374151"}}>Memory ({memories.length})</span><Ico.chevDown/>
             </button>
-            {showMemory&&(
-              <div style={{background:"#0F172A",borderRadius:"8px",padding:"8px",marginTop:"4px",border:"0.5px solid #E5E7EB",maxHeight:"160px",overflowY:"auto"}}>
-                {memories.map(m=>(<div key={m.id} style={{display:"flex",gap:"6px",alignItems:"flex-start",marginBottom:"6px"}}><div style={{width:"4px",height:"4px",borderRadius:"50%",background:"#F97316",flexShrink:0,marginTop:"5px"}}/><div style={{flex:1,fontSize:"10px",color:"#94A3B8",lineHeight:"1.5"}}>{m.memory_text}</div><button onClick={()=>deleteMemory(m.id)} style={{background:"none",border:"none",cursor:"pointer",color:"#6B7280",padding:"0",flexShrink:0}}><Ico.x/></button></div>))}
-              </div>
-            )}
+            {showMemory&&(<div style={{background:"#F9FAFB",borderRadius:"8px",padding:"8px",marginTop:"4px",border:"1px solid #E5E7EB",maxHeight:"160px",overflowY:"auto"}}>
+              {memories.map(m=>(<div key={m.id} style={{display:"flex",gap:"6px",alignItems:"flex-start",marginBottom:"6px"}}><div style={{width:"4px",height:"4px",borderRadius:"50%",background:"#F97316",flexShrink:0,marginTop:"5px"}}/><div style={{flex:1,fontSize:"10px",color:"#374151",lineHeight:"1.5"}}>{m.memory_text}</div><button onClick={()=>deleteMemory(m.id)} style={{background:"none",border:"none",cursor:"pointer",color:"#9CA3AF",padding:"0",flexShrink:0}}><Ico.x/></button></div>))}
+            </div>)}
           </div>
         )}
 
         {!sidebarCollapsed&&suggestions.length>0&&(
           <div style={{padding:"0 8px 8px",flexShrink:0}}>
-            <div style={{fontSize:"9px",color:"#6B7280",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"6px",padding:"0 4px"}}>Suggested</div>
-            {suggestions.slice(0,3).map(s=>(<button key={s.id} onClick={()=>{setChatInput(s.action_text);setPanel("chat");}} style={{width:"100%",display:"flex",alignItems:"flex-start",gap:"6px",padding:"7px 8px",borderRadius:"6px",border:"none",cursor:"pointer",background:"transparent",textAlign:"left",fontFamily:"inherit",marginBottom:"2px"}}><span style={{color:s.urgency==="High"?"#EF4444":s.urgency==="Medium"?"#F59E0B":"#3B82F6",flexShrink:0,marginTop:"1px"}}><Ico.lightning/></span><span style={{fontSize:"10px",color:"#94A3B8",lineHeight:"1.4"}}>{s.action_text}</span></button>))}
+            <div style={{fontSize:"9px",color:"#9CA3AF",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"6px",padding:"0 4px"}}>Suggested</div>
+            {suggestions.slice(0,3).map(s=>(<button key={s.id} onClick={()=>{setChatInput(s.action_text);setPanel("chat");}} style={{width:"100%",display:"flex",alignItems:"flex-start",gap:"6px",padding:"7px 8px",borderRadius:"6px",border:"none",cursor:"pointer",background:"transparent",textAlign:"left",fontFamily:"inherit",marginBottom:"2px"}}><span style={{color:s.urgency==="High"?"#EF4444":s.urgency==="Medium"?"#F59E0B":"#3B82F6",flexShrink:0,marginTop:"1px"}}><Ico.lightning/></span><span style={{fontSize:"10px",color:"#374151",lineHeight:"1.4"}}>{s.action_text}</span></button>))}
           </div>
         )}
 
         {!sidebarCollapsed&&(
-          <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",borderTop:"0.5px solid #E5E7EB"}}>
+          <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",borderTop:"1px solid #E5E7EB"}}>
             <div style={{padding:"10px 12px 6px",display:"flex",alignItems:"center",gap:"6px",flexShrink:0}}>
-              <span style={{fontSize:"9px",color:"#6B7280",textTransform:"uppercase",letterSpacing:".08em",flex:1}}>Recent</span>
-              <button onClick={()=>setShowSearch(!showSearch)} style={{background:"none",border:"none",cursor:"pointer",color:"#6B7280",padding:"2px"}}><Ico.search/></button>
-              <button onClick={startNewChat} style={{background:"none",border:"none",cursor:"pointer",color:"#6B7280",padding:"2px"}} title="New chat"><Ico.plus/></button>
+              <span style={{fontSize:"9px",color:"#9CA3AF",textTransform:"uppercase",letterSpacing:".08em",flex:1}}>Recent Chats</span>
+              <button onClick={()=>setShowSearch(!showSearch)} style={{background:"none",border:"none",cursor:"pointer",color:"#9CA3AF",padding:"2px"}}><Ico.search/></button>
+              <button onClick={startNewChat} style={{background:"none",border:"none",cursor:"pointer",color:"#9CA3AF",padding:"2px"}} title="New chat"><Ico.plus/></button>
             </div>
-            {showSearch&&(<div style={{padding:"0 8px 6px",flexShrink:0}}><input value={chatSearch} onChange={e=>setChatSearch(e.target.value)} placeholder="Search chats..." style={{width:"100%",fontSize:"11px",background:"#F9FAFB",color:"#111827",border:"0.5px solid #E5E7EB",borderRadius:"6px",padding:"5px 8px",fontFamily:"inherit",outline:"none"}}/></div>)}
+            {showSearch&&<div style={{padding:"0 8px 6px",flexShrink:0}}><input value={chatSearch} onChange={e=>setChatSearch(e.target.value)} placeholder="Search chats..." style={{width:"100%",fontSize:"11px",background:"#F9FAFB",color:"#111827",border:"1px solid #E5E7EB",borderRadius:"6px",padding:"5px 8px",fontFamily:"inherit",outline:"none"}}/></div>}
             <div style={{flex:1,overflowY:"auto"}}>
-              {pinnedSessions.length>0&&!chatSearch&&(<div><div style={{fontSize:"9px",color:"#6B7280",padding:"4px 12px",textTransform:"uppercase",letterSpacing:".06em"}}>Pinned</div>{pinnedSessions.map(s=>(<SessionRow key={s.id} s={s} active={activeSessionId===s.id} onLoad={loadSession} onPin={togglePin} onDelete={deleteSession}/>))}</div>)}
-              {(filteredSessions||unpinnedSessions).map(s=>(<SessionRow key={s.id} s={s} active={activeSessionId===s.id} onLoad={loadSession} onPin={togglePin} onDelete={deleteSession}/>))}
-              {sessions.length===0&&<div style={{fontSize:"11px",color:"#6B7280",padding:"12px",textAlign:"center"}}>No conversations yet</div>}
+              {pinnedSessions.length>0&&!chatSearch&&<div><div style={{fontSize:"9px",color:"#9CA3AF",padding:"4px 12px",textTransform:"uppercase",letterSpacing:".06em"}}>Pinned</div>{pinnedSessions.map(s=><SessionRow key={s.id} s={s} active={activeSessionId===s.id} onLoad={loadSession} onPin={togglePin} onDelete={deleteSession}/>)}</div>}
+              {(filteredSessions||unpinnedSessions).map(s=><SessionRow key={s.id} s={s} active={activeSessionId===s.id} onLoad={loadSession} onPin={togglePin} onDelete={deleteSession}/>)}
+              {sessions.length===0&&<div style={{fontSize:"11px",color:"#9CA3AF",padding:"12px",textAlign:"center"}}>No conversations yet</div>}
             </div>
-            <div style={{padding:"8px 12px",borderTop:"0.5px solid #E5E7EB",flexShrink:0}}>
-              <a href="/platform" style={{display:"flex",alignItems:"center",gap:"6px",textDecoration:"none",color:"#6B7280",fontSize:"11px",padding:"4px",justifyContent:sidebarCollapsed?"center":"flex-start"}}><Ico.back/>{!sidebarCollapsed&&"Back to TMF360"}</a>
+            <div style={{padding:"8px 12px",borderTop:"1px solid #E5E7EB",flexShrink:0}}>
+              <a href="/platform" style={{display:"flex",alignItems:"center",gap:"6px",textDecoration:"none",color:"#6B7280",fontSize:"11px",padding:"6px 8px",borderRadius:"7px",background:"#F9FAFB",border:"1px solid #E5E7EB"}}>
+                <Ico.back/><span>Back to TMF360</span>
+              </a>
             </div>
+          </div>
+        )}
+
+        {sidebarCollapsed&&(
+          <div style={{marginTop:"auto",padding:"8px",borderTop:"1px solid #E5E7EB"}}>
+            <a href="/platform" style={{display:"flex",alignItems:"center",justifyContent:"center",padding:"8px",borderRadius:"7px",background:"#F9FAFB",border:"1px solid #E5E7EB",color:"#6B7280",textDecoration:"none"}}><Ico.back/></a>
           </div>
         )}
       </div>
 
-      {/* MAIN CONTENT */}
+      {/* MAIN */}
       <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-        <div style={{height:"44px",borderBottom:`0.5px solid ${P.border}`,background:P.bg,display:"flex",alignItems:"center",padding:"0 1.25rem",gap:"12px",flexShrink:0}}>
-          <span style={{fontSize:"13px",fontWeight:"600",color:P.text}}>{NAV.find(n=>n.id===panel)?.label||"Trinity"}</span>
-          {activeStudy&&<span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"20px",background:P.primaryLight,color:P.primary,fontWeight:"500"}}>{activeStudy.study_id}</span>}
-          {studyIdentity&&<span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"20px",background:"#ECFDF5",color:"#10B981",fontWeight:"500"}}>Identity verified</span>}
+        <div style={{height:"48px",borderBottom:`1px solid ${P.border}`,background:P.bg,display:"flex",alignItems:"center",padding:"0 1.5rem",gap:"12px",flexShrink:0}}>
+          <span style={{fontSize:"14px",fontWeight:"600",color:P.text}}>{NAV.find(n=>n.id===panel)?.label||"Trinity"}</span>
+          {activeStudy&&<span style={{fontSize:"11px",padding:"3px 10px",borderRadius:"20px",background:P.primaryLight,color:P.primary,fontWeight:"500"}}>{activeStudy.study_id}</span>}
+          {studyIdentity&&<span style={{fontSize:"11px",padding:"3px 10px",borderRadius:"20px",background:"#ECFDF5",color:"#10B981",fontWeight:"500"}}>Identity verified</span>}
           <div style={{marginLeft:"auto",display:"flex",gap:"8px",alignItems:"center"}}>
-            {panel==="chat"&&(<><button onClick={exportChatAsPDF} style={{fontSize:"11px",padding:"4px 10px",background:P.bgTert,color:P.textSec,border:`0.5px solid ${P.border}`,borderRadius:"6px",cursor:"pointer",display:"flex",alignItems:"center",gap:"5px"}}><Ico.download/>Export</button><button onClick={startNewChat} style={{fontSize:"11px",padding:"4px 10px",background:P.primaryLight,color:P.primary,border:`0.5px solid ${P.primary}`,borderRadius:"6px",cursor:"pointer",display:"flex",alignItems:"center",gap:"5px"}}><Ico.plus/>New Chat</button></>)}
+            {panel==="chat"&&<><button onClick={exportChatAsPDF} style={{fontSize:"11px",padding:"5px 12px",background:P.bgTert,color:P.textSec,border:`1px solid ${P.border}`,borderRadius:"6px",cursor:"pointer",display:"flex",alignItems:"center",gap:"5px"}}><Ico.download/>Export</button><button onClick={startNewChat} style={{fontSize:"11px",padding:"5px 12px",background:P.primaryLight,color:P.primary,border:"1px solid #FDBA74",borderRadius:"6px",cursor:"pointer",display:"flex",alignItems:"center",gap:"5px"}}><Ico.plus/>New Chat</button></>}
             <span style={{fontSize:"11px",color:P.textTert}}>{user?.email}</span>
           </div>
         </div>
 
-        {/* CHAT PANEL */}
+        {/* CHAT */}
         {panel==="chat"&&(
           <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-            <div style={{padding:"8px 1.25rem",display:"flex",gap:"6px",flexWrap:"wrap",borderBottom:`0.5px solid ${P.border}`,background:P.bgSec,flexShrink:0}}>
-              {["What's my TMF health?","What is the primary endpoint?","What documents are missing from Zone 3?","Summarise the Protocol","Review a pending document"].map(q=>(<button key={q} onClick={()=>setChatInput(q)} style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"20px",padding:"4px 12px",color:P.textSec,background:P.bg,cursor:"pointer",whiteSpace:"nowrap"}}>{q}</button>))}
-              {!vaultHasProtocol&&<span style={{fontSize:"11px",padding:"4px 12px",borderRadius:"20px",background:"#FFFBEB",color:"#92400E",border:"0.5px solid #FDE68A"}}>Upload Protocol to vault for full insights</span>}
+            <div style={{padding:"8px 1.5rem",display:"flex",gap:"6px",flexWrap:"wrap",borderBottom:`1px solid ${P.border}`,background:P.bgSec,flexShrink:0}}>
+              {["What's my TMF health?","What is the primary endpoint?","What documents are missing from Zone 3?","Summarise the Protocol","Review a pending document"].map(q=><button key={q} onClick={()=>setChatInput(q)} style={{fontSize:"11px",border:`1px solid ${P.border}`,borderRadius:"20px",padding:"4px 12px",color:P.textSec,background:P.bg,cursor:"pointer",whiteSpace:"nowrap"}}>{q}</button>)}
+              {!vaultHasProtocol&&<span style={{fontSize:"11px",padding:"4px 12px",borderRadius:"20px",background:"#FFFBEB",color:"#92400E",border:"1px solid #FDE68A"}}>Upload Protocol to vault for full insights</span>}
             </div>
-
             <div style={{flex:1,overflowY:"auto",background:`linear-gradient(135deg,${P.lavender} 0%,#F5F6FC 45%,${P.bg} 100%)`,display:"flex",flexDirection:"column",alignItems:"center",padding:"20px 0 8px"}}>
-              <div style={{width:"100%",maxWidth:"800px",padding:"0 20px",display:"flex",flexDirection:"column",gap:"16px"}}>
+              <div style={{width:"100%",maxWidth:"820px",padding:"0 24px",display:"flex",flexDirection:"column",gap:"16px"}}>
                 {chatMessages.map((m,i)=>(
                   <div key={i} style={{display:"flex",gap:"10px",justifyContent:m.role==="user"?"flex-end":"flex-start",animation:"fadeIn .2s ease"}}>
-                    {m.role==="ai"&&(<span style={{width:"28px",height:"28px",borderRadius:"50%",flexShrink:0,background:"linear-gradient(135deg,#FFEDD5,#fff)",border:"0.5px solid #FFEDD5",display:"flex",alignItems:"center",justifyContent:"center",color:P.primary,marginTop:"2px"}}><Ico.star/></span>)}
-                    <div style={{maxWidth:"78%",display:"flex",flexDirection:"column",gap:"6px"}}>
-                      {m.role==="ai"&&<div style={{fontSize:"10px",color:P.textTert,fontWeight:"600",paddingLeft:"2px"}}>Trinity</div>}
-
+                    {m.role==="ai"&&<span style={{width:"30px",height:"30px",borderRadius:"50%",flexShrink:0,background:"linear-gradient(135deg,#FFEDD5,#fff)",border:"1px solid #FFEDD5",display:"flex",alignItems:"center",justifyContent:"center",color:P.primary,marginTop:"2px"}}><Ico.star/></span>}
+                    <div style={{maxWidth:"80%",display:"flex",flexDirection:"column",gap:"6px"}}>
+                      {m.role==="ai"&&<div style={{fontSize:"11px",color:P.textTert,fontWeight:"600",paddingLeft:"2px"}}>Trinity</div>}
                       {m.text&&m.text!=="__VALIDATE__"&&!m.text.startsWith("__FILED__")&&!m.text.startsWith("__VALIDATE_DONE__")&&(
-                        <div style={{fontSize:"13px",borderRadius:m.role==="ai"?"10px 10px 10px 4px":"10px 10px 4px 10px",padding:"10px 14px",lineHeight:"1.65",whiteSpace:"pre-wrap",background:m.role==="ai"?P.bg:P.bgTert,border:m.role==="ai"?`0.5px solid ${P.border}`:"none",color:P.text}}>{m.text}</div>
+                        <div style={{fontSize:"13px",borderRadius:m.role==="ai"?"12px 12px 12px 4px":"12px 12px 4px 12px",padding:"11px 15px",lineHeight:"1.7",whiteSpace:"pre-wrap",background:m.role==="ai"?P.bg:"#F97316",border:m.role==="ai"?`1px solid ${P.border}`:"none",color:m.role==="ai"?P.text:"#fff",boxShadow:m.role==="ai"?"0 1px 3px rgba(0,0,0,0.06)":"none"}}>{m.text}</div>
                       )}
-
                       {m.text?.startsWith("__FILED__")&&(
-                        <div style={{display:"flex",alignItems:"flex-start",gap:"9px",border:"0.5px solid #bfe6d4",background:P.successLight,borderRadius:"10px",padding:"11px 14px"}}>
+                        <div style={{display:"flex",alignItems:"flex-start",gap:"9px",border:"1px solid #A7F3D0",background:P.successLight,borderRadius:"12px",padding:"12px 15px"}}>
                           <span style={{color:P.success,flexShrink:0}}><Ico.circleCheck/></span>
-                          <div><div style={{fontSize:"12px",fontWeight:"600",color:"#0a6b4f"}}>{m.text.replace("__FILED__","").split("\n")[0]}</div><div style={{fontSize:"11px",color:"#0a6b4f",opacity:.85}}>{m.text.replace("__FILED__","").split("\n")[1]}</div></div>
+                          <div><div style={{fontSize:"13px",fontWeight:"600",color:"#065F46"}}>{m.text.replace("__FILED__","").split("\n")[0]}</div><div style={{fontSize:"11px",color:"#065F46",opacity:.85,marginTop:"2px"}}>{m.text.replace("__FILED__","").split("\n")[1]}</div></div>
                         </div>
                       )}
-
                       {m.text==="__VALIDATE__"&&m.validation&&(
-                        <div style={{border:`0.5px solid ${P.border}`,borderRadius:"10px",padding:"14px 16px",background:P.bg,display:"flex",flexDirection:"column",gap:"10px"}}>
-                          <div style={{fontSize:"12px",fontWeight:"700",color:P.text}}>Document Validation Report</div>
-
+                        <div style={{border:`1px solid ${P.border}`,borderRadius:"12px",padding:"16px",background:P.bg,display:"flex",flexDirection:"column",gap:"10px",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+                          <div style={{fontSize:"13px",fontWeight:"700",color:P.text}}>Document Validation Report</div>
                           {m.validation.identity_checks?.length>0&&(
                             <div>
                               <div style={{fontSize:"10px",fontWeight:"600",color:P.textTert,textTransform:"uppercase",letterSpacing:".06em",marginBottom:"6px"}}>Identity Verification</div>
                               {m.validation.identity_checks.map((c:any,ci:number)=>(
-                                <div key={ci} style={{display:"flex",alignItems:"flex-start",gap:"8px",padding:"7px 10px",borderRadius:"7px",background:c.pass?P.successLight:c.hard?P.dangerLight:P.warningLight,marginBottom:"4px"}}>
+                                <div key={ci} style={{display:"flex",alignItems:"flex-start",gap:"8px",padding:"8px 10px",borderRadius:"8px",background:c.pass?P.successLight:c.hard?P.dangerLight:P.warningLight,marginBottom:"4px"}}>
                                   <span style={{flexShrink:0,color:c.pass?P.success:c.hard?P.danger:P.warning}}>{c.pass?<Ico.check/>:<Ico.x/>}</span>
-                                  <div style={{flex:1}}>
-                                    <div style={{fontSize:"11px",fontWeight:"600",color:P.text}}>{c.label}</div>
-                                    <div style={{fontSize:"10px",color:P.textSec,marginTop:"1px"}}>{c.detail}</div>
-                                    {c.doc_value&&c.vault_value&&!c.pass&&<div style={{fontSize:"10px",color:P.danger,marginTop:"4px",fontFamily:"monospace"}}>Doc: {c.doc_value} | Study: {c.vault_value}</div>}
-                                  </div>
+                                  <div style={{flex:1}}><div style={{fontSize:"11px",fontWeight:"600",color:P.text}}>{c.label}</div><div style={{fontSize:"10px",color:P.textSec,marginTop:"1px"}}>{c.detail}</div>{c.doc_value&&c.vault_value&&!c.pass&&<div style={{fontSize:"10px",color:P.danger,marginTop:"4px",fontFamily:"monospace"}}>Doc: {c.doc_value} | Study: {c.vault_value}</div>}</div>
                                   {c.hard&&!c.pass&&<span style={{fontSize:"9px",padding:"2px 6px",borderRadius:"20px",background:P.danger,color:"#fff",fontWeight:"700",flexShrink:0}}>HARD FAIL</span>}
                                 </div>
                               ))}
                             </div>
                           )}
-
                           {m.validation.quality_checks?.length>0&&(
                             <div>
                               <div style={{fontSize:"10px",fontWeight:"600",color:P.textTert,textTransform:"uppercase",letterSpacing:".06em",marginBottom:"6px"}}>Quality Checks</div>
-                              {m.validation.quality_checks.map((c:any,ci:number)=>(
-                                <div key={ci} style={{display:"flex",alignItems:"flex-start",gap:"8px",padding:"7px 10px",borderRadius:"7px",background:c.pass?P.successLight:P.warningLight,marginBottom:"4px"}}>
-                                  <span style={{flexShrink:0,color:c.pass?P.success:P.warning}}>{c.pass?<Ico.check/>:<Ico.alert/>}</span>
-                                  <div style={{flex:1}}><div style={{fontSize:"11px",fontWeight:"600",color:P.text}}>{c.label}</div><div style={{fontSize:"10px",color:P.textSec,marginTop:"1px"}}>{c.detail}</div></div>
-                                </div>
-                              ))}
+                              {m.validation.quality_checks.map((c:any,ci:number)=><div key={ci} style={{display:"flex",alignItems:"flex-start",gap:"8px",padding:"8px 10px",borderRadius:"8px",background:c.pass?P.successLight:P.warningLight,marginBottom:"4px"}}><span style={{flexShrink:0,color:c.pass?P.success:P.warning}}>{c.pass?<Ico.check/>:<Ico.alert/>}</span><div style={{flex:1}}><div style={{fontSize:"11px",fontWeight:"600",color:P.text}}>{c.label}</div><div style={{fontSize:"10px",color:P.textSec,marginTop:"1px"}}>{c.detail}</div></div></div>)}
                             </div>
                           )}
-
                           {m.validation.consistency_checks?.length>0&&(
                             <div>
                               <div style={{fontSize:"10px",fontWeight:"600",color:P.textTert,textTransform:"uppercase",letterSpacing:".06em",marginBottom:"6px"}}>Consistency Checks</div>
-                              {m.validation.consistency_checks.map((c:any,ci:number)=>(
-                                <div key={ci} style={{display:"flex",alignItems:"flex-start",gap:"8px",padding:"7px 10px",borderRadius:"7px",background:c.pass?P.successLight:P.warningLight,marginBottom:"4px"}}>
-                                  <span style={{flexShrink:0,color:c.pass?P.success:P.warning}}>{c.pass?<Ico.check/>:<Ico.alert/>}</span>
-                                  <div style={{flex:1}}><div style={{fontSize:"11px",fontWeight:"600",color:P.text}}>{c.label}</div><div style={{fontSize:"10px",color:P.textSec,marginTop:"1px"}}>{c.detail}</div></div>
-                                </div>
-                              ))}
+                              {m.validation.consistency_checks.map((c:any,ci:number)=><div key={ci} style={{display:"flex",alignItems:"flex-start",gap:"8px",padding:"8px 10px",borderRadius:"8px",background:c.pass?P.successLight:P.warningLight,marginBottom:"4px"}}><span style={{flexShrink:0,color:c.pass?P.success:P.warning}}>{c.pass?<Ico.check/>:<Ico.alert/>}</span><div style={{flex:1}}><div style={{fontSize:"11px",fontWeight:"600",color:P.text}}>{c.label}</div><div style={{fontSize:"10px",color:P.textSec,marginTop:"1px"}}>{c.detail}</div></div></div>)}
                             </div>
                           )}
-
-                          {m.validation.audit_narrative&&(
-                            <div style={{padding:"8px 12px",borderRadius:"8px",background:P.bgSec,border:`0.5px solid ${P.border}`,fontSize:"10px",color:P.textSec,lineHeight:"1.6",fontStyle:"italic"}}>{m.validation.audit_narrative}</div>
-                          )}
-
-                          <div style={{padding:"8px 12px",borderRadius:"8px",background:m.validation.overall==="pass"?P.successLight:m.validation.overall==="fail"?P.dangerLight:P.warningLight,fontSize:"11px",color:m.validation.overall==="pass"?P.success:m.validation.overall==="fail"?P.danger:P.warning,fontWeight:"600"}}>
+                          {m.validation.audit_narrative&&<div style={{padding:"10px 12px",borderRadius:"8px",background:P.bgSec,border:`1px solid ${P.border}`,fontSize:"10px",color:P.textSec,lineHeight:"1.6",fontStyle:"italic"}}>{m.validation.audit_narrative}</div>}
+                          <div style={{padding:"10px 12px",borderRadius:"8px",background:m.validation.overall==="pass"?P.successLight:m.validation.overall==="fail"?P.dangerLight:P.warningLight,fontSize:"12px",color:m.validation.overall==="pass"?P.success:m.validation.overall==="fail"?P.danger:P.warning,fontWeight:"600"}}>
                             {m.validation.overall==="fail"?"REJECTED — This document cannot be filed into this study":m.validation.overall==="warn"?"Issues detected — review before filing":"Passed — document is valid for this study"}
                           </div>
-
-                          {m.validation.overall!=="fail"&&(
-                            <div style={{display:"flex",gap:"8px"}}>
-                              <button onClick={async()=>{const cl=m.pendingClassification;setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,text:"__VALIDATE_DONE__"} as any:msg));await fileDocument(cl,m.validation);}} style={{fontSize:"12px",fontWeight:"600",padding:"6px 16px",background:P.success,color:"#fff",border:"none",borderRadius:"7px",cursor:"pointer",display:"flex",alignItems:"center",gap:"5px"}}><Ico.check/>Confirm & File</button>
-                              <button onClick={()=>{setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,text:"__VALIDATE_DONE__"} as any:msg));setChatMessages(prev=>[...prev,{role:"ai",text:"Filing cancelled."}]);}} style={{fontSize:"12px",fontWeight:"600",padding:"6px 16px",background:P.danger,color:"#fff",border:"none",borderRadius:"7px",cursor:"pointer",display:"flex",alignItems:"center",gap:"5px"}}><Ico.x/>Cancel</button>
-                            </div>
-                          )}
-                          {m.validation.overall==="fail"&&(
-                            <button onClick={()=>{setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,text:"__VALIDATE_DONE__"} as any:msg));setChatMessages(prev=>[...prev,{role:"ai",text:"Document rejected. Please upload the correct document for this study."}]);}} style={{fontSize:"12px",fontWeight:"600",padding:"6px 16px",background:P.danger,color:"#fff",border:"none",borderRadius:"7px",cursor:"pointer",display:"flex",alignItems:"center",gap:"5px",alignSelf:"flex-start"}}><Ico.x/>Dismiss</button>
-                          )}
+                          {m.validation.overall!=="fail"&&<div style={{display:"flex",gap:"8px"}}><button onClick={async()=>{const cl=m.pendingClassification;setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,text:"__VALIDATE_DONE__"} as any:msg));await fileDocument(cl,m.validation);}} style={{fontSize:"12px",fontWeight:"600",padding:"7px 16px",background:P.success,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",display:"flex",alignItems:"center",gap:"5px"}}><Ico.check/>Confirm & File</button><button onClick={()=>{setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,text:"__VALIDATE_DONE__"} as any:msg));setChatMessages(prev=>[...prev,{role:"ai",text:"Filing cancelled."}]);}} style={{fontSize:"12px",fontWeight:"600",padding:"7px 16px",background:P.bgTert,color:P.textSec,border:`1px solid ${P.border}`,borderRadius:"8px",cursor:"pointer",display:"flex",alignItems:"center",gap:"5px"}}><Ico.x/>Cancel</button></div>}
+                          {m.validation.overall==="fail"&&<button onClick={()=>{setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,text:"__VALIDATE_DONE__"} as any:msg));setChatMessages(prev=>[...prev,{role:"ai",text:"Document rejected."}]);}} style={{fontSize:"12px",fontWeight:"600",padding:"7px 16px",background:P.danger,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",alignSelf:"flex-start"}}>Dismiss</button>}
                         </div>
                       )}
-
                       {m.isHealthCard&&activeStudy&&(
-                        <>
-                          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"8px"}}>
-                            {[{val:`${donePct}%`,label:"TMF completeness",color:P.blue},{val:missing,label:"Missing documents",color:P.danger},{val:`${ri}/100`,label:"Readiness score",color:ri>=80?P.success:ri>=50?P.primary:P.danger}].map((s,si)=>(<div key={si} style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"10px 12px"}}><div style={{fontSize:"18px",fontWeight:"700",color:s.color}}>{s.val}</div><div style={{fontSize:"10px",color:P.textSec,marginTop:"2px"}}>{s.label}</div></div>))}
-                          </div>
-                          {m.sourceTags&&<div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>{m.sourceTags.map((t,ti)=><span key={ti} style={{fontSize:"9px",padding:"2px 8px",borderRadius:"20px",background:P.bgTert,color:P.textTert}}>{t}</span>)}</div>}
-                        </>
+                        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"8px"}}>
+                          {[{val:`${donePct}%`,label:"TMF completeness",color:P.blue},{val:missing,label:"Missing documents",color:P.danger},{val:`${ri}/100`,label:"Readiness score",color:ri>=80?P.success:ri>=50?P.primary:P.danger}].map((s,si)=><div key={si} style={{background:P.bg,border:`1px solid ${P.border}`,borderRadius:"10px",padding:"12px 14px"}}><div style={{fontSize:"20px",fontWeight:"700",color:s.color}}>{s.val}</div><div style={{fontSize:"10px",color:P.textSec,marginTop:"2px"}}>{s.label}</div></div>)}
+                        </div>
                       )}
-
                       {m.classification&&(
                         <>
-                          <div style={{border:`0.5px solid ${P.border}`,borderRadius:"10px",padding:"12px 14px",background:P.bg}}>
-                            <div style={{fontSize:"13px",fontWeight:"600",color:P.text,marginBottom:"4px"}}>{m.classification.zoneLine}</div>
-                            <span style={{fontSize:"10px",fontWeight:"600",padding:"2px 9px",borderRadius:"20px",background:m.classification.confidence>=80?P.successLight:P.warningLight,color:m.classification.confidence>=80?P.success:P.warning}}>Confidence {m.classification.confidence}%</span>
+                          <div style={{border:`1px solid ${P.border}`,borderRadius:"12px",padding:"12px 15px",background:P.bg}}>
+                            <div style={{fontSize:"13px",fontWeight:"600",color:P.text,marginBottom:"6px"}}>{m.classification.zoneLine}</div>
+                            <span style={{fontSize:"11px",fontWeight:"600",padding:"3px 10px",borderRadius:"20px",background:m.classification.confidence>=80?P.successLight:P.warningLight,color:m.classification.confidence>=80?P.success:P.warning}}>Confidence {m.classification.confidence}%</span>
                           </div>
-                          {m.classification.warning&&(<div style={{border:"0.5px solid #f3d9a6",background:P.warningLight,borderRadius:"10px",padding:"11px 14px"}}><div style={{fontSize:"11px",fontWeight:"600",color:P.warning,marginBottom:"4px"}}>Version mismatch detected</div><div style={{fontSize:"11px",color:"#7a5205",lineHeight:"1.55"}}>{m.classification.warning.detail}</div><div style={{fontSize:"11px",color:"#7a5205",background:"#fff",border:"0.5px solid #f3d9a6",borderRadius:"7px",padding:"7px 10px",marginTop:"6px"}}>Suggested action: {m.classification.warning.action}</div></div>)}
+                          {m.classification.warning&&<div style={{border:"1px solid #FDE68A",background:P.warningLight,borderRadius:"12px",padding:"12px 15px"}}><div style={{fontSize:"12px",fontWeight:"600",color:P.warning,marginBottom:"4px"}}>Version mismatch detected</div><div style={{fontSize:"12px",color:"#7a5205",lineHeight:"1.6"}}>{m.classification.warning.detail}</div><div style={{fontSize:"12px",color:"#7a5205",background:"#fff",border:"1px solid #FDE68A",borderRadius:"8px",padding:"8px 10px",marginTop:"6px"}}>Suggested action: {m.classification.warning.action}</div></div>}
                         </>
                       )}
-
                       {chatDocAction?.msgIdx===i&&!chatDocAction.disabled&&(
                         <div style={{display:"flex",gap:"8px"}}>
-                          <button onClick={()=>{const pendingDoc=docs.find(d=>d.status==="Under Review");if(!pendingDoc)return;const zoneInfo=activeZONES.find(z=>z.z===pendingDoc.zone);setApproveDocId(pendingDoc.id||null);setApproveStage(1);setChatMessages(prev=>[...prev,{role:"ai",text:`Zone ${padZone(pendingDoc.zone)} - ${zoneInfo?.zn||"Unclassified zone"}\nConfirm this is the correct zone for filing.`}]);setChatDocAction(prev=>prev?{...prev,disabled:true}:null);}} style={{fontSize:"12px",fontWeight:"600",padding:"6px 16px",background:P.success,color:"#fff",border:"none",borderRadius:"7px",cursor:"pointer"}}>Approve</button>
-                          <button onClick={()=>{const pendingDoc=docs.find(d=>d.status==="Under Review");if(!pendingDoc)return;setFlagDocId(pendingDoc.id||null);setFlagReason(detectFlagReason(pendingDoc));setFlagStage("form");setFlagMsgIdx(i);setChatMessages(prev=>[...prev,{role:"ai",text:"Flag initiated. Review the detected reason below and add context before submitting."}]);setChatDocAction(prev=>prev?{...prev,disabled:true}:null);}} style={{fontSize:"12px",fontWeight:"600",padding:"6px 16px",background:P.danger,color:"#fff",border:"none",borderRadius:"7px",cursor:"pointer"}}>Flag</button>
+                          <button onClick={()=>{const pendingDoc=docs.find(d=>d.status==="Under Review");if(!pendingDoc)return;const zoneInfo=activeZONES.find(z=>z.z===pendingDoc.zone);setApproveDocId(pendingDoc.id||null);setApproveStage(1);setChatMessages(prev=>[...prev,{role:"ai",text:`Zone ${padZone(pendingDoc.zone)} - ${zoneInfo?.zn||"Unclassified zone"}\nConfirm this is the correct zone for filing.`}]);setChatDocAction(prev=>prev?{...prev,disabled:true}:null);}} style={{fontSize:"12px",fontWeight:"600",padding:"7px 16px",background:P.success,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Approve</button>
+                          <button onClick={()=>{const pendingDoc=docs.find(d=>d.status==="Under Review");if(!pendingDoc)return;setFlagDocId(pendingDoc.id||null);setFlagReason(detectFlagReason(pendingDoc));setFlagStage("form");setFlagMsgIdx(i);setChatMessages(prev=>[...prev,{role:"ai",text:"Flag initiated. Review the detected reason below and add context before submitting."}]);setChatDocAction(prev=>prev?{...prev,disabled:true}:null);}} style={{fontSize:"12px",fontWeight:"600",padding:"7px 16px",background:P.danger,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Flag</button>
                         </div>
                       )}
-
                       {approveStage===1&&i===chatMessages.length-1&&m.text.startsWith("Zone ")&&(
-                        <button onClick={async()=>{const pendingDoc=docs.find(d=>d.id===approveDocId);if(!pendingDoc)return;const art=activeTMF.find(a=>a.a===pendingDoc.artifact_num);setApproveStage(2);setChatMessages(prev=>[...prev,{role:"ai",text:`Artifact - ${art?.an||pendingDoc.artifact_name}\nConfirm this is the correct artifact type.`}]);}} style={{fontSize:"12px",fontWeight:"600",padding:"6px 16px",background:P.success,color:"#fff",border:"none",borderRadius:"7px",cursor:"pointer",alignSelf:"flex-start"}}>Approve Zone</button>
+                        <button onClick={async()=>{const pendingDoc=docs.find(d=>d.id===approveDocId);if(!pendingDoc)return;const art=activeTMF.find(a=>a.a===pendingDoc.artifact_num);setApproveStage(2);setChatMessages(prev=>[...prev,{role:"ai",text:`Artifact - ${art?.an||pendingDoc.artifact_name}\nConfirm this is the correct artifact type.`}]);}} style={{fontSize:"12px",fontWeight:"600",padding:"7px 16px",background:P.success,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",alignSelf:"flex-start"}}>Approve Zone</button>
                       )}
-
                       {approveStage===2&&i===chatMessages.length-1&&m.text.startsWith("Artifact -")&&(
-                        <button onClick={async()=>{const pendingDoc=docs.find(d=>d.id===approveDocId);if(!pendingDoc)return;const art=activeTMF.find(a=>a.a===pendingDoc.artifact_num);const now=new Date().toISOString();const{error}=await supabase.from("documents").update({status:"Approved",approved_by:user?.email,approved_at:now,signature_reason:"Approved via Trinity AI"}).eq("id",pendingDoc.id);if(!error){await supabase.from("audit_trail").insert([{user_id:user?.id,user_email:user?.email,action:"Document approved via Trinity",document_id:pendingDoc.id,study_id:pendingDoc.study_id,field_changed:"status",old_value:pendingDoc.status,new_value:"Approved",signature_reason:"Approved via Trinity AI",document_name:pendingDoc.custom_file_name||pendingDoc.artifact_name}]);setDocs(prev=>prev.map(d=>d.id===pendingDoc.id?{...d,status:"Approved",approved_by:user?.email,approved_at:now}:d));const filedMsg:ChatMsg={role:"ai",text:`__FILED__Filed to Zone ${padZone(pendingDoc.zone)} — Section ${formatSection(art?.s||"")}\nAudit trail entry recorded.`};const final=[...chatMessages,filedMsg];setChatMessages(final);scheduleSave(final);}setApproveStage(0);setApproveDocId(null);}} style={{fontSize:"12px",fontWeight:"600",padding:"6px 16px",background:P.success,color:"#fff",border:"none",borderRadius:"7px",cursor:"pointer",alignSelf:"flex-start"}}>Approve & File</button>
+                        <button onClick={async()=>{const pendingDoc=docs.find(d=>d.id===approveDocId);if(!pendingDoc)return;const art=activeTMF.find(a=>a.a===pendingDoc.artifact_num);const now=new Date().toISOString();const{error}=await supabase.from("documents").update({status:"Approved",approved_by:user?.email,approved_at:now,signature_reason:"Approved via Trinity AI"}).eq("id",pendingDoc.id);if(!error){await supabase.from("audit_trail").insert([{user_id:user?.id,user_email:user?.email,action:"Document approved via Trinity",document_id:pendingDoc.id,study_id:pendingDoc.study_id,field_changed:"status",old_value:pendingDoc.status,new_value:"Approved",signature_reason:"Approved via Trinity AI",document_name:pendingDoc.custom_file_name||pendingDoc.artifact_name}]);setDocs(prev=>prev.map(d=>d.id===pendingDoc.id?{...d,status:"Approved",approved_by:user?.email,approved_at:now}:d));const filedMsg:ChatMsg={role:"ai",text:`__FILED__Filed to Zone ${padZone(pendingDoc.zone)} — Section ${formatSection(art?.s||"")}\nAudit trail entry recorded.`};const final=[...chatMessages,filedMsg];setChatMessages(final);scheduleSave(final);}setApproveStage(0);setApproveDocId(null);}} style={{fontSize:"12px",fontWeight:"600",padding:"7px 16px",background:P.success,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",alignSelf:"flex-start"}}>Approve & File</button>
                       )}
-
                       {flagStage==="form"&&i===chatMessages.length-1&&m.text.includes("Flag initiated")&&(
-                        <div style={{background:P.dangerLight,border:"0.5px solid #f3c9c7",borderRadius:"10px",padding:"12px 14px",display:"flex",flexDirection:"column",gap:"10px"}}>
-                          <div><div style={{fontSize:"11px",fontWeight:"600",color:P.textTert,marginBottom:"4px",textTransform:"uppercase",letterSpacing:".03em"}}>Auto-detected reason</div><div style={{fontSize:"12px",background:"#fff",border:`0.5px solid ${P.border}`,borderRadius:"7px",padding:"8px 10px",color:P.textSec}}>{flagReason}</div></div>
-                          <div><div style={{fontSize:"11px",fontWeight:"600",color:P.textTert,marginBottom:"4px",textTransform:"uppercase",letterSpacing:".03em"}}>Your comment</div><textarea value={flagComment} onChange={e=>setFlagComment(e.target.value)} rows={2} placeholder="Add context for the reviewer..." style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"7px",padding:"8px 10px",resize:"vertical",background:"#fff",fontFamily:"inherit"}}/></div>
-                          <button disabled={!flagComment.trim()} onClick={async()=>{if(!flagDocId)return;const doc=docs.find(d=>d.id===flagDocId);if(!doc)return;const now=new Date().toISOString();const{error}=await supabase.from("documents").update({status:"Draft",rejection_reason:flagReason,rejected_by:user?.email,rejected_at:now}).eq("id",doc.id);if(!error){await supabase.from("audit_trail").insert([{user_id:user?.id,user_email:user?.email,action:"Document flagged via Trinity",document_id:doc.id,study_id:doc.study_id,field_changed:"status",old_value:doc.status,new_value:"Draft",signature_reason:flagReason,document_name:doc.custom_file_name||doc.artifact_name}]);setDocs(prev=>prev.map(d=>d.id===doc.id?{...d,status:"Draft",rejection_reason:flagReason} as any:d));}const flagMsg:ChatMsg={role:"ai",text:`Document flagged and moved to Draft.\nReason: ${flagReason}\nComment: ${flagComment}`};const final=[...chatMessages,flagMsg];setChatMessages(final);scheduleSave(final);setFlagStage("idle");setFlagMsgIdx(null);setFlagComment("");setFlagDocId(null);setFlagReason("");}} style={{fontSize:"12px",fontWeight:"600",padding:"6px 16px",background:P.danger,color:"#fff",border:"none",borderRadius:"7px",cursor:flagComment.trim()?"pointer":"not-allowed",alignSelf:"flex-start",opacity:flagComment.trim()?1:0.5}}>Submit Flag</button>
+                        <div style={{background:P.dangerLight,border:"1px solid #FECACA",borderRadius:"12px",padding:"14px",display:"flex",flexDirection:"column",gap:"10px"}}>
+                          <div><div style={{fontSize:"11px",fontWeight:"600",color:P.textTert,marginBottom:"4px",textTransform:"uppercase",letterSpacing:".03em"}}>Auto-detected reason</div><div style={{fontSize:"12px",background:"#fff",border:`1px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px",color:P.textSec}}>{flagReason}</div></div>
+                          <div><div style={{fontSize:"11px",fontWeight:"600",color:P.textTert,marginBottom:"4px",textTransform:"uppercase",letterSpacing:".03em"}}>Your comment</div><textarea value={flagComment} onChange={e=>setFlagComment(e.target.value)} rows={2} placeholder="Add context for the reviewer..." style={{width:"100%",fontSize:"12px",border:`1px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px",resize:"vertical",background:"#fff",fontFamily:"inherit"}}/></div>
+                          <button disabled={!flagComment.trim()} onClick={async()=>{if(!flagDocId)return;const doc=docs.find(d=>d.id===flagDocId);if(!doc)return;const now=new Date().toISOString();const{error}=await supabase.from("documents").update({status:"Draft",rejection_reason:flagReason,rejected_by:user?.email,rejected_at:now}).eq("id",doc.id);if(!error){await supabase.from("audit_trail").insert([{user_id:user?.id,user_email:user?.email,action:"Document flagged via Trinity",document_id:doc.id,study_id:doc.study_id,field_changed:"status",old_value:doc.status,new_value:"Draft",signature_reason:flagReason,document_name:doc.custom_file_name||doc.artifact_name}]);setDocs(prev=>prev.map(d=>d.id===doc.id?{...d,status:"Draft",rejection_reason:flagReason} as any:d));}const flagMsg:ChatMsg={role:"ai",text:`Document flagged and moved to Draft.\nReason: ${flagReason}\nComment: ${flagComment}`};const final=[...chatMessages,flagMsg];setChatMessages(final);scheduleSave(final);setFlagStage("idle");setFlagMsgIdx(null);setFlagComment("");setFlagDocId(null);setFlagReason("");}} style={{fontSize:"12px",fontWeight:"600",padding:"7px 16px",background:P.danger,color:"#fff",border:"none",borderRadius:"8px",cursor:flagComment.trim()?"pointer":"not-allowed",alignSelf:"flex-start",opacity:flagComment.trim()?1:0.5}}>Submit Flag</button>
                         </div>
                       )}
-
                       {(m as any).classStage==="zone"&&(m as any).pendingClassification&&(
                         <div style={{display:"flex",gap:"8px"}}>
-                          <button onClick={()=>{const cl=(m as any).pendingClassification;setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,classStage:"done_zone"} as any:msg));setChatMessages(prev=>[...prev,{role:"ai",text:`Zone ${cl.zone_num} - ${cl.zone_name} approved.\n\nArtifact: ${cl.artifact_num} - ${cl.artifact_name}\n\n${cl.issues?.length>0?"Issues:\n"+cl.issues.join("\n"):""}\n\nApprove this artifact?`,pendingClassification:cl,classStage:"artifact"} as any]);}} style={{fontSize:"12px",fontWeight:"600",padding:"6px 15px",background:P.success,color:"#fff",border:"none",borderRadius:"7px",cursor:"pointer"}}>Approve Zone</button>
-                          <button onClick={()=>{setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,classStage:"done_zone"} as any:msg));setChatMessages(prev=>[...prev,{role:"ai",text:"Zone rejected. Which zone should this document be filed under?"}]);}} style={{fontSize:"12px",fontWeight:"600",padding:"6px 15px",background:P.danger,color:"#fff",border:"none",borderRadius:"7px",cursor:"pointer"}}>Reject</button>
+                          <button onClick={()=>{const cl=(m as any).pendingClassification;setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,classStage:"done_zone"} as any:msg));setChatMessages(prev=>[...prev,{role:"ai",text:`Zone ${cl.zone_num} - ${cl.zone_name} approved.\n\nArtifact: ${cl.artifact_num} - ${cl.artifact_name}\n\n${cl.issues?.length>0?"Issues:\n"+cl.issues.join("\n"):""}\n\nApprove this artifact?`,pendingClassification:cl,classStage:"artifact"} as any]);}} style={{fontSize:"12px",fontWeight:"600",padding:"7px 16px",background:P.success,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Approve Zone</button>
+                          <button onClick={()=>{setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,classStage:"done_zone"} as any:msg));setChatMessages(prev=>[...prev,{role:"ai",text:"Zone rejected. Which zone should this document be filed under?"}]);}} style={{fontSize:"12px",fontWeight:"600",padding:"7px 16px",background:P.bgTert,color:P.textSec,border:`1px solid ${P.border}`,borderRadius:"8px",cursor:"pointer"}}>Reject</button>
                         </div>
                       )}
-
                       {(m as any).classStage==="artifact"&&(m as any).pendingClassification&&(
                         <div style={{display:"flex",gap:"8px"}}>
                           <button onClick={async()=>{
@@ -745,42 +759,23 @@ export default function TrinityPage(){
                             setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,classStage:"done_artifact"} as any:msg));
                             setChatLoading(true);
                             try{
-                              const vRes=await fetch("/api/trinity/validate",{
-                                method:"POST",
-                                headers:{"Content-Type":"application/json"},
-                                body:JSON.stringify({
-                                  pdfBase64:cl.base64,
-                                  fileName:cl.fileName,
-                                  artifactNum:cl.artifact_num,
-                                  artifactName:cl.artifact_name,
-                                  zoneNum:cl.zone_num,
-                                  zoneName:cl.zone_name,
-                                  vaultDocs:vaultDocs.map(d=>({document_type:d.document_type,custom_name:d.custom_name,extracted_text:d.extracted_text?.slice(0,2000)||""})),
-                                  filedDocs:docs.filter(d=>d.status==="Approved").map(d=>({artifact_num:d.artifact_num,artifact_name:d.artifact_name,custom_file_name:d.custom_file_name,status:d.status})),
-                                  activeStudy:activeStudy?.study_id||"",
-                                  orgId,
-                                  userEmail:user?.email||"",
-                                  userId:user?.id||"",
-                                  studyIdentity,
-                                }),
-                              });
+                              const vRes=await fetch("/api/trinity/validate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pdfBase64:cl.base64,fileName:cl.fileName,artifactNum:cl.artifact_num,artifactName:cl.artifact_name,zoneNum:cl.zone_num,zoneName:cl.zone_name,vaultDocs:vaultDocs.map(d=>({document_type:d.document_type,custom_name:d.custom_name,extracted_text:d.extracted_text?.slice(0,2000)||""})),filedDocs:docs.filter(d=>d.status==="Approved").map(d=>({artifact_num:d.artifact_num,artifact_name:d.artifact_name,custom_file_name:d.custom_file_name,status:d.status})),activeStudy:activeStudy?.study_id||"",orgId,userEmail:user?.email||"",userId:user?.id||"",studyIdentity})});
                               const validation=await vRes.json();
                               const valMsg={role:"ai",text:"__VALIDATE__",pendingClassification:cl,validation} as any;
                               const final=[...chatMessages,valMsg];setChatMessages(final);scheduleSave(final);
                             }catch{await fileDocument(cl,null);}
                             setChatLoading(false);
-                          }} style={{fontSize:"12px",fontWeight:"600",padding:"6px 15px",background:P.success,color:"#fff",border:"none",borderRadius:"7px",cursor:"pointer"}}>Approve & Validate</button>
-                          <button onClick={()=>{setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,classStage:"done_artifact"} as any:msg));setChatMessages(prev=>[...prev,{role:"ai",text:"Artifact rejected. Which artifact should this be filed under?"}]);}} style={{fontSize:"12px",fontWeight:"600",padding:"6px 15px",background:P.danger,color:"#fff",border:"none",borderRadius:"7px",cursor:"pointer"}}>Reject</button>
+                          }} style={{fontSize:"12px",fontWeight:"600",padding:"7px 16px",background:P.success,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Approve & Validate</button>
+                          <button onClick={()=>{setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,classStage:"done_artifact"} as any:msg));setChatMessages(prev=>[...prev,{role:"ai",text:"Artifact rejected. Which artifact should this be filed under?"}]);}} style={{fontSize:"12px",fontWeight:"600",padding:"7px 16px",background:P.bgTert,color:P.textSec,border:`1px solid ${P.border}`,borderRadius:"8px",cursor:"pointer"}}>Reject</button>
                         </div>
                       )}
                     </div>
                   </div>
                 ))}
-                {chatLoading&&(<div style={{display:"flex",gap:"10px"}}><span style={{width:"28px",height:"28px",borderRadius:"50%",background:"linear-gradient(135deg,#FFEDD5,#fff)",border:"0.5px solid #FFEDD5",display:"flex",alignItems:"center",justifyContent:"center",color:P.primary,flexShrink:0}}><Ico.star/></span><div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"10px",padding:"10px 14px",display:"flex",gap:"4px",alignItems:"center"}}>{[0,1,2].map(i=><span key={i} style={{width:"5px",height:"5px",borderRadius:"50%",background:P.textTert,display:"inline-block",animation:"bounce 0.9s infinite",animationDelay:`${i*0.15}s`}}/>)}</div></div>)}
+                {chatLoading&&<div style={{display:"flex",gap:"10px"}}><span style={{width:"30px",height:"30px",borderRadius:"50%",background:"linear-gradient(135deg,#FFEDD5,#fff)",border:"1px solid #FFEDD5",display:"flex",alignItems:"center",justifyContent:"center",color:P.primary,flexShrink:0}}><Ico.star/></span><div style={{background:P.bg,border:`1px solid ${P.border}`,borderRadius:"12px",padding:"12px 15px",display:"flex",gap:"5px",alignItems:"center"}}>{[0,1,2].map(i=><span key={i} style={{width:"6px",height:"6px",borderRadius:"50%",background:"#D1D5DB",display:"inline-block",animation:"bounce 0.9s infinite",animationDelay:`${i*0.15}s`}}/>)}</div></div>}
                 <div ref={messagesEnd}/>
               </div>
             </div>
-
             <div style={{display:"flex",justifyContent:"center",padding:"12px 0 16px",background:`linear-gradient(135deg,${P.lavender} 0%,#F5F6FC 45%,${P.bg} 100%)`,flexShrink:0}}>
               <input ref={chatFileInput} type="file" accept=".pdf" style={{display:"none"}} onChange={async(e)=>{
                 const file=e.target.files?.[0];if(!file)return;
@@ -803,143 +798,156 @@ export default function TrinityPage(){
                 reader.readAsDataURL(file);
                 if(chatFileInput.current)chatFileInput.current.value="";
               }}/>
-              <div style={{width:"100%",maxWidth:"800px",margin:"0 20px",display:"flex",alignItems:"center",gap:"8px",background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"26px",padding:"6px 8px 6px 14px",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
-                <button onClick={()=>chatFileInput.current?.click()} style={{width:"32px",height:"32px",borderRadius:"50%",border:"none",background:"transparent",color:P.textTert,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Ico.clip/></button>
+              <div style={{width:"100%",maxWidth:"820px",margin:"0 24px",display:"flex",alignItems:"center",gap:"8px",background:P.bg,border:`1px solid ${P.border}`,borderRadius:"28px",padding:"6px 8px 6px 16px",boxShadow:"0 2px 16px rgba(0,0,0,0.08)"}}>
+                <button onClick={()=>chatFileInput.current?.click()} style={{width:"34px",height:"34px",borderRadius:"50%",border:"none",background:"transparent",color:P.textTert,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Ico.clip/></button>
                 <input value={chatInput} onChange={e=>setChatInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendChat()} placeholder="Ask Trinity anything about this study..." style={{flex:1,border:"none",outline:"none",fontSize:"13px",background:"transparent",color:P.text,padding:"8px 2px"}}/>
-                <button onClick={sendChat} disabled={chatLoading} style={{width:"32px",height:"32px",borderRadius:"50%",flexShrink:0,background:chatLoading?P.bgTert:P.primary,border:"none",color:chatLoading?P.textTert:"#fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:chatLoading?"not-allowed":"pointer"}}><Ico.up/></button>
+                <button onClick={sendChat} disabled={chatLoading} style={{width:"34px",height:"34px",borderRadius:"50%",flexShrink:0,background:chatLoading?P.bgTert:P.primary,border:"none",color:chatLoading?P.textTert:"#fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:chatLoading?"not-allowed":"pointer"}}><Ico.up/></button>
               </div>
             </div>
           </div>
         )}
 
-        {/* VAULT PANEL */}
+        {/* VAULT */}
         {panel==="vault"&&(
           <div style={{flex:1,overflowY:"auto",padding:"1.5rem"}}>
             <div style={{maxWidth:"800px",margin:"0 auto",display:"flex",flexDirection:"column",gap:"16px"}}>
-              <div><h2 style={{fontSize:"16px",fontWeight:"700",color:P.text}}>Study Vault</h2><p style={{fontSize:"12px",color:P.textTert,marginTop:"3px"}}>Upload key study documents. Trinity reads these to understand your trial.</p></div>
-              {studyIdentity&&(<div style={{background:"#ECFDF5",border:"0.5px solid #A7F3D0",borderRadius:"10px",padding:"12px 16px"}}><div style={{fontSize:"11px",fontWeight:"600",color:"#059669",marginBottom:"6px"}}>Study Identity Profile Active — Documents will be validated against this profile</div><div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"8px"}}>{[{label:"Protocol",val:studyIdentity.protocol_number},{label:"Sponsor",val:studyIdentity.sponsor_name},{label:"Phase",val:studyIdentity.phase},{label:"IMP",val:studyIdentity.imp_name},{label:"Indication",val:studyIdentity.indication},{label:"Primary Endpoint",val:studyIdentity.primary_endpoint}].filter(f=>f.val).map((f,i)=>(<div key={i}><div style={{fontSize:"9px",color:"#64748B",textTransform:"uppercase",letterSpacing:".06em"}}>{f.label}</div><div style={{fontSize:"11px",color:P.text,fontWeight:"500",marginTop:"2px"}}>{f.val}</div></div>))}</div></div>)}
-              <div style={{background:"#EFF6FF",border:"0.5px solid #BFDBFE",borderRadius:"10px",padding:"12px 16px",fontSize:"11px",color:"#1E40AF"}}><strong>Recommended uploads:</strong> Protocol (most important — activates identity verification), Investigator's Brochure, Statistical Analysis Plan, Monitoring Plan, IRB Decision.</div>
-              <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"20px"}}>
-                <h3 style={{fontSize:"13px",fontWeight:"600",marginBottom:"14px"}}>Upload to Vault</h3>
+              <div><h2 style={{fontSize:"16px",fontWeight:"700",color:P.text,margin:0}}>Study Vault</h2><p style={{fontSize:"12px",color:P.textTert,marginTop:"4px",marginBottom:0}}>Upload key study documents. Trinity reads these to power identity verification and inspection readiness.</p></div>
+              {studyIdentity&&(<div style={{background:"#ECFDF5",border:"1px solid #A7F3D0",borderRadius:"12px",padding:"14px 16px"}}><div style={{fontSize:"11px",fontWeight:"600",color:"#059669",marginBottom:"8px"}}>Study Identity Profile Active — Documents validated against this profile</div><div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"8px"}}>{[{label:"Protocol",val:studyIdentity.protocol_number},{label:"Sponsor",val:studyIdentity.sponsor_name},{label:"Phase",val:studyIdentity.phase},{label:"IMP",val:studyIdentity.imp_name},{label:"Indication",val:studyIdentity.indication},{label:"Primary Endpoint",val:studyIdentity.primary_endpoint}].filter(f=>f.val).map((f,i)=><div key={i}><div style={{fontSize:"9px",color:"#6B7280",textTransform:"uppercase",letterSpacing:".06em"}}>{f.label}</div><div style={{fontSize:"11px",color:P.text,fontWeight:"500",marginTop:"2px"}}>{f.val}</div></div>)}</div></div>)}
+              <div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:"10px",padding:"12px 16px",fontSize:"11px",color:"#1E40AF"}}><strong>Recommended:</strong> Protocol (activates identity verification), IB, SAP, Monitoring Plan, IRB Decision.</div>
+              <div style={{background:P.bg,border:`1px solid ${P.border}`,borderRadius:"12px",padding:"20px"}}>
+                <h3 style={{fontSize:"13px",fontWeight:"600",marginBottom:"14px",marginTop:0}}>Upload to Vault</h3>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px",marginBottom:"12px"}}>
-                  <div><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>Document type</label><select value={vaultDocType} onChange={e=>setVaultDocType(e.target.value)} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px",fontFamily:"inherit"}}>{VAULT_DOC_TYPES.map(t=><option key={t}>{t}</option>)}</select></div>
-                  <div><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>Custom name (optional)</label><input value={vaultCustomName} onChange={e=>setVaultCustomName(e.target.value)} placeholder="e.g. Protocol v2.1 Final" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px"}}/></div>
+                  <div><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>Document type</label><select value={vaultDocType} onChange={e=>setVaultDocType(e.target.value)} style={{width:"100%",fontSize:"12px",border:`1px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px",fontFamily:"inherit"}}>{VAULT_DOC_TYPES.map(t=><option key={t}>{t}</option>)}</select></div>
+                  <div><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>Custom name (optional)</label><input value={vaultCustomName} onChange={e=>setVaultCustomName(e.target.value)} placeholder="e.g. Protocol v2.1 Final" style={{width:"100%",fontSize:"12px",border:`1px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px",outline:"none"}}/></div>
                 </div>
-                <div onClick={()=>vaultFileInput.current?.click()} style={{border:`1.5px dashed ${vaultFile?P.primary:P.border}`,borderRadius:"10px",padding:"1.5rem",textAlign:"center",cursor:"pointer",background:vaultFile?P.primaryLight:P.bgSec,marginBottom:"12px"}} onDragOver={e=>{e.preventDefault();}} onDrop={e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f)setVaultFile(f);}}>
+                <div onClick={()=>vaultFileInput.current?.click()} style={{border:`2px dashed ${vaultFile?P.primary:P.border}`,borderRadius:"10px",padding:"1.5rem",textAlign:"center",cursor:"pointer",background:vaultFile?P.primaryLight:P.bgSec,marginBottom:"12px"}} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f)setVaultFile(f);}}>
                   <input ref={vaultFileInput} type="file" accept=".pdf,.doc,.docx" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)setVaultFile(f);}}/>
-                  {vaultFile?(<div><div style={{fontSize:"24px",marginBottom:"6px"}}>📄</div><div style={{fontSize:"13px",fontWeight:"500",color:P.primary}}>{vaultFile.name}</div><div style={{fontSize:"11px",color:P.textTert,marginTop:"2px"}}>{(vaultFile.size/1024).toFixed(0)} KB</div></div>):(<div><div style={{fontSize:"24px",marginBottom:"6px"}}>📁</div><div style={{fontSize:"13px",color:P.textSec}}>Drop a PDF here or click to browse</div></div>)}
+                  {vaultFile?<div><div style={{fontSize:"24px",marginBottom:"6px"}}>📄</div><div style={{fontSize:"13px",fontWeight:"500",color:P.primary}}>{vaultFile.name}</div><div style={{fontSize:"11px",color:P.textTert,marginTop:"2px"}}>{(vaultFile.size/1024).toFixed(0)} KB</div></div>:<div><div style={{fontSize:"24px",marginBottom:"6px"}}>📁</div><div style={{fontSize:"13px",color:P.textSec}}>Drop a PDF here or click to browse</div></div>}
                 </div>
                 {vaultProgress&&<div style={{fontSize:"11px",padding:"8px 12px",borderRadius:"8px",background:vaultProgress.includes("Done")?P.successLight:P.primaryLight,color:vaultProgress.includes("Done")?P.success:P.primary,marginBottom:"10px"}}>{vaultProgress}</div>}
                 <button onClick={uploadVaultDoc} disabled={!vaultFile||vaultUploading} style={{fontSize:"12px",fontWeight:"600",padding:"10px 20px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:vaultFile&&!vaultUploading?"pointer":"not-allowed",opacity:vaultFile&&!vaultUploading?1:0.5}}>{vaultUploading?"Processing...":"Upload to Vault"}</button>
               </div>
-              {vaultDocs.length===0?(<div style={{textAlign:"center",padding:"3rem",color:P.textTert,background:P.bgSec,borderRadius:"12px",border:`0.5px solid ${P.border}`}}><div style={{fontSize:"32px",marginBottom:"8px"}}>📂</div><div style={{fontSize:"13px",fontWeight:"500",color:P.textSec}}>Vault is empty</div></div>):(
+              {vaultDocs.length===0?<div style={{textAlign:"center",padding:"3rem",color:P.textTert,background:P.bgSec,borderRadius:"12px",border:`1px solid ${P.border}`}}><div style={{fontSize:"32px",marginBottom:"8px"}}>📂</div><div style={{fontSize:"13px",fontWeight:"500",color:P.textSec}}>Vault is empty</div></div>:(
                 <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
-                  <h3 style={{fontSize:"13px",fontWeight:"600"}}>Vault Documents ({vaultDocs.length})</h3>
-                  {vaultDocs.map(d=>(<div key={d.id} style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"10px",padding:"14px 16px",display:"flex",alignItems:"center",gap:"12px"}}><div style={{width:"40px",height:"40px",borderRadius:"10px",background:P.primaryLight,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px",flexShrink:0}}>📄</div><div style={{flex:1}}><div style={{fontSize:"13px",fontWeight:"500",color:P.text}}>{d.custom_name||d.file_name}</div><div style={{display:"flex",gap:"8px",marginTop:"3px",alignItems:"center"}}><span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"20px",background:P.purpleLight,color:P.purple,fontWeight:"500"}}>{d.document_type}</span><span style={{fontSize:"10px",color:P.textTert}}>{new Date(d.uploaded_at).toLocaleDateString()}</span>{d.extracted_text?<span style={{fontSize:"10px",color:P.success}}>✓ {d.extracted_text.length} chars</span>:<span style={{fontSize:"10px",color:P.warning}}>⚠ No text</span>}</div></div><div style={{display:"flex",gap:"6px"}}><a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:"11px",padding:"5px 12px",background:P.bgTert,color:P.textSec,borderRadius:"6px",textDecoration:"none"}}>View</a><button onClick={()=>deleteVaultDoc(d.id)} style={{fontSize:"11px",padding:"5px 12px",background:P.dangerLight,color:P.danger,border:"none",borderRadius:"6px",cursor:"pointer"}}>Remove</button></div></div>))}
+                  <h3 style={{fontSize:"13px",fontWeight:"600",margin:0}}>Vault Documents ({vaultDocs.length})</h3>
+                  {vaultDocs.map(d=><div key={d.id} style={{background:P.bg,border:`1px solid ${P.border}`,borderRadius:"10px",padding:"14px 16px",display:"flex",alignItems:"center",gap:"12px"}}><div style={{width:"40px",height:"40px",borderRadius:"10px",background:P.primaryLight,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px",flexShrink:0}}>📄</div><div style={{flex:1}}><div style={{fontSize:"13px",fontWeight:"500",color:P.text}}>{d.custom_name||d.file_name}</div><div style={{display:"flex",gap:"8px",marginTop:"3px",alignItems:"center"}}><span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"20px",background:P.purpleLight,color:P.purple,fontWeight:"500"}}>{d.document_type}</span><span style={{fontSize:"10px",color:P.textTert}}>{new Date(d.uploaded_at).toLocaleDateString()}</span>{d.extracted_text?<span style={{fontSize:"10px",color:P.success}}>✓ {d.extracted_text.length} chars</span>:<span style={{fontSize:"10px",color:P.warning}}>⚠ No text</span>}</div></div><div style={{display:"flex",gap:"6px"}}><a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:"11px",padding:"5px 12px",background:P.bgTert,color:P.textSec,borderRadius:"6px",textDecoration:"none",border:`1px solid ${P.border}`}}>View</a><button onClick={()=>deleteVaultDoc(d.id)} style={{fontSize:"11px",padding:"5px 12px",background:P.dangerLight,color:P.danger,border:"1px solid #FECACA",borderRadius:"6px",cursor:"pointer"}}>Remove</button></div></div>)}
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* FINDINGS PANEL */}
+        {/* FINDINGS */}
         {panel==="findings"&&(
           <div style={{flex:1,overflowY:"auto",padding:"1.5rem"}}>
             <div style={{maxWidth:"900px",margin:"0 auto",display:"flex",flexDirection:"column",gap:"16px"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                <div><h2 style={{fontSize:"16px",fontWeight:"700",color:P.text}}>Trinity Findings</h2><p style={{fontSize:"12px",color:P.textTert,marginTop:"3px"}}>Auto-generated from vault document analysis.</p></div>
+                <div><h2 style={{fontSize:"16px",fontWeight:"700",color:P.text,margin:0}}>Trinity Findings</h2><p style={{fontSize:"12px",color:P.textTert,marginTop:"4px",marginBottom:0}}>Auto-generated from vault document analysis.</p></div>
                 <button onClick={runVaultAnalysis} disabled={analysing||vaultDocs.length===0} style={{fontSize:"12px",padding:"8px 16px",background:P.purple,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",display:"flex",alignItems:"center",gap:"6px",opacity:analysing||vaultDocs.length===0?0.5:1}}>{analysing?<Ico.loader/>:<Ico.brain/>}{analysing?"Analysing...":"Re-run Analysis"}</button>
               </div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"10px"}}>
-                {[{label:"Critical",color:P.danger,bg:P.dangerLight,count:findings.filter(f=>f.severity==="Critical"&&f.status==="Open").length},{label:"Major",color:P.warning,bg:P.warningLight,count:findings.filter(f=>f.severity==="Major"&&f.status==="Open").length},{label:"Minor",color:P.blue,bg:P.blueLight,count:findings.filter(f=>f.severity==="Minor"&&f.status==="Open").length}].map((s,i)=>(<div key={i} style={{background:s.bg,border:`0.5px solid ${P.border}`,borderRadius:"10px",padding:"14px"}}><div style={{fontSize:"26px",fontWeight:"700",color:s.color}}>{s.count}</div><div style={{fontSize:"11px",color:P.textSec,marginTop:"2px"}}>{s.label} open</div></div>))}
+                {[{label:"Critical",color:P.danger,bg:P.dangerLight,count:findings.filter(f=>f.severity==="Critical"&&f.status==="Open").length},{label:"Major",color:P.warning,bg:P.warningLight,count:findings.filter(f=>f.severity==="Major"&&f.status==="Open").length},{label:"Minor",color:P.blue,bg:P.blueLight,count:findings.filter(f=>f.severity==="Minor"&&f.status==="Open").length}].map((s,i)=><div key={i} style={{background:s.bg,border:`1px solid ${P.border}`,borderRadius:"10px",padding:"14px"}}><div style={{fontSize:"26px",fontWeight:"700",color:s.color}}>{s.count}</div><div style={{fontSize:"11px",color:P.textSec,marginTop:"2px"}}>{s.label} open</div></div>)}
               </div>
-              {findings.length===0?(<div style={{textAlign:"center",padding:"3rem",color:P.textTert,background:P.bgSec,borderRadius:"12px",border:`0.5px solid ${P.border}`}}><div style={{fontSize:"32px",marginBottom:"8px"}}>🔍</div><div style={{fontSize:"13px",fontWeight:"500",color:P.textSec}}>No findings yet</div></div>):(
+              {findings.length===0?<div style={{textAlign:"center",padding:"3rem",color:P.textTert,background:P.bgSec,borderRadius:"12px",border:`1px solid ${P.border}`}}><div style={{fontSize:"32px",marginBottom:"8px"}}>🔍</div><div style={{fontSize:"13px",fontWeight:"500",color:P.textSec}}>No findings yet — upload vault documents and run analysis</div></div>:(
                 <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
-                  {["Critical","Major","Minor"].map(sev=>{const sevFindings=findings.filter(f=>f.severity===sev);if(!sevFindings.length)return null;return(<div key={sev}><h3 style={{fontSize:"11px",fontWeight:"600",color:SEVERITY_COLOR(sev),textTransform:"uppercase",letterSpacing:".06em",marginBottom:"6px"}}>{sev} — {sevFindings.filter(f=>f.status==="Open").length} open</h3>{sevFindings.map(f=>(<div key={f.id} style={{background:P.bg,border:`0.5px solid ${f.status==="Open"?SEVERITY_COLOR(f.severity):P.border}`,borderRadius:"10px",padding:"14px 16px",marginBottom:"6px",display:"flex",gap:"12px",alignItems:"flex-start",opacity:f.status==="Resolved"?0.6:1}}><div style={{width:"8px",height:"8px",borderRadius:"50%",background:f.status==="Resolved"?P.textMuted:SEVERITY_COLOR(f.severity),flexShrink:0,marginTop:"5px"}}/><div style={{flex:1}}><div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"4px",flexWrap:"wrap"}}><span style={{fontSize:"13px",fontWeight:"600",color:P.text}}>{f.title}</span><span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"20px",background:SEVERITY_BG(f.severity),color:SEVERITY_COLOR(f.severity),fontWeight:"500"}}>{f.severity}</span><span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"20px",background:f.status==="Resolved"?P.successLight:P.bgTert,color:f.status==="Resolved"?P.success:P.textTert}}>{f.status}</span></div><div style={{fontSize:"12px",color:P.textSec,lineHeight:"1.6",marginBottom:"6px"}}>{f.detail}</div><div style={{display:"flex",gap:"10px",flexWrap:"wrap"}}>{f.source_doc&&<span style={{fontSize:"10px",color:P.textTert}}>Source: {f.source_doc}</span>}{f.artifact_ref&&<span style={{fontSize:"10px",fontFamily:"monospace",color:P.blue}}>Artifact: {f.artifact_ref}</span>}</div></div>{f.status==="Open"&&<button onClick={()=>resolveFinding(f.id)} style={{fontSize:"11px",padding:"5px 12px",background:P.successLight,color:P.success,border:`0.5px solid #A7F3D0`,borderRadius:"6px",cursor:"pointer",flexShrink:0}}>Resolve</button>}</div>))}</div>);})}
+                  {["Critical","Major","Minor"].map(sev=>{const sevF=findings.filter(f=>f.severity===sev);if(!sevF.length)return null;return(<div key={sev}><h3 style={{fontSize:"11px",fontWeight:"600",color:SEVERITY_COLOR(sev),textTransform:"uppercase",letterSpacing:".06em",marginBottom:"6px"}}>{sev} — {sevF.filter(f=>f.status==="Open").length} open</h3>{sevF.map(f=><div key={f.id} style={{background:P.bg,border:`1px solid ${f.status==="Open"?SEVERITY_COLOR(f.severity):P.border}`,borderRadius:"10px",padding:"14px 16px",marginBottom:"6px",display:"flex",gap:"12px",alignItems:"flex-start",opacity:f.status==="Resolved"?0.6:1}}><div style={{width:"8px",height:"8px",borderRadius:"50%",background:f.status==="Resolved"?P.textMuted:SEVERITY_COLOR(f.severity),flexShrink:0,marginTop:"5px"}}/><div style={{flex:1}}><div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"4px",flexWrap:"wrap"}}><span style={{fontSize:"13px",fontWeight:"600",color:P.text}}>{f.title}</span><span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"20px",background:SEVERITY_BG(f.severity),color:SEVERITY_COLOR(f.severity),fontWeight:"500"}}>{f.severity}</span><span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"20px",background:f.status==="Resolved"?P.successLight:P.bgTert,color:f.status==="Resolved"?P.success:P.textTert}}>{f.status}</span></div><div style={{fontSize:"12px",color:P.textSec,lineHeight:"1.6",marginBottom:"6px"}}>{f.detail}</div><div style={{display:"flex",gap:"10px",flexWrap:"wrap"}}>{f.source_doc&&<span style={{fontSize:"10px",color:P.textTert}}>Source: {f.source_doc}</span>}{f.artifact_ref&&<span style={{fontSize:"10px",fontFamily:"monospace",color:P.blue}}>Artifact: {f.artifact_ref}</span>}</div></div>{f.status==="Open"&&<button onClick={()=>resolveFinding(f.id)} style={{fontSize:"11px",padding:"5px 12px",background:P.successLight,color:P.success,border:"1px solid #A7F3D0",borderRadius:"6px",cursor:"pointer",flexShrink:0}}>Resolve</button>}</div>)}</div>);})}
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* BRIEFING PANEL */}
+        {/* BRIEFING */}
         {panel==="briefing"&&(
           <div style={{flex:1,overflowY:"auto",padding:"1.5rem"}}>
             <div style={{maxWidth:"800px",margin:"0 auto",display:"flex",flexDirection:"column",gap:"16px"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                <div><h2 style={{fontSize:"16px",fontWeight:"700",color:P.text}}>Daily Briefing</h2><p style={{fontSize:"12px",color:P.textTert,marginTop:"3px"}}>{activeStudy?.study_id} · {new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</p></div>
+                <div><h2 style={{fontSize:"16px",fontWeight:"700",color:P.text,margin:0}}>Daily Briefing</h2><p style={{fontSize:"12px",color:P.textTert,marginTop:"4px",marginBottom:0}}>{activeStudy?.study_id} · {new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</p></div>
                 <button onClick={generateBriefing} disabled={briefingLoading} style={{fontSize:"12px",padding:"8px 16px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",display:"flex",alignItems:"center",gap:"6px",opacity:briefingLoading?0.6:1}}>{briefingLoading?<Ico.loader/>:<Ico.refresh/>}{briefingLoading?"Generating...":"Refresh"}</button>
               </div>
               {briefingLoading&&!briefing&&<div style={{textAlign:"center",padding:"3rem",color:P.textTert}}><div style={{fontSize:"13px"}}>Trinity is generating your briefing...</div></div>}
-              {briefing&&(
-                <>
-                  <div style={{background:"linear-gradient(135deg,#0F1E3D 0%,#1E3A5F 100%)",borderRadius:"14px",padding:"20px 24px",color:"#fff"}}>
-                    <div style={{fontSize:"11px",fontWeight:"600",color:"rgba(255,255,255,0.6)",textTransform:"uppercase",letterSpacing:".06em",marginBottom:"8px"}}>Morning Summary</div>
-                    <div style={{fontSize:"14px",lineHeight:"1.7",color:"rgba(255,255,255,0.9)"}}>{briefing.summary}</div>
-                    {briefing.vault_insight&&<div style={{marginTop:"12px",padding:"10px 14px",background:"rgba(249,115,22,0.2)",borderRadius:"8px",fontSize:"12px",color:"rgba(255,255,255,0.85)",borderLeft:"3px solid #F97316"}}><strong>From your vault:</strong> {briefing.vault_insight}</div>}
-                  </div>
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:"10px"}}>
-                    {[{val:`${briefing.stats?.completeness||donePct}%`,label:"Completeness",color:P.blue},{val:briefing.stats?.missing||missing,label:"Missing",color:P.danger},{val:briefing.stats?.pending||pending,label:"Pending",color:P.warning},{val:briefing.stats?.expiring||expiring,label:"Expiring",color:P.warning},{val:`${briefing.stats?.ri||ri}/100`,label:"Readiness",color:ri>=80?P.success:ri>=50?P.primary:P.danger}].map((s,i)=>(<div key={i} style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"10px",padding:"12px",textAlign:"center"}}><div style={{fontSize:"22px",fontWeight:"700",color:s.color}}>{s.val}</div><div style={{fontSize:"10px",color:P.textSec,marginTop:"3px"}}>{s.label}</div></div>))}
-                  </div>
-                  {briefing.priority_actions?.length>0&&(<div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"16px 20px"}}><h3 style={{fontSize:"13px",fontWeight:"600",marginBottom:"12px"}}>Priority Actions</h3><div style={{display:"flex",flexDirection:"column",gap:"8px"}}>{briefing.priority_actions.map((a:any,i:number)=>{const urg=a.urgency==="High"?{bg:P.dangerLight,color:P.danger,border:"#FECACA"}:a.urgency==="Medium"?{bg:P.warningLight,color:P.warning,border:"#FDE68A"}:{bg:P.blueLight,color:P.blue,border:"#BFDBFE"};return(<div key={i} style={{display:"flex",gap:"10px",padding:"10px 12px",background:urg.bg,borderRadius:"8px",border:`0.5px solid ${urg.border}`}}><span style={{fontSize:"14px",flexShrink:0}}>{a.urgency==="High"?"🔴":a.urgency==="Medium"?"🟡":"🔵"}</span><div style={{flex:1}}><div style={{fontSize:"12px",fontWeight:"600",color:P.text}}>{a.action}</div><div style={{fontSize:"11px",color:P.textSec,marginTop:"2px"}}>{a.reason}</div></div><span style={{fontSize:"10px",padding:"3px 8px",borderRadius:"20px",background:"rgba(255,255,255,0.7)",color:urg.color,fontWeight:"600",flexShrink:0,alignSelf:"flex-start"}}>{a.urgency}</span></div>);})}</div></div>)}
-                </>
-              )}
+              {briefing&&(<>
+                <div style={{background:"linear-gradient(135deg,#0F1E3D 0%,#1E3A5F 100%)",borderRadius:"14px",padding:"20px 24px",color:"#fff"}}>
+                  <div style={{fontSize:"11px",fontWeight:"600",color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:".06em",marginBottom:"8px"}}>Morning Summary</div>
+                  <div style={{fontSize:"14px",lineHeight:"1.7",color:"rgba(255,255,255,0.9)"}}>{briefing.summary}</div>
+                  {briefing.vault_insight&&<div style={{marginTop:"12px",padding:"10px 14px",background:"rgba(249,115,22,0.2)",borderRadius:"8px",fontSize:"12px",color:"rgba(255,255,255,0.85)",borderLeft:"3px solid #F97316"}}><strong>From your vault:</strong> {briefing.vault_insight}</div>}
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:"10px"}}>
+                  {[{val:`${briefing.stats?.completeness||donePct}%`,label:"Completeness",color:P.blue},{val:briefing.stats?.missing||missing,label:"Missing",color:P.danger},{val:briefing.stats?.pending||pending,label:"Pending",color:P.warning},{val:briefing.stats?.expiring||expiring,label:"Expiring",color:P.warning},{val:`${briefing.stats?.ri||ri}/100`,label:"Readiness",color:ri>=80?P.success:ri>=50?P.primary:P.danger}].map((s,i)=><div key={i} style={{background:P.bg,border:`1px solid ${P.border}`,borderRadius:"10px",padding:"12px",textAlign:"center"}}><div style={{fontSize:"22px",fontWeight:"700",color:s.color}}>{s.val}</div><div style={{fontSize:"10px",color:P.textSec,marginTop:"3px"}}>{s.label}</div></div>)}
+                </div>
+                {briefing.priority_actions?.length>0&&<div style={{background:P.bg,border:`1px solid ${P.border}`,borderRadius:"12px",padding:"16px 20px"}}><h3 style={{fontSize:"13px",fontWeight:"600",marginBottom:"12px",marginTop:0}}>Priority Actions</h3><div style={{display:"flex",flexDirection:"column",gap:"8px"}}>{briefing.priority_actions.map((a:any,i:number)=>{const urg=a.urgency==="High"?{bg:P.dangerLight,color:P.danger,border:"#FECACA"}:a.urgency==="Medium"?{bg:P.warningLight,color:P.warning,border:"#FDE68A"}:{bg:P.blueLight,color:P.blue,border:"#BFDBFE"};return(<div key={i} style={{display:"flex",gap:"10px",padding:"10px 12px",background:urg.bg,borderRadius:"8px",border:`1px solid ${urg.border}`}}><span style={{fontSize:"14px",flexShrink:0}}>{a.urgency==="High"?"🔴":a.urgency==="Medium"?"🟡":"🔵"}</span><div style={{flex:1}}><div style={{fontSize:"12px",fontWeight:"600",color:P.text}}>{a.action}</div><div style={{fontSize:"11px",color:P.textSec,marginTop:"2px"}}>{a.reason}</div></div><span style={{fontSize:"10px",padding:"3px 8px",borderRadius:"20px",background:"rgba(255,255,255,0.7)",color:urg.color,fontWeight:"600",flexShrink:0,alignSelf:"flex-start"}}>{a.urgency}</span></div>);})}</div></div>}
+              </>)}
             </div>
           </div>
         )}
 
-        {/* CHECKLIST PANEL */}
-        {panel==="checklist"&&(
-          <div style={{flex:1,overflowY:"auto",padding:"1.5rem"}}>
-            <div style={{maxWidth:"900px",margin:"0 auto",display:"flex",flexDirection:"column",gap:"16px"}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                <div><h2 style={{fontSize:"16px",fontWeight:"700",color:P.text}}>Study Checklist</h2><p style={{fontSize:"12px",color:P.textTert,marginTop:"3px"}}>Protocol-driven expected document list generated by Trinity.</p></div>
-                <button onClick={generateChecklist} disabled={checklistLoading||vaultDocs.length===0} style={{fontSize:"12px",padding:"8px 16px",background:P.cyan,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",display:"flex",alignItems:"center",gap:"6px",opacity:checklistLoading||vaultDocs.length===0?0.5:1}}>{checklistLoading?<Ico.loader/>:<Ico.refresh/>}{checklistLoading?"Generating...":"Regenerate"}</button>
-              </div>
-              {vaultDocs.length===0&&<div style={{background:"#FFFBEB",border:"0.5px solid #FDE68A",borderRadius:"10px",padding:"12px 16px",fontSize:"11px",color:"#92400E"}}>Upload your Protocol to the Study Vault first.</div>}
-              {!checklistGenerated&&vaultDocs.length>0&&(<div style={{textAlign:"center",padding:"3rem",color:P.textTert,background:P.bgSec,borderRadius:"12px",border:`0.5px solid ${P.border}`}}><div style={{fontSize:"32px",marginBottom:"8px"}}>📋</div><div style={{fontSize:"13px",fontWeight:"500",color:P.textSec}}>No checklist generated yet</div><div style={{fontSize:"12px",marginTop:"4px",marginBottom:"1rem"}}>Click Generate Checklist to create a Protocol-driven expected document list.</div><button onClick={generateChecklist} style={{fontSize:"12px",fontWeight:"600",padding:"10px 20px",background:P.cyan,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Generate Checklist</button></div>)}
-              {checklistGenerated&&checklist.length>0&&(
-                <>
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"10px"}}>
-                    {[{label:"Total expected",color:P.cyan,bg:P.cyanLight,count:checklist.length},{label:"Filed",color:P.success,bg:P.successLight,count:checklist.filter(c=>c.status==="Filed").length},{label:"Missing",color:P.danger,bg:P.dangerLight,count:checklist.filter(c=>c.status==="Missing").length}].map((s,i)=>(<div key={i} style={{background:s.bg,border:`0.5px solid ${P.border}`,borderRadius:"10px",padding:"14px"}}><div style={{fontSize:"26px",fontWeight:"700",color:s.color}}>{s.count}</div><div style={{fontSize:"11px",color:P.textSec,marginTop:"2px"}}>{s.label}</div></div>))}
-                  </div>
-                  {["Critical","Major","Minor"].map(sev=>{const sevItems=checklist.filter(c=>c.severity===sev);if(!sevItems.length)return null;return(<div key={sev}><h3 style={{fontSize:"11px",fontWeight:"600",color:SEVERITY_COLOR(sev),textTransform:"uppercase",letterSpacing:".06em",marginBottom:"6px"}}>{sev} — {sevItems.filter(c=>c.status==="Missing").length} missing of {sevItems.length}</h3>{sevItems.map((item,idx)=>(<div key={idx} style={{background:P.bg,border:`0.5px solid ${item.status==="Missing"?SEVERITY_COLOR(item.severity):P.success}`,borderRadius:"10px",padding:"14px 16px",marginBottom:"6px",display:"flex",gap:"12px",alignItems:"flex-start"}}><div style={{width:"28px",height:"28px",borderRadius:"50%",background:item.status==="Filed"?P.successLight:SEVERITY_BG(item.severity),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,color:item.status==="Filed"?P.success:SEVERITY_COLOR(item.severity)}}>{item.status==="Filed"?<Ico.check/>:<Ico.alert/>}</div><div style={{flex:1}}><div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"4px",flexWrap:"wrap"}}><span style={{fontSize:"13px",fontWeight:"600",color:P.text}}>{item.item_name}</span><span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"20px",background:item.status==="Filed"?P.successLight:SEVERITY_BG(item.severity),color:item.status==="Filed"?P.success:SEVERITY_COLOR(item.severity),fontWeight:"500"}}>{item.status}</span></div><div style={{fontSize:"12px",color:P.textSec,lineHeight:"1.6",marginBottom:"4px"}}>{item.reason}</div><div style={{display:"flex",gap:"10px"}}>{item.artifact_ref&&<span style={{fontSize:"10px",fontFamily:"monospace",color:P.blue}}>{item.artifact_ref}</span>}{item.zone&&<span style={{fontSize:"10px",color:P.textTert}}>Zone {item.zone}</span>}</div></div></div>))}</div>);})}
-                </>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* INSPECTION PANEL */}
+        {/* INSPECTION */}
         {panel==="inspection"&&(
           <div style={{flex:1,overflowY:"auto",padding:"1.5rem"}}>
-            <div style={{maxWidth:"900px",margin:"0 auto",display:"flex",flexDirection:"column",gap:"16px"}}>
+            <div style={{maxWidth:"960px",margin:"0 auto",display:"flex",flexDirection:"column",gap:"16px"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                <div><h2 style={{fontSize:"16px",fontWeight:"700",color:P.text}}>Inspection Simulation</h2><p style={{fontSize:"12px",color:P.textTert,marginTop:"3px"}}>Simulated FDA/EMA inspection based on your current TMF state.</p></div>
-                <button onClick={generateInspectionReport} disabled={inspectionLoading} style={{fontSize:"12px",padding:"8px 16px",background:"#0F172A",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",display:"flex",alignItems:"center",gap:"6px",opacity:inspectionLoading?0.5:1}}>{inspectionLoading?<Ico.loader/>:<Ico.shield/>}{inspectionLoading?"Running...":"Re-run Simulation"}</button>
+                <div><h2 style={{fontSize:"16px",fontWeight:"700",color:P.text,margin:0}}>Inspection Simulation</h2><p style={{fontSize:"12px",color:P.textTert,marginTop:"4px",marginBottom:0}}>Content-aware FDA/EMA inspection powered by your vault documents.</p></div>
+                <button onClick={()=>{setInspectionTab("report");generateInspectionReport();}} disabled={inspectionLoading||inspectionQuestions.length===0} style={{fontSize:"12px",padding:"8px 16px",background:"#0F172A",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",display:"flex",alignItems:"center",gap:"6px",opacity:inspectionLoading||inspectionQuestions.length===0?0.5:1}}>{inspectionLoading?<Ico.loader/>:<Ico.shield/>}{inspectionLoading?"Running...":"Run Inspection"}</button>
               </div>
-              {!inspectionReport&&!inspectionLoading&&(<div style={{textAlign:"center",padding:"3rem",color:P.textTert,background:P.bgSec,borderRadius:"12px",border:`0.5px solid ${P.border}`}}><div style={{fontSize:"32px",marginBottom:"8px"}}>🏛️</div><div style={{fontSize:"13px",fontWeight:"500",color:P.textSec}}>No inspection simulation run yet</div><div style={{fontSize:"12px",marginTop:"4px",marginBottom:"1rem"}}>Run a simulated FDA/EMA inspection to identify gaps before the real thing.</div><button onClick={generateInspectionReport} style={{fontSize:"12px",fontWeight:"600",padding:"10px 20px",background:"#0F172A",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Run Inspection Simulation</button></div>)}
-              {inspectionReport&&(
-                <>
-                  <div style={{background:"linear-gradient(135deg,#0F1E3D 0%,#1E3A5F 100%)",borderRadius:"14px",padding:"20px 24px",color:"#fff"}}>
-                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"12px"}}>
-                      <div><div style={{fontSize:"11px",color:"rgba(255,255,255,0.6)",textTransform:"uppercase",letterSpacing:".06em",marginBottom:"4px"}}>Inspection Readiness Score</div><div style={{fontSize:"48px",fontWeight:"700",color:inspectionReport.risk_score>=80?"#10B981":inspectionReport.risk_score>=50?"#F97316":"#EF4444"}}>{inspectionReport.risk_score}<span style={{fontSize:"24px",color:"rgba(255,255,255,0.4)"}}>/100</span></div></div>
-                      <div style={{textAlign:"right"}}><div style={{fontSize:"14px",fontWeight:"600",color:inspectionReport.inspection_ready?"#10B981":"#EF4444"}}>{inspectionReport.inspection_ready?"Inspection Ready":"Not Ready"}</div><div style={{fontSize:"11px",color:"rgba(255,255,255,0.5)",marginTop:"4px"}}>{inspectionReport.critical_fails?.length||0} critical · {inspectionReport.major_fails?.length||0} major · {inspectionReport.minor_fails?.length||0} minor</div></div>
+              <div style={{display:"flex",gap:"0",borderBottom:`1px solid ${P.border}`}}>
+                {[{id:"questions",label:`Questions (${inspectionQuestions.length})`},{id:"report",label:"Inspection Report"}].map(t=><button key={t.id} onClick={()=>setInspectionTab(t.id as any)} style={{padding:"10px 20px",fontSize:"12px",fontWeight:inspectionTab===t.id?"600":"400",color:inspectionTab===t.id?P.primary:P.textSec,background:"none",border:"none",borderBottom:inspectionTab===t.id?`2px solid ${P.primary}`:"2px solid transparent",cursor:"pointer",fontFamily:"inherit"}}>{t.label}</button>)}
+              </div>
+
+              {inspectionTab==="questions"&&(
+                <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                    <p style={{fontSize:"12px",color:P.textTert,margin:0,flex:1}}>These questions guide the inspection. Trinity reads your vault documents and evaluates each one with evidence-based findings. Add or remove questions to tailor the inspection to your study type.</p>
+                    <button onClick={()=>setShowAddQuestion(!showAddQuestion)} style={{fontSize:"12px",fontWeight:"600",padding:"8px 14px",background:P.primaryLight,color:P.primary,border:"1px solid #FDBA74",borderRadius:"8px",cursor:"pointer",display:"flex",alignItems:"center",gap:"5px",flexShrink:0,marginLeft:"12px"}}><Ico.plus/>Add Question</button>
+                  </div>
+                  {showAddQuestion&&(
+                    <div style={{background:P.bgSec,border:`1px solid ${P.border}`,borderRadius:"12px",padding:"16px",display:"flex",flexDirection:"column",gap:"10px"}}>
+                      <div style={{fontSize:"12px",fontWeight:"600",color:P.text}}>Add Custom Question</div>
+                      <textarea value={newQuestionText} onChange={e=>setNewQuestionText(e.target.value)} rows={3} placeholder="Enter your inspection question..." style={{width:"100%",fontSize:"12px",border:`1px solid ${P.border}`,borderRadius:"8px",padding:"10px 12px",resize:"vertical",fontFamily:"inherit",outline:"none"}}/>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
+                        <div><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>Category</label><select value={newQuestionCategory} onChange={e=>setNewQuestionCategory(e.target.value)} style={{width:"100%",fontSize:"12px",border:`1px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px",fontFamily:"inherit"}}>
+                          {["TMF Structure","Document Quality","Protocol","IRB/EC","Investigator","Training","Informed Consent","Monitoring","Safety Reporting","Drug/Device Accountability","Protocol Deviations","Correspondence","Audit/Inspection","Subject Records","Electronic Records","Close-Out","Archive","General"].map(c=><option key={c}>{c}</option>)}
+                        </select></div>
+                        <div><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>Severity</label><select value={newQuestionSeverity} onChange={e=>setNewQuestionSeverity(e.target.value)} style={{width:"100%",fontSize:"12px",border:`1px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px",fontFamily:"inherit"}}><option>Critical</option><option>Major</option><option>Minor</option></select></div>
+                      </div>
+                      <div style={{display:"flex",gap:"8px"}}>
+                        <button onClick={addInspectionQuestion} disabled={!newQuestionText.trim()} style={{fontSize:"12px",fontWeight:"600",padding:"8px 16px",background:P.success,color:"#fff",border:"none",borderRadius:"8px",cursor:newQuestionText.trim()?"pointer":"not-allowed",opacity:newQuestionText.trim()?1:0.5}}>Add Question</button>
+                        <button onClick={()=>{setShowAddQuestion(false);setNewQuestionText("");}} style={{fontSize:"12px",padding:"8px 16px",background:P.bgTert,color:P.textSec,border:`1px solid ${P.border}`,borderRadius:"8px",cursor:"pointer"}}>Cancel</button>
+                      </div>
                     </div>
-                    {inspectionReport.summary&&<div style={{fontSize:"12px",lineHeight:"1.7",color:"rgba(255,255,255,0.8)",borderTop:"0.5px solid rgba(255,255,255,0.1)",paddingTop:"12px"}}>{inspectionReport.summary}</div>}
-                  </div>
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"10px"}}>
-                    {[{val:inspectionReport.passing?.length||0,label:"Passing",color:P.success,bg:P.successLight},{val:inspectionReport.critical_fails?.length||0,label:"Critical Gaps",color:P.danger,bg:P.dangerLight},{val:inspectionReport.major_fails?.length||0,label:"Major Gaps",color:P.warning,bg:P.warningLight},{val:inspectionReport.minor_fails?.length||0,label:"Minor Gaps",color:P.blue,bg:P.blueLight}].map((s,i)=>(<div key={i} style={{background:s.bg,border:`0.5px solid ${P.border}`,borderRadius:"10px",padding:"12px",textAlign:"center"}}><div style={{fontSize:"28px",fontWeight:"700",color:s.color}}>{s.val}</div><div style={{fontSize:"10px",color:P.textSec,marginTop:"2px"}}>{s.label}</div></div>))}
-                  </div>
-                  <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
-                    {["Critical","Major","Minor"].map(sev=>{
-                      const sevQs=inspectionReport.questions?.filter((q:any)=>q.severity===sev&&q.status!=="pass")||[];
-                      if(!sevQs.length)return null;
-                      return(<div key={sev}><h3 style={{fontSize:"11px",fontWeight:"600",color:SEVERITY_COLOR(sev),textTransform:"uppercase",letterSpacing:".06em",marginBottom:"6px"}}>{sev} Findings</h3>{sevQs.map((q:any,qi:number)=>(<div key={qi} style={{background:P.bg,border:`0.5px solid ${SEVERITY_COLOR(q.severity)}`,borderRadius:"10px",padding:"14px 16px",marginBottom:"6px"}}><div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"6px"}}><span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"20px",background:SEVERITY_BG(q.severity),color:SEVERITY_COLOR(q.severity),fontWeight:"500"}}>{q.category}</span><span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"20px",background:q.status==="fail"?P.dangerLight:P.warningLight,color:q.status==="fail"?P.danger:P.warning,fontWeight:"500"}}>{q.status==="fail"?"FAIL":"PARTIAL"}</span></div><div style={{fontSize:"12px",fontWeight:"600",color:P.text,marginBottom:"4px"}}>{q.question}</div><div style={{fontSize:"11px",color:P.textSec,lineHeight:"1.6"}}>{q.finding}</div>{q.missing_refs?.length>0&&<div style={{marginTop:"6px",fontSize:"10px",fontFamily:"monospace",color:P.danger}}>Missing: {q.missing_refs.join(", ")}</div>}</div>))}</div>);
+                  )}
+                  {["TMF Structure","Document Quality","Protocol","IRB/EC","Investigator","Training","Informed Consent","Monitoring","Safety Reporting","Drug/Device Accountability","Protocol Deviations","Correspondence","Audit/Inspection","Subject Records","Electronic Records","Close-Out","Archive","General"].filter(cat=>inspectionQuestions.some(q=>q.category===cat)).map(cat=>{
+                    const catQs=inspectionQuestions.filter(q=>q.category===cat);
+                    return(<div key={cat}><div style={{fontSize:"10px",fontWeight:"600",color:P.textTert,textTransform:"uppercase",letterSpacing:".06em",marginBottom:"6px",paddingLeft:"4px"}}>{cat} ({catQs.length})</div>{catQs.map(q=><div key={q.id} style={{background:P.bg,border:`1px solid ${P.border}`,borderRadius:"10px",padding:"12px 14px",marginBottom:"6px",display:"flex",alignItems:"flex-start",gap:"10px"}}><div style={{fontSize:"10px",fontWeight:"600",color:"#fff",background:SEVERITY_COLOR(q.severity),padding:"2px 7px",borderRadius:"20px",flexShrink:0,marginTop:"2px"}}>{q.severity}</div><div style={{flex:1,fontSize:"12px",color:P.text,lineHeight:"1.6"}}>{q.question_text}</div><button onClick={()=>removeInspectionQuestion(q.id)} style={{background:"none",border:"none",cursor:"pointer",color:P.textMuted,padding:"2px",flexShrink:0,display:"flex"}} title="Remove"><Ico.trash/></button></div>)}</div>);
+                  })}
+                </div>
+              )}
+
+              {inspectionTab==="report"&&(
+                <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+                  {inspectionLoading&&<div style={{textAlign:"center",padding:"4rem",color:P.textTert}}><div style={{display:"flex",justifyContent:"center",marginBottom:"12px"}}><Ico.loader/></div><div style={{fontSize:"13px",fontWeight:"500",color:P.textSec}}>Trinity is evaluating each inspection question against your vault documents...</div><div style={{fontSize:"11px",color:P.textTert,marginTop:"4px"}}>{inspectionQuestions.length} questions · {vaultDocs.length} vault documents</div></div>}
+                  {!inspectionReport&&!inspectionLoading&&<div style={{textAlign:"center",padding:"4rem",color:P.textTert,background:P.bgSec,borderRadius:"12px",border:`1px solid ${P.border}`}}><div style={{fontSize:"32px",marginBottom:"8px"}}>🏛️</div><div style={{fontSize:"13px",fontWeight:"500",color:P.textSec}}>No inspection report yet</div><div style={{fontSize:"12px",marginTop:"4px",marginBottom:"1rem",color:P.textTert}}>Click "Run Inspection" to simulate an FDA/EMA audit using your {inspectionQuestions.length} questions and vault documents.</div><button onClick={()=>generateInspectionReport()} style={{fontSize:"12px",fontWeight:"600",padding:"10px 20px",background:"#0F172A",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Run Inspection Simulation</button></div>}
+                  {inspectionReport&&!inspectionLoading&&(<>
+                    <div style={{background:"linear-gradient(135deg,#0F1E3D 0%,#1E3A5F 100%)",borderRadius:"14px",padding:"20px 24px",color:"#fff"}}>
+                      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:"12px"}}>
+                        <div><div style={{fontSize:"11px",color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:".06em",marginBottom:"4px"}}>Inspection Readiness Score</div><div style={{fontSize:"52px",fontWeight:"700",lineHeight:1,color:inspectionReport.risk_score>=80?"#10B981":inspectionReport.risk_score>=50?"#F97316":"#EF4444"}}>{inspectionReport.risk_score}<span style={{fontSize:"24px",color:"rgba(255,255,255,0.3)"}}>/100</span></div></div>
+                        <div style={{textAlign:"right"}}><div style={{fontSize:"14px",fontWeight:"700",color:inspectionReport.inspection_ready?"#10B981":"#EF4444",marginBottom:"4px"}}>{inspectionReport.inspection_ready?"✅ Inspection Ready":"🚫 Not Ready"}</div><div style={{fontSize:"11px",color:"rgba(255,255,255,0.4)"}}>{inspectionReport.critical_fails?.length||0} critical · {inspectionReport.major_fails?.length||0} major · {inspectionReport.partial?.length||0} partial · {inspectionReport.unverifiable?.length||0} unverifiable</div><div style={{fontSize:"10px",color:"rgba(255,255,255,0.3)",marginTop:"4px"}}>{new Date(inspectionReport.generated_at).toLocaleString()}</div></div>
+                      </div>
+                      {inspectionReport.summary&&<div style={{fontSize:"12px",lineHeight:"1.7",color:"rgba(255,255,255,0.8)",borderTop:"1px solid rgba(255,255,255,0.1)",paddingTop:"12px"}}>{inspectionReport.summary}</div>}
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"10px"}}>
+                      {[{val:inspectionReport.passing?.length||0,label:"Passing",color:P.success,bg:P.successLight},{val:inspectionReport.critical_fails?.length||0,label:"Critical Fails",color:P.danger,bg:P.dangerLight},{val:inspectionReport.major_fails?.length||0,label:"Major Findings",color:P.warning,bg:P.warningLight},{val:inspectionReport.unverifiable?.length||0,label:"Unable to Verify",color:P.blue,bg:P.blueLight}].map((s,i)=><div key={i} style={{background:s.bg,border:`1px solid ${P.border}`,borderRadius:"10px",padding:"14px",textAlign:"center"}}><div style={{fontSize:"28px",fontWeight:"700",color:s.color}}>{s.val}</div><div style={{fontSize:"10px",color:P.textSec,marginTop:"3px"}}>{s.label}</div></div>)}
+                    </div>
+                    {[
+                      {label:"Critical Failures",items:inspectionReport.questions?.filter((q:any)=>q.verdict==="Fail"&&q.severity==="Critical")||[],color:P.danger,bg:P.dangerLight,bdr:"#FECACA"},
+                      {label:"Major Findings",items:inspectionReport.questions?.filter((q:any)=>(q.verdict==="Fail"&&q.severity==="Major")||(q.verdict==="Partial"&&(q.severity==="Critical"||q.severity==="Major")))||[],color:P.warning,bg:P.warningLight,bdr:"#FDE68A"},
+                      {label:"Unable to Verify",items:inspectionReport.unverifiable||[],color:P.blue,bg:P.blueLight,bdr:"#BFDBFE"},
+                      {label:"Passing",items:inspectionReport.passing||[],color:P.success,bg:P.successLight,bdr:"#A7F3D0"},
+                    ].map(group=>{
+                      if(!group.items.length)return null;
+                      return(<div key={group.label}><h3 style={{fontSize:"11px",fontWeight:"700",color:group.color,textTransform:"uppercase",letterSpacing:".06em",marginBottom:"8px"}}>{group.label} ({group.items.length})</h3>{group.items.map((q:any,qi:number)=><div key={qi} style={{background:P.bg,border:`1px solid ${group.bdr}`,borderRadius:"10px",padding:"14px 16px",marginBottom:"8px"}}><div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"8px",flexWrap:"wrap"}}><span style={{fontSize:"10px",fontWeight:"600",color:"#fff",background:SEVERITY_COLOR(q.severity),padding:"2px 8px",borderRadius:"20px"}}>{q.severity}</span><span style={{fontSize:"10px",fontWeight:"600",color:group.color,background:group.bg,padding:"2px 8px",borderRadius:"20px",border:`1px solid ${group.bdr}`}}>{q.verdict}</span><span style={{fontSize:"10px",color:P.textTert}}>{q.category}</span></div><div style={{fontSize:"12px",fontWeight:"600",color:P.text,marginBottom:"6px",lineHeight:"1.5"}}>{q.question_text}</div><div style={{fontSize:"11px",color:P.textSec,lineHeight:"1.6",marginBottom:"6px"}}>{q.finding}</div>{q.evidence&&<div style={{fontSize:"10px",color:P.blue,background:P.blueLight,borderRadius:"6px",padding:"5px 10px",marginBottom:"6px"}}><strong>Evidence:</strong> {q.evidence}</div>}{q.regulatory_ref&&<div style={{fontSize:"10px",color:P.textTert,fontFamily:"monospace"}}>{q.regulatory_ref}</div>}{q.recommendation&&q.verdict!=="Pass"&&<div style={{fontSize:"10px",color:P.primary,background:P.primaryLight,borderRadius:"6px",padding:"6px 10px",marginTop:"6px"}}><strong>Recommendation:</strong> {q.recommendation}</div>}</div>)}</div>);
                     })}
-                    {inspectionReport.passing?.length>0&&(<div><h3 style={{fontSize:"11px",fontWeight:"600",color:P.success,textTransform:"uppercase",letterSpacing:".06em",marginBottom:"6px"}}>Passing ({inspectionReport.passing.length})</h3>{inspectionReport.passing.map((q:any,qi:number)=>(<div key={qi} style={{background:P.successLight,border:`0.5px solid #A7F3D0`,borderRadius:"8px",padding:"10px 14px",marginBottom:"4px",display:"flex",gap:"8px",alignItems:"center"}}><span style={{color:P.success,flexShrink:0}}><Ico.check/></span><div><div style={{fontSize:"11px",fontWeight:"500",color:P.text}}>{q.category}</div><div style={{fontSize:"10px",color:P.textSec}}>{q.finding}</div></div></div>))}</div>)}
-                  </div>
-                </>
+                  </>)}
+                </div>
               )}
             </div>
           </div>
