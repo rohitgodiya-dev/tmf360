@@ -506,6 +506,7 @@ export default function TrinityPage(){
   ];
 
   if(loading)return(<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#F9FAFB",fontFamily:"system-ui"}}><div style={{textAlign:"center"}}><div style={{width:"40px",height:"40px",borderRadius:"50%",background:"linear-gradient(135deg,#FFEDD5,#F97316)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px",color:"#fff"}}><Ico.star/></div><div style={{fontSize:"14px",color:"#6B7280"}}>Loading Trinity...</div></div></div>);
+  if(loading)return(<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#F9FAFB",fontFamily:"system-ui"}}><div style={{textAlign:"center"}}><div style={{width:"40px",height:"40px",borderRadius:"50%",background:"linear-gradient(135deg,#FFEDD5,#F97316)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px",color:"#fff"}}><Ico.star/></div><div style={{fontSize:"14px",color:"#6B7280"}}>Loading Trinity...</div></div></div>);
   return(
     <div style={{display:"flex",height:"100vh",fontFamily:"system-ui,-apple-system,sans-serif",background:P.bg,overflow:"hidden"}}>
       <style>{`@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}`}</style>
@@ -548,7 +549,7 @@ export default function TrinityPage(){
         </div>
 
         {!sidebarCollapsed&&(
-          <div style={{padding:"8px",borderTop:"1px solid #E5E7EB",marginTop:"4px",display:"flex",gap:"4px",flexShrink:0}}>
+          <div style={{padding:"8px",borderTop:"1px solid #E5E7EB",marginTop:"4px",flexShrink:0}}>
             <button onClick={()=>{setPanel("inspection");setInspectionTab("report");generateInspectionReport();}} disabled={inspectionLoading} style={{width:"100%",fontSize:"10px",padding:"6px",background:"#0F172A",color:"#fff",border:"none",borderRadius:"6px",cursor:"pointer",opacity:inspectionLoading?0.5:1,display:"flex",alignItems:"center",justifyContent:"center",gap:"4px"}}>{inspectionLoading?<Ico.loader/>:<Ico.shield/>}{inspectionLoading?"...":"Run Inspection"}</button>
           </div>
         )}
@@ -563,8 +564,6 @@ export default function TrinityPage(){
             </div>)}
           </div>
         )}
-
-
 
         {!sidebarCollapsed&&(
           <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",borderTop:"1px solid #E5E7EB"}}>
@@ -596,6 +595,8 @@ export default function TrinityPage(){
 
       {/* MAIN */}
       <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+
+        {/* TOP BAR */}
         <div style={{height:"48px",borderBottom:`1px solid ${P.border}`,background:P.bg,display:"flex",alignItems:"center",padding:"0 1.5rem",gap:"12px",flexShrink:0}}>
           <span style={{fontSize:"14px",fontWeight:"600",color:P.text}}>{NAV.find(n=>n.id===panel)?.label||"Trinity"}</span>
           {activeStudy&&<span style={{fontSize:"11px",padding:"3px 10px",borderRadius:"20px",background:P.primaryLight,color:P.primary,fontWeight:"500"}}>{activeStudy.study_id}</span>}
@@ -606,7 +607,7 @@ export default function TrinityPage(){
           </div>
         </div>
 
-        {/* CHAT */}
+        {/* CHAT PANEL */}
         {panel==="chat"&&(
           <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
             <div style={{padding:"8px 1.5rem",display:"flex",gap:"6px",flexWrap:"wrap",borderBottom:`1px solid ${P.border}`,background:P.bgSec,flexShrink:0}}>
@@ -632,35 +633,12 @@ export default function TrinityPage(){
                       {m.text==="__VALIDATE__"&&m.validation&&(
                         <div style={{border:`1px solid ${P.border}`,borderRadius:"12px",padding:"16px",background:P.bg,display:"flex",flexDirection:"column",gap:"10px",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
                           <div style={{fontSize:"13px",fontWeight:"700",color:P.text}}>Document Validation Report</div>
-                          {m.validation.identity_checks?.length>0&&(
-                            <div>
-                              <div style={{fontSize:"10px",fontWeight:"600",color:P.textTert,textTransform:"uppercase",letterSpacing:".06em",marginBottom:"6px"}}>Identity Verification</div>
-                              {m.validation.identity_checks.map((c:any,ci:number)=>(
-                                <div key={ci} style={{display:"flex",alignItems:"flex-start",gap:"8px",padding:"8px 10px",borderRadius:"8px",background:c.pass?P.successLight:c.hard?P.dangerLight:P.warningLight,marginBottom:"4px"}}>
-                                  <span style={{flexShrink:0,color:c.pass?P.success:c.hard?P.danger:P.warning}}>{c.pass?<Ico.check/>:<Ico.x/>}</span>
-                                  <div style={{flex:1}}><div style={{fontSize:"11px",fontWeight:"600",color:P.text}}>{c.label}</div><div style={{fontSize:"10px",color:P.textSec,marginTop:"1px"}}>{c.detail}</div>{c.doc_value&&c.vault_value&&!c.pass&&<div style={{fontSize:"10px",color:P.danger,marginTop:"4px",fontFamily:"monospace"}}>Doc: {c.doc_value} | Study: {c.vault_value}</div>}</div>
-                                  {c.hard&&!c.pass&&<span style={{fontSize:"9px",padding:"2px 6px",borderRadius:"20px",background:P.danger,color:"#fff",fontWeight:"700",flexShrink:0}}>HARD FAIL</span>}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                          {m.validation.quality_checks?.length>0&&(
-                            <div>
-                              <div style={{fontSize:"10px",fontWeight:"600",color:P.textTert,textTransform:"uppercase",letterSpacing:".06em",marginBottom:"6px"}}>Quality Checks</div>
-                              {m.validation.quality_checks.map((c:any,ci:number)=><div key={ci} style={{display:"flex",alignItems:"flex-start",gap:"8px",padding:"8px 10px",borderRadius:"8px",background:c.pass?P.successLight:P.warningLight,marginBottom:"4px"}}><span style={{flexShrink:0,color:c.pass?P.success:P.warning}}>{c.pass?<Ico.check/>:<Ico.alert/>}</span><div style={{flex:1}}><div style={{fontSize:"11px",fontWeight:"600",color:P.text}}>{c.label}</div><div style={{fontSize:"10px",color:P.textSec,marginTop:"1px"}}>{c.detail}</div></div></div>)}
-                            </div>
-                          )}
-                          {m.validation.consistency_checks?.length>0&&(
-                            <div>
-                              <div style={{fontSize:"10px",fontWeight:"600",color:P.textTert,textTransform:"uppercase",letterSpacing:".06em",marginBottom:"6px"}}>Consistency Checks</div>
-                              {m.validation.consistency_checks.map((c:any,ci:number)=><div key={ci} style={{display:"flex",alignItems:"flex-start",gap:"8px",padding:"8px 10px",borderRadius:"8px",background:c.pass?P.successLight:P.warningLight,marginBottom:"4px"}}><span style={{flexShrink:0,color:c.pass?P.success:P.warning}}>{c.pass?<Ico.check/>:<Ico.alert/>}</span><div style={{flex:1}}><div style={{fontSize:"11px",fontWeight:"600",color:P.text}}>{c.label}</div><div style={{fontSize:"10px",color:P.textSec,marginTop:"1px"}}>{c.detail}</div></div></div>)}
-                            </div>
-                          )}
+                          {m.validation.identity_checks?.length>0&&(<div><div style={{fontSize:"10px",fontWeight:"600",color:P.textTert,textTransform:"uppercase",letterSpacing:".06em",marginBottom:"6px"}}>Identity Verification</div>{m.validation.identity_checks.map((c:any,ci:number)=>(<div key={ci} style={{display:"flex",alignItems:"flex-start",gap:"8px",padding:"8px 10px",borderRadius:"8px",background:c.pass?P.successLight:c.hard?P.dangerLight:P.warningLight,marginBottom:"4px"}}><span style={{flexShrink:0,color:c.pass?P.success:c.hard?P.danger:P.warning}}>{c.pass?<Ico.check/>:<Ico.x/>}</span><div style={{flex:1}}><div style={{fontSize:"11px",fontWeight:"600",color:P.text}}>{c.label}</div><div style={{fontSize:"10px",color:P.textSec,marginTop:"1px"}}>{c.detail}</div>{c.doc_value&&c.vault_value&&!c.pass&&<div style={{fontSize:"10px",color:P.danger,marginTop:"4px",fontFamily:"monospace"}}>Doc: {c.doc_value} | Study: {c.vault_value}</div>}</div>{c.hard&&!c.pass&&<span style={{fontSize:"9px",padding:"2px 6px",borderRadius:"20px",background:P.danger,color:"#fff",fontWeight:"700",flexShrink:0}}>HARD FAIL</span>}</div>))}</div>)}
+                          {m.validation.quality_checks?.length>0&&(<div><div style={{fontSize:"10px",fontWeight:"600",color:P.textTert,textTransform:"uppercase",letterSpacing:".06em",marginBottom:"6px"}}>Quality Checks</div>{m.validation.quality_checks.map((c:any,ci:number)=><div key={ci} style={{display:"flex",alignItems:"flex-start",gap:"8px",padding:"8px 10px",borderRadius:"8px",background:c.pass?P.successLight:P.warningLight,marginBottom:"4px"}}><span style={{flexShrink:0,color:c.pass?P.success:P.warning}}>{c.pass?<Ico.check/>:<Ico.alert/>}</span><div style={{flex:1}}><div style={{fontSize:"11px",fontWeight:"600",color:P.text}}>{c.label}</div><div style={{fontSize:"10px",color:P.textSec,marginTop:"1px"}}>{c.detail}</div></div></div>)}</div>)}
+                          {m.validation.consistency_checks?.length>0&&(<div><div style={{fontSize:"10px",fontWeight:"600",color:P.textTert,textTransform:"uppercase",letterSpacing:".06em",marginBottom:"6px"}}>Consistency Checks</div>{m.validation.consistency_checks.map((c:any,ci:number)=><div key={ci} style={{display:"flex",alignItems:"flex-start",gap:"8px",padding:"8px 10px",borderRadius:"8px",background:c.pass?P.successLight:P.warningLight,marginBottom:"4px"}}><span style={{flexShrink:0,color:c.pass?P.success:P.warning}}>{c.pass?<Ico.check/>:<Ico.alert/>}</span><div style={{flex:1}}><div style={{fontSize:"11px",fontWeight:"600",color:P.text}}>{c.label}</div><div style={{fontSize:"10px",color:P.textSec,marginTop:"1px"}}>{c.detail}</div></div></div>)}</div>)}
                           {m.validation.audit_narrative&&<div style={{padding:"10px 12px",borderRadius:"8px",background:P.bgSec,border:`1px solid ${P.border}`,fontSize:"10px",color:P.textSec,lineHeight:"1.6",fontStyle:"italic"}}>{m.validation.audit_narrative}</div>}
-                          <div style={{padding:"10px 12px",borderRadius:"8px",background:m.validation.overall==="pass"?P.successLight:m.validation.overall==="fail"?P.dangerLight:P.warningLight,fontSize:"12px",color:m.validation.overall==="pass"?P.success:m.validation.overall==="fail"?P.danger:P.warning,fontWeight:"600"}}>
-                            {m.validation.overall==="fail"?"REJECTED — This document cannot be filed into this study":m.validation.overall==="warn"?"Issues detected — review before filing":"Passed — document is valid for this study"}
-                          </div>
-                          {m.validation.overall!=="fail"&&<div style={{display:"flex",gap:"8px"}}><button onClick={async()=>{const cl=m.pendingClassification;setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,text:"__VALIDATE_DONE__"} as any:msg));await fileDocument(cl,m.validation);}} style={{fontSize:"12px",fontWeight:"600",padding:"7px 16px",background:P.success,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",display:"flex",alignItems:"center",gap:"5px"}}><Ico.check/>Confirm & File</button><button onClick={()=>{setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,text:"__VALIDATE_DONE__"} as any:msg));setChatMessages(prev=>[...prev,{role:"ai",text:"Filing cancelled."}]);}} style={{fontSize:"12px",fontWeight:"600",padding:"7px 16px",background:P.bgTert,color:P.textSec,border:`1px solid ${P.border}`,borderRadius:"8px",cursor:"pointer",display:"flex",alignItems:"center",gap:"5px"}}><Ico.x/>Cancel</button></div>}
+                          <div style={{padding:"10px 12px",borderRadius:"8px",background:m.validation.overall==="pass"?P.successLight:m.validation.overall==="fail"?P.dangerLight:P.warningLight,fontSize:"12px",color:m.validation.overall==="pass"?P.success:m.validation.overall==="fail"?P.danger:P.warning,fontWeight:"600"}}>{m.validation.overall==="fail"?"REJECTED — This document cannot be filed into this study":m.validation.overall==="warn"?"Issues detected — review before filing":"Passed — document is valid for this study"}</div>
+                          {m.validation.overall!=="fail"&&<div style={{display:"flex",gap:"8px"}}><button onClick={async()=>{const cl=m.pendingClassification;setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,text:"__VALIDATE_DONE__"} as any:msg));await fileDocument(cl,m.validation);}} style={{fontSize:"12px",fontWeight:"600",padding:"7px 16px",background:P.success,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",display:"flex",alignItems:"center",gap:"5px"}}><Ico.check/>Confirm & File</button><button onClick={()=>{setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,text:"__VALIDATE_DONE__"} as any:msg));setChatMessages(prev=>[...prev,{role:"ai",text:"Filing cancelled."}]);}} style={{fontSize:"12px",fontWeight:"600",padding:"7px 16px",background:P.bgTert,color:P.textSec,border:`1px solid ${P.border}`,borderRadius:"8px",cursor:"pointer"}}><Ico.x/>Cancel</button></div>}
                           {m.validation.overall==="fail"&&<button onClick={()=>{setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,text:"__VALIDATE_DONE__"} as any:msg));setChatMessages(prev=>[...prev,{role:"ai",text:"Document rejected."}]);}} style={{fontSize:"12px",fontWeight:"600",padding:"7px 16px",background:P.danger,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",alignSelf:"flex-start"}}>Dismiss</button>}
                         </div>
                       )}
@@ -669,15 +647,10 @@ export default function TrinityPage(){
                           {[{val:`${donePct}%`,label:"TMF completeness",color:P.blue},{val:missing,label:"Missing documents",color:P.danger},{val:`${ri}/100`,label:"Readiness score",color:ri>=80?P.success:ri>=50?P.primary:P.danger}].map((s,si)=><div key={si} style={{background:P.bg,border:`1px solid ${P.border}`,borderRadius:"10px",padding:"12px 14px"}}><div style={{fontSize:"20px",fontWeight:"700",color:s.color}}>{s.val}</div><div style={{fontSize:"10px",color:P.textSec,marginTop:"2px"}}>{s.label}</div></div>)}
                         </div>
                       )}
-                      {m.classification&&(
-                        <>
-                          <div style={{border:`1px solid ${P.border}`,borderRadius:"12px",padding:"12px 15px",background:P.bg}}>
-                            <div style={{fontSize:"13px",fontWeight:"600",color:P.text,marginBottom:"6px"}}>{m.classification.zoneLine}</div>
-                            <span style={{fontSize:"11px",fontWeight:"600",padding:"3px 10px",borderRadius:"20px",background:m.classification.confidence>=80?P.successLight:P.warningLight,color:m.classification.confidence>=80?P.success:P.warning}}>Confidence {m.classification.confidence}%</span>
-                          </div>
-                          {m.classification.warning&&<div style={{border:"1px solid #FDE68A",background:P.warningLight,borderRadius:"12px",padding:"12px 15px"}}><div style={{fontSize:"12px",fontWeight:"600",color:P.warning,marginBottom:"4px"}}>Version mismatch detected</div><div style={{fontSize:"12px",color:"#7a5205",lineHeight:"1.6"}}>{m.classification.warning.detail}</div><div style={{fontSize:"12px",color:"#7a5205",background:"#fff",border:"1px solid #FDE68A",borderRadius:"8px",padding:"8px 10px",marginTop:"6px"}}>Suggested action: {m.classification.warning.action}</div></div>}
-                        </>
-                      )}
+                      {m.classification&&(<>
+                        <div style={{border:`1px solid ${P.border}`,borderRadius:"12px",padding:"12px 15px",background:P.bg}}><div style={{fontSize:"13px",fontWeight:"600",color:P.text,marginBottom:"6px"}}>{m.classification.zoneLine}</div><span style={{fontSize:"11px",fontWeight:"600",padding:"3px 10px",borderRadius:"20px",background:m.classification.confidence>=80?P.successLight:P.warningLight,color:m.classification.confidence>=80?P.success:P.warning}}>Confidence {m.classification.confidence}%</span></div>
+                        {m.classification.warning&&<div style={{border:"1px solid #FDE68A",background:P.warningLight,borderRadius:"12px",padding:"12px 15px"}}><div style={{fontSize:"12px",fontWeight:"600",color:P.warning,marginBottom:"4px"}}>Version mismatch detected</div><div style={{fontSize:"12px",color:"#7a5205",lineHeight:"1.6"}}>{m.classification.warning.detail}</div><div style={{fontSize:"12px",color:"#7a5205",background:"#fff",border:"1px solid #FDE68A",borderRadius:"8px",padding:"8px 10px",marginTop:"6px"}}>Suggested action: {m.classification.warning.action}</div></div>}
+                      </>)}
                       {chatDocAction?.msgIdx===i&&!chatDocAction.disabled&&(
                         <div style={{display:"flex",gap:"8px"}}>
                           <button onClick={()=>{const pendingDoc=docs.find(d=>d.status==="Under Review");if(!pendingDoc)return;const zoneInfo=activeZONES.find(z=>z.z===pendingDoc.zone);setApproveDocId(pendingDoc.id||null);setApproveStage(1);setChatMessages(prev=>[...prev,{role:"ai",text:`Zone ${padZone(pendingDoc.zone)} - ${zoneInfo?.zn||"Unclassified zone"}\nConfirm this is the correct zone for filing.`}]);setChatDocAction(prev=>prev?{...prev,disabled:true}:null);}} style={{fontSize:"12px",fontWeight:"600",padding:"7px 16px",background:P.success,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Approve</button>
@@ -692,8 +665,8 @@ export default function TrinityPage(){
                       )}
                       {flagStage==="form"&&i===chatMessages.length-1&&m.text.includes("Flag initiated")&&(
                         <div style={{background:P.dangerLight,border:"1px solid #FECACA",borderRadius:"12px",padding:"14px",display:"flex",flexDirection:"column",gap:"10px"}}>
-                          <div><div style={{fontSize:"11px",fontWeight:"600",color:P.textTert,marginBottom:"4px",textTransform:"uppercase",letterSpacing:".03em"}}>Auto-detected reason</div><div style={{fontSize:"12px",background:"#fff",border:`1px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px",color:P.textSec}}>{flagReason}</div></div>
-                          <div><div style={{fontSize:"11px",fontWeight:"600",color:P.textTert,marginBottom:"4px",textTransform:"uppercase",letterSpacing:".03em"}}>Your comment</div><textarea value={flagComment} onChange={e=>setFlagComment(e.target.value)} rows={2} placeholder="Add context for the reviewer..." style={{width:"100%",fontSize:"12px",border:`1px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px",resize:"vertical",background:"#fff",fontFamily:"inherit"}}/></div>
+                          <div><div style={{fontSize:"11px",fontWeight:"600",color:P.textTert,marginBottom:"4px",textTransform:"uppercase"}}>Auto-detected reason</div><div style={{fontSize:"12px",background:"#fff",border:`1px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px",color:P.textSec}}>{flagReason}</div></div>
+                          <div><div style={{fontSize:"11px",fontWeight:"600",color:P.textTert,marginBottom:"4px",textTransform:"uppercase"}}>Your comment</div><textarea value={flagComment} onChange={e=>setFlagComment(e.target.value)} rows={2} placeholder="Add context for the reviewer..." style={{width:"100%",fontSize:"12px",border:`1px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px",resize:"vertical",background:"#fff",fontFamily:"inherit"}}/></div>
                           <button disabled={!flagComment.trim()} onClick={async()=>{if(!flagDocId)return;const doc=docs.find(d=>d.id===flagDocId);if(!doc)return;const now=new Date().toISOString();const{error}=await supabase.from("documents").update({status:"Draft",rejection_reason:flagReason,rejected_by:user?.email,rejected_at:now}).eq("id",doc.id);if(!error){await supabase.from("audit_trail").insert([{user_id:user?.id,user_email:user?.email,action:"Document flagged via Trinity",document_id:doc.id,study_id:doc.study_id,field_changed:"status",old_value:doc.status,new_value:"Draft",signature_reason:flagReason,document_name:doc.custom_file_name||doc.artifact_name}]);setDocs(prev=>prev.map(d=>d.id===doc.id?{...d,status:"Draft",rejection_reason:flagReason} as any:d));}const flagMsg:ChatMsg={role:"ai",text:`Document flagged and moved to Draft.\nReason: ${flagReason}\nComment: ${flagComment}`};const final=[...chatMessages,flagMsg];setChatMessages(final);scheduleSave(final);setFlagStage("idle");setFlagMsgIdx(null);setFlagComment("");setFlagDocId(null);setFlagReason("");}} style={{fontSize:"12px",fontWeight:"600",padding:"7px 16px",background:P.danger,color:"#fff",border:"none",borderRadius:"8px",cursor:flagComment.trim()?"pointer":"not-allowed",alignSelf:"flex-start",opacity:flagComment.trim()?1:0.5}}>Submit Flag</button>
                         </div>
                       )}
@@ -705,18 +678,7 @@ export default function TrinityPage(){
                       )}
                       {(m as any).classStage==="artifact"&&(m as any).pendingClassification&&(
                         <div style={{display:"flex",gap:"8px"}}>
-                          <button onClick={async()=>{
-                            const cl=(m as any).pendingClassification;
-                            setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,classStage:"done_artifact"} as any:msg));
-                            setChatLoading(true);
-                            try{
-                              const vRes=await fetch("/api/trinity/validate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pdfBase64:cl.base64,fileName:cl.fileName,artifactNum:cl.artifact_num,artifactName:cl.artifact_name,zoneNum:cl.zone_num,zoneName:cl.zone_name,vaultDocs:vaultDocs.map(d=>({document_type:d.document_type,custom_name:d.custom_name,extracted_text:d.extracted_text?.slice(0,2000)||""})),filedDocs:docs.filter(d=>d.status==="Approved").map(d=>({artifact_num:d.artifact_num,artifact_name:d.artifact_name,custom_file_name:d.custom_file_name,status:d.status})),activeStudy:activeStudy?.study_id||"",orgId,userEmail:user?.email||"",userId:user?.id||"",studyIdentity})});
-                              const validation=await vRes.json();
-                              const valMsg={role:"ai",text:"__VALIDATE__",pendingClassification:cl,validation} as any;
-                              const final=[...chatMessages,valMsg];setChatMessages(final);scheduleSave(final);
-                            }catch{await fileDocument(cl,null);}
-                            setChatLoading(false);
-                          }} style={{fontSize:"12px",fontWeight:"600",padding:"7px 16px",background:P.success,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Approve & Validate</button>
+                          <button onClick={async()=>{const cl=(m as any).pendingClassification;setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,classStage:"done_artifact"} as any:msg));setChatLoading(true);try{const vRes=await fetch("/api/trinity/validate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pdfBase64:cl.base64,fileName:cl.fileName,artifactNum:cl.artifact_num,artifactName:cl.artifact_name,zoneNum:cl.zone_num,zoneName:cl.zone_name,vaultDocs:vaultDocs.map(d=>({document_type:d.document_type,custom_name:d.custom_name,extracted_text:d.extracted_text?.slice(0,2000)||""})),filedDocs:docs.filter(d=>d.status==="Approved").map(d=>({artifact_num:d.artifact_num,artifact_name:d.artifact_name,custom_file_name:d.custom_file_name,status:d.status})),activeStudy:activeStudy?.study_id||"",orgId,userEmail:user?.email||"",userId:user?.id||"",studyIdentity})});const validation=await vRes.json();const valMsg={role:"ai",text:"__VALIDATE__",pendingClassification:cl,validation} as any;const final=[...chatMessages,valMsg];setChatMessages(final);scheduleSave(final);}catch{await fileDocument(cl,null);}setChatLoading(false);}} style={{fontSize:"12px",fontWeight:"600",padding:"7px 16px",background:P.success,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Approve & Validate</button>
                           <button onClick={()=>{setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,classStage:"done_artifact"} as any:msg));setChatMessages(prev=>[...prev,{role:"ai",text:"Artifact rejected. Which artifact should this be filed under?"}]);}} style={{fontSize:"12px",fontWeight:"600",padding:"7px 16px",background:P.bgTert,color:P.textSec,border:`1px solid ${P.border}`,borderRadius:"8px",cursor:"pointer"}}>Reject</button>
                         </div>
                       )}
@@ -758,7 +720,7 @@ export default function TrinityPage(){
           </div>
         )}
 
-        {/* VAULT */}
+        {/* VAULT PANEL */}
         {panel==="vault"&&(
           <div style={{flex:1,overflowY:"auto",padding:"1.5rem"}}>
             <div style={{maxWidth:"800px",margin:"0 auto",display:"flex",flexDirection:"column",gap:"16px"}}>
@@ -773,7 +735,7 @@ export default function TrinityPage(){
                 </div>
                 <div onClick={()=>vaultFileInput.current?.click()} style={{border:`2px dashed ${vaultFile?P.primary:P.border}`,borderRadius:"10px",padding:"1.5rem",textAlign:"center",cursor:"pointer",background:vaultFile?P.primaryLight:P.bgSec,marginBottom:"12px"}} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f)setVaultFile(f);}}>
                   <input ref={vaultFileInput} type="file" accept=".pdf,.doc,.docx,.PDF,.DOC,.DOCX" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)setVaultFile(f);}}/>
-                  {vaultFile?<div><div style={{fontSize:"24px",marginBottom:"6px"}}>📄</div><div style={{fontSize:"13px",fontWeight:"500",color:P.primary}}>{vaultFile.name}</div><div style={{fontSize:"11px",color:P.textTert,marginTop:"2px"}}>{(vaultFile.size/1024).toFixed(0)} KB</div></div>:<div><div style={{fontSize:"24px",marginBottom:"6px"}}>📁</div><div style={{fontSize:"13px",color:P.textSec}}>Drop a PDF here or click to browse</div></div>}
+                  {vaultFile?<div><div style={{fontSize:"24px",marginBottom:"6px"}}>📄</div><div style={{fontSize:"13px",fontWeight:"500",color:P.primary}}>{vaultFile.name}</div><div style={{fontSize:"11px",color:P.textTert,marginTop:"2px"}}>{(vaultFile.size/1024).toFixed(0)} KB</div></div>:<div><div style={{fontSize:"24px",marginBottom:"6px"}}>📁</div><div style={{fontSize:"13px",color:P.textSec}}>Drop a PDF or Word document here or click to browse</div></div>}
                 </div>
                 {vaultProgress&&<div style={{fontSize:"11px",padding:"8px 12px",borderRadius:"8px",background:vaultProgress.includes("Done")?P.successLight:P.primaryLight,color:vaultProgress.includes("Done")?P.success:P.primary,marginBottom:"10px"}}>{vaultProgress}</div>}
                 <button onClick={uploadVaultDoc} disabled={!vaultFile||vaultUploading} style={{fontSize:"12px",fontWeight:"600",padding:"10px 20px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:vaultFile&&!vaultUploading?"pointer":"not-allowed",opacity:vaultFile&&!vaultUploading?1:0.5}}>{vaultUploading?"Processing...":"Upload to Vault"}</button>
@@ -788,19 +750,72 @@ export default function TrinityPage(){
           </div>
         )}
 
-                  {inspectionReport&&!inspectionLoading&&<button onClick={()=>{
-                    const rows=inspectionReport.questions||[];
-                    const sc=inspectionReport.risk_score>=80?"#10B981":inspectionReport.risk_score>=50?"#F97316":"#EF4444";
-                    function badge(cls:string,text:string){return`<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:9px;font-weight:700;margin:2px;background:${cls==="pass"?"#ECFDF5":cls==="fail"?"#FEF2F2":cls==="partial"?"#FFFBEB":cls==="crit"?"#FEF2F2":cls==="major"?"#FFFBEB":"#EFF6FF"};color:${cls==="pass"?"#10B981":cls==="fail"?"#EF4444":cls==="partial"?"#F59E0B":cls==="crit"?"#EF4444":cls==="major"?"#F59E0B":"#3B82F6"}">${text}</span>`;}
-                    const cards=rows.map((q:any)=>{const vc=q.verdict==="Pass"?"pass":q.verdict==="Fail"?"fail":q.verdict==="Partial"?"partial":"unverify";const sc2=q.severity==="Critical"?"crit":q.severity==="Major"?"major":"minor";const borderColor=q.verdict==="Pass"?"#10B981":q.verdict==="Fail"?"#EF4444":q.verdict==="Partial"?"#F59E0B":"#3B82F6";return`<div style="margin-bottom:10px;padding:10px 12px;border-radius:6px;border-left:3px solid ${borderColor};background:${q.verdict==="Pass"?"#ECFDF5":q.verdict==="Fail"?"#FEF2F2":q.verdict==="Partial"?"#FFFBEB":"#EFF6FF"}">${badge(sc2,q.severity)}${badge(vc,q.verdict)}<span style="color:#6B7280;font-size:9px;margin-left:4px">${q.category||""}</span><div style="font-weight:600;font-size:11px;margin:5px 0">${q.question_text||""}</div><div style="color:#374151;font-size:10px">${q.finding||""}</div>${q.evidence?`<div style="color:#3B82F6;font-size:10px;margin-top:3px"><strong>Evidence:</strong> ${q.evidence}</div>`:""} ${q.regulatory_ref?`<div style="color:#6B7280;font-size:9px;font-family:monospace;margin-top:2px">${q.regulatory_ref}</div>`:""} ${q.recommendation&&q.verdict!=="Pass"?`<div style="color:#F97316;font-size:10px;margin-top:3px"><strong>Recommendation:</strong> ${q.recommendation}</div>`:""}</div>`;}).join("");
-                    const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Inspection Report — ${activeStudy?.study_id}</title><style>body{font-family:Arial,sans-serif;font-size:10px;margin:30px;color:#111}h1{color:#0F1E3D;font-size:16px}h2{font-size:11px;color:#374151;text-transform:uppercase;letter-spacing:.06em;margin-top:18px;border-bottom:1px solid #E5E7EB;padding-bottom:4px}.footer{margin-top:30px;font-size:8px;color:#9CA3AF;border-top:1px solid #E5E7EB;padding-top:8px}@media print{body{margin:15px}}</style></head><body><h1>TMF Inspection Simulation Report</h1><p><strong>Study:</strong> ${activeStudy?.study_id} &nbsp;<strong>Sponsor:</strong> ${activeStudy?.sponsor||"—"} &nbsp;<strong>Phase:</strong> ${activeStudy?.phase||"—"}</p><p><strong>Generated:</strong> ${new Date(inspectionReport.generated_at).toLocaleString()} &nbsp;<strong>Questions evaluated:</strong> ${rows.length}</p><div style="font-size:36px;font-weight:700;color:${sc}">${inspectionReport.risk_score}/100 &nbsp;<span style="font-size:13px;color:#6B7280">${inspectionReport.inspection_ready?"✅ Inspection Ready":"🚫 Not Ready"}</span></div><p style="color:#6B7280">${inspectionReport.critical_fails?.length||0} critical · ${inspectionReport.major_fails?.length||0} major · ${inspectionReport.partial?.length||0} partial · ${inspectionReport.unverifiable?.length||0} unable to verify · ${inspectionReport.passing?.length||0} passing</p>${inspectionReport.summary?`<p style="background:#F3F4F6;padding:10px 12px;border-radius:6px;font-style:italic;font-size:10px">${inspectionReport.summary}</p>`:""}<h2>Findings Detail</h2>${cards}<div class="footer">TMF360 Trinity AI Inspection Simulation · ${new Date().toISOString()} · For internal readiness assessment only</div></body></html>`;
-                    const w=window.open("","_blank");if(w){w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);}
-                  }} style={{fontSize:"12px",padding:"8px 14px",background:"#374151",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",display:"flex",alignItems:"center",gap:"5px"}}><Ico.download/>Export PDF</button>}
-                  <button onClick={()=>{setInspectionTab("report");generateInspectionReport();}} disabled={inspectionLoading||inspectionQuestions.length===0} style={{fontSize:"12px",padding:"8px 16px",background:"#0F172A",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",display:"flex",alignItems:"center",gap:"6px",opacity:inspectionLoading||inspectionQuestions.length===0?0.5:1}}>{inspectionLoading?<Ico.loader/>:<Ico.shield/>}{inspectionLoading?"Running...":"Run Inspection"}</button>
+        {/* INSPECTION PANEL */}
+        {panel==="inspection"&&(
+          <div style={{flex:1,overflowY:"auto",padding:"1.5rem"}}>
+            <div style={{maxWidth:"960px",margin:"0 auto",display:"flex",flexDirection:"column",gap:"16px"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <div>
+                  <h2 style={{fontSize:"16px",fontWeight:"700",color:P.text,margin:0}}>Inspection Simulation</h2>
+                  <p style={{fontSize:"12px",color:P.textTert,marginTop:"4px",marginBottom:0}}>FDA/EMA inspection simulation evaluated against your live TMF document registry.</p>
+                </div>
+                <div style={{display:"flex",gap:"8px"}}>
+                  {inspectionReport&&!inspectionLoading&&(
+                    <button onClick={()=>{
+                      const rows=inspectionReport.questions||[];
+                      const sc=inspectionReport.risk_score>=80?"#10B981":inspectionReport.risk_score>=50?"#F97316":"#EF4444";
+                      const cards=rows.map((q:any)=>{
+                        const borderColor=q.verdict==="Pass"?"#10B981":q.verdict==="Fail"?"#EF4444":q.verdict==="Partial"?"#F59E0B":"#3B82F6";
+                        const bg=q.verdict==="Pass"?"#ECFDF5":q.verdict==="Fail"?"#FEF2F2":q.verdict==="Partial"?"#FFFBEB":"#EFF6FF";
+                        const sevColor=q.severity==="Critical"?"#EF4444":q.severity==="Major"?"#F59E0B":"#3B82F6";
+                        const verdColor=q.verdict==="Pass"?"#10B981":q.verdict==="Fail"?"#EF4444":q.verdict==="Partial"?"#F59E0B":"#3B82F6";
+                        return [
+                          '<div style="margin-bottom:10px;padding:10px 12px;border-radius:6px;border-left:3px solid '+borderColor+';background:'+bg+'">',
+                          '<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:9px;font-weight:700;background:'+bg+';color:'+sevColor+';margin-right:4px">'+q.severity+'</span>',
+                          '<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:9px;font-weight:700;background:'+bg+';color:'+verdColor+'">'+q.verdict+'</span>',
+                          '<span style="color:#6B7280;font-size:9px;margin-left:6px">'+(q.category||'')+'</span>',
+                          '<div style="font-weight:600;font-size:11px;margin:5px 0;color:#111">'+(q.question_text||'')+'</div>',
+                          '<div style="color:#374151;font-size:10px">'+(q.finding||'')+'</div>',
+                          q.evidence?'<div style="color:#3B82F6;font-size:10px;margin-top:3px"><strong>Evidence:</strong> '+q.evidence+'</div>':'',
+                          q.regulatory_ref?'<div style="color:#6B7280;font-size:9px;font-family:monospace;margin-top:2px">'+q.regulatory_ref+'</div>':'',
+                          q.recommendation&&q.verdict!=="Pass"?'<div style="color:#F97316;font-size:10px;margin-top:3px"><strong>Recommendation:</strong> '+q.recommendation+'</div>':'',
+                          '</div>'
+                        ].join('');
+                      }).join('');
+                      const html=[
+                        '<!DOCTYPE html><html><head><meta charset="UTF-8"/>',
+                        '<title>Inspection Report — '+(activeStudy?.study_id||'')+'</title>',
+                        '<style>body{font-family:Arial,sans-serif;font-size:10px;margin:30px;color:#111}',
+                        'h1{color:#0F1E3D;font-size:16px}h2{font-size:11px;color:#374151;text-transform:uppercase;letter-spacing:.06em;margin-top:18px;border-bottom:1px solid #E5E7EB;padding-bottom:4px}',
+                        '.footer{margin-top:30px;font-size:8px;color:#9CA3AF;border-top:1px solid #E5E7EB;padding-top:8px}',
+                        '@media print{body{margin:15px}}</style></head><body>',
+                        '<h1>TMF Inspection Simulation Report</h1>',
+                        '<p><strong>Study:</strong> '+(activeStudy?.study_id||'')+'&nbsp;<strong>Sponsor:</strong> '+(activeStudy?.sponsor||'—')+'&nbsp;<strong>Phase:</strong> '+(activeStudy?.phase||'—')+'</p>',
+                        '<p><strong>Generated:</strong> '+new Date(inspectionReport.generated_at).toLocaleString()+'&nbsp;<strong>Questions evaluated:</strong> '+rows.length+'</p>',
+                        '<div style="font-size:36px;font-weight:700;color:'+sc+'">'+inspectionReport.risk_score+'/100&nbsp;<span style="font-size:13px;color:#6B7280">'+(inspectionReport.inspection_ready?'✅ Inspection Ready':'🚫 Not Ready')+'</span></div>',
+                        '<p style="color:#6B7280">'+(inspectionReport.critical_fails?.length||0)+' critical · '+(inspectionReport.major_fails?.length||0)+' major · '+(inspectionReport.partial?.length||0)+' partial · '+(inspectionReport.unverifiable?.length||0)+' unable to verify · '+(inspectionReport.passing?.length||0)+' passing</p>',
+                        inspectionReport.summary?'<p style="background:#F3F4F6;padding:10px 12px;border-radius:6px;font-style:italic;font-size:10px">'+inspectionReport.summary+'</p>':'',
+                        '<h2>Findings Detail</h2>',
+                        cards,
+                        '<div class="footer">TMF360 Trinity AI Inspection Simulation · '+new Date().toISOString()+' · For internal readiness assessment only</div>',
+                        '</body></html>'
+                      ].join('');
+                      const w=window.open("","_blank");
+                      if(w){w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);}
+                    }} style={{fontSize:"12px",padding:"8px 14px",background:"#374151",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",display:"flex",alignItems:"center",gap:"5px"}}>
+                      <Ico.download/>Export PDF
+                    </button>
+                  )}
+                  <button onClick={()=>{setInspectionTab("report");generateInspectionReport();}} disabled={inspectionLoading||inspectionQuestions.length===0} style={{fontSize:"12px",padding:"8px 16px",background:"#0F172A",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",display:"flex",alignItems:"center",gap:"6px",opacity:inspectionLoading||inspectionQuestions.length===0?0.5:1}}>
+                    {inspectionLoading?<Ico.loader/>:<Ico.shield/>}{inspectionLoading?"Running...":"Run Inspection"}
+                  </button>
                 </div>
               </div>
+
               <div style={{display:"flex",gap:"0",borderBottom:`1px solid ${P.border}`}}>
-                {[{id:"questions",label:`Questions (${inspectionQuestions.length})`},{id:"report",label:"Inspection Report"}].map(t=><button key={t.id} onClick={()=>setInspectionTab(t.id as any)} style={{padding:"10px 20px",fontSize:"12px",fontWeight:inspectionTab===t.id?"600":"400",color:inspectionTab===t.id?P.primary:P.textSec,background:"none",border:"none",borderBottom:inspectionTab===t.id?`2px solid ${P.primary}`:"2px solid transparent",cursor:"pointer",fontFamily:"inherit"}}>{t.label}</button>)}
+                {[{id:"questions",label:`Questions (${inspectionQuestions.length})`},{id:"report",label:"Inspection Report"}].map(t=>(
+                  <button key={t.id} onClick={()=>setInspectionTab(t.id as any)} style={{padding:"10px 20px",fontSize:"12px",fontWeight:inspectionTab===t.id?"600":"400",color:inspectionTab===t.id?P.primary:P.textSec,background:"none",border:"none",borderBottom:inspectionTab===t.id?`2px solid ${P.primary}`:"2px solid transparent",cursor:"pointer",fontFamily:"inherit"}}>{t.label}</button>
+                ))}
               </div>
 
               {inspectionTab==="questions"&&(
@@ -814,9 +829,7 @@ export default function TrinityPage(){
                       <div style={{fontSize:"12px",fontWeight:"600",color:P.text}}>Add Custom Question</div>
                       <textarea value={newQuestionText} onChange={e=>setNewQuestionText(e.target.value)} rows={3} placeholder="Enter your inspection question..." style={{width:"100%",fontSize:"12px",border:`1px solid ${P.border}`,borderRadius:"8px",padding:"10px 12px",resize:"vertical",fontFamily:"inherit",outline:"none"}}/>
                       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
-                        <div><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>Category</label><select value={newQuestionCategory} onChange={e=>setNewQuestionCategory(e.target.value)} style={{width:"100%",fontSize:"12px",border:`1px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px",fontFamily:"inherit"}}>
-                          {["TMF Structure","Document Quality","Protocol","IRB/EC","Investigator","Training","Informed Consent","Monitoring","Safety Reporting","Drug/Device Accountability","Protocol Deviations","Correspondence","Audit/Inspection","Subject Records","Electronic Records","Close-Out","Archive","General"].map(c=><option key={c}>{c}</option>)}
-                        </select></div>
+                        <div><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>Category</label><select value={newQuestionCategory} onChange={e=>setNewQuestionCategory(e.target.value)} style={{width:"100%",fontSize:"12px",border:`1px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px",fontFamily:"inherit"}}>{["TMF Structure","Document Quality","Protocol","IRB/EC","Investigator","Training","Informed Consent","Monitoring","Safety Reporting","Drug/Device Accountability","Protocol Deviations","Correspondence","Audit/Inspection","Subject Records","Electronic Records","Close-Out","Archive","General"].map(c=><option key={c}>{c}</option>)}</select></div>
                         <div><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>Severity</label><select value={newQuestionSeverity} onChange={e=>setNewQuestionSeverity(e.target.value)} style={{width:"100%",fontSize:"12px",border:`1px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px",fontFamily:"inherit"}}><option>Critical</option><option>Major</option><option>Minor</option></select></div>
                       </div>
                       <div style={{display:"flex",gap:"8px"}}>
@@ -827,36 +840,89 @@ export default function TrinityPage(){
                   )}
                   {["TMF Structure","Document Quality","Protocol","IRB/EC","Investigator","Training","Informed Consent","Monitoring","Safety Reporting","Drug/Device Accountability","Protocol Deviations","Correspondence","Audit/Inspection","Subject Records","Electronic Records","Close-Out","Archive","General"].filter(cat=>inspectionQuestions.some(q=>q.category===cat)).map(cat=>{
                     const catQs=inspectionQuestions.filter(q=>q.category===cat);
-                    return(<div key={cat}><div style={{fontSize:"10px",fontWeight:"600",color:P.textTert,textTransform:"uppercase",letterSpacing:".06em",marginBottom:"6px",paddingLeft:"4px"}}>{cat} ({catQs.length})</div>{catQs.map(q=><div key={q.id} style={{background:P.bg,border:`1px solid ${P.border}`,borderRadius:"10px",padding:"12px 14px",marginBottom:"6px",display:"flex",alignItems:"flex-start",gap:"10px"}}><div style={{fontSize:"10px",fontWeight:"600",color:"#fff",background:SEVERITY_COLOR(q.severity),padding:"2px 7px",borderRadius:"20px",flexShrink:0,marginTop:"2px"}}>{q.severity}</div><div style={{flex:1,fontSize:"12px",color:P.text,lineHeight:"1.6"}}>{q.question_text}</div><button onClick={()=>removeInspectionQuestion(q.id)} style={{background:"none",border:"none",cursor:"pointer",color:P.textMuted,padding:"2px",flexShrink:0,display:"flex"}} title="Remove"><Ico.trash/></button></div>)}</div>);
+                    return(
+                      <div key={cat}>
+                        <div style={{fontSize:"10px",fontWeight:"600",color:P.textTert,textTransform:"uppercase",letterSpacing:".06em",marginBottom:"6px",paddingLeft:"4px"}}>{cat} ({catQs.length})</div>
+                        {catQs.map(q=>(
+                          <div key={q.id} style={{background:P.bg,border:`1px solid ${P.border}`,borderRadius:"10px",padding:"12px 14px",marginBottom:"6px",display:"flex",alignItems:"flex-start",gap:"10px"}}>
+                            <div style={{fontSize:"10px",fontWeight:"600",color:"#fff",background:SEVERITY_COLOR(q.severity),padding:"2px 7px",borderRadius:"20px",flexShrink:0,marginTop:"2px"}}>{q.severity}</div>
+                            <div style={{flex:1,fontSize:"12px",color:P.text,lineHeight:"1.6"}}>{q.question_text}</div>
+                            <button onClick={()=>removeInspectionQuestion(q.id)} style={{background:"none",border:"none",cursor:"pointer",color:P.textMuted,padding:"2px",flexShrink:0,display:"flex"}} title="Remove"><Ico.trash/></button>
+                          </div>
+                        ))}
+                      </div>
+                    );
                   })}
                 </div>
               )}
 
               {inspectionTab==="report"&&(
                 <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
-                  {inspectionLoading&&<div style={{textAlign:"center",padding:"4rem",color:P.textTert}}><div style={{display:"flex",justifyContent:"center",marginBottom:"12px"}}><Ico.loader/></div><div style={{fontSize:"13px",fontWeight:"500",color:P.textSec}}>Trinity is evaluating each inspection question against your vault documents...</div><div style={{fontSize:"11px",color:P.textTert,marginTop:"4px"}}>{inspectionQuestions.length} questions · {vaultDocs.length} vault documents</div></div>}
-                  {!inspectionReport&&!inspectionLoading&&<div style={{textAlign:"center",padding:"4rem",color:P.textTert,background:P.bgSec,borderRadius:"12px",border:`1px solid ${P.border}`}}><div style={{fontSize:"32px",marginBottom:"8px"}}>🏛️</div><div style={{fontSize:"13px",fontWeight:"500",color:P.textSec}}>No inspection report yet</div><div style={{fontSize:"12px",marginTop:"4px",marginBottom:"1rem",color:P.textTert}}>Click "Run Inspection" to simulate an FDA/EMA audit using your {inspectionQuestions.length} questions and vault documents.</div><button onClick={()=>generateInspectionReport()} style={{fontSize:"12px",fontWeight:"600",padding:"10px 20px",background:"#0F172A",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Run Inspection Simulation</button></div>}
-                  {inspectionReport&&!inspectionLoading&&(<>
-                    <div style={{background:"linear-gradient(135deg,#0F1E3D 0%,#1E3A5F 100%)",borderRadius:"14px",padding:"20px 24px",color:"#fff"}}>
-                      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:"12px"}}>
-                        <div><div style={{fontSize:"11px",color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:".06em",marginBottom:"4px"}}>Inspection Readiness Score</div><div style={{fontSize:"52px",fontWeight:"700",lineHeight:1,color:inspectionReport.risk_score>=80?"#10B981":inspectionReport.risk_score>=50?"#F97316":"#EF4444"}}>{inspectionReport.risk_score}<span style={{fontSize:"24px",color:"rgba(255,255,255,0.3)"}}>/100</span></div></div>
-                        <div style={{textAlign:"right"}}><div style={{fontSize:"14px",fontWeight:"700",color:inspectionReport.inspection_ready?"#10B981":"#EF4444",marginBottom:"4px"}}>{inspectionReport.inspection_ready?"✅ Inspection Ready":"🚫 Not Ready"}</div><div style={{fontSize:"11px",color:"rgba(255,255,255,0.4)"}}>{inspectionReport.critical_fails?.length||0} critical · {inspectionReport.major_fails?.length||0} major · {inspectionReport.partial?.length||0} partial · {inspectionReport.unverifiable?.length||0} unverifiable</div><div style={{fontSize:"10px",color:"rgba(255,255,255,0.3)",marginTop:"4px"}}>{new Date(inspectionReport.generated_at).toLocaleString()}</div></div>
+                  {inspectionLoading&&(
+                    <div style={{textAlign:"center",padding:"4rem",color:P.textTert}}>
+                      <div style={{display:"flex",justifyContent:"center",marginBottom:"12px"}}><Ico.loader/></div>
+                      <div style={{fontSize:"13px",fontWeight:"500",color:P.textSec}}>Trinity is evaluating each inspection question against your TMF document registry...</div>
+                      <div style={{fontSize:"11px",color:P.textTert,marginTop:"4px"}}>{inspectionQuestions.length} questions · {docs.length} TMF documents</div>
+                    </div>
+                  )}
+                  {!inspectionReport&&!inspectionLoading&&(
+                    <div style={{textAlign:"center",padding:"4rem",color:P.textTert,background:P.bgSec,borderRadius:"12px",border:`1px solid ${P.border}`}}>
+                      <div style={{fontSize:"32px",marginBottom:"8px"}}>🏛️</div>
+                      <div style={{fontSize:"13px",fontWeight:"500",color:P.textSec}}>No inspection report yet</div>
+                      <div style={{fontSize:"12px",marginTop:"4px",marginBottom:"1rem",color:P.textTert}}>Click "Run Inspection" to simulate an FDA/EMA audit using your {inspectionQuestions.length} questions evaluated against {docs.length} TMF documents.</div>
+                      <button onClick={()=>generateInspectionReport()} style={{fontSize:"12px",fontWeight:"600",padding:"10px 20px",background:"#0F172A",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Run Inspection Simulation</button>
+                    </div>
+                  )}
+                  {inspectionReport&&!inspectionLoading&&(
+                    <>
+                      <div style={{background:"linear-gradient(135deg,#0F1E3D 0%,#1E3A5F 100%)",borderRadius:"14px",padding:"20px 24px",color:"#fff"}}>
+                        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:"12px"}}>
+                          <div>
+                            <div style={{fontSize:"11px",color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:".06em",marginBottom:"4px"}}>Inspection Readiness Score</div>
+                            <div style={{fontSize:"52px",fontWeight:"700",lineHeight:1,color:inspectionReport.risk_score>=80?"#10B981":inspectionReport.risk_score>=50?"#F97316":"#EF4444"}}>{inspectionReport.risk_score}<span style={{fontSize:"24px",color:"rgba(255,255,255,0.3)"}}>/100</span></div>
+                          </div>
+                          <div style={{textAlign:"right"}}>
+                            <div style={{fontSize:"14px",fontWeight:"700",color:inspectionReport.inspection_ready?"#10B981":"#EF4444",marginBottom:"4px"}}>{inspectionReport.inspection_ready?"✅ Inspection Ready":"🚫 Not Ready"}</div>
+                            <div style={{fontSize:"11px",color:"rgba(255,255,255,0.4)"}}>{inspectionReport.critical_fails?.length||0} critical · {inspectionReport.major_fails?.length||0} major · {inspectionReport.partial?.length||0} partial · {inspectionReport.unverifiable?.length||0} unverifiable</div>
+                            <div style={{fontSize:"10px",color:"rgba(255,255,255,0.3)",marginTop:"4px"}}>{new Date(inspectionReport.generated_at).toLocaleString()}</div>
+                          </div>
+                        </div>
+                        {inspectionReport.summary&&<div style={{fontSize:"12px",lineHeight:"1.7",color:"rgba(255,255,255,0.8)",borderTop:"1px solid rgba(255,255,255,0.1)",paddingTop:"12px"}}>{inspectionReport.summary}</div>}
                       </div>
-                      {inspectionReport.summary&&<div style={{fontSize:"12px",lineHeight:"1.7",color:"rgba(255,255,255,0.8)",borderTop:"1px solid rgba(255,255,255,0.1)",paddingTop:"12px"}}>{inspectionReport.summary}</div>}
-                    </div>
-                    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"10px"}}>
-                      {[{val:inspectionReport.passing?.length||0,label:"Passing",color:P.success,bg:P.successLight},{val:inspectionReport.critical_fails?.length||0,label:"Critical Fails",color:P.danger,bg:P.dangerLight},{val:inspectionReport.major_fails?.length||0,label:"Major Findings",color:P.warning,bg:P.warningLight},{val:inspectionReport.unverifiable?.length||0,label:"Unable to Verify",color:P.blue,bg:P.blueLight}].map((s,i)=><div key={i} style={{background:s.bg,border:`1px solid ${P.border}`,borderRadius:"10px",padding:"14px",textAlign:"center"}}><div style={{fontSize:"28px",fontWeight:"700",color:s.color}}>{s.val}</div><div style={{fontSize:"10px",color:P.textSec,marginTop:"3px"}}>{s.label}</div></div>)}
-                    </div>
-                    {[
-                      {label:"Critical Failures",items:inspectionReport.questions?.filter((q:any)=>q.verdict==="Fail"&&q.severity==="Critical")||[],color:P.danger,bg:P.dangerLight,bdr:"#FECACA"},
-                      {label:"Major Findings",items:inspectionReport.questions?.filter((q:any)=>(q.verdict==="Fail"&&q.severity==="Major")||(q.verdict==="Partial"&&(q.severity==="Critical"||q.severity==="Major")))||[],color:P.warning,bg:P.warningLight,bdr:"#FDE68A"},
-                      {label:"Unable to Verify",items:inspectionReport.unverifiable||[],color:P.blue,bg:P.blueLight,bdr:"#BFDBFE"},
-                      {label:"Passing",items:inspectionReport.passing||[],color:P.success,bg:P.successLight,bdr:"#A7F3D0"},
-                    ].map(group=>{
-                      if(!group.items.length)return null;
-                      return(<div key={group.label}><h3 style={{fontSize:"11px",fontWeight:"700",color:group.color,textTransform:"uppercase",letterSpacing:".06em",marginBottom:"8px"}}>{group.label} ({group.items.length})</h3>{group.items.map((q:any,qi:number)=><div key={qi} style={{background:P.bg,border:`1px solid ${group.bdr}`,borderRadius:"10px",padding:"14px 16px",marginBottom:"8px"}}><div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"8px",flexWrap:"wrap"}}><span style={{fontSize:"10px",fontWeight:"600",color:"#fff",background:SEVERITY_COLOR(q.severity),padding:"2px 8px",borderRadius:"20px"}}>{q.severity}</span><span style={{fontSize:"10px",fontWeight:"600",color:group.color,background:group.bg,padding:"2px 8px",borderRadius:"20px",border:`1px solid ${group.bdr}`}}>{q.verdict}</span><span style={{fontSize:"10px",color:P.textTert}}>{q.category}</span></div><div style={{fontSize:"12px",fontWeight:"600",color:P.text,marginBottom:"6px",lineHeight:"1.5"}}>{q.question_text}</div><div style={{fontSize:"11px",color:P.textSec,lineHeight:"1.6",marginBottom:"6px"}}>{q.finding}</div>{q.evidence&&<div style={{fontSize:"10px",color:P.blue,background:P.blueLight,borderRadius:"6px",padding:"5px 10px",marginBottom:"6px"}}><strong>Evidence:</strong> {q.evidence}</div>}{q.regulatory_ref&&<div style={{fontSize:"10px",color:P.textTert,fontFamily:"monospace"}}>{q.regulatory_ref}</div>}{q.recommendation&&q.verdict!=="Pass"&&<div style={{fontSize:"10px",color:P.primary,background:P.primaryLight,borderRadius:"6px",padding:"6px 10px",marginTop:"6px"}}><strong>Recommendation:</strong> {q.recommendation}</div>}</div>)}</div>);
-                    })}
-                  </>)}
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"10px"}}>
+                        {[{val:inspectionReport.passing?.length||0,label:"Passing",color:P.success,bg:P.successLight},{val:inspectionReport.critical_fails?.length||0,label:"Critical Fails",color:P.danger,bg:P.dangerLight},{val:inspectionReport.major_fails?.length||0,label:"Major Findings",color:P.warning,bg:P.warningLight},{val:inspectionReport.unverifiable?.length||0,label:"Unable to Verify",color:P.blue,bg:P.blueLight}].map((s,i)=>(
+                          <div key={i} style={{background:s.bg,border:`1px solid ${P.border}`,borderRadius:"10px",padding:"14px",textAlign:"center"}}><div style={{fontSize:"28px",fontWeight:"700",color:s.color}}>{s.val}</div><div style={{fontSize:"10px",color:P.textSec,marginTop:"3px"}}>{s.label}</div></div>
+                        ))}
+                      </div>
+                      {[
+                        {label:"Critical Failures",items:(inspectionReport.questions||[]).filter((q:any)=>q.verdict==="Fail"&&q.severity==="Critical"),color:P.danger,bg:P.dangerLight,bdr:"#FECACA"},
+                        {label:"Major Findings",items:(inspectionReport.questions||[]).filter((q:any)=>(q.verdict==="Fail"&&q.severity==="Major")||(q.verdict==="Partial"&&(q.severity==="Critical"||q.severity==="Major"))),color:P.warning,bg:P.warningLight,bdr:"#FDE68A"},
+                        {label:"Unable to Verify",items:inspectionReport.unverifiable||[],color:P.blue,bg:P.blueLight,bdr:"#BFDBFE"},
+                        {label:"Passing",items:inspectionReport.passing||[],color:P.success,bg:P.successLight,bdr:"#A7F3D0"},
+                      ].map(group=>{
+                        if(!group.items.length)return null;
+                        return(
+                          <div key={group.label}>
+                            <h3 style={{fontSize:"11px",fontWeight:"700",color:group.color,textTransform:"uppercase",letterSpacing:".06em",marginBottom:"8px"}}>{group.label} ({group.items.length})</h3>
+                            {group.items.map((q:any,qi:number)=>(
+                              <div key={qi} style={{background:P.bg,border:`1px solid ${group.bdr}`,borderRadius:"10px",padding:"14px 16px",marginBottom:"8px"}}>
+                                <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"8px",flexWrap:"wrap"}}>
+                                  <span style={{fontSize:"10px",fontWeight:"600",color:"#fff",background:SEVERITY_COLOR(q.severity),padding:"2px 8px",borderRadius:"20px"}}>{q.severity}</span>
+                                  <span style={{fontSize:"10px",fontWeight:"600",color:group.color,background:group.bg,padding:"2px 8px",borderRadius:"20px",border:`1px solid ${group.bdr}`}}>{q.verdict}</span>
+                                  <span style={{fontSize:"10px",color:P.textTert}}>{q.category}</span>
+                                </div>
+                                <div style={{fontSize:"12px",fontWeight:"600",color:P.text,marginBottom:"6px",lineHeight:"1.5"}}>{q.question_text}</div>
+                                <div style={{fontSize:"11px",color:P.textSec,lineHeight:"1.6",marginBottom:"6px"}}>{q.finding}</div>
+                                {q.evidence&&<div style={{fontSize:"10px",color:P.blue,background:P.blueLight,borderRadius:"6px",padding:"5px 10px",marginBottom:"6px"}}><strong>Evidence:</strong> {q.evidence}</div>}
+                                {q.regulatory_ref&&<div style={{fontSize:"10px",color:P.textTert,fontFamily:"monospace"}}>{q.regulatory_ref}</div>}
+                                {q.recommendation&&q.verdict!=="Pass"&&<div style={{fontSize:"10px",color:P.primary,background:P.primaryLight,borderRadius:"6px",padding:"6px 10px",marginTop:"6px"}}><strong>Recommendation:</strong> {q.recommendation}</div>}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })}
+                    </>
+                  )}
                 </div>
               )}
             </div>
