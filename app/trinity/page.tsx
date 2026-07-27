@@ -14,7 +14,7 @@ const P={
   purple:"#8B5CF6",purpleLight:"#F5F3FF",
   cyan:"#0891B2",cyanLight:"#ECFEFF",
   lavender:"#E9ECFB",
-  sidebar:"#0F172A",
+  sidebar:"#FFFFFF",sidebarBorder:"#E5E7EB",sidebarActive:"#FFF7ED",sidebarText:"#6B7280",sidebarTextActive:"#F97316",
 };
 
 const VAULT_DOC_TYPES=["Protocol","Protocol Amendment","Investigator's Brochure","Statistical Analysis Plan","Monitoring Plan","Medical Monitoring Plan","IRB / IEC Decision","Regulatory Authority Decision","Clinical Trial Agreement","Informed Consent Form","Risk Management Plan","Quality Plan","Data Management Plan","Safety Management Plan","Other"];
@@ -57,15 +57,15 @@ interface Suggestion{id:string;action_text:string;reason:string;urgency:string;}
 function SessionRow({s,active,onLoad,onPin,onDelete}:{s:ChatSession;active:boolean;onLoad:(s:ChatSession)=>void;onPin:(id:string,pinned:boolean)=>void;onDelete:(id:string)=>void}){
   const[hover,setHover]=useState(false);
   return(
-    <div onMouseEnter={()=>setHover(true)} onMouseLeave={()=>setHover(false)} style={{display:"flex",alignItems:"center",gap:"6px",padding:"6px 8px",borderRadius:"7px",cursor:"pointer",background:active?"#1E3A5F":hover?"#1E293B":"transparent",margin:"0 4px 1px"}}>
+    <div onMouseEnter={()=>setHover(true)} onMouseLeave={()=>setHover(false)} style={{display:"flex",alignItems:"center",gap:"6px",padding:"6px 8px",borderRadius:"7px",cursor:"pointer",background:active?"#FFF7ED":hover?"#FFF7ED":"transparent",margin:"0 4px 1px"}}>
       <div onClick={()=>onLoad(s)} style={{flex:1,minWidth:0}}>
         <div style={{fontSize:"11px",color:active?"#F1F5F9":"#94A3B8",fontWeight:active?"500":"400",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.title||"New conversation"}</div>
-        <div style={{fontSize:"9px",color:"#475569",marginTop:"1px"}}>{new Date(s.updated_at).toLocaleDateString()}</div>
+        <div style={{fontSize:"9px",color:"#6B7280",marginTop:"1px"}}>{new Date(s.updated_at).toLocaleDateString()}</div>
       </div>
       {hover&&(
         <div style={{display:"flex",gap:"2px",flexShrink:0}}>
           <button onClick={e=>{e.stopPropagation();onPin(s.id,s.is_pinned);}} style={{background:"none",border:"none",cursor:"pointer",color:s.is_pinned?"#F97316":"#475569",padding:"2px"}}><Ico.memory/></button>
-          <button onClick={e=>{e.stopPropagation();onDelete(s.id);}} style={{background:"none",border:"none",cursor:"pointer",color:"#475569",padding:"2px"}}><Ico.x/></button>
+          <button onClick={e=>{e.stopPropagation();onDelete(s.id);}} style={{background:"none",border:"none",cursor:"pointer",color:"#6B7280",padding:"2px"}}><Ico.x/></button>
         </div>
       )}
     </div>
@@ -436,8 +436,10 @@ export default function TrinityPage(){
     if(!activeStudy||vaultDocs.length===0){alert("Upload at least one vault document first.");return;}
     setChecklistLoading(true);
     const vaultCtx=vaultDocs.map(d=>`[${d.document_type} - ${d.custom_name}]:\n${d.extracted_text?.slice(0,2000)||""}`).join("\n\n---\n\n");
-    const filedList=docs.filter(d=>d.status==="Approved").map(d=>`${d.artifact_num} - ${d.artifact_name}`).join("\n");
-    const prompt=`Generate a study-specific expected document checklist.\n\nVAULT:\n${vaultCtx}\n\nFILED:\n${filedList||"None"}\n\nReturn JSON array:\n[{"item_name":"string","artifact_ref":"string","zone":"string","reason":"string","severity":"Critical|Major|Minor","status":"Filed|Missing"}]\n\nReturn ONLY valid JSON array.`;
+    const approvedDocs=docs.filter(d=>d.status==="Approved");
+    const filedArtifactNums=approvedDocs.map(d=>d.artifact_num).filter(Boolean);
+    const filedList=approvedDocs.map(d=>`${d.artifact_num} - ${d.artifact_name}`).join("\n");
+    const prompt=`You are a clinical trial TMF expert. Generate a study-specific expected document checklist based ONLY on the vault documents below.\n\nIMPORTANT RULES:\n- A document is "Filed" ONLY if its artifact_ref exactly matches one of these filed artifact numbers from the TMF artifact browser: [${filedArtifactNums.join(", ")||"none"}]\n- Do NOT mark a document as Filed just because it appears in the vault. The vault is Trinity's knowledge base only.\n- If artifact_ref is not in the filed list above, status must be "Missing".\n\nVAULT (knowledge base only - not the TMF):\n${vaultCtx}\n\nFILED ARTIFACT NUMBERS IN TMF:\n${filedList||"None filed yet"}\n\nReturn JSON array:\n[{"item_name":"string","artifact_ref":"string","zone":"string","reason":"string","severity":"Critical|Major|Minor","status":"Filed|Missing"}]\n\nReturn ONLY valid JSON array.`;
     try{
       const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:prompt,context:"Return only valid JSON."})});
       const data=await res.json();
@@ -491,52 +493,52 @@ export default function TrinityPage(){
     {id:"inspection",label:"Inspection Sim",Icon:Ico.shield,badge:null},
   ];
 
-  if(loading)return(<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#0F172A",fontFamily:"system-ui,-apple-system,sans-serif"}}><div style={{textAlign:"center"}}><div style={{width:"40px",height:"40px",borderRadius:"50%",background:"linear-gradient(135deg,#FFEDD5,#F97316)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px",color:"#fff"}}><Ico.star/></div><div style={{fontSize:"14px",color:"#94A3B8"}}>Loading Trinity...</div></div></div>);
+  if(loading)return(<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#0F172A",fontFamily:"system-ui,-apple-system,sans-serif"}}><div style={{textAlign:"center"}}><div style={{width:"40px",height:"40px",borderRadius:"50%",background:"linear-gradient(135deg,#FFEDD5,#F97316)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px",color:"#fff"}}><Ico.star/></div><div style={{fontSize:"14px",color:"#6B7280"}}>Loading Trinity...</div></div></div>);
 
   return(
     <div style={{display:"flex",height:"100vh",fontFamily:"system-ui,-apple-system,sans-serif",background:P.bg,overflow:"hidden"}}>
       <style>{`@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}`}</style>
 
       {/* SIDEBAR */}
-      <div style={{width:sidebarCollapsed?"60px":"260px",background:P.sidebar,display:"flex",flexDirection:"column",flexShrink:0,transition:"width .2s ease",overflow:"hidden"}}>
-        <div style={{padding:"16px 12px 12px",borderBottom:"0.5px solid #1E293B",display:"flex",alignItems:"center",gap:"8px",flexShrink:0}}>
+      <div style={{width:sidebarCollapsed?"60px":"260px",background:"#FFFFFF",display:"flex",flexDirection:"column",flexShrink:0,transition:"width .2s ease",overflow:"hidden"}}>
+        <div style={{padding:"16px 12px 12px",borderBottom:"0.5px solid #E5E7EB",display:"flex",alignItems:"center",gap:"8px",flexShrink:0}}>
           <div style={{width:"28px",height:"28px",borderRadius:"8px",background:"linear-gradient(135deg,#F97316,#EA580C)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",flexShrink:0}}><Ico.star/></div>
-          {!sidebarCollapsed&&(<div style={{flex:1,minWidth:0}}><div style={{fontSize:"13px",fontWeight:"700",color:"#F1F5F9"}}>Trinity</div><div style={{fontSize:"10px",color:"#64748B"}}>AI Specialist</div></div>)}
+          {!sidebarCollapsed&&(<div style={{flex:1,minWidth:0}}><div style={{fontSize:"13px",fontWeight:"700",color:"#111827"}}>Trinity</div><div style={{fontSize:"10px",color:"#9CA3AF"}}>AI Specialist</div></div>)}
           <button onClick={()=>setSidebarCollapsed(!sidebarCollapsed)} style={{background:"none",border:"none",cursor:"pointer",color:"#64748B",padding:"2px",flexShrink:0,display:"flex"}}><Ico.menu/></button>
         </div>
 
         {!sidebarCollapsed&&(
-          <div style={{padding:"10px 12px",borderBottom:"0.5px solid #1E293B",flexShrink:0}}>
-            <div style={{fontSize:"9px",color:"#475569",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"6px"}}>Active Study</div>
-            <select value={activeStudy?.study_id||""} onChange={e=>switchStudy(e.target.value)} style={{width:"100%",fontSize:"11px",background:"#1E293B",color:"#F1F5F9",border:"0.5px solid #334155",borderRadius:"6px",padding:"6px 8px",fontFamily:"inherit"}}>
+          <div style={{padding:"10px 12px",borderBottom:"0.5px solid #E5E7EB",flexShrink:0}}>
+            <div style={{fontSize:"9px",color:"#6B7280",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"6px"}}>Active Study</div>
+            <select value={activeStudy?.study_id||""} onChange={e=>switchStudy(e.target.value)} style={{width:"100%",fontSize:"11px",background:"#F9FAFB",color:"#111827",border:"0.5px solid #E5E7EB",borderRadius:"6px",padding:"6px 8px",fontFamily:"inherit"}}>
               {studies.map(s=><option key={s.study_id} value={s.study_id}>{s.study_id}</option>)}
             </select>
             <div style={{display:"flex",alignItems:"center",gap:"6px",marginTop:"6px"}}>
-              <div style={{flex:1,height:"3px",background:"#1E293B",borderRadius:"3px",overflow:"hidden"}}><div style={{width:`${donePct}%`,height:"100%",background:donePct>=80?"#10B981":donePct>=50?"#F97316":"#EF4444",borderRadius:"3px"}}/></div>
-              <span style={{fontSize:"10px",color:"#94A3B8"}}>{donePct}%</span>
+              <div style={{flex:1,height:"3px",background:"#F3F4F6",borderRadius:"3px",overflow:"hidden"}}><div style={{width:`${donePct}%`,height:"100%",background:donePct>=80?"#10B981":donePct>=50?"#F97316":"#EF4444",borderRadius:"3px"}}/></div>
+              <span style={{fontSize:"10px",color:"#6B7280"}}>{donePct}%</span>
             </div>
           </div>
         )}
 
         {studyIdentity&&!sidebarCollapsed&&(
-          <div style={{padding:"8px 12px",borderBottom:"0.5px solid #1E293B",flexShrink:0}}>
+          <div style={{padding:"8px 12px",borderBottom:"0.5px solid #E5E7EB",flexShrink:0}}>
             <div style={{fontSize:"9px",color:"#10B981",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"4px"}}>Identity Profile Active</div>
-            <div style={{fontSize:"10px",color:"#64748B"}}>{studyIdentity.protocol_number||"Protocol #"} · {studyIdentity.phase||"Phase ?"}</div>
-            <div style={{fontSize:"10px",color:"#64748B"}}>{studyIdentity.sponsor_name||""}</div>
+            <div style={{fontSize:"10px",color:"#9CA3AF"}}>{studyIdentity.protocol_number||"Protocol #"} · {studyIdentity.phase||"Phase ?"}</div>
+            <div style={{fontSize:"10px",color:"#9CA3AF"}}>{studyIdentity.sponsor_name||""}</div>
           </div>
         )}
 
         <div style={{padding:"8px 8px 0",flexShrink:0}}>
           {NAV.map(n=>(
-            <button key={n.id} onClick={()=>setPanel(n.id as any)} style={{width:"100%",display:"flex",alignItems:"center",gap:"10px",padding:"8px",borderRadius:"8px",border:"none",cursor:"pointer",background:panel===n.id?"#1E3A5F":"transparent",color:panel===n.id?"#F97316":"#94A3B8",marginBottom:"2px",textAlign:"left",fontFamily:"inherit",transition:"all .15s"}}>
+            <button key={n.id} onClick={()=>setPanel(n.id as any)} style={{width:"100%",display:"flex",alignItems:"center",gap:"10px",padding:"8px",borderRadius:"8px",border:"none",cursor:"pointer",background:panel===n.id?"#FFF7ED":"transparent",color:panel===n.id?"#F97316":"#94A3B8",marginBottom:"2px",textAlign:"left",fontFamily:"inherit",transition:"all .15s"}}>
               <span style={{flexShrink:0}}><n.Icon/></span>
-              {!sidebarCollapsed&&(<><span style={{fontSize:"12px",fontWeight:panel===n.id?"600":"400",flex:1}}>{n.label}</span>{n.badge&&<span style={{fontSize:"10px",padding:"1px 6px",borderRadius:"20px",background:panel===n.id?"rgba(249,115,22,0.2)":"#1E293B",color:panel===n.id?"#F97316":"#64748B"}}>{n.badge}</span>}</>)}
+              {!sidebarCollapsed&&(<><span style={{fontSize:"12px",fontWeight:panel===n.id?"600":"400",flex:1}}>{n.label}</span>{n.badge&&<span style={{fontSize:"10px",padding:"1px 6px",borderRadius:"20px",background:panel===n.id?"#FFEDD5":"#F3F4F6",color:panel===n.id?"#F97316":"#6B7280"}}>{n.badge}</span>}</>)}
             </button>
           ))}
         </div>
 
         {!sidebarCollapsed&&(
-          <div style={{padding:"8px",borderTop:"0.5px solid #1E293B",marginTop:"4px",display:"flex",gap:"4px",flexShrink:0}}>
+          <div style={{padding:"8px",borderTop:"0.5px solid #E5E7EB",marginTop:"4px",display:"flex",gap:"4px",flexShrink:0}}>
             <button onClick={generateChecklist} disabled={checklistLoading||vaultDocs.length===0} style={{flex:1,fontSize:"10px",padding:"5px",background:"#0891B2",color:"#fff",border:"none",borderRadius:"6px",cursor:"pointer",opacity:checklistLoading||vaultDocs.length===0?0.5:1,display:"flex",alignItems:"center",justifyContent:"center",gap:"4px"}}>{checklistLoading?<Ico.loader/>:<Ico.list/>}{checklistLoading?"...":"Checklist"}</button>
             <button onClick={runVaultAnalysis} disabled={analysing||vaultDocs.length===0} style={{flex:1,fontSize:"10px",padding:"5px",background:"#8B5CF6",color:"#fff",border:"none",borderRadius:"6px",cursor:"pointer",opacity:analysing||vaultDocs.length===0?0.5:1,display:"flex",alignItems:"center",justifyContent:"center",gap:"4px"}}>{analysing?<Ico.loader/>:<Ico.brain/>}{analysing?"...":"Analyse"}</button>
             <button onClick={generateInspectionReport} disabled={inspectionLoading} style={{flex:1,fontSize:"10px",padding:"5px",background:"#1E293B",color:"#94A3B8",border:"0.5px solid #334155",borderRadius:"6px",cursor:"pointer",opacity:inspectionLoading?0.5:1,display:"flex",alignItems:"center",justifyContent:"center",gap:"4px"}}>{inspectionLoading?<Ico.loader/>:<Ico.shield/>}{inspectionLoading?"...":"Inspect"}</button>
@@ -549,8 +551,8 @@ export default function TrinityPage(){
               <Ico.memory/><span style={{fontSize:"11px",flex:1,textAlign:"left"}}>Memory ({memories.length})</span><Ico.chevDown/>
             </button>
             {showMemory&&(
-              <div style={{background:"#0F172A",borderRadius:"8px",padding:"8px",marginTop:"4px",border:"0.5px solid #1E293B",maxHeight:"160px",overflowY:"auto"}}>
-                {memories.map(m=>(<div key={m.id} style={{display:"flex",gap:"6px",alignItems:"flex-start",marginBottom:"6px"}}><div style={{width:"4px",height:"4px",borderRadius:"50%",background:"#F97316",flexShrink:0,marginTop:"5px"}}/><div style={{flex:1,fontSize:"10px",color:"#94A3B8",lineHeight:"1.5"}}>{m.memory_text}</div><button onClick={()=>deleteMemory(m.id)} style={{background:"none",border:"none",cursor:"pointer",color:"#475569",padding:"0",flexShrink:0}}><Ico.x/></button></div>))}
+              <div style={{background:"#0F172A",borderRadius:"8px",padding:"8px",marginTop:"4px",border:"0.5px solid #E5E7EB",maxHeight:"160px",overflowY:"auto"}}>
+                {memories.map(m=>(<div key={m.id} style={{display:"flex",gap:"6px",alignItems:"flex-start",marginBottom:"6px"}}><div style={{width:"4px",height:"4px",borderRadius:"50%",background:"#F97316",flexShrink:0,marginTop:"5px"}}/><div style={{flex:1,fontSize:"10px",color:"#94A3B8",lineHeight:"1.5"}}>{m.memory_text}</div><button onClick={()=>deleteMemory(m.id)} style={{background:"none",border:"none",cursor:"pointer",color:"#6B7280",padding:"0",flexShrink:0}}><Ico.x/></button></div>))}
               </div>
             )}
           </div>
@@ -558,26 +560,26 @@ export default function TrinityPage(){
 
         {!sidebarCollapsed&&suggestions.length>0&&(
           <div style={{padding:"0 8px 8px",flexShrink:0}}>
-            <div style={{fontSize:"9px",color:"#475569",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"6px",padding:"0 4px"}}>Suggested</div>
+            <div style={{fontSize:"9px",color:"#6B7280",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"6px",padding:"0 4px"}}>Suggested</div>
             {suggestions.slice(0,3).map(s=>(<button key={s.id} onClick={()=>{setChatInput(s.action_text);setPanel("chat");}} style={{width:"100%",display:"flex",alignItems:"flex-start",gap:"6px",padding:"7px 8px",borderRadius:"6px",border:"none",cursor:"pointer",background:"transparent",textAlign:"left",fontFamily:"inherit",marginBottom:"2px"}}><span style={{color:s.urgency==="High"?"#EF4444":s.urgency==="Medium"?"#F59E0B":"#3B82F6",flexShrink:0,marginTop:"1px"}}><Ico.lightning/></span><span style={{fontSize:"10px",color:"#94A3B8",lineHeight:"1.4"}}>{s.action_text}</span></button>))}
           </div>
         )}
 
         {!sidebarCollapsed&&(
-          <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",borderTop:"0.5px solid #1E293B"}}>
+          <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",borderTop:"0.5px solid #E5E7EB"}}>
             <div style={{padding:"10px 12px 6px",display:"flex",alignItems:"center",gap:"6px",flexShrink:0}}>
-              <span style={{fontSize:"9px",color:"#475569",textTransform:"uppercase",letterSpacing:".08em",flex:1}}>Recent</span>
-              <button onClick={()=>setShowSearch(!showSearch)} style={{background:"none",border:"none",cursor:"pointer",color:"#475569",padding:"2px"}}><Ico.search/></button>
-              <button onClick={startNewChat} style={{background:"none",border:"none",cursor:"pointer",color:"#475569",padding:"2px"}} title="New chat"><Ico.plus/></button>
+              <span style={{fontSize:"9px",color:"#6B7280",textTransform:"uppercase",letterSpacing:".08em",flex:1}}>Recent</span>
+              <button onClick={()=>setShowSearch(!showSearch)} style={{background:"none",border:"none",cursor:"pointer",color:"#6B7280",padding:"2px"}}><Ico.search/></button>
+              <button onClick={startNewChat} style={{background:"none",border:"none",cursor:"pointer",color:"#6B7280",padding:"2px"}} title="New chat"><Ico.plus/></button>
             </div>
-            {showSearch&&(<div style={{padding:"0 8px 6px",flexShrink:0}}><input value={chatSearch} onChange={e=>setChatSearch(e.target.value)} placeholder="Search chats..." style={{width:"100%",fontSize:"11px",background:"#1E293B",color:"#F1F5F9",border:"0.5px solid #334155",borderRadius:"6px",padding:"5px 8px",fontFamily:"inherit",outline:"none"}}/></div>)}
+            {showSearch&&(<div style={{padding:"0 8px 6px",flexShrink:0}}><input value={chatSearch} onChange={e=>setChatSearch(e.target.value)} placeholder="Search chats..." style={{width:"100%",fontSize:"11px",background:"#F9FAFB",color:"#111827",border:"0.5px solid #E5E7EB",borderRadius:"6px",padding:"5px 8px",fontFamily:"inherit",outline:"none"}}/></div>)}
             <div style={{flex:1,overflowY:"auto"}}>
-              {pinnedSessions.length>0&&!chatSearch&&(<div><div style={{fontSize:"9px",color:"#475569",padding:"4px 12px",textTransform:"uppercase",letterSpacing:".06em"}}>Pinned</div>{pinnedSessions.map(s=>(<SessionRow key={s.id} s={s} active={activeSessionId===s.id} onLoad={loadSession} onPin={togglePin} onDelete={deleteSession}/>))}</div>)}
+              {pinnedSessions.length>0&&!chatSearch&&(<div><div style={{fontSize:"9px",color:"#6B7280",padding:"4px 12px",textTransform:"uppercase",letterSpacing:".06em"}}>Pinned</div>{pinnedSessions.map(s=>(<SessionRow key={s.id} s={s} active={activeSessionId===s.id} onLoad={loadSession} onPin={togglePin} onDelete={deleteSession}/>))}</div>)}
               {(filteredSessions||unpinnedSessions).map(s=>(<SessionRow key={s.id} s={s} active={activeSessionId===s.id} onLoad={loadSession} onPin={togglePin} onDelete={deleteSession}/>))}
-              {sessions.length===0&&<div style={{fontSize:"11px",color:"#475569",padding:"12px",textAlign:"center"}}>No conversations yet</div>}
+              {sessions.length===0&&<div style={{fontSize:"11px",color:"#6B7280",padding:"12px",textAlign:"center"}}>No conversations yet</div>}
             </div>
-            <div style={{padding:"8px 12px",borderTop:"0.5px solid #1E293B",flexShrink:0}}>
-              <a href="/platform" style={{display:"flex",alignItems:"center",gap:"6px",textDecoration:"none",color:"#64748B",fontSize:"11px"}}><Ico.back/>Back to TMF360</a>
+            <div style={{padding:"8px 12px",borderTop:"0.5px solid #E5E7EB",flexShrink:0}}>
+              <a href="/platform" style={{display:"flex",alignItems:"center",gap:"6px",textDecoration:"none",color:"#6B7280",fontSize:"11px",padding:"4px",justifyContent:sidebarCollapsed?"center":"flex-start"}}><Ico.back/>{!sidebarCollapsed&&"Back to TMF360"}</a>
             </div>
           </div>
         )}
