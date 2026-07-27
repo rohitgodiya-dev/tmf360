@@ -64,11 +64,12 @@ export default function Research360Page() {
       `}</style>
 
       <div className="topnav">
-        <a href="/" className="topnav-brand">Trial360 <span>OS</span></a>
+        <a href="/" style={{display:"flex",alignItems:"center",gap:"10px",textDecoration:"none"}}>
+          <img src="/logo.png" alt="Trial360 OS" style={{height:"36px",display:"block"}} onError={(e)=>{(e.target as HTMLImageElement).style.display="none";}} />
+          <span style={{fontFamily:"Inter,sans-serif",fontWeight:"700",fontSize:"18px",color:"#0F2A4A"}}>Trial360 <span style={{color:"#E8703A"}}>OS</span></span>
+        </a>
         <div className="topnav-links">
           <a href="/">Home</a>
-          <a href="/platform">Platform</a>
-          <a href="/trialfinder360">Find a Clinical Trial</a>
           <a href="/research360" className="active">Find a Publication</a>
         </div>
       </div>
