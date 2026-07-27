@@ -89,10 +89,10 @@ const Ico={
 
 interface ChatMsg{role:"ai"|"user";text:string;isHealthCard?:boolean;sourceTags?:string[];classification?:{zoneLine:string;confidence:number;warning?:{detail:string;action:string}};pendingClassification?:any;classStage?:string;validation?:any;}
 interface VaultDoc{id:string;file_name:string;custom_name:string;document_type:string;file_path:string;file_size:number;extracted_text:string;uploaded_by:string;uploaded_at:string;is_active:boolean;}
-interface Finding{id:string;finding_type:string;severity:string;title:string;detail:string;source_doc:string;artifact_ref:string;status:string;created_at:string;}
+
 interface ChatSession{id:string;title:string;messages:ChatMsg[];is_pinned:boolean;created_at:string;updated_at:string;}
 interface Memory{id:string;memory_text:string;created_at:string;}
-interface Suggestion{id:string;action_text:string;reason:string;urgency:string;}
+
 interface InspectionQuestion{id:string;question_text:string;category:string;severity:string;is_active:boolean;sort_order:number;}
 
 function SessionRow({s,active,onLoad,onPin,onDelete}:{s:ChatSession;active:boolean;onLoad:(s:ChatSession)=>void;onPin:(id:string,pinned:boolean)=>void;onDelete:(id:string)=>void}){
@@ -184,16 +184,16 @@ export default function TrinityPage(){
   }
 
   async function loadStudyData(studyId:string,oid:string,uid?:string){
-    const[{data:docData},{data:configData},{data:vaultData},{data:findingData}]=await Promise.all([
+    const[{data:docData},{data:configData},{data:vaultData}]=await Promise.all([
       supabase.from("documents").select("*").eq("study_id",studyId).eq("org_id",oid).order("created_at",{ascending:false}),
       supabase.from("tmf_config").select("*").eq("org_id",oid).eq("study_id",studyId).eq("is_enabled",true),
       supabase.from("study_vault").select("*").eq("org_id",oid).eq("study_id",studyId).eq("is_active",true).order("uploaded_at",{ascending:false}),
-      supabase.from("trinity_findings").select("*").eq("org_id",oid).eq("study_id",studyId).order("created_at",{ascending:false}),
+
     ]);
     if(docData)setDocs(docData);
     if(configData)setTmfConfig(configData);
     if(vaultData)setVaultDocs(vaultData as VaultDoc[]);
-    if(findingData)setFindings(findingData as Finding[]);
+
     const{data:identityData}=await supabase.from("study_identity").select("*").eq("org_id",oid).eq("study_id",studyId).eq("is_active",true).order("extracted_at",{ascending:false}).limit(1).maybeSingle();
     if(identityData)setStudyIdentity(identityData);
   }
@@ -322,7 +322,7 @@ export default function TrinityPage(){
     const s=studies.find(x=>x.study_id===studyId);
     if(s&&user&&orgId){
       setActiveStudy(s);localStorage.setItem("tmf_active_study",studyId);
-      setDocs([]);setVaultDocs([]);setFindings([]);setMemories([]);setStudyIdentity(null);setInspectionReport(null);
+      setDocs([]);setVaultDocs([]);setMemories([]);setStudyIdentity(null);setInspectionReport(null);
       loadStudyData(studyId,orgId,user.id);loadSessions(studyId,orgId,user.id);loadMemories(studyId,orgId,user.id);
     }
   }
@@ -460,7 +460,7 @@ export default function TrinityPage(){
 
   async function deleteVaultDoc(id:string){if(!confirm("Remove?"))return;await supabase.from("study_vault").update({is_active:false}).eq("id",id);setVaultDocs(prev=>prev.filter(d=>d.id!==id));}
 
-  async function resolveFinding(id:string){await supabase.from("trinity_findings").update({status:"Resolved",resolved_at:new Date().toISOString(),resolved_by:user?.email}).eq("id",id);setFindings(prev=>prev.map(f=>f.id===id?{...f,status:"Resolved"}:f));}
+
 
   async function generateInspectionReport(){
     if(!activeStudy||inspectionQuestions.length===0)return;
@@ -492,7 +492,7 @@ export default function TrinityPage(){
     setInspectionLoading(false);
   }
 
-  const openFindings=findings.filter(f=>f.status==="Open");
+
   const vaultHasProtocol=vaultDocs.some(d=>d.document_type==="Protocol");
   const pinnedSessions=sessions.filter(s=>s.is_pinned);
   const unpinnedSessions=sessions.filter(s=>!s.is_pinned);
