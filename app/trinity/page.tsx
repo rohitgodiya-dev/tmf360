@@ -119,7 +119,7 @@ export default function TrinityPage(){
   const[studies,setStudies]=useState<any[]>([]);
   const[activeStudy,setActiveStudy]=useState<any>(null);
   const[userFullName,setUserFullName]=useState("");
-  const[panel,setPanel]=useState<"chat"|"vault"|"findings"|"briefing"|"inspection">("chat");
+  const[panel,setPanel]=useState<"chat"|"vault"|"inspection">("chat");
   const[loading,setLoading]=useState(true);
   const[docs,setDocs]=useState<any[]>([]);
   const[tmfConfig,setTmfConfig]=useState<any[]>([]);
@@ -148,10 +148,7 @@ export default function TrinityPage(){
   const[vaultCustomName,setVaultCustomName]=useState("");
   const[vaultFile,setVaultFile]=useState<File|null>(null);
   const vaultFileInput=useRef<HTMLInputElement>(null);
-  const[findings,setFindings]=useState<Finding[]>([]);
-  const[analysing,setAnalysing]=useState(false);
-  const[briefing,setBriefing]=useState<any>(null);
-  const[briefingLoading,setBriefingLoading]=useState(false);
+
   const[studyIdentity,setStudyIdentity]=useState<any>(null);
   const[inspectionReport,setInspectionReport]=useState<any>(null);
   const[inspectionLoading,setInspectionLoading]=useState(false);
@@ -162,7 +159,6 @@ export default function TrinityPage(){
   const[newQuestionSeverity,setNewQuestionSeverity]=useState("Major");
   const[inspectionTab,setInspectionTab]=useState<"questions"|"report">("questions");
   const[memories,setMemories]=useState<Memory[]>([]);
-  const[suggestions,setSuggestions]=useState<Suggestion[]>([]);
   const[showMemory,setShowMemory]=useState(false);
   const[sidebarCollapsed,setSidebarCollapsed]=useState(false);
 
@@ -183,7 +179,6 @@ export default function TrinityPage(){
       await loadSessions(active.study_id,data.org_id,uid);
       await loadMemories(active.study_id,data.org_id,uid);
       await loadInspectionQuestions(data.org_id);
-      await generateSuggestions(active.study_id,data.org_id);
     }
     setLoading(false);
   }
@@ -312,19 +307,7 @@ export default function TrinityPage(){
     setMemories(prev=>prev.filter(m=>m.id!==id));
   }
 
-  async function generateSuggestions(studyId:string,oid:string){
-    try{
-      const{data:docData}=await supabase.from("documents").select("*").eq("study_id",studyId).eq("org_id",oid);
-      if(!docData)return;
-      const expiring=docData.filter((d:any)=>d.expiry_date&&new Date(d.expiry_date)<new Date(Date.now()+30*86400000));
-      const pendingDocs=docData.filter((d:any)=>d.status==="Under Review");
-      const suggs:Suggestion[]=[];
-      if(expiring.length>0)suggs.push({id:"exp",action_text:`${expiring.length} document${expiring.length!==1?"s":""} expiring within 30 days`,reason:"Review and renew before expiry",urgency:"High"});
-      if(pendingDocs.length>0)suggs.push({id:"pen",action_text:`${pendingDocs.length} document${pendingDocs.length!==1?"s":""} awaiting review`,reason:"Approve or reject pending documents",urgency:"Medium"});
-      suggs.push({id:"vault",action_text:"Upload Protocol to Study Vault",reason:"Enables identity verification and inspection readiness",urgency:"Medium"});
-      setSuggestions(suggs);
-    }catch{}
-  }
+
 
   async function exportChatAsPDF(){
     if(!activeSessionId)return;
@@ -339,8 +322,8 @@ export default function TrinityPage(){
     const s=studies.find(x=>x.study_id===studyId);
     if(s&&user&&orgId){
       setActiveStudy(s);localStorage.setItem("tmf_active_study",studyId);
-      setDocs([]);setVaultDocs([]);setFindings([]);setBriefing(null);setMemories([]);setSuggestions([]);setStudyIdentity(null);setInspectionReport(null);
-      loadStudyData(studyId,orgId,user.id);loadSessions(studyId,orgId,user.id);loadMemories(studyId,orgId,user.id);generateSuggestions(studyId,orgId);
+      setDocs([]);setVaultDocs([]);setFindings([]);setMemories([]);setStudyIdentity(null);setInspectionReport(null);
+      loadStudyData(studyId,orgId,user.id);loadSessions(studyId,orgId,user.id);loadMemories(studyId,orgId,user.id);
     }
   }
 
@@ -430,7 +413,7 @@ export default function TrinityPage(){
       const hasIssues=hasHardFail||validationResult?.overall==="fail"||(cl.issues?.length>0);
       const docStatus=hasIssues?"Draft":"Under Review";
       const rejReason=hasIssues?[validationResult?.audit_narrative,...(cl.issues||[])].filter(Boolean).join("; "):undefined;
-      const{data:docData,error:docErr}=await supabase.from("documents").insert([{study_id:activeStudy?.study_id,user_id:user?.id,org_id:orgId,artifact_num:cl.artifact_num,artifact_name:cl.artifact_name,zone:cl.zone_num,version:"",status:docStatus,owner:userFullName||user?.email,file_path:filePath,file_name:cl.fileName,custom_file_name:cl.fileName,file_type:"application/pdf",file_size:0,comments:"Auto-classified by Trinity AI.",rejection_reason:rejReason||null}]).select();
+      const{data:docData,error:docErr}=await supabase.from("documents").insert([{study_id:activeStudy?.study_id,user_id:user?.id,org_id:orgId,artifact_num:cl.artifact_num,artifact_name:cl.artifact_name,zone:cl.zone_num,version:"",status:docStatus,owner:userFullName||user?.email,file_path:filePath,file_name:cl.fileName,custom_file_name:cl.fileName,file_type:cl.fileType||"application/pdf",file_size:0,comments:"Auto-classified by Trinity AI.",rejection_reason:rejReason||null}]).select();
       if(docErr)throw new Error(docErr.message);
       setDocs(prev=>[docData[0],...prev]);
       await supabase.from("audit_trail").insert([{user_id:user?.id,user_email:user?.email,action:"Document classified and vault-validated by Trinity",document_id:docData[0].id,study_id:activeStudy?.study_id,field_changed:"status",old_value:"",new_value:docStatus,signature_reason:"Trinity AI",document_name:cl.fileName}]);
@@ -477,33 +460,19 @@ export default function TrinityPage(){
 
   async function deleteVaultDoc(id:string){if(!confirm("Remove?"))return;await supabase.from("study_vault").update({is_active:false}).eq("id",id);setVaultDocs(prev=>prev.filter(d=>d.id!==id));}
 
-  async function runVaultAnalysis(){
-    if(!activeStudy||vaultDocs.length===0){alert("Upload at least one document first.");return;}
-    setAnalysing(true);
-    try{
-      const vaultContext=vaultDocs.map(d=>`[${d.document_type}] ${d.custom_name}:\n${d.extracted_text?.slice(0,3000)||"No text"}`).join("\n\n---\n\n");
-      const missingList=gaps.crit.concat(gaps.major).concat(gaps.minor).map(g=>`${g.a} - ${g.an} (Zone ${g.z})`).join("\n");
-      const prompt=`You are a clinical trial TMF expert. Return JSON array:\n[{"finding_type":"gap","severity":"Critical","title":"short title","detail":"explanation","source_doc":"vault doc","artifact_ref":"DIA number"}]\n\nVAULT:\n${vaultContext}\n\nMISSING:\n${missingList}\n\nFILED:\n${docs.filter(d=>d.status==="Approved").map(d=>`${d.artifact_num} - ${d.artifact_name}`).join("\n")}\n\nReturn ONLY JSON array.`;
-      const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:prompt,context:"Return only valid JSON."})});
-      const data=await res.json();
-      let newFindings:any[]=[];
-      try{newFindings=JSON.parse((data.response||"[]").replace(/```json|```/g,"").trim());}catch{newFindings=[];}
-      if(newFindings.length>0){const toInsert=newFindings.map((f:any)=>({...f,org_id:orgId,study_id:activeStudy.study_id,status:"Open"}));const{data:saved}=await supabase.from("trinity_findings").insert(toInsert).select();if(saved)setFindings(prev=>[...saved,...prev]);}
-      setPanel("findings");
-    }catch{alert("Analysis failed.");}
-    setAnalysing(false);
-  }
-
   async function resolveFinding(id:string){await supabase.from("trinity_findings").update({status:"Resolved",resolved_at:new Date().toISOString(),resolved_by:user?.email}).eq("id",id);setFindings(prev=>prev.map(f=>f.id===id?{...f,status:"Resolved"}:f));}
 
   async function generateInspectionReport(){
     if(!activeStudy||inspectionQuestions.length===0)return;
     setInspectionLoading(true);
     try{
-      const vaultContext=buildVaultContext();
-      const filedDocsList=docs.filter(d=>d.status==="Approved").map(d=>`${d.artifact_num} - ${d.artifact_name} (${d.custom_file_name||d.file_name})`).join("\n");
+      // Build TMF document context from actual filed documents in the artifact browser
+      const allDocs=docs.map(d=>`[${d.status}] Zone ${d.zone} — ${d.artifact_num} — ${d.artifact_name} | File: ${d.custom_file_name||d.file_name} | Owner: ${d.owner||""} | Version: ${d.version||"N/A"} | Date: ${d.approved_at||d.created_at||""}`).join("\n");
+      const approvedDocs=docs.filter(d=>d.status==="Approved").map(d=>`${d.artifact_num} — ${d.artifact_name} (${d.custom_file_name||d.file_name})`).join("\n");
+      const pendingDocs=docs.filter(d=>d.status==="Under Review").map(d=>`${d.artifact_num} — ${d.artifact_name}`).join("\n");
+      const missingDocs=gaps.crit.concat(gaps.major).concat(gaps.minor).map((g:any)=>`${g.a} — ${g.an} (Zone ${g.z}, ${g.cl})`).join("\n");
       const questionsList=inspectionQuestions.map((q,i)=>`${i+1}. [${q.severity}][${q.category}] ${q.question_text}`).join("\n");
-      const prompt=`You are a senior FDA/EMA TMF auditor conducting a formal inspection.\n\nSTUDY: ${activeStudy.study_id}\nSPONSOR: ${activeStudy.sponsor||"Unknown"}\nPHASE: ${activeStudy.phase||"Unknown"}\n\nVAULT DOCUMENTS:\n${vaultContext}\n\nFILED TMF DOCUMENTS:\n${filedDocsList||"None filed"}\n\nINSPECTION QUESTIONS:\n${questionsList}\n\nFor each question, evaluate against vault and filed documents. Return JSON array:\n[{"question_number":1,"question_text":"exact text","category":"category","severity":"Critical|Major|Minor","verdict":"Pass|Fail|Partial|Unable to Verify","finding":"specific finding referencing actual documents","evidence":"which documents support this verdict or what is missing","regulatory_ref":"specific ICH E6(R3)/21 CFR/FDA citation","recommendation":"action required if not Pass"}]\n\nReturn ONLY valid JSON array.`;
+      const prompt=`You are a senior FDA/EMA TMF auditor conducting a formal inspection of a live clinical trial master file system.\n\nSTUDY: ${activeStudy.study_id}\nSPONSOR: ${activeStudy.sponsor||"Unknown"}\nPHASE: ${activeStudy.phase||"Unknown"}\nTMF COMPLETENESS: ${donePct}%\n\nALL TMF DOCUMENTS IN SYSTEM (with status):\n${allDocs||"No documents filed"}\n\nAPPROVED DOCUMENTS (${docs.filter(d=>d.status==="Approved").length}):\n${approvedDocs||"None"}\n\nPENDING REVIEW (${docs.filter(d=>d.status==="Under Review").length}):\n${pendingDocs||"None"}\n\nMISSING CORE DOCUMENTS (${missing}):\n${missingDocs||"None — all core documents filed"}\n\nINSPECTION QUESTIONS:\n${questionsList}\n\nFor each question, evaluate it against the actual TMF documents listed above. Reference specific artifact numbers and document names in your findings. If a document is approved, note it as evidence. If it is missing, that is a finding. Return JSON array:\n[{"question_number":1,"question_text":"exact text","category":"category","severity":"Critical|Major|Minor","verdict":"Pass|Fail|Partial|Unable to Verify","finding":"specific finding referencing actual artifact numbers and document names from the TMF","evidence":"list specific artifact numbers that pass or confirm the gap","regulatory_ref":"specific ICH E6(R3)/21 CFR Part 11/FDA guidance citation","recommendation":"specific action required if not Pass"}]\n\nReturn ONLY valid JSON array.`;
       const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:prompt,context:"You are a senior FDA/EMA auditor. Return only valid JSON array."})});
       const data=await res.json();
       let results:any[]=[];
@@ -523,16 +492,6 @@ export default function TrinityPage(){
     setInspectionLoading(false);
   }
 
-  async function generateBriefing(){
-    if(!activeStudy)return;setBriefingLoading(true);
-    const vaultContext=vaultDocs.slice(0,3).map(d=>`[${d.document_type}]: ${d.extracted_text?.slice(0,1000)||""}`).join("\n\n");
-    const prompt=`Generate a daily TMF briefing. Return JSON:\n{"summary":"2 sentence overview","priority_actions":[{"action":"string","reason":"string","urgency":"High|Medium|Low"}],"stats":{"completeness":${donePct},"missing":${missing},"pending":${pending},"expiring":${expiring},"ri":${ri}},"vault_insight":"one insight"}\n\nVAULT:\n${vaultContext}\n\nReturn ONLY valid JSON.`;
-    try{const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:prompt,context:"Return only valid JSON."})});const data=await res.json();setBriefing(JSON.parse((data.response||"{}").replace(/```json|```/g,"").trim()));}catch{setBriefing(null);}
-    setBriefingLoading(false);
-  }
-
-  useEffect(()=>{if(panel==="briefing"&&!briefing&&activeStudy)generateBriefing();},[panel,activeStudy]);
-
   const openFindings=findings.filter(f=>f.status==="Open");
   const vaultHasProtocol=vaultDocs.some(d=>d.document_type==="Protocol");
   const pinnedSessions=sessions.filter(s=>s.is_pinned);
@@ -543,8 +502,6 @@ export default function TrinityPage(){
   const NAV=[
     {id:"chat",label:"Chat",Icon:Ico.chat,badge:null},
     {id:"vault",label:"Study Vault",Icon:Ico.db,badge:vaultDocs.length>0?vaultDocs.length:null},
-    {id:"findings",label:"Findings",Icon:Ico.alert,badge:openFindings.length>0?openFindings.length:null},
-    {id:"briefing",label:"Daily Briefing",Icon:Ico.sun,badge:null},
     {id:"inspection",label:"Inspection Sim",Icon:Ico.shield,badge:null},
   ];
 
@@ -592,8 +549,7 @@ export default function TrinityPage(){
 
         {!sidebarCollapsed&&(
           <div style={{padding:"8px",borderTop:"1px solid #E5E7EB",marginTop:"4px",display:"flex",gap:"4px",flexShrink:0}}>
-            <button onClick={runVaultAnalysis} disabled={analysing||vaultDocs.length===0} style={{flex:1,fontSize:"10px",padding:"6px",background:P.purple,color:"#fff",border:"none",borderRadius:"6px",cursor:"pointer",opacity:analysing||vaultDocs.length===0?0.5:1,display:"flex",alignItems:"center",justifyContent:"center",gap:"4px"}}>{analysing?<Ico.loader/>:<Ico.brain/>}{analysing?"...":"Analyse"}</button>
-            <button onClick={()=>{setPanel("inspection");setInspectionTab("report");generateInspectionReport();}} disabled={inspectionLoading} style={{flex:1,fontSize:"10px",padding:"6px",background:"#0F172A",color:"#fff",border:"none",borderRadius:"6px",cursor:"pointer",opacity:inspectionLoading?0.5:1,display:"flex",alignItems:"center",justifyContent:"center",gap:"4px"}}>{inspectionLoading?<Ico.loader/>:<Ico.shield/>}{inspectionLoading?"...":"Inspect"}</button>
+            <button onClick={()=>{setPanel("inspection");setInspectionTab("report");generateInspectionReport();}} disabled={inspectionLoading} style={{width:"100%",fontSize:"10px",padding:"6px",background:"#0F172A",color:"#fff",border:"none",borderRadius:"6px",cursor:"pointer",opacity:inspectionLoading?0.5:1,display:"flex",alignItems:"center",justifyContent:"center",gap:"4px"}}>{inspectionLoading?<Ico.loader/>:<Ico.shield/>}{inspectionLoading?"...":"Run Inspection"}</button>
           </div>
         )}
 
@@ -608,12 +564,7 @@ export default function TrinityPage(){
           </div>
         )}
 
-        {!sidebarCollapsed&&suggestions.length>0&&(
-          <div style={{padding:"0 8px 8px",flexShrink:0}}>
-            <div style={{fontSize:"9px",color:"#9CA3AF",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"6px",padding:"0 4px"}}>Suggested</div>
-            {suggestions.slice(0,3).map(s=>(<button key={s.id} onClick={()=>{setChatInput(s.action_text);setPanel("chat");}} style={{width:"100%",display:"flex",alignItems:"flex-start",gap:"6px",padding:"7px 8px",borderRadius:"6px",border:"none",cursor:"pointer",background:"transparent",textAlign:"left",fontFamily:"inherit",marginBottom:"2px"}}><span style={{color:s.urgency==="High"?"#EF4444":s.urgency==="Medium"?"#F59E0B":"#3B82F6",flexShrink:0,marginTop:"1px"}}><Ico.lightning/></span><span style={{fontSize:"10px",color:"#374151",lineHeight:"1.4"}}>{s.action_text}</span></button>))}
-          </div>
-        )}
+
 
         {!sidebarCollapsed&&(
           <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",borderTop:"1px solid #E5E7EB"}}>
@@ -777,7 +728,7 @@ export default function TrinityPage(){
               </div>
             </div>
             <div style={{display:"flex",justifyContent:"center",padding:"12px 0 16px",background:`linear-gradient(135deg,${P.lavender} 0%,#F5F6FC 45%,${P.bg} 100%)`,flexShrink:0}}>
-              <input ref={chatFileInput} type="file" accept=".pdf" style={{display:"none"}} onChange={async(e)=>{
+              <input ref={chatFileInput} type="file" accept=".pdf,.doc,.docx" style={{display:"none"}} onChange={async(e)=>{
                 const file=e.target.files?.[0];if(!file)return;
                 if(!activeStudy){setChatMessages(prev=>[...prev,{role:"ai",text:"Select a study first."}]);return;}
                 const userMsg:ChatMsg={role:"user",text:`Uploaded: ${file.name}`};
@@ -821,7 +772,7 @@ export default function TrinityPage(){
                   <div><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>Custom name (optional)</label><input value={vaultCustomName} onChange={e=>setVaultCustomName(e.target.value)} placeholder="e.g. Protocol v2.1 Final" style={{width:"100%",fontSize:"12px",border:`1px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px",outline:"none"}}/></div>
                 </div>
                 <div onClick={()=>vaultFileInput.current?.click()} style={{border:`2px dashed ${vaultFile?P.primary:P.border}`,borderRadius:"10px",padding:"1.5rem",textAlign:"center",cursor:"pointer",background:vaultFile?P.primaryLight:P.bgSec,marginBottom:"12px"}} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f)setVaultFile(f);}}>
-                  <input ref={vaultFileInput} type="file" accept=".pdf,.doc,.docx" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)setVaultFile(f);}}/>
+                  <input ref={vaultFileInput} type="file" accept=".pdf,.doc,.docx,.PDF,.DOC,.DOCX" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)setVaultFile(f);}}/>
                   {vaultFile?<div><div style={{fontSize:"24px",marginBottom:"6px"}}>📄</div><div style={{fontSize:"13px",fontWeight:"500",color:P.primary}}>{vaultFile.name}</div><div style={{fontSize:"11px",color:P.textTert,marginTop:"2px"}}>{(vaultFile.size/1024).toFixed(0)} KB</div></div>:<div><div style={{fontSize:"24px",marginBottom:"6px"}}>📁</div><div style={{fontSize:"13px",color:P.textSec}}>Drop a PDF here or click to browse</div></div>}
                 </div>
                 {vaultProgress&&<div style={{fontSize:"11px",padding:"8px 12px",borderRadius:"8px",background:vaultProgress.includes("Done")?P.successLight:P.primaryLight,color:vaultProgress.includes("Done")?P.success:P.primary,marginBottom:"10px"}}>{vaultProgress}</div>}
@@ -837,57 +788,12 @@ export default function TrinityPage(){
           </div>
         )}
 
-        {/* FINDINGS */}
-        {panel==="findings"&&(
-          <div style={{flex:1,overflowY:"auto",padding:"1.5rem"}}>
-            <div style={{maxWidth:"900px",margin:"0 auto",display:"flex",flexDirection:"column",gap:"16px"}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                <div><h2 style={{fontSize:"16px",fontWeight:"700",color:P.text,margin:0}}>Trinity Findings</h2><p style={{fontSize:"12px",color:P.textTert,marginTop:"4px",marginBottom:0}}>Auto-generated from vault document analysis.</p></div>
-                <button onClick={runVaultAnalysis} disabled={analysing||vaultDocs.length===0} style={{fontSize:"12px",padding:"8px 16px",background:P.purple,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",display:"flex",alignItems:"center",gap:"6px",opacity:analysing||vaultDocs.length===0?0.5:1}}>{analysing?<Ico.loader/>:<Ico.brain/>}{analysing?"Analysing...":"Re-run Analysis"}</button>
-              </div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"10px"}}>
-                {[{label:"Critical",color:P.danger,bg:P.dangerLight,count:findings.filter(f=>f.severity==="Critical"&&f.status==="Open").length},{label:"Major",color:P.warning,bg:P.warningLight,count:findings.filter(f=>f.severity==="Major"&&f.status==="Open").length},{label:"Minor",color:P.blue,bg:P.blueLight,count:findings.filter(f=>f.severity==="Minor"&&f.status==="Open").length}].map((s,i)=><div key={i} style={{background:s.bg,border:`1px solid ${P.border}`,borderRadius:"10px",padding:"14px"}}><div style={{fontSize:"26px",fontWeight:"700",color:s.color}}>{s.count}</div><div style={{fontSize:"11px",color:P.textSec,marginTop:"2px"}}>{s.label} open</div></div>)}
-              </div>
-              {findings.length===0?<div style={{textAlign:"center",padding:"3rem",color:P.textTert,background:P.bgSec,borderRadius:"12px",border:`1px solid ${P.border}`}}><div style={{fontSize:"32px",marginBottom:"8px"}}>🔍</div><div style={{fontSize:"13px",fontWeight:"500",color:P.textSec}}>No findings yet — upload vault documents and run analysis</div></div>:(
-                <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
-                  {["Critical","Major","Minor"].map(sev=>{const sevF=findings.filter(f=>f.severity===sev);if(!sevF.length)return null;return(<div key={sev}><h3 style={{fontSize:"11px",fontWeight:"600",color:SEVERITY_COLOR(sev),textTransform:"uppercase",letterSpacing:".06em",marginBottom:"6px"}}>{sev} — {sevF.filter(f=>f.status==="Open").length} open</h3>{sevF.map(f=><div key={f.id} style={{background:P.bg,border:`1px solid ${f.status==="Open"?SEVERITY_COLOR(f.severity):P.border}`,borderRadius:"10px",padding:"14px 16px",marginBottom:"6px",display:"flex",gap:"12px",alignItems:"flex-start",opacity:f.status==="Resolved"?0.6:1}}><div style={{width:"8px",height:"8px",borderRadius:"50%",background:f.status==="Resolved"?P.textMuted:SEVERITY_COLOR(f.severity),flexShrink:0,marginTop:"5px"}}/><div style={{flex:1}}><div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"4px",flexWrap:"wrap"}}><span style={{fontSize:"13px",fontWeight:"600",color:P.text}}>{f.title}</span><span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"20px",background:SEVERITY_BG(f.severity),color:SEVERITY_COLOR(f.severity),fontWeight:"500"}}>{f.severity}</span><span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"20px",background:f.status==="Resolved"?P.successLight:P.bgTert,color:f.status==="Resolved"?P.success:P.textTert}}>{f.status}</span></div><div style={{fontSize:"12px",color:P.textSec,lineHeight:"1.6",marginBottom:"6px"}}>{f.detail}</div><div style={{display:"flex",gap:"10px",flexWrap:"wrap"}}>{f.source_doc&&<span style={{fontSize:"10px",color:P.textTert}}>Source: {f.source_doc}</span>}{f.artifact_ref&&<span style={{fontSize:"10px",fontFamily:"monospace",color:P.blue}}>Artifact: {f.artifact_ref}</span>}</div></div>{f.status==="Open"&&<button onClick={()=>resolveFinding(f.id)} style={{fontSize:"11px",padding:"5px 12px",background:P.successLight,color:P.success,border:"1px solid #A7F3D0",borderRadius:"6px",cursor:"pointer",flexShrink:0}}>Resolve</button>}</div>)}</div>);})}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
-        {/* BRIEFING */}
-        {panel==="briefing"&&(
-          <div style={{flex:1,overflowY:"auto",padding:"1.5rem"}}>
-            <div style={{maxWidth:"800px",margin:"0 auto",display:"flex",flexDirection:"column",gap:"16px"}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                <div><h2 style={{fontSize:"16px",fontWeight:"700",color:P.text,margin:0}}>Daily Briefing</h2><p style={{fontSize:"12px",color:P.textTert,marginTop:"4px",marginBottom:0}}>{activeStudy?.study_id} · {new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</p></div>
-                <button onClick={generateBriefing} disabled={briefingLoading} style={{fontSize:"12px",padding:"8px 16px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",display:"flex",alignItems:"center",gap:"6px",opacity:briefingLoading?0.6:1}}>{briefingLoading?<Ico.loader/>:<Ico.refresh/>}{briefingLoading?"Generating...":"Refresh"}</button>
-              </div>
-              {briefingLoading&&!briefing&&<div style={{textAlign:"center",padding:"3rem",color:P.textTert}}><div style={{fontSize:"13px"}}>Trinity is generating your briefing...</div></div>}
-              {briefing&&(<>
-                <div style={{background:"linear-gradient(135deg,#0F1E3D 0%,#1E3A5F 100%)",borderRadius:"14px",padding:"20px 24px",color:"#fff"}}>
-                  <div style={{fontSize:"11px",fontWeight:"600",color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:".06em",marginBottom:"8px"}}>Morning Summary</div>
-                  <div style={{fontSize:"14px",lineHeight:"1.7",color:"rgba(255,255,255,0.9)"}}>{briefing.summary}</div>
-                  {briefing.vault_insight&&<div style={{marginTop:"12px",padding:"10px 14px",background:"rgba(249,115,22,0.2)",borderRadius:"8px",fontSize:"12px",color:"rgba(255,255,255,0.85)",borderLeft:"3px solid #F97316"}}><strong>From your vault:</strong> {briefing.vault_insight}</div>}
+</div>`:""}</div>`).join("")}<div class="footer">TMF360 Trinity AI Inspection Simulation · ${new Date().toISOString()} · For internal readiness assessment only</div></body></html>`;
+                    const w=window.open("","_blank");if(w){w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);}
+                  }} style={{fontSize:"12px",padding:"8px 14px",background:"#374151",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",display:"flex",alignItems:"center",gap:"5px"}}><Ico.download/>Export PDF</button>}
+                  <button onClick={()=>{setInspectionTab("report");generateInspectionReport();}} disabled={inspectionLoading||inspectionQuestions.length===0} style={{fontSize:"12px",padding:"8px 16px",background:"#0F172A",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",display:"flex",alignItems:"center",gap:"6px",opacity:inspectionLoading||inspectionQuestions.length===0?0.5:1}}>{inspectionLoading?<Ico.loader/>:<Ico.shield/>}{inspectionLoading?"Running...":"Run Inspection"}</button>
                 </div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:"10px"}}>
-                  {[{val:`${briefing.stats?.completeness||donePct}%`,label:"Completeness",color:P.blue},{val:briefing.stats?.missing||missing,label:"Missing",color:P.danger},{val:briefing.stats?.pending||pending,label:"Pending",color:P.warning},{val:briefing.stats?.expiring||expiring,label:"Expiring",color:P.warning},{val:`${briefing.stats?.ri||ri}/100`,label:"Readiness",color:ri>=80?P.success:ri>=50?P.primary:P.danger}].map((s,i)=><div key={i} style={{background:P.bg,border:`1px solid ${P.border}`,borderRadius:"10px",padding:"12px",textAlign:"center"}}><div style={{fontSize:"22px",fontWeight:"700",color:s.color}}>{s.val}</div><div style={{fontSize:"10px",color:P.textSec,marginTop:"3px"}}>{s.label}</div></div>)}
-                </div>
-                {briefing.priority_actions?.length>0&&<div style={{background:P.bg,border:`1px solid ${P.border}`,borderRadius:"12px",padding:"16px 20px"}}><h3 style={{fontSize:"13px",fontWeight:"600",marginBottom:"12px",marginTop:0}}>Priority Actions</h3><div style={{display:"flex",flexDirection:"column",gap:"8px"}}>{briefing.priority_actions.map((a:any,i:number)=>{const urg=a.urgency==="High"?{bg:P.dangerLight,color:P.danger,border:"#FECACA"}:a.urgency==="Medium"?{bg:P.warningLight,color:P.warning,border:"#FDE68A"}:{bg:P.blueLight,color:P.blue,border:"#BFDBFE"};return(<div key={i} style={{display:"flex",gap:"10px",padding:"10px 12px",background:urg.bg,borderRadius:"8px",border:`1px solid ${urg.border}`}}><span style={{fontSize:"14px",flexShrink:0}}>{a.urgency==="High"?"🔴":a.urgency==="Medium"?"🟡":"🔵"}</span><div style={{flex:1}}><div style={{fontSize:"12px",fontWeight:"600",color:P.text}}>{a.action}</div><div style={{fontSize:"11px",color:P.textSec,marginTop:"2px"}}>{a.reason}</div></div><span style={{fontSize:"10px",padding:"3px 8px",borderRadius:"20px",background:"rgba(255,255,255,0.7)",color:urg.color,fontWeight:"600",flexShrink:0,alignSelf:"flex-start"}}>{a.urgency}</span></div>);})}</div></div>}
-              </>)}
-            </div>
-          </div>
-        )}
-
-        {/* INSPECTION */}
-        {panel==="inspection"&&(
-          <div style={{flex:1,overflowY:"auto",padding:"1.5rem"}}>
-            <div style={{maxWidth:"960px",margin:"0 auto",display:"flex",flexDirection:"column",gap:"16px"}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                <div><h2 style={{fontSize:"16px",fontWeight:"700",color:P.text,margin:0}}>Inspection Simulation</h2><p style={{fontSize:"12px",color:P.textTert,marginTop:"4px",marginBottom:0}}>Content-aware FDA/EMA inspection powered by your vault documents.</p></div>
-                <button onClick={()=>{setInspectionTab("report");generateInspectionReport();}} disabled={inspectionLoading||inspectionQuestions.length===0} style={{fontSize:"12px",padding:"8px 16px",background:"#0F172A",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",display:"flex",alignItems:"center",gap:"6px",opacity:inspectionLoading||inspectionQuestions.length===0?0.5:1}}>{inspectionLoading?<Ico.loader/>:<Ico.shield/>}{inspectionLoading?"Running...":"Run Inspection"}</button>
               </div>
               <div style={{display:"flex",gap:"0",borderBottom:`1px solid ${P.border}`}}>
                 {[{id:"questions",label:`Questions (${inspectionQuestions.length})`},{id:"report",label:"Inspection Report"}].map(t=><button key={t.id} onClick={()=>setInspectionTab(t.id as any)} style={{padding:"10px 20px",fontSize:"12px",fontWeight:inspectionTab===t.id?"600":"400",color:inspectionTab===t.id?P.primary:P.textSec,background:"none",border:"none",borderBottom:inspectionTab===t.id?`2px solid ${P.primary}`:"2px solid transparent",cursor:"pointer",fontFamily:"inherit"}}>{t.label}</button>)}
@@ -896,7 +802,7 @@ export default function TrinityPage(){
               {inspectionTab==="questions"&&(
                 <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
                   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                    <p style={{fontSize:"12px",color:P.textTert,margin:0,flex:1}}>These questions guide the inspection. Trinity reads your vault documents and evaluates each one with evidence-based findings. Add or remove questions to tailor the inspection to your study type.</p>
+                    <p style={{fontSize:"12px",color:P.textTert,margin:0,flex:1}}>These questions guide the inspection. Trinity evaluates each one against your actual TMF documents from the artifact browser. Add or remove questions to tailor the inspection to your study type.</p>
                     <button onClick={()=>setShowAddQuestion(!showAddQuestion)} style={{fontSize:"12px",fontWeight:"600",padding:"8px 14px",background:P.primaryLight,color:P.primary,border:"1px solid #FDBA74",borderRadius:"8px",cursor:"pointer",display:"flex",alignItems:"center",gap:"5px",flexShrink:0,marginLeft:"12px"}}><Ico.plus/>Add Question</button>
                   </div>
                   {showAddQuestion&&(
