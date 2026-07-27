@@ -2,10 +2,7 @@ export default function Research360Page() {
   return (
     <>
       <style>{`
-        :root{
-          --navy:#0F2A4A;--navy-deep:#0A1E38;--orange:#E8703A;--orange-soft:#FBEAE0;
-          --paper:#FAF9F6;--line:#E4E0D8;--ink:#1C2733;--ink-soft:#5B6673;--green:#2E7D5B;--gold:#B08900;
-        }
+        :root{--navy:#0F2A4A;--navy-deep:#0A1E38;--orange:#E8703A;--orange-soft:#FBEAE0;--paper:#FAF9F6;--line:#E4E0D8;--ink:#1C2733;--ink-soft:#5B6673;--green:#2E7D5B;--gold:#B08900;}
         *{box-sizing:border-box;margin:0;padding:0;}
         body{font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--paper);color:var(--ink);}
         .topnav{background:#fff;border-bottom:1px solid var(--line);padding:10px 32px;display:flex;align-items:center;justify-content:space-between;}
@@ -83,7 +80,7 @@ export default function Research360Page() {
           <p>Search peer-reviewed literature, preprints, and clinical evidence across Europe PMC and CrossRef — free, no account needed.</p>
           <div className="search-bar">
             <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            <input type="text" id="q" placeholder="Search publications, e.g. 'risk-based monitoring oncology trials'…" />
+            <input type="text" id="q" placeholder="Search publications, e.g. 'risk-based monitoring oncology trials'" />
             <button className="search-btn" id="search-btn">Search</button>
           </div>
           <div className="quick-tags">
@@ -138,88 +135,7 @@ export default function Research360Page() {
         </div>
       </div>
 
-      <script dangerouslySetInnerHTML={{__html:`
-        const qInput = document.getElementById('q');
-        const searchBtn = document.getElementById('search-btn');
-        const resultsList = document.getElementById('results-list');
-        const resultsCount = document.getElementById('results-count');
-        const loadMoreBtn = document.getElementById('load-more-btn');
-        const sortSelect = document.getElementById('sort-select');
-        const peerCb = document.getElementById('f-peer');
-        const preprintCb = document.getElementById('f-preprint');
-        const epmcCb = document.getElementById('f-europepmc');
-        const crossrefCb = document.getElementById('f-crossref');
-        let allPapers = [];
-        let lastQuery = '';
-        let shownCount = 4;
-        const BATCH = 4;
-        function getSaved(){try{return JSON.parse(localStorage.getItem('research360_saved')||'{}');}catch(e){return{};}}
-        function setSaved(obj){localStorage.setItem('research360_saved',JSON.stringify(obj));}
-        function escapeHtml(str){return(str||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-        function highlightTerms(text,query){
-          if(!text)return'';
-          const terms=query.toLowerCase().split(/\\s+/).filter(t=>t.length>3);
-          let escaped=escapeHtml(text);
-          terms.forEach(t=>{const re=new RegExp('('+t.replace(/[.*+?^${}()|[\\]\\\\]/g,'\\\\$&')+')','gi');escaped=escaped.replace(re,'<span class="hl">$1</span>');});
-          return escaped;
-        }
-        function passesDateFilter(pubYear){
-          const dateOpt=document.querySelector('input[name="date"]:checked').value;
-          if(dateOpt==='all'||!pubYear)return true;
-          const age=new Date().getFullYear()-parseInt(pubYear,10);
-          if(dateOpt==='12m')return age<=1;
-          if(dateOpt==='5y')return age<=5;
-          return true;
-        }
-        function applyFiltersAndSort(){
-          let filtered=allPapers.filter(p=>{
-            if(p.isPeerReviewed&&!peerCb.checked)return false;
-            if(p.isPreprint&&!preprintCb.checked)return false;
-            if(p.sourceApi==='europepmc'&&!epmcCb.checked)return false;
-            if(p.sourceApi==='crossref'&&!crossrefCb.checked)return false;
-            if(!passesDateFilter(p.pubYear))return false;
-            return true;
-          });
-          const sortBy=sortSelect.value;
-          if(sortBy==='recent')filtered.sort((a,b)=>(parseInt(b.pubYear)||0)-(parseInt(a.pubYear)||0));
-          else if(sortBy==='cited')filtered.sort((a,b)=>(b.citedByCount||0)-(a.citedByCount||0));
-          else filtered.sort((a,b)=>(b.relevance||0)-(a.relevance||0));
-          return filtered;
-        }
-        function paperCardHtml(p){
-          const key=p.doi||p.title;
-          const saved=!!getSaved()[key];
-          const chip=p.isPeerReviewed?'<span class="status-chip chip-peer">PEER-REVIEWED</span>':(p.isPreprint?'<span class="status-chip chip-preprint">PREPRINT</span>':'');
-          const abstract=p.abstract?highlightTerms(p.abstract.slice(0,340)+(p.abstract.length>340?'\\u2026':''),lastQuery):'';
-          return '<div class="paper-row"><div class="paper-top"><div class="paper-title">'+escapeHtml(p.title)+'</div>'+chip+'</div>'+(p.authors?'<div class="paper-authors">'+escapeHtml(p.authors)+'</div>':'')+'<div class="paper-meta-row">'+(p.journal?'<span>'+escapeHtml(p.journal)+'</span>':'')+(p.pubYear?'<span>'+escapeHtml(p.pubYear)+'</span>':'')+(p.doi?'<span>DOI: '+escapeHtml(p.doi)+'</span>':'')+(p.citedByCount?'<span>Cited by '+p.citedByCount+'</span>':'')+'<span class="relevance-badge">'+Math.round((p.relevance||0)*100)+'% relevance</span></div>'+(abstract?'<div class="paper-abstract">'+abstract+'</div>':'')+'<div class="paper-actions">'+(p.url?'<a class="action-link" href="'+p.url+'" target="_blank" rel="noreferrer">View source</a>':'')+'<button class="action-link js-cite" data-key="'+escapeHtml(key)+'">Cite</button><button class="action-primary js-save" data-key="'+escapeHtml(key)+'" '+(saved?'disabled':'')+' style="'+(saved?'background:#2E7D5B;':'')+'">'+( saved?'Saved':'Save')+'</button></div></div>';
-        }
-        function render(){
-          const filtered=applyFiltersAndSort();
-          if(filtered.length===0){resultsCount.innerHTML=allPapers.length===0?'Search peer-reviewed literature, preprints, and clinical evidence — free, no account needed.':'No results match your filters.';resultsList.innerHTML='';loadMoreBtn.style.display='none';return;}
-          resultsCount.innerHTML='<b>'+filtered.length+'</b> results for "'+escapeHtml(lastQuery)+'"';
-          resultsList.innerHTML=filtered.slice(0,shownCount).map(paperCardHtml).join('');
-          loadMoreBtn.style.display=filtered.length>shownCount?'flex':'none';
-          resultsList.querySelectorAll('.js-save').forEach(btn=>{btn.addEventListener('click',()=>{const key=btn.dataset.key;const paper=allPapers.find(p=>(p.doi||p.title)===key);const saved=getSaved();saved[key]=paper;setSaved(saved);btn.disabled=true;btn.style.background='#2E7D5B';btn.textContent='Saved';});});
-          resultsList.querySelectorAll('.js-cite').forEach(btn=>{btn.addEventListener('click',()=>{const key=btn.dataset.key;const paper=allPapers.find(p=>(p.doi||p.title)===key);const citation=(paper.authors||'')+' ('+(paper.pubYear||'n.d.')+''). '+paper.title+'. '+(paper.journal||'')+'. '+(paper.doi?'https://doi.org/'+paper.doi:paper.url||'');navigator.clipboard.writeText(citation.trim()).then(()=>{btn.textContent='Copied!';setTimeout(()=>{btn.textContent='Cite';},1500);});});});
-        }
-        async function runSearch(query){
-          if(!query||!query.trim())return;
-          lastQuery=query;shownCount=BATCH;
-          resultsCount.textContent='Searching\\u2026';resultsList.innerHTML='';loadMoreBtn.style.display='none';
-          try{
-            const res=await fetch('/api/research360',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query,mode:'publication'})});
-            const data=await res.json();
-            if(data.error){resultsCount.textContent=data.error;return;}
-            allPapers=data.papers||[];render();
-          }catch(e){resultsCount.textContent='Search failed. Please try again.';}
-        }
-        searchBtn.addEventListener('click',()=>runSearch(qInput.value));
-        qInput.addEventListener('keydown',e=>{if(e.key==='Enter')runSearch(qInput.value);});
-        document.querySelectorAll('.quick-tag').forEach(tag=>{tag.addEventListener('click',()=>{qInput.value=tag.dataset.q;runSearch(tag.dataset.q);});});
-        [peerCb,preprintCb,epmcCb,crossrefCb,sortSelect].forEach(el=>el.addEventListener('change',render));
-        document.querySelectorAll('input[name="date"]').forEach(el=>el.addEventListener('change',render));
-        loadMoreBtn.addEventListener('click',()=>{shownCount+=BATCH;render();});
-      `}} />
+      <script src="/research360-client.js" defer></script>
     </>
   );
 }
