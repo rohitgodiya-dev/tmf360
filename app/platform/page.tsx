@@ -765,7 +765,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {navItem("readiness","Inspection readiness","ti-shield-check")}
           {navItem("report","Report","ti-file-analytics")}
           {navItem("tracker","Tracker","ti-bell-ringing")}
-          <a href="/trinity" style={{display:"flex",alignItems:"center",gap:"8px",padding:"7px 10px",borderRadius:"8px",fontSize:"12px",color:P.textSec,textDecoration:"none"}}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>AI Specialist</a>
+          <a href="/trinity" style={{display:"flex",alignItems:"center",gap:"8px",padding:"7px 10px",borderRadius:"8px",fontSize:"12px",color:"#374151",textDecoration:"none",fontWeight:"400"}}><i className="ti ti-message-circle" style={{fontSize:"15px"}}/>AI Specialist</a>
           {navItem("audit","Audit trail","ti-lock")}
           {navItem("quality","Quality checks","ti-clipboard-list")}
           {navItem("tmfauditor","TMF Auditor","ti-checkup-list")}
@@ -2746,7 +2746,7 @@ function UserManagementPanel({user, P, supabase, activeStudy, orgId}: {user: any
 
   async function changeUserPassword() {
     if(!newPwd.trim()||newPwd.length<6){setPwdMsg("Password must be at least 6 characters.");return;}
-    const res=await fetch("/api/change-password",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userId:pwdTargetUser.user_id,newPassword:newPwd})});
+    const res=await fetch("/api/change-password",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({user_id:pwdTargetUser.user_id,new_password:newPwd})});
     const data=await res.json();
     if(data.error){setPwdMsg("Error: "+data.error);}else{setPwdMsg("Password changed successfully.");setTimeout(()=>{setShowPwdModal(false);setPwdTargetUser(null);setNewPwd("");setPwdMsg("");},1500);}
   }
@@ -2764,7 +2764,7 @@ function UserManagementPanel({user, P, supabase, activeStudy, orgId}: {user: any
       <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",overflow:"hidden"}}>
         <table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px"}}>
           <thead><tr style={{borderBottom:`0.5px solid ${P.border}`}}>
-            {["Name / Email","Role","Status","Added","Upload","Download","Notifications","Can Delete","Activate / Deactivate","Change Password"].map(h=><th key={h} style={{textAlign:"left",padding:"10px 14px",fontSize:"11px",fontWeight:"500",color:P.textSec}}>{h}</th>)}
+            {["Name / Email","Role","Status","Added","Upload","Download","Notifications","Can Delete","Activate / Deactivate"].map(h=><th key={h} style={{textAlign:"left",padding:"10px 14px",fontSize:"11px",fontWeight:"500",color:P.textSec}}>{h}</th>)}
           </tr></thead>
           <tbody>
             {loading?<tr><td colSpan={8} style={{textAlign:"center",padding:"2rem",color:P.textTert}}>Loading...</td></tr>
@@ -4344,7 +4344,6 @@ setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfi
     </div>
   );
 }
-
 
 
 
