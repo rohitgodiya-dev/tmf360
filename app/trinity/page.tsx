@@ -466,26 +466,85 @@ export default function TrinityPage(){
     if(!activeStudy||inspectionQuestions.length===0)return;
     setInspectionLoading(true);
     try{
-      // Build TMF document context from actual filed documents in the artifact browser
-      const allDocs=docs.map(d=>`[${d.status}] Zone ${d.zone} — ${d.artifact_num} — ${d.artifact_name} | File: ${d.custom_file_name||d.file_name} | Owner: ${d.owner||""} | Version: ${d.version||"N/A"} | Date: ${d.approved_at||d.created_at||""}`).join("\n");
-      const approvedDocs=docs.filter(d=>d.status==="Approved").map(d=>`${d.artifact_num} — ${d.artifact_name} (${d.custom_file_name||d.file_name})`).join("\n");
-      const pendingDocs=docs.filter(d=>d.status==="Under Review").map(d=>`${d.artifact_num} — ${d.artifact_name}`).join("\n");
-      const missingDocs=gaps.crit.concat(gaps.major).concat(gaps.minor).map((g:any)=>`${g.a} — ${g.an} (Zone ${g.z}, ${g.cl})`).join("\n");
+      // ONLY approved documents count — this mirrors exactly what is visible in the TMF Auditor
+      const approvedDocs=docs.filter(d=>d.status==="Approved");
+      const approvedCount=approvedDocs.length;
+      const approvedList=approvedDocs.map(d=>`${d.artifact_num} — ${d.artifact_name} | File: ${d.custom_file_name||d.file_name} | Zone: ${d.zone} | Approved: ${d.approved_at||""}`).join("\n");
+      const underReviewList=docs.filter(d=>d.status==="Under Review").map(d=>`${d.artifact_num} — ${d.artifact_name} (UNDER REVIEW — not yet filed)`).join("\n");
+      const draftList=docs.filter(d=>d.status==="Draft").map(d=>`${d.artifact_num} — ${d.artifact_name} (DRAFT — rejected or incomplete)`).join("\n");
+      const missingList=gaps.crit.concat(gaps.major).concat(gaps.minor).map((g:any)=>`Zone ${g.z} — ${g.a} — ${g.an} [${g.cl}] — MISSING`).join("\n");
       const questionsList=inspectionQuestions.map((q,i)=>`${i+1}. [${q.severity}][${q.category}] ${q.question_text}`).join("\n");
-      const prompt=`You are a senior FDA/EMA TMF auditor conducting a formal inspection of a live clinical trial master file system.\n\nSTUDY: ${activeStudy.study_id}\nSPONSOR: ${activeStudy.sponsor||"Unknown"}\nPHASE: ${activeStudy.phase||"Unknown"}\nTMF COMPLETENESS: ${donePct}%\n\nALL TMF DOCUMENTS IN SYSTEM (with status):\n${allDocs||"No documents filed"}\n\nAPPROVED DOCUMENTS (${docs.filter(d=>d.status==="Approved").length}):\n${approvedDocs||"None"}\n\nPENDING REVIEW (${docs.filter(d=>d.status==="Under Review").length}):\n${pendingDocs||"None"}\n\nMISSING CORE DOCUMENTS (${missing}):\n${missingDocs||"None — all core documents filed"}\n\nINSPECTION QUESTIONS:\n${questionsList}\n\nFor each question, evaluate it against the actual TMF documents listed above. Reference specific artifact numbers and document names in your findings. If a document is approved, note it as evidence. If it is missing, that is a finding. Return JSON array:\n[{"question_number":1,"question_text":"exact text","category":"category","severity":"Critical|Major|Minor","verdict":"Pass|Fail|Partial|Unable to Verify","finding":"specific finding referencing actual artifact numbers and document names from the TMF","evidence":"list specific artifact numbers that pass or confirm the gap","regulatory_ref":"specific ICH E6(R3)/21 CFR Part 11/FDA guidance citation","recommendation":"specific action required if not Pass"}]\n\nReturn ONLY valid JSON array.`;
-      const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:prompt,context:"You are a senior FDA/EMA auditor. Return only valid JSON array."})});
+
+      const prompt=`You are a senior FDA/EMA TMF auditor inspecting a live Trial Master File system.
+
+YOUR ONLY SOURCE OF TRUTH is the APPROVED DOCUMENTS list below. This is the TMF Auditor view — only approved documents are considered filed. Draft and Under Review documents do not exist for inspection purposes.
+
+ABSOLUTE RULES:
+1. "Pass" = document is explicitly in the APPROVED list AND directly satisfies the question. State the exact artifact number.
+2. "Fail" = document required by this question is NOT in the approved list (whether missing, draft, or under review). Missing = Fail. Draft = Fail. Under Review = Fail.
+3. "Partial" = question is partially satisfied by approved documents but not fully (e.g. protocol approved but no amendments).
+4. "Unable to Verify" = question asks about document CONTENT (signatures, dates, internal consistency) that cannot be assessed from the artifact name alone — but only use this if the document IS approved. If the document is missing, it is still Fail.
+5. A TMF with ${approvedCount} approved documents CANNOT score above ${Math.min(100, approvedCount===0?0:Math.round((approvedCount/Math.max(totalCore,1))*100)+20)}/100. Calibrate accordingly.
+6. Never assume a document exists. Never give benefit of the doubt.
+
+STUDY: ${activeStudy.study_id} | SPONSOR: ${activeStudy.sponsor||"Unknown"} | PHASE: ${activeStudy.phase||"Unknown"}
+TMF COMPLETENESS: ${donePct}% (${approvedCount} approved of ${totalCore} core required)
+
+=== APPROVED DOCUMENTS — only these can support a Pass (${approvedCount} total) ===
+${approvedList||"NO APPROVED DOCUMENTS. Every question about document presence must be Fail."}
+
+=== UNDER REVIEW — cannot support Pass, at most Partial ===
+${underReviewList||"None"}
+
+=== DRAFT / REJECTED — cannot support Pass or Partial ===
+${draftList||"None"}
+
+=== MISSING CORE ARTIFACTS — not filed at all, auto-Fail for any question about these ===
+${missingList||"No missing core documents"}
+
+=== INSPECTION QUESTIONS ===
+${questionsList}
+
+Evaluate each question. Reference exact artifact numbers. Return JSON array only:
+[{"question_number":1,"question_text":"exact text","category":"category","severity":"Critical|Major|Minor","verdict":"Pass|Fail|Partial|Unable to Verify","finding":"precise finding citing artifact numbers or naming what is absent","evidence":"artifact numbers from approved list that support verdict, or what is missing","regulatory_ref":"specific ICH E6(R3) section or 21 CFR Part 11 subsection","recommendation":"exact corrective action with suggested timeline if not Pass"}]
+
+Return ONLY valid JSON array.`;
+
+      const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:prompt,context:`You are a strict FDA/EMA TMF auditor. The TMF has ${approvedCount} approved documents. You ONLY award Pass for documents explicitly in the approved list. ${approvedCount===0?"There are zero approved documents — every document-presence question is Fail.":""} Return only valid JSON array, no other text.`})});
       const data=await res.json();
       let results:any[]=[];
       try{results=JSON.parse((data.response||"[]").replace(/```json|```/g,"").trim());}catch{results=[];}
+
+      // Post-process: enforce hard rules the AI may have missed
+      results=results.map((r:any)=>{
+        // If AI gave Pass but no approved document exists at all, downgrade to Fail
+        if(r.verdict==="Pass"&&approvedCount===0){
+          return{...r,verdict:"Fail",finding:(r.finding||"")+" [Auto-downgraded: no approved documents in TMF]",evidence:"No approved documents exist"};
+        }
+        // If AI gave Pass but evidence doesn't reference any known approved artifact, downgrade to Unable to Verify
+        if(r.verdict==="Pass"&&r.evidence){
+          const evidenceLower=(r.evidence||"").toLowerCase();
+          const hasRealEvidence=approvedDocs.some(d=>evidenceLower.includes(d.artifact_num?.toLowerCase()||"xxx")||evidenceLower.includes((d.artifact_name||"").toLowerCase().slice(0,8)));
+          if(!hasRealEvidence&&approvedCount>0){
+            return{...r,verdict:"Unable to Verify",finding:(r.finding||"")+" [Cannot confirm — no matching approved artifact found]"};
+          }
+        }
+        return r;
+      });
+
       const passing=results.filter((r:any)=>r.verdict==="Pass");
       const failing=results.filter((r:any)=>r.verdict==="Fail");
       const partial=results.filter((r:any)=>r.verdict==="Partial");
       const unverifiable=results.filter((r:any)=>r.verdict==="Unable to Verify");
       const criticalFails=failing.filter((r:any)=>r.severity==="Critical");
       const majorFails=[...failing.filter((r:any)=>r.severity==="Major"),...partial.filter((r:any)=>r.severity==="Critical"||r.severity==="Major")];
-      const riskScore=Math.max(0,100-(criticalFails.length*12)-(majorFails.length*5)-(failing.filter((r:any)=>r.severity==="Minor").length*2)-(partial.length*2));
-      const narrativePrompt=`Write a 3-4 sentence formal inspection readiness assessment in FDA Form 483 style for study ${activeStudy.study_id}. ${criticalFails.length} critical failures, ${majorFails.length} major findings, ${passing.length} passing, ${unverifiable.length} unable to verify. Risk score: ${riskScore}/100. Be direct, use clinical regulatory language.`;
-      const narrativeRes=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:narrativePrompt,context:"You are a senior FDA auditor writing formal inspection narrative."})});
+      const minorFails=failing.filter((r:any)=>r.severity==="Minor");
+      // Score: start from passing only, penalise fails — unverifiable counts as neutral
+      const baseScore=results.length>0?Math.round((passing.length/results.length)*100):0;
+      const penalty=(criticalFails.length*15)+(majorFails.length*7)+(minorFails.length*3)+(partial.length*2);
+      const riskScore=Math.max(0,Math.min(baseScore,100-penalty));
+      const narrativePrompt=`Write a 3-4 sentence formal inspection readiness assessment in FDA Form 483 observation style for study ${activeStudy.study_id}. ${approvedCount} documents approved of ${totalCore} required (${donePct}% complete). ${criticalFails.length} critical failures, ${majorFails.length} major findings, ${passing.length} passing, ${unverifiable.length} unable to verify. Risk score: ${riskScore}/100. Be direct and use formal regulatory language.`;
+      const narrativeRes=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:narrativePrompt,context:"You are a senior FDA auditor writing a formal inspection narrative."})});
       const narrativeData=await narrativeRes.json();
       setInspectionReport({questions:results,passing,failing,partial,unverifiable,critical_fails:criticalFails,major_fails:majorFails,risk_score:riskScore,inspection_ready:criticalFails.length===0&&majorFails.length<3,summary:narrativeData.response||"",generated_at:new Date().toISOString()});
     }catch{alert("Inspection simulation failed.");}
