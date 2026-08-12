@@ -16,12 +16,11 @@ export default function BookDemoPage() {
     selectedTime: '',
   });
   const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
 
   async function submitDemo() {
     if (!formData.selectedDate || !formData.selectedTime) return;
     setSubmitting(true);
-    const { data, error } = await supabase.from('demo_requests').insert([{
+    const { error } = await supabase.from('demo_requests').insert([{
       full_name: formData.fullName,
       email: formData.email,
       organisation: formData.organisation,
@@ -40,7 +39,6 @@ export default function BookDemoPage() {
       return;
     }
     setSubmitting(false);
-    setSubmitted(true);
     (window as any).__goStep(3);
   }
 
@@ -132,7 +130,7 @@ export default function BookDemoPage() {
       const arc = document.getElementById('gauge-arc');
       const lbl = document.getElementById('gauge-pct');
       if (!arc || !lbl) return;
-      (arc as SVGPathElement).style.strokeDashoffset = String(Math.round(146 * (1 - pct / 100)));
+      (arc as unknown as SVGPathElement).style.strokeDashoffset = String(Math.round(146 * (1 - pct / 100)));
       lbl.textContent = pct + '%';
     }
 
@@ -335,10 +333,9 @@ export default function BookDemoPage() {
 
     (window as any).__goStep = goStep;
     (window as any).__calNav = calNav;
-    (window as any).__selectPill = (el: HTMLElement, gid: string, field: string) => {
+    (window as any).__selectPill = (el: HTMLElement, gid: string) => {
       document.getElementById(gid)?.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
       el.classList.add('active');
-      if (field) setFormData(prev => ({ ...prev, [field]: el.textContent || '' }));
     };
     (window as any).__toggleFeature = (el: HTMLElement) => el.classList.toggle('selected');
   }, []);
@@ -528,7 +525,7 @@ export default function BookDemoPage() {
                 <label className="lbl">Your role</label>
                 <div className="pill-group" id="role-pills">
                   {['Sponsor','CRO','TMF Lead','CRA / CTA','QA','Regulatory','Other'].map((r, i) => (
-                    <span key={r} className={`pill${i === 0 ? ' active' : ''}`} onClick={(e) => { (window as any).__selectPill(e.currentTarget, 'role-pills', ''); setFormData(p => ({...p, role: r})); }}>{r}</span>
+                    <span key={r} className={`pill${i === 0 ? ' active' : ''}`} onClick={(e) => { (window as any).__selectPill(e.currentTarget, 'role-pills'); setFormData(p => ({...p, role: r})); }}>{r}</span>
                   ))}
                 </div>
               </div>
@@ -594,7 +591,7 @@ export default function BookDemoPage() {
                 <label className="lbl">Trial phase</label>
                 <div className="pill-group" id="phase-pills">
                   {['Phase I','Phase II','Phase III','Phase IV','Observational','Feasibility'].map((p, i) => (
-                    <span key={p} className={`pill${i === 1 ? ' active' : ''}`} onClick={(e) => { (window as any).__selectPill(e.currentTarget, 'phase-pills', ''); setFormData(prev => ({...prev, trialPhase: p})); }}>{p}</span>
+                    <span key={p} className={`pill${i === 1 ? ' active' : ''}`} onClick={(e) => { (window as any).__selectPill(e.currentTarget, 'phase-pills'); setFormData(prev => ({...prev, trialPhase: p})); }}>{p}</span>
                   ))}
                 </div>
               </div>
@@ -602,7 +599,7 @@ export default function BookDemoPage() {
                 <label className="lbl">Team size</label>
                 <div className="pill-group" id="size-pills">
                   {['1-5','6-20','21-50','50+'].map((s, i) => (
-                    <span key={s} className={`pill${i === 1 ? ' active' : ''}`} onClick={(e) => { (window as any).__selectPill(e.currentTarget, 'size-pills', ''); setFormData(prev => ({...prev, teamSize: s})); }}>{s}</span>
+                    <span key={s} className={`pill${i === 1 ? ' active' : ''}`} onClick={(e) => { (window as any).__selectPill(e.currentTarget, 'size-pills'); setFormData(prev => ({...prev, teamSize: s})); }}>{s}</span>
                   ))}
                 </div>
               </div>
