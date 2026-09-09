@@ -92,6 +92,20 @@ export default function ParticipantLoginPage() {
       setLoading(false);
       return;
     }
+    // Verify this user is a registered participant
+    const { data: participant } = await supabase
+      .from('participants')
+      .select('id')
+      .eq('email', email.trim())
+      .single();
+    if (!participant) {
+      await supabase.auth.signOut();
+      setError(lang === 'en'
+        ? 'No participant account found. Contact your study coordinator.'
+        : 'No se encontró cuenta de participante. Contacte a su coordinador del estudio.');
+      setLoading(false);
+      return;
+    }
     window.location.href = '/participant360';
   }
 
