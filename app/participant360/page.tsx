@@ -282,7 +282,7 @@ export default function Participant360Page() {
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLoading(false); return; }
+      if (!user) { window.location.href = '/participant360/login'; return; }
 
       const { data: p } = await supabase
         .from('participants')
@@ -290,8 +290,12 @@ export default function Participant360Page() {
         .eq('email', user.email)
         .single();
 
-      if (p) {
-        setParticipant({ ...p, study: p.studies });
+      if (!p) { 
+        await supabase.auth.signOut();
+        window.location.href = '/participant360/login'; 
+        return; 
+      }
+      setParticipant({ ...p, study: p.studies });
         setLang((p.language_preference as Lang) || 'en');
 
         // Load activities
