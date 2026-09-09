@@ -224,11 +224,7 @@ const Icon = ({ name, size = 20, color = 'currentColor' }: { name: string; size?
 
 // ── Logo ─────────────────────────────────────────────────────────────────────
 const Logo = ({ size = 36 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 40 40" fill="none">
-    <path d="M22 4a16 16 0 1 0 12 26.6" stroke={C.navy} strokeWidth="4" strokeLinecap="round" />
-    <path d="M13.5 21c0-5.2 4.3-9.5 9.5-9.5 3.2 0 6.1 1.6 7.8 4.1" stroke={C.orange} strokeWidth="4" strokeLinecap="round" />
-    <circle cx="32" cy="27" r="3.4" fill={C.orange} />
-  </svg>
+  <img src="/favicon.ico" alt="Participant360" width={size} height={size} style={{ objectFit: 'contain', flexShrink: 0 }} />
 );
 
 // ── Types ────────────────────────────────────────────────────────────────────
