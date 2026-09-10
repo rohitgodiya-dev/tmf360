@@ -54,12 +54,16 @@ export default function Site360Page() {
       if (!u) { setLoading(false); return; }
       setUser(u);
 
-      const { data: ur } = await supabase.from('user_roles').select('org_id, full_name, role').eq('user_id', u.id).eq('is_active', true).single();
+      const { data: ur } = await supabase.from('user_roles').select('org_id, full_name, role').eq('user_id', u.id).single();
       if (!ur) { setLoading(false); return; }
 
       // Load site
-      const { data: siteData } = await supabase.from('sites').select('*').eq('org_id', ur.org_id).single();
-      if (!siteData) { setLoading(false); return; }
+      const { data: siteData, error: siteError } = await supabase.from('sites').select('*').eq('org_id', ur.org_id).single();
+      if (!siteData) { 
+        console.error('Site error:', siteError, 'org_id:', ur.org_id);
+        setLoading(false); 
+        return; 
+      }
       setSite({ ...siteData, user_name: ur.full_name || u.email?.split('@')[0] || 'User', user_role: ur.role });
 
       // Load study
