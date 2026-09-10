@@ -55,7 +55,12 @@ export default function Site360Page() {
       setUser(u);
 
       const { data: ur } = await supabase.from('user_roles').select('org_id, full_name, role').eq('user_id', u.id).single();
-      if (!ur) { setLoading(false); return; }
+      if (!ur) { 
+        alert('user_roles query returned null for user: ' + u.id);
+        setLoading(false); 
+        return; 
+      }
+      alert('ur found: ' + JSON.stringify(ur));
 
       // Load site
       const { data: siteData, error: siteError } = await supabase.from('sites').select('*').eq('org_id', ur.org_id).single();
