@@ -234,7 +234,9 @@ return (
 <p style={{ fontSize: '9px', fontWeight: 600, color: '#475569', padding: '8px 8px 3px', textTransform: 'uppercase' as const, letterSpacing: '.06em' }}>Start-Up</p>
 {navItem('activation', 'Site Activation', '✓')}
 {navItem('staff', 'Staff & Delegation', '👤')}
-{navItem('isf', 'ISF', '📁')}
+<button onClick={() => window.location.href = '/site360/isf'} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', borderRadius: '8px', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', fontSize: '12px', background: 'transparent', color: '#94A3B8', fontWeight: 400 }}>
+  <span style={{ fontSize: '15px' }}>📁</span>ISF
+</button>
 <p style={{ fontSize: '9px', fontWeight: 600, color: '#475569', padding: '8px 8px 3px', textTransform: 'uppercase' as const, letterSpacing: '.06em' }}>Clinical Ops</p>
 {navItem('participants', 'Participants', '👥', participants.filter(p => p.status === 'screening').length || undefined)}
 {navItem('ip', 'IP & Supplies', '💊')}
