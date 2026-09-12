@@ -212,7 +212,7 @@ export default function Site360LoginPage() {
 
           {/* Platform link */}
           <a
-            href="/platform"
+            href="/trial360.html"
             style={{
               display: 'block',
               width: '100%',
