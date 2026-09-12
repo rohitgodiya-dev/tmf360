@@ -13,8 +13,6 @@ const C = {
   text: '#111827',
   textSec: '#374151',
   textMuted: '#6B7280',
-  green: '#10B981',
-  greenLight: '#ECFDF5',
   red: '#EF4444',
   redLight: '#FEF2F2',
 };
@@ -41,23 +39,22 @@ export default function Site360LoginPage() {
       return;
     }
 
-    // Verify user has a site role
-    const { data: ur } = await supabase
-      .from('user_roles')
-      .select('role, org_id')
-      .eq('email', email.trim())
-      .eq('is_active', true)
-      .single();
-
-    if (!ur) {
-      await supabase.auth.signOut();
-      setError('No site account found for this email. Contact your administrator.');
-      setLoading(false);
-      return;
-    }
-
+    // Login successful — redirect to dashboard
     window.location.href = '/site360';
   }
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    fontSize: '14px',
+    padding: '11px 14px',
+    border: `1.5px solid ${C.border}`,
+    borderRadius: '10px',
+    color: C.text,
+    background: C.bg,
+    outline: 'none',
+    fontFamily: 'inherit',
+    boxSizing: 'border-box',
+  };
 
   return (
     <div style={{
@@ -91,6 +88,7 @@ export default function Site360LoginPage() {
           maxWidth: '420px',
           boxShadow: '0 24px 64px rgba(0,0,0,0.3)',
         }}>
+
           {/* Header */}
           <div style={{ marginBottom: '28px' }}>
             <div style={{ fontSize: '24px', fontWeight: 700, color: C.navy, marginBottom: '6px' }}>
@@ -112,18 +110,7 @@ export default function Site360LoginPage() {
               onChange={e => setEmail(e.target.value)}
               placeholder="you@organisation.com"
               onKeyDown={e => e.key === 'Enter' && handleLogin()}
-              style={{
-                width: '100%',
-                fontSize: '14px',
-                padding: '11px 14px',
-                border: `1.5px solid ${C.border}`,
-                borderRadius: '10px',
-                color: C.text,
-                background: C.bg,
-                outline: 'none',
-                fontFamily: 'inherit',
-                boxSizing: 'border-box' as const,
-              }}
+              style={inputStyle}
             />
           </div>
 
@@ -150,18 +137,7 @@ export default function Site360LoginPage() {
               onChange={e => setPassword(e.target.value)}
               placeholder="••••••••"
               onKeyDown={e => e.key === 'Enter' && handleLogin()}
-              style={{
-                width: '100%',
-                fontSize: '14px',
-                padding: '11px 14px',
-                border: `1.5px solid ${C.border}`,
-                borderRadius: '10px',
-                color: C.text,
-                background: C.bg,
-                outline: 'none',
-                fontFamily: 'inherit',
-                boxSizing: 'border-box' as const,
-              }}
+              style={inputStyle}
             />
           </div>
 
@@ -217,7 +193,7 @@ export default function Site360LoginPage() {
               display: 'block',
               width: '100%',
               padding: '12px',
-              textAlign: 'center' as const,
+              textAlign: 'center',
               background: C.bg,
               border: `1px solid ${C.border}`,
               borderRadius: '10px',
@@ -225,7 +201,7 @@ export default function Site360LoginPage() {
               fontWeight: 600,
               color: C.navy,
               textDecoration: 'none',
-              boxSizing: 'border-box' as const,
+              boxSizing: 'border-box',
             }}
           >
             Go to Trial360 OS Platform
@@ -240,7 +216,7 @@ export default function Site360LoginPage() {
             fontSize: '11px',
             color: C.textMuted,
             lineHeight: 1.6,
-            textAlign: 'center' as const,
+            textAlign: 'center',
           }}>
             Your account is created by your sponsor or CRO. Contact your administrator if you need access.
           </div>
@@ -248,11 +224,12 @@ export default function Site360LoginPage() {
       </div>
 
       {/* Footer */}
-      <div style={{ padding: '20px 32px', textAlign: 'center' as const }}>
+      <div style={{ padding: '20px 32px', textAlign: 'center' }}>
         <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>
           Site360 · Part of Trial360 OS · trial360os.com
         </div>
       </div>
+
     </div>
   );
 }
