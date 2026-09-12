@@ -476,7 +476,7 @@ return (
 <nav style={navStyle}>
 <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', maxWidth: '1060px', margin: '0 auto', width: '100%' }}>
 <a href="/site360/home" style={{ display: 'flex', alignItems: 'center', gap: '9px', textDecoration: 'none', justifySelf: 'start' }}>
-<img src="/site360-logo.png" alt="Site360" style={{ height: '32px', width: '32px', objectFit: 'contain' }} />
+<img src="/favicon.ico" alt="Site360" style={{ height: '32px', width: '32px', objectFit: 'contain' }} />
 <span style={{ fontSize: '18px', fontWeight: 700, letterSpacing: '-0.01em' }}>
 <span style={{ color: C.navy }}>Site</span><span style={{ color: C.orange }}>360</span>
 </span>
@@ -710,7 +710,7 @@ Book a demo <ArrowRight size={16} strokeWidth={2.5} />
 <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr 1fr 1.2fr', gap: '32px', marginBottom: '40px' }}>
 <div>
 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-<img src="/site360-logo.png" alt="Site360" style={{ height: '26px', width: '26px', objectFit: 'contain' }} />
+<img src="/favicon.ico" alt="Site360" style={{ height: '26px', width: '26px', objectFit: 'contain' }} />
 <span style={{ fontSize: '20px', fontWeight: 800, color: C.navy }}>Site<span style={{ color: C.orange }}>360</span></span>
 </div>
 <p style={{ fontSize: '13px', color: C.textMuted, lineHeight: 1.7, marginBottom: '16px', maxWidth: '220px' }}>
