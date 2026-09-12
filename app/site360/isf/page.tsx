@@ -159,7 +159,7 @@ export default function ISFPage() {
         ...uploadForm, file_url: urlData?.publicUrl, file_name: uploadFile.name,
         file_size: uploadFile.size, uploaded_by: user.id, status: 'Draft',
       }]).select().single();
-      if (newDoc) await logAudit('UPLOAD', newDoc.id, null, uploadForm.title);
+      if (newDoc) await logAudit('UPLOAD', newDoc.id, undefined, uploadForm.title);
       setShowUpload(false);
       setUploadForm({ title: '', zone: '5', section: '', artifact_num: '', artifact_name: '', version: '1.0', effective_date: '', expiry_date: '', comments: '' });
       setUploadFile(null);
