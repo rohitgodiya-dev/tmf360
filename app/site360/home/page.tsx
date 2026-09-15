@@ -488,7 +488,7 @@ return (
 </div>
 <div style={{ display: 'flex', gap: '10px', alignItems: 'center', justifySelf: 'end' }}>
 <a href="/site360" style={{ fontSize: '13px', color: C.textSec, textDecoration: 'none', padding: '8px 16px' }}>Sign in</a>
-<a href="/book-demo" style={{ fontSize: '13px', fontWeight: 600, color: '#fff', background: C.orange, padding: '9px 20px', borderRadius: '8px', textDecoration: 'none' }}>Book a demo</a>
+<a href="/site360/book-demo" style={{ fontSize: '13px', fontWeight: 600, color: '#fff', background: C.orange, padding: '9px 20px', borderRadius: '8px', textDecoration: 'none' }}>Book a demo</a>
 </div>
 </div>
 </nav>
@@ -506,7 +506,7 @@ The site operations<br />platform built for<br /><span style={{ color: C.orange 
 Site360 gives CRCs, PIs, and site coordinators everything they need to run an inspection-ready site — from ISF management to participant enrollment, safety reporting, and monitoring visit preparation.
 </p>
 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-<a href="/book-demo" style={{ fontSize: '14px', fontWeight: 700, color: '#fff', background: C.orange, padding: '13px 28px', borderRadius: '10px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
+<a href="/site360/book-demo" style={{ fontSize: '14px', fontWeight: 700, color: '#fff', background: C.orange, padding: '13px 28px', borderRadius: '10px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
 Book a demo <ArrowRight size={16} strokeWidth={2.5} />
 </a>
 <a href="/site360" style={{ fontSize: '14px', fontWeight: 600, color: C.navy, background: C.bgSec, padding: '13px 28px', borderRadius: '10px', textDecoration: 'none', border: `1px solid ${C.border}` }}>
@@ -542,7 +542,7 @@ Your AI site assistant understands your study, your documents, and your workflow
 </div>
 ))}
 </div>
-<a href="/book-demo" style={{ fontSize: '14px', fontWeight: 700, color: '#fff', background: C.orange, padding: '13px 28px', borderRadius: '10px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+<a href="/site360/book-demo" style={{ fontSize: '14px', fontWeight: 700, color: '#fff', background: C.orange, padding: '13px 28px', borderRadius: '10px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
 Book a demo <ArrowRight size={16} strokeWidth={2.5} />
 </a>
 </div>
@@ -695,7 +695,7 @@ Turn Your Site Into<br /><span style={{ color: C.orange }}>Inspection-Ready Oper
 Move beyond scattered spreadsheets. Site360 gives your team the visibility, control, and AI-powered insight to stay inspection-ready at every stage of the trial.
 </p>
 <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-<a href="/book-demo" style={{ fontSize: '14px', fontWeight: 700, color: '#fff', background: C.orange, padding: '14px 32px', borderRadius: '10px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+<a href="/site360/book-demo" style={{ fontSize: '14px', fontWeight: 700, color: '#fff', background: C.orange, padding: '14px 32px', borderRadius: '10px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
 Book a demo <ArrowRight size={16} strokeWidth={2.5} />
 </a>
 <a href="/site360" style={{ fontSize: '14px', fontWeight: 600, color: C.navy, background: C.bg, padding: '14px 32px', borderRadius: '10px', textDecoration: 'none', border: `1px solid ${C.border}`, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
