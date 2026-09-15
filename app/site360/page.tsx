@@ -76,7 +76,6 @@ export default function Site360Page() {
   const [aeReports, setAeReports] = useState<any[]>([]);
   const [deviations, setDeviations] = useState<any[]>([]);
   const [activationItems, setActivationItems] = useState<any[]>([]);
-  const [activationLoaded, setActivationLoaded] = useState(false);
   const [actionItems, setActionItems] = useState<any[]>([]);
   const [isfDocs, setIsfDocs] = useState<any[]>([]);
   const [auditTrail, setAuditTrail] = useState<any[]>([]);
@@ -96,7 +95,6 @@ export default function Site360Page() {
 
   useEffect(() => { loadData(); }, []);
   useEffect(() => { if (activeStudy && site) loadStudyData(); }, [activeStudy]);
-  useEffect(() => { if (site && activationLoaded && activationItems.length === 0) seedActivationChecklist(); }, [activationLoaded]);
 
   async function loadData() {
     setLoading(true);
@@ -138,17 +136,17 @@ export default function Site360Page() {
         { data: aiData }, { data: isfData }, { data: auditData }, { data: queryData },
       ] = await Promise.all([
         supabase.from('participants').select('*').eq('site_id', site.id).eq('study_id', activeStudy.id).order('created_at', { ascending: false }),
-        supabase.from('site_tasks').select('*').eq('site_id', site.id).order('due_date', { ascending: true }),
+        supabase.from('site_tasks').select('*').eq('site_id', site.id).eq('study_id', activeStudy.id).order('due_date', { ascending: true }),
         supabase.from('monitoring_visits').select('*').eq('site_id', site.id).eq('study_id', activeStudy.id).order('scheduled_date', { ascending: false }),
         supabase.from('payment_milestones').select('*').eq('site_id', site.id).eq('study_id', activeStudy.id).order('due_date', { ascending: true }),
-        supabase.from('ip_inventory').select('*').eq('site_id', site.id),
+        supabase.from('ip_inventory').select('*').eq('site_id', site.id).eq('study_id', activeStudy.id),
         supabase.from('ae_reports').select('*').eq('site_id', site.id).eq('study_id', activeStudy.id).order('created_at', { ascending: false }),
         supabase.from('protocol_deviations').select('*').eq('site_id', site.id).eq('study_id', activeStudy.id).order('created_at', { ascending: false }),
-        supabase.from('site_activation_items').select('*').eq('site_id', site.id),
-        supabase.from('monitoring_action_items').select('*').eq('site_id', site.id).order('created_at', { ascending: false }),
+        supabase.from('site_activation_items').select('*').eq('site_id', site.id).eq('study_id', activeStudy.id),
+        supabase.from('monitoring_action_items').select('*').eq('site_id', site.id).eq('study_id', activeStudy.id).order('created_at', { ascending: false }),
         supabase.from('isf_documents').select('*').eq('site_id', site.id).eq('study_id', activeStudy.id).order('created_at', { ascending: false }),
-        supabase.from('isf_audit_trail').select('*').eq('site_id', site.id).order('created_at', { ascending: false }).limit(30),
-        supabase.from('isf_queries').select('*').eq('site_id', site.id).order('created_at', { ascending: false }),
+        supabase.from('isf_audit_trail').select('*').eq('site_id', site.id).eq('study_id', activeStudy.id).order('created_at', { ascending: false }).limit(30),
+        supabase.from('isf_queries').select('*').eq('site_id', site.id).eq('study_id', activeStudy.id).order('created_at', { ascending: false }),
       ]);
 
       if (pData) setParticipants(pData);
@@ -158,18 +156,24 @@ export default function Site360Page() {
       if (invData) setInventory(invData);
       if (aeData) setAeReports(aeData);
       if (devData) setDeviations(devData);
-      if (actData) setActivationItems(actData);
-      setActivationLoaded(true);
       if (aiData) setActionItems(aiData);
       if (isfData) setIsfDocs(isfData);
       if (auditData) setAuditTrail(auditData);
       if (queryData) setQueries(queryData);
+
+      if (actData && actData.length === 0) {
+        // This study has no checklist yet — seed the default regulatory
+        // checklist for THIS study and re-fetch, rather than showing empty.
+        await seedActivationChecklist();
+      } else if (actData) {
+        setActivationItems(actData);
+      }
     } catch (e) { console.error(e); }
   }
 
   async function addTask() {
-    if (!newTask.title || !site) return;
-    await supabase.from('site_tasks').insert([{ site_id: site.id, org_id: userRole?.org_id, ...newTask, status: 'Open', created_by: user.id }]);
+    if (!newTask.title || !site || !activeStudy) return;
+    await supabase.from('site_tasks').insert([{ site_id: site.id, study_id: activeStudy.id, org_id: userRole?.org_id, ...newTask, status: 'Open', created_by: user.id }]);
     setShowAddTask(false);
     setNewTask({ title: '', priority: 'Medium', due_date: '', assigned_to_name: '', linked_panel: '' });
     loadStudyData();
@@ -203,16 +207,16 @@ export default function Site360Page() {
   ];
 
   async function seedActivationChecklist() {
-    if (!site || !userRole) return;
+    if (!site || !userRole || !activeStudy) return;
     await supabase.from('site_activation_items').insert(
-      DEFAULT_ACTIVATION_ITEMS.map(item_name => ({ site_id: site.id, org_id: userRole.org_id, item_name, status: 'Open' }))
+      DEFAULT_ACTIVATION_ITEMS.map(item_name => ({ site_id: site.id, study_id: activeStudy.id, org_id: userRole.org_id, item_name, status: 'Open' }))
     );
     loadStudyData();
   }
 
   async function addActivationItem() {
-    if (!site || !userRole) return;
-    await supabase.from('site_activation_items').insert([{ site_id: site.id, org_id: userRole.org_id, item_name: 'New item', status: 'Open' }]);
+    if (!site || !userRole || !activeStudy) return;
+    await supabase.from('site_activation_items').insert([{ site_id: site.id, study_id: activeStudy.id, org_id: userRole.org_id, item_name: 'New item', status: 'Open' }]);
     loadStudyData();
   }
 
