@@ -2,16 +2,18 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 
+// Design tokens — matched 1:1 to TMF360's palette (app/platform/page.tsx `P` object)
+// so Site360 and TMF360 read as one product. Key names kept as before so every
+// panel below keeps working unchanged; only the hex values moved to match TMF360.
 const C = {
-  orange: '#F97316', orangeLight: '#FFF7ED', orangeDark: '#EA580C',
-  navy: '#0F1E3D', navyLight: '#1E3A5F',
-  bg: '#F5F8FF', bgCard: '#FFFFFF',
-  border: '#E7ECF6', divider: '#EEF2FA',
-  text: '#111827', textSec: '#3E5273', textMuted: '#6B7280',
-  green: '#16A34A', greenLight: '#E9FBF0',
-  red: '#EF4444', redLight: '#FDEDEA',
-  blue: '#2563EB', blueLight: '#EAF1FE',
-  amber: '#F59E0B', amberLight: '#FEF3E2',
+  orange: '#F97316', orangeLight: '#FFEDD5', orangeDark: '#EA580C',
+  bg: '#F9FAFB', bgCard: '#FFFFFF', bgTert: '#F3F4F6',
+  border: '#E5E7EB', divider: '#E5E7EB',
+  text: '#111827', textSec: '#374151', textMuted: '#6B7280',
+  green: '#10B981', greenLight: '#ECFDF5',
+  red: '#EF4444', redLight: '#FEF2F2',
+  blue: '#3B82F6', blueLight: '#EFF6FF',
+  amber: '#F59E0B', amberLight: '#FFFBEB',
   purple: '#8B5CF6', purpleLight: '#F5F3FF',
 };
 
@@ -20,36 +22,40 @@ type Panel = 'dashboard' | 'activation' | 'isf' | 'artifacts' | 'gap' |
   'readiness' | 'report' | 'auditor' | 'audit' | 'quality' | 'archived' |
   'tasks' | 'messages' | 'queries' | 'users' | 'siteconfig' | 'ticket' | 'studies';
 
+// Icon classes are Tabler Icons font classes (`ti ti-*`), loaded via the same
+// CDN link TMF360 uses — see the <link> tag in the header below. This is the
+// icon system TMF360 uses; Site360 previously used emoji, which is one of the
+// two things that made it look like a different, unrelated product.
 const NAV_GROUPS = [
-  { label: 'Overview', items: [{ key: 'dashboard', label: 'Dashboard', icon: '⊞' }] },
+  { label: 'Overview', items: [{ key: 'dashboard', label: 'Dashboard', icon: 'ti-layout-dashboard' }] },
   { label: 'Site', items: [
-    { key: 'activation', label: 'Site Activation', icon: '✓' },
-    { key: 'isf', label: 'ISF', icon: '📁' },
-    { key: 'artifacts', label: 'Artifact Browser', icon: '🗂' },
-    { key: 'gap', label: 'Gap Analysis', icon: '⚠' },
-    { key: 'participants', label: 'Participants', icon: '👥' },
-    { key: 'supplies', label: 'IP & Supplies', icon: '💊' },
-    { key: 'safety', label: 'Safety Reporting', icon: '🛡' },
-    { key: 'monitoring', label: 'Monitoring Visits', icon: '🔍' },
-    { key: 'payments', label: 'Payments', icon: '💰' },
+    { key: 'activation', label: 'Site Activation', icon: 'ti-list-check' },
+    { key: 'isf', label: 'ISF', icon: 'ti-files' },
+    { key: 'artifacts', label: 'Artifact Browser', icon: 'ti-layout-grid' },
+    { key: 'gap', label: 'Gap Analysis', icon: 'ti-clipboard-check' },
+    { key: 'participants', label: 'Participants', icon: 'ti-users' },
+    { key: 'supplies', label: 'IP & Supplies', icon: 'ti-pill' },
+    { key: 'safety', label: 'Safety Reporting', icon: 'ti-shield-exclamation' },
+    { key: 'monitoring', label: 'Monitoring Visits', icon: 'ti-clipboard-search' },
+    { key: 'payments', label: 'Payments', icon: 'ti-cash' },
   ]},
   { label: 'Intelligence', items: [
-    { key: 'readiness', label: 'Inspection Readiness', icon: '🎯' },
-    { key: 'report', label: 'Report', icon: '📊' },
-    { key: 'auditor', label: 'ISF Auditor', icon: '🤖' },
-    { key: 'audit', label: 'Audit Trail', icon: '🔒' },
-    { key: 'quality', label: 'Quality Checks', icon: '⭐' },
-    { key: 'archived', label: 'Archived', icon: '📦' },
+    { key: 'readiness', label: 'Inspection Readiness', icon: 'ti-shield-check' },
+    { key: 'report', label: 'Report', icon: 'ti-file-analytics' },
+    { key: 'auditor', label: 'ISF Auditor', icon: 'ti-checkup-list' },
+    { key: 'audit', label: 'Audit Trail', icon: 'ti-lock' },
+    { key: 'quality', label: 'Quality Checks', icon: 'ti-clipboard-list' },
+    { key: 'archived', label: 'Archived', icon: 'ti-archive' },
   ]},
   { label: 'Team', items: [
-    { key: 'tasks', label: 'Tasks', icon: '✓' },
-    { key: 'users', label: 'User Management', icon: '👤' },
-    { key: 'messages', label: 'Messages', icon: '✉' },
-    { key: 'queries', label: 'Queries', icon: '💬' },
+    { key: 'tasks', label: 'Tasks', icon: 'ti-checkbox' },
+    { key: 'users', label: 'User Management', icon: 'ti-users-group' },
+    { key: 'messages', label: 'Messages', icon: 'ti-message-2' },
+    { key: 'queries', label: 'Queries', icon: 'ti-help-circle' },
   ]},
   { label: 'Settings', items: [
-    { key: 'siteconfig', label: 'Site Configuration', icon: '⚙' },
-    { key: 'ticket', label: 'Ticket', icon: '🎫' },
+    { key: 'siteconfig', label: 'Site Configuration', icon: 'ti-adjustments' },
+    { key: 'ticket', label: 'Ticket', icon: 'ti-ticket' },
   ]},
 ];
 
@@ -257,6 +263,33 @@ export default function Site360Page() {
     <tr><td colSpan={cols} style={{ textAlign: 'center', padding: '2rem', color: C.textMuted, fontSize: '12px' }}>{msg}</td></tr>
   );
 
+  // Copied verbatim from TMF360's app/platform/page.tsx so both dashboards
+  // render the exact same ring/gauge visuals.
+  const miniRing = (pct: number, color: string, size = 48, stroke = 5) => {
+    const r = (size - stroke) / 2, c = 2 * Math.PI * r, off = c - (Math.min(pct, 100) / 100) * c;
+    return (
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)', flexShrink: 0 }}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={C.bgTert} strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={off} strokeLinecap="round" />
+      </svg>
+    );
+  };
+
+  const readinessGauge = (pct: number, size = 180, stroke = 16) => {
+    const r = (size - stroke) / 2, cx = size / 2, cy = size / 2;
+    const sweep = 270, startAngle = 225;
+    const polar = (ang: number) => { const rad = (ang - 90) * Math.PI / 180; return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }; };
+    const arcPath = (a0: number, a1: number) => { const p0 = polar(a0), p1 = polar(a1); const large = a1 - a0 <= 180 ? 0 : 1; return `M ${p0.x} ${p0.y} A ${r} ${r} 0 ${large} 1 ${p1.x} ${p1.y}`; };
+    const endAngle = startAngle + sweep * (Math.min(pct, 100) / 100);
+    const color = pct >= 80 ? C.green : pct >= 50 ? C.orange : C.red;
+    return (
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <path d={arcPath(startAngle, startAngle + sweep)} fill="none" stroke={C.bgTert} strokeWidth={stroke} strokeLinecap="round" />
+        <path d={arcPath(startAngle, endAngle)} fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round" />
+      </svg>
+    );
+  };
+
   const comingSoon = (title: string) => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
       <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>{title}</div>
@@ -285,33 +318,66 @@ export default function Site360Page() {
   );
 
   return (
-    <div style={{ display: 'flex', height: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif', background: C.bg }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: C.bg, fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css" />
 
-      {/* Sidebar */}
-      <aside style={{ width: '212px', background: C.navy, display: 'flex', flexDirection: 'column', flexShrink: 0, padding: '0 8px 8px', overflowY: 'auto' }}>
-        <div style={{ padding: '16px 8px 10px' }}>
-          <div style={{ fontSize: '18px', fontWeight: 700, color: '#fff' }}>Site<span style={{ color: C.orange }}>360</span></div>
-          <div style={{ fontSize: '10px', color: '#64748B', marginTop: '1px' }}>Site Operations Platform</div>
+      {/* Header — same 48px flat bar as TMF360's app/platform/page.tsx header */}
+      <header style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '0 1.25rem', height: '48px', borderBottom: `0.5px solid ${C.border}`, background: C.bgCard, flexShrink: 0 }}>
+        <span style={{ fontSize: '16px', fontWeight: 500 }}>Site<span style={{ color: C.orange }}>360</span></span>
+        <span style={{ fontSize: '11px', color: C.textMuted }}>Site Operations Platform</span>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Study switcher */}
+          <div style={{ position: 'relative' }}>
+            <button onClick={() => setShowStudyDropdown(!showStudyDropdown)} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', border: `0.5px solid ${C.border}`, borderRadius: '6px', padding: '3px 8px', background: C.bgCard, color: C.text, cursor: 'pointer' }}>
+              {activeStudy ? `${activeStudy.study_id} — ${activeStudy.protocol || 'Study'}` : 'Select study'}
+              <i className="ti ti-chevron-down" style={{ fontSize: '12px' }} />
+            </button>
+            {showStudyDropdown && (
+              <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '4px', background: C.bgCard, border: `0.5px solid ${C.border}`, borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 100, minWidth: '240px', overflow: 'hidden' }}>
+                {studies.length === 0 ? (
+                  <div style={{ padding: '12px 14px', fontSize: '12px', color: C.textMuted }}>No studies found for this site.</div>
+                ) : studies.map((s, i) => (
+                  <button key={i} onClick={() => { setActiveStudy(s); setShowStudyDropdown(false); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '10px 14px', border: 'none', background: activeStudy?.id === s.id ? C.orangeLight : 'transparent', cursor: 'pointer', textAlign: 'left' as const, borderBottom: i < studies.length - 1 ? `0.5px solid ${C.border}` : 'none' }}>
+                    <div>
+                      <div style={{ fontSize: '12px', fontWeight: 600, color: activeStudy?.id === s.id ? C.orange : C.text }}>{s.study_id} — {s.protocol || 'Protocol TBD'}</div>
+                      <div style={{ fontSize: '10px', color: C.textMuted, marginTop: '1px' }}>{s.phase || ''} {s.sponsor ? `· ${s.sponsor}` : ''}</div>
+                    </div>
+                    <span style={{ fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '20px', background: s.status === 'Active' ? C.greenLight : C.amberLight, color: s.status === 'Active' ? C.green : C.amber }}>{s.site_study_status || s.status || 'Active'}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {activeStudy && <span style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', background: C.orangeLight, color: C.orange, fontWeight: 500 }}>Active</span>}
+          <span style={{ fontSize: '11px', color: C.textMuted }}>{site.site_name}</span>
+          <span style={{ fontSize: '11px', color: C.textMuted }}>{user?.email}</span>
+          <button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/site360/login'; }} style={{ fontSize: '11px', color: C.textMuted, background: 'transparent', border: `0.5px solid ${C.border}`, borderRadius: '6px', padding: '3px 10px', cursor: 'pointer' }}>Sign out</button>
         </div>
+      </header>
 
-        {/* Site info */}
-        <div style={{ margin: '0 0 10px', padding: '8px 10px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px' }}>
-          <div style={{ fontSize: '11px', fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{site.site_name}</div>
-          <div style={{ fontSize: '10px', color: '#64748B', marginTop: '1px' }}>{site.site_code}</div>
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+
+      {/* Sidebar — same 192px white sidebar as TMF360's app/platform/page.tsx aside */}
+      <aside style={{ width: '192px', borderRight: `0.5px solid ${C.border}`, background: C.bgCard, overflowY: 'auto', flexShrink: 0, padding: '8px', display: 'flex', flexDirection: 'column' }}>
+        {/* Site info — Site360's one addition on top of the TMF360 pattern, since
+            (unlike TMF360) a coordinator's identity is tied to one physical site */}
+        <div style={{ margin: '4px 4px 8px', padding: '8px 10px', background: C.bg, border: `0.5px solid ${C.border}`, borderRadius: '8px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 600, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{site.site_name}</div>
+          <div style={{ fontSize: '10px', color: C.textMuted, marginTop: '1px' }}>{site.site_code}</div>
         </div>
 
         {/* Nav groups */}
         {NAV_GROUPS.map(group => (
           <div key={group.label}>
-            <p style={{ fontSize: '9px', fontWeight: 600, color: '#475569', padding: '6px 8px 2px', textTransform: 'uppercase' as const, letterSpacing: '.06em', margin: 0 }}>{group.label}</p>
+            <p style={{ fontSize: '9px', fontWeight: 500, color: C.textMuted, padding: '8px 10px 4px', textTransform: 'uppercase' as const, letterSpacing: '.06em', margin: 0 }}>{group.label}</p>
             {group.items.map(item => {
               const badgeCount = item.key === 'tasks' ? openTasks : item.key === 'safety' ? openAEs : item.key === 'queries' ? openQueries : 0;
               return (
                 <button key={item.key} onClick={() => {
                   if (item.key === 'isf') { window.location.href = '/site360/isf'; return; }
                   setPanel(item.key as Panel);
-                }} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 10px', borderRadius: '8px', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' as const, fontSize: '12px', background: panel === item.key ? 'rgba(249,115,22,0.12)' : 'transparent', color: panel === item.key ? C.orange : '#94A3B8', fontWeight: panel === item.key ? 600 : 400, marginBottom: '1px' }}>
-                  <span style={{ fontSize: '13px' }}>{item.icon}</span>
+                }} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 10px', borderRadius: '8px', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' as const, fontSize: '12px', background: panel === item.key ? C.orangeLight : 'transparent', color: panel === item.key ? C.orange : C.textSec, fontWeight: panel === item.key ? 500 : 400 }}>
+                  <i className={`ti ${item.icon}`} style={{ fontSize: '15px' }} />
                   <span style={{ flex: 1 }}>{item.label}</span>
                   {badgeCount > 0 && <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '20px', background: C.red, color: '#fff', fontWeight: 600 }}>{badgeCount}</span>}
                 </button>
@@ -321,155 +387,159 @@ export default function Site360Page() {
         ))}
 
         {/* Footer */}
-        <div style={{ borderTop: '1px solid #1E3A5F', paddingTop: '8px', marginTop: 'auto' }}>
-          <div style={{ fontSize: '11px', color: '#64748B', padding: '2px 8px' }}>{site.user_name}</div>
-          <div style={{ fontSize: '10px', color: '#475569', padding: '0 8px 2px' }}>{site.user_role}</div>
-          <button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/site360/login'; }} style={{ fontSize: '11px', color: '#64748B', background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px 8px', textAlign: 'left' as const, width: '100%' }}>Sign out</button>
+        <div style={{ borderTop: `0.5px solid ${C.border}`, paddingTop: '8px', marginTop: 'auto' }}>
+          <div style={{ fontSize: '11px', color: C.text, padding: '2px 10px' }}>{site.user_name}</div>
+          <div style={{ fontSize: '10px', color: C.textMuted, padding: '0 10px 2px' }}>{site.user_role}</div>
+          <button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/site360/login'; }} style={{ fontSize: '11px', color: C.textMuted, background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px 10px', textAlign: 'left' as const, width: '100%' }}>Sign out</button>
         </div>
       </aside>
 
       {/* Main */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <main style={{ flex: 1, overflowY: 'auto', padding: '1.25rem' }} onClick={() => showStudyDropdown && setShowStudyDropdown(false)}>
 
-        {/* Top bar */}
-        <div style={{ background: C.bgCard, borderBottom: `0.5px solid ${C.border}`, padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ fontSize: '14px', fontWeight: 600, color: C.text }}>{site.site_name}</div>
-            <div style={{ width: '1px', height: '16px', background: C.border }} />
-            {/* Study switcher */}
-            <div style={{ position: 'relative' }}>
-              <button onClick={() => setShowStudyDropdown(!showStudyDropdown)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: C.orangeLight, border: `0.5px solid ${C.orange}`, borderRadius: '8px', cursor: 'pointer', fontSize: '12px', color: C.orange, fontWeight: 600 }}>
-                {activeStudy ? `${activeStudy.study_id} — ${activeStudy.protocol || 'Study'}` : 'Select Study'}
-                <span style={{ fontSize: '10px' }}>▼</span>
-              </button>
-              {showStudyDropdown && (
-                <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: '4px', background: C.bgCard, border: `0.5px solid ${C.border}`, borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 100, minWidth: '240px', overflow: 'hidden' }}>
-                  {studies.length === 0 ? (
-                    <div style={{ padding: '12px 14px', fontSize: '12px', color: C.textMuted }}>No studies found for this site.</div>
-                  ) : studies.map((s, i) => (
-                    <button key={i} onClick={() => { setActiveStudy(s); setShowStudyDropdown(false); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '10px 14px', border: 'none', background: activeStudy?.id === s.id ? C.orangeLight : 'transparent', cursor: 'pointer', textAlign: 'left' as const, borderBottom: i < studies.length - 1 ? `0.5px solid ${C.border}` : 'none' }}>
-                      <div>
-                        <div style={{ fontSize: '12px', fontWeight: 600, color: activeStudy?.id === s.id ? C.orange : C.text }}>{s.study_id} — {s.protocol || 'Protocol TBD'}</div>
-                        <div style={{ fontSize: '10px', color: C.textMuted, marginTop: '1px' }}>{s.phase || ''} {s.sponsor ? `· ${s.sponsor}` : ''}</div>
-                      </div>
-                      <span style={{ fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '20px', background: s.status === 'Active' ? C.greenLight : C.amberLight, color: s.status === 'Active' ? C.green : C.amber }}>{s.site_study_status || s.status || 'Active'}</span>
-                    </button>
-                  ))}
+          {/* DASHBOARD — restructured to match TMF360's dashboard exactly:
+              1) H1 + subtitle, 2) a 5-card metric strip (ring + 4 tinted cards,
+              each with a "View X →" link), 3) a 1.15fr/1.4fr two-column row:
+              left = category completeness bars + legend, right = two readiness
+              gauges + top attention items + a CTA banner. See app/platform/page.tsx
+              in TMF360 for the source of this pattern. */}
+          {panel === 'dashboard' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                <div>
+                  <h1 style={{ fontSize: '20px', fontWeight: 700, color: C.text, margin: 0 }}>Dashboard {activeStudy ? `— ${activeStudy.study_id}` : ''}</h1>
+                  <p style={{ fontSize: '12px', color: C.textMuted, marginTop: '2px' }}>{site.site_name} · Welcome back, {site.user_name?.split(' ')[0]}. Here's what's happening at your site.</p>
                 </div>
+              </div>
+
+              {!activeStudy ? (
+                <div style={{ textAlign: 'center' as const, padding: '3rem', color: C.textMuted, background: C.bgCard, border: `0.5px solid ${C.border}`, borderRadius: '14px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px', color: C.text }}>No study selected</div>
+                  <div style={{ fontSize: '12px' }}>Select a study from the header to see this site's dashboard.</div>
+                </div>
+              ) : (
+                <>
+                  {/* 5-card metric strip */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: '12px' }}>
+                    {[
+                      { val: healthScore, suffix: '%', label: 'Site readiness', sub: 'Overall progress', color: C.blue, tint: C.blueLight, icon: 'ti-chart-donut', link: 'View breakdown', page: 'readiness', ring: true },
+                      { val: openTasks, suffix: '', label: 'Open tasks', sub: 'Require attention', color: C.amber, tint: C.amberLight, icon: 'ti-list-check', link: 'View tasks', page: 'tasks' },
+                      { val: openAEs, suffix: '', label: 'Open safety events', sub: 'Pending resolution', color: openAEs > 0 ? C.red : C.green, tint: openAEs > 0 ? C.redLight : C.greenLight, icon: 'ti-shield-exclamation', link: 'Review now', page: 'safety' },
+                      { val: inventory.filter(i => i.expiry_date && new Date(i.expiry_date) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)).length, suffix: '', label: 'Expiring supplies', sub: 'Within 30 days', color: C.red, tint: C.redLight, icon: 'ti-pill', link: 'View supplies', page: 'supplies' },
+                      { val: openQueries, suffix: '', label: 'Open queries', sub: 'Awaiting response', color: C.blue, tint: C.blueLight, icon: 'ti-help-circle', link: 'View queries', page: 'queries' },
+                    ].map((m, i) => (
+                      <div key={i} style={{ background: m.tint, border: `0.5px solid ${C.border}`, borderRadius: '14px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          {m.ring ? (
+                            <div style={{ position: 'relative' as const, width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              {miniRing(m.val, m.color)}
+                              <span style={{ position: 'absolute' as const, fontSize: '10px', fontWeight: 700, color: m.color }}>{m.val}%</span>
+                            </div>
+                          ) : (
+                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: C.bgCard, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: `0.5px solid ${C.border}` }}>
+                              <i className={`ti ${m.icon}`} style={{ fontSize: '18px', color: m.color }} />
+                            </div>
+                          )}
+                          <div style={{ fontSize: '22px', fontWeight: 700, color: m.color, lineHeight: 1 }}>{m.val}{m.suffix}</div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '12px', fontWeight: 600, color: C.text }}>{m.label}</div>
+                          <div style={{ fontSize: '11px', color: C.textMuted, marginTop: '1px' }}>{m.sub}</div>
+                        </div>
+                        <button onClick={() => setPanel(m.page as Panel)} style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left' as const, fontSize: '11px', fontWeight: 600, color: m.color, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px' }}>{m.link} <i className="ti ti-arrow-right" style={{ fontSize: '12px' }} /></button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Two-column: category completeness (left) + readiness gauges (right) */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1.4fr', gap: '12px', alignItems: 'start' }}>
+                    <div style={{ background: C.bgCard, border: `0.5px solid ${C.border}`, borderRadius: '14px', padding: '16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                        <h2 style={{ fontSize: '13px', fontWeight: 700, color: C.text, margin: 0 }}>Site readiness by category</h2>
+                      </div>
+                      {[
+                        ['Site Activation', 'ti-list-check', activationItems.length > 0 ? Math.round((activationItems.filter(i => i.status === 'Completed').length / activationItems.length) * 100) : 0],
+                        ['ISF Completeness', 'ti-files', isfDocs.length > 0 ? Math.round((isfApproved / isfDocs.length) * 100) : 0],
+                        ['Safety Compliance', 'ti-shield-exclamation', aeReports.length > 0 ? Math.round((aeReports.filter(a => a.status !== 'Open').length / aeReports.length) * 100) : 100],
+                        ['Participant Retention', 'ti-users', participants.length > 0 ? Math.round((participants.filter(p => p.status !== 'withdrawn').length / participants.length) * 100) : 100],
+                        ['Monitoring Readiness', 'ti-clipboard-search', visits.length > 0 ? Math.round((visits.filter(v => v.status === 'Report Finalized').length / visits.length) * 100) : 0],
+                      ].map(([label, icon, pct], i) => {
+                        const p = pct as number;
+                        const barColor = p >= 75 ? C.green : p >= 50 ? C.blue : p >= 25 ? C.amber : p > 0 ? C.red : C.bgTert;
+                        return (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '6px 0' }}>
+                            <i className={`ti ${icon}`} style={{ fontSize: '14px', color: C.textMuted, flexShrink: 0 }} />
+                            <span style={{ fontSize: '12px', fontWeight: 500, color: C.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{label as string}</span>
+                            <div style={{ width: '140px', height: '6px', background: C.bgTert, borderRadius: '6px', overflow: 'hidden' }}><div style={{ width: `${p}%`, height: '100%', background: barColor, borderRadius: '6px' }} /></div>
+                            <span style={{ fontSize: '11px', fontWeight: 700, width: '32px', textAlign: 'right' as const, color: barColor }}>{p}%</span>
+                          </div>
+                        );
+                      })}
+                      <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '14px', marginTop: '14px', paddingTop: '12px', borderTop: `0.5px solid ${C.border}` }}>
+                        {[{ c: C.green, l: '\u2265 75%' }, { c: C.blue, l: '50 \u2013 74%' }, { c: C.amber, l: '25 \u2013 49%' }, { c: C.red, l: '< 25%' }, { c: C.bgTert, l: '0%' }].map((leg, i) => (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: leg.c, display: 'inline-block' }} />
+                            <span style={{ fontSize: '10px', color: C.textMuted }}>{leg.l}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ background: C.bgCard, border: `0.5px solid ${C.border}`, borderRadius: '14px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <h2 style={{ fontSize: '13px', fontWeight: 700, color: C.text, margin: 0 }}>Site readiness</h2>
+                        <button onClick={() => setPanel('readiness')} style={{ fontSize: '11px', fontWeight: 600, color: C.blue, background: C.blueLight, border: `0.5px solid #BFDBFE`, borderRadius: '7px', padding: '5px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>View details <i className="ti ti-arrow-right" style={{ fontSize: '12px' }} /></button>
+                      </div>
+                      <div style={{ display: 'flex', gap: '16px' }}>
+                        <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '180px' }}>
+                          <div style={{ position: 'relative' as const, width: '180px', height: '140px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {readinessGauge(healthScore)}
+                            <div style={{ position: 'absolute' as const, top: '52px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                              <span style={{ fontSize: '30px', fontWeight: 700, color: C.text }}>{healthScore}%</span>
+                            </div>
+                          </div>
+                          <div style={{ fontSize: '11px', color: C.textMuted, marginTop: '-6px' }}>Readiness score</div>
+                          <span style={{ fontSize: '10px', fontWeight: 600, color: healthScore >= 80 ? C.green : healthScore >= 60 ? C.amber : C.red, background: healthScore >= 80 ? C.greenLight : healthScore >= 60 ? C.amberLight : C.redLight, borderRadius: '20px', padding: '3px 10px', marginTop: '8px' }}>{healthScore >= 80 ? 'Inspection ready' : healthScore >= 60 ? 'Needs attention' : 'Not ready'}</span>
+                        </div>
+                        <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '180px' }}>
+                          <div style={{ position: 'relative' as const, width: '180px', height: '140px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {readinessGauge(isfDocs.length > 0 ? Math.round((isfApproved / isfDocs.length) * 100) : 0)}
+                            <div style={{ position: 'absolute' as const, top: '52px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                              <span style={{ fontSize: '30px', fontWeight: 700, color: C.text }}>{isfDocs.length > 0 ? Math.round((isfApproved / isfDocs.length) * 100) : 0}%</span>
+                            </div>
+                          </div>
+                          <div style={{ fontSize: '11px', color: C.textMuted, marginTop: '-6px' }}>ISF completeness</div>
+                          <span style={{ fontSize: '10px', fontWeight: 600, color: isfApproved === isfDocs.length && isfDocs.length > 0 ? C.green : C.amber, background: isfApproved === isfDocs.length && isfDocs.length > 0 ? C.greenLight : C.amberLight, borderRadius: '20px', padding: '3px 10px', marginTop: '8px' }}>{isfApproved} of {isfDocs.length} approved</span>
+                        </div>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'center' }}>
+                          {[
+                            ...aeReports.filter(a => a.status === 'Open').slice(0, 2).map(a => ({ label: a.description || 'Open AE report', sev: a.is_serious ? 'SAE' : 'AE' })),
+                            ...tasks.filter(t => t.priority === 'High' && t.status === 'Open').slice(0, 2).map(t => ({ label: t.title, sev: 'Task' })),
+                          ].slice(0, 4).map((g, i) => (
+                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', background: g.sev === 'SAE' ? C.redLight : C.amberLight, borderRadius: '9px' }}>
+                              <i className="ti ti-alert-triangle" style={{ fontSize: '14px', color: g.sev === 'SAE' ? C.red : C.amber, flexShrink: 0 }} />
+                              <span style={{ fontSize: '11px', fontWeight: 500, color: C.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{g.label}</span>
+                              <span style={{ fontSize: '10px', fontWeight: 700, color: g.sev === 'SAE' ? C.red : '#B45309', flexShrink: 0 }}>{g.sev}</span>
+                            </div>
+                          ))}
+                          {openAEs === 0 && tasks.filter(t => t.priority === 'High' && t.status === 'Open').length === 0 && <div style={{ fontSize: '11px', color: C.green, padding: '8px 10px' }}>No critical or high-priority findings</div>}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: C.blueLight, border: `0.5px solid #BFDBFE`, borderRadius: '12px', padding: '12px 14px' }}>
+                        <i className="ti ti-bulb" style={{ fontSize: '20px', color: C.blue, flexShrink: 0 }} />
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '12px', fontWeight: 700, color: C.text }}>Improve your readiness score</div>
+                          <div style={{ fontSize: '11px', color: C.textMuted, marginTop: '1px' }}>Close out open activation items and safety events to raise site readiness.</div>
+                        </div>
+                        <button onClick={() => setPanel('activation')} style={{ fontSize: '11px', fontWeight: 600, color: '#fff', background: C.orange, border: 'none', borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', whiteSpace: 'nowrap' as const }}>View action plan</button>
+                      </div>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
-            {activeStudy && <span style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', background: C.greenLight, color: C.green, fontWeight: 600 }}>● Active</span>}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ fontSize: '12px', color: C.textMuted }}>{new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</div>
-            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: C.orange, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '12px' }}>
-              {site.user_name?.slice(0, 2).toUpperCase() || 'U'}
-            </div>
-          </div>
-        </div>
-
-        {/* Panel content */}
-        <main style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }} onClick={() => showStudyDropdown && setShowStudyDropdown(false)}>
-
-          {/* DASHBOARD */}
-          {panel === 'dashboard' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <div style={{ fontSize: '20px', fontWeight: 700, color: C.text }}>Good morning, {site.user_name?.split(' ')[0]} 👋</div>
-                  <div style={{ fontSize: '12px', color: C.textMuted, marginTop: '2px' }}>
-                    {site.site_name} · {activeStudy ? `${activeStudy.study_id} — ${activeStudy.protocol || 'Study'}` : 'No study selected'} · PI: {site.pi_name || '—'}
-                  </div>
-                </div>
-                <div style={{ fontSize: '12px', color: C.textMuted }}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</div>
-              </div>
-
-              {/* Health score + stats */}
-              <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '14px' }}>
-                <div style={card()}>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: C.textSec, marginBottom: '12px' }}>Site Health Score</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
-                    <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: `conic-gradient(${healthScore >= 80 ? C.green : healthScore >= 60 ? C.amber : C.red} ${healthScore}%, #F3F4F6 0)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: C.bgCard, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ fontSize: '17px', fontWeight: 700, color: healthScore >= 80 ? C.green : healthScore >= 60 ? C.amber : C.red }}>{healthScore}</span>
-                      </div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '13px', fontWeight: 600, color: healthScore >= 80 ? C.green : healthScore >= 60 ? C.amber : C.red }}>{healthScore >= 80 ? 'Inspection Ready' : healthScore >= 60 ? 'Needs Attention' : 'Not Ready'}</div>
-                      <div style={{ fontSize: '11px', color: C.textMuted }}>Out of 100</div>
-                    </div>
-                  </div>
-                  {[
-                    ['Site Activation', activationItems.length > 0 ? Math.round((activationItems.filter(i => i.status === 'Completed').length / activationItems.length) * 100) : 0],
-                    ['ISF Completeness', isfDocs.length > 0 ? Math.round((isfApproved / isfDocs.length) * 100) : 0],
-                    ['Safety Compliance', aeReports.length > 0 ? Math.round((aeReports.filter(a => a.status !== 'Open').length / aeReports.length) * 100) : 100],
-                    ['Participant Retention', participants.length > 0 ? Math.round((participants.filter(p => p.status !== 'withdrawn').length / participants.length) * 100) : 100],
-                    ['Monitoring Readiness', visits.length > 0 ? Math.round((visits.filter(v => v.status === 'Report Finalized').length / visits.length) * 100) : 0],
-                  ].map(([label, val], i) => (
-                    <div key={i} style={{ marginBottom: '7px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '3px' }}>
-                        <span style={{ color: C.textSec }}>{label as string}</span>
-                        <span style={{ fontWeight: 600, color: (val as number) >= 80 ? C.green : (val as number) >= 60 ? C.amber : C.red }}>{val as number}%</span>
-                      </div>
-                      <div style={{ height: '5px', background: '#F3F4F6', borderRadius: '20px', overflow: 'hidden' }}>
-                        <div style={{ height: '100%', width: `${val}%`, background: (val as number) >= 80 ? C.green : (val as number) >= 60 ? C.amber : C.red, borderRadius: '20px' }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-                  {[
-                    { val: participants.length, label: 'Participants', sub: `${enrolled} enrolled`, color: C.blue, icon: '👥', action: () => setPanel('participants') },
-                    { val: openTasks, label: 'Open Tasks', sub: `${tasks.filter(t => t.priority === 'High' && t.status === 'Open').length} high priority`, color: C.amber, icon: '✓', action: () => setPanel('tasks') },
-                    { val: openAEs, label: 'Open AEs', sub: `${aeReports.filter(a => a.is_serious && a.status === 'Open').length} SAEs`, color: openAEs > 0 ? C.red : C.green, icon: '⚠', action: () => setPanel('safety') },
-                    { val: inventory.length, label: 'IP Items', sub: `${inventory.filter(i => i.expiry_date && new Date(i.expiry_date) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)).length} expiring`, color: C.purple, icon: '💊', action: () => setPanel('supplies') },
-                    { val: visits.filter(v => v.status === 'Scheduled').length, label: 'Upcoming Visits', sub: visits[0]?.scheduled_date ? new Date(visits[0].scheduled_date).toLocaleDateString() : '—', color: C.orange, icon: '🔍', action: () => setPanel('monitoring') },
-                    { val: milestones.filter(m => m.status === 'Pending').length, label: 'Pending Payments', sub: `$${milestones.filter(m => m.status === 'Pending').reduce((s, m) => s + (m.amount || 0), 0).toLocaleString()}`, color: C.green, icon: '💰', action: () => setPanel('payments') },
-                  ].map((s, i) => (
-                    <div key={i} style={{ ...card(), cursor: 'pointer', padding: '14px' }} onClick={s.action}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                        <span style={{ fontSize: '20px' }}>{s.icon}</span>
-                        <span style={{ fontSize: '22px', fontWeight: 700, color: s.color }}>{s.val}</span>
-                      </div>
-                      <div style={{ fontSize: '12px', fontWeight: 600, color: C.text }}>{s.label}</div>
-                      <div style={{ fontSize: '11px', color: C.textMuted, marginTop: '2px' }}>{s.sub}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Action items + Tasks */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                <div style={card()}>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: C.textSec, marginBottom: '12px' }}>What Needs Attention</div>
-                  {openAEs > 0 && <div style={{ display: 'flex', gap: '8px', padding: '8px 0', borderBottom: `0.5px solid ${C.border}` }}><span style={{ color: C.red }}>●</span><div><div style={{ fontSize: '12px', fontWeight: 500 }}>{openAEs} open AE report{openAEs > 1 ? 's' : ''}</div><div style={{ fontSize: '10px', color: C.textMuted }}>Review and update status</div></div></div>}
-                  {tasks.filter(t => t.priority === 'High' && t.status === 'Open').length > 0 && <div style={{ display: 'flex', gap: '8px', padding: '8px 0', borderBottom: `0.5px solid ${C.border}` }}><span style={{ color: C.orange }}>●</span><div><div style={{ fontSize: '12px', fontWeight: 500 }}>{tasks.filter(t => t.priority === 'High' && t.status === 'Open').length} high priority tasks</div><div style={{ fontSize: '10px', color: C.textMuted }}>Action required</div></div></div>}
-                  {inventory.filter(i => i.expiry_date && new Date(i.expiry_date) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)).length > 0 && <div style={{ display: 'flex', gap: '8px', padding: '8px 0', borderBottom: `0.5px solid ${C.border}` }}><span style={{ color: C.amber }}>●</span><div><div style={{ fontSize: '12px', fontWeight: 500 }}>IP expiring within 30 days</div><div style={{ fontSize: '10px', color: C.textMuted }}>Check inventory</div></div></div>}
-                  {openQueries > 0 && <div style={{ display: 'flex', gap: '8px', padding: '8px 0' }}><span style={{ color: C.blue }}>●</span><div><div style={{ fontSize: '12px', fontWeight: 500 }}>{openQueries} open monitoring quer{openQueries > 1 ? 'ies' : 'y'}</div><div style={{ fontSize: '10px', color: C.textMuted }}>Response required</div></div></div>}
-                  {openAEs === 0 && openTasks === 0 && openQueries === 0 && <div style={{ fontSize: '13px', color: C.green }}>✅ No immediate action items!</div>}
-                </div>
-
-                <div style={card()}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <div style={{ fontSize: '13px', fontWeight: 600, color: C.textSec }}>My Tasks</div>
-                    <button onClick={() => setPanel('tasks')} style={{ fontSize: '11px', color: C.orange, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>View All</button>
-                  </div>
-                  {tasks.filter(t => t.status === 'Open').slice(0, 4).map((t, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0', borderBottom: i < 3 ? `0.5px solid ${C.border}` : 'none' }}>
-                      <input type="checkbox" onChange={() => updateTask(t.id, 'Completed')} style={{ cursor: 'pointer', flexShrink: 0 }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: '12px', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{t.title}</div>
-                        <div style={{ fontSize: '10px', color: C.textMuted }}>{t.due_date ? new Date(t.due_date).toLocaleDateString() : '—'}</div>
-                      </div>
-                      {badge(t.priority, priorityColor(t.priority), priorityBg(t.priority))}
-                    </div>
-                  ))}
-                  {tasks.filter(t => t.status === 'Open').length === 0 && <div style={{ fontSize: '12px', color: C.textMuted }}>No open tasks 🎉</div>}
-                </div>
-              </div>
-            </div>
           )}
+
 
           {/* STUDIES */}
           {panel === 'studies' && (
@@ -479,7 +549,7 @@ export default function Site360Page() {
                 <div key={i} style={{ ...card(), cursor: 'pointer', border: activeStudy?.id === s.id ? `1px solid ${C.orange}` : `0.5px solid ${C.border}` }} onClick={() => setActiveStudy(s)}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
-                      <div style={{ fontSize: '15px', fontWeight: 700, color: C.navy, marginBottom: '4px' }}>{s.study_id} — {s.protocol || 'Protocol TBD'}</div>
+                      <div style={{ fontSize: '15px', fontWeight: 700, color: C.text, marginBottom: '4px' }}>{s.study_id} — {s.protocol || 'Protocol TBD'}</div>
                       <div style={{ fontSize: '12px', color: C.textSec }}>{s.phase || '—'} {s.sponsor ? `· ${s.sponsor}` : ''}</div>
                     </div>
                     {badge(s.site_study_status || s.status || 'Active', statusColor(s.site_study_status || s.status || 'Active'), statusBg(s.site_study_status || s.status || 'Active'))}
