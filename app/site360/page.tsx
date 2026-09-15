@@ -27,7 +27,10 @@ type Panel = 'dashboard' | 'activation' | 'isf' | 'artifacts' | 'gap' |
 // icon system TMF360 uses; Site360 previously used emoji, which is one of the
 // two things that made it look like a different, unrelated product.
 const NAV_GROUPS = [
-  { label: 'Overview', items: [{ key: 'dashboard', label: 'Dashboard', icon: 'ti-layout-dashboard' }] },
+  { label: 'Overview', items: [
+    { key: 'dashboard', label: 'Dashboard', icon: 'ti-layout-dashboard' },
+    { key: 'studies', label: 'Studies', icon: 'ti-flask' },
+  ]},
   { label: 'Site', items: [
     { key: 'activation', label: 'Site Activation', icon: 'ti-list-check' },
     { key: 'isf', label: 'ISF', icon: 'ti-files' },
@@ -91,6 +94,9 @@ export default function Site360Page() {
   const [addingParticipant, setAddingParticipant] = useState(false);
   const [showAddAE, setShowAddAE] = useState(false);
   const [newAE, setNewAE] = useState({ ae_number: '', description: '', onset_date: '', severity: 'Mild', relatedness: 'Unrelated', is_serious: false });
+  const [showNewStudy, setShowNewStudy] = useState(false);
+  const [newStudy, setNewStudy] = useState({ study_id: '', protocol: '', sponsor: '', phase: 'Phase I', status: 'Startup' });
+  const [creatingStudy, setCreatingStudy] = useState(false);
 
   useEffect(() => { loadData(); }, []);
   useEffect(() => { if (activeStudy && site) loadStudyData(); }, [activeStudy]);
@@ -187,6 +193,38 @@ export default function Site360Page() {
     setShowAddAE(false);
     setNewAE({ ae_number: '', description: '', onset_date: '', severity: 'Mild', relatedness: 'Unrelated', is_serious: false });
     loadStudyData();
+  }
+
+  // Creates a new study, then links it to this site via the same site_studies
+  // bridge table loadData() reads from — so it immediately shows up in the
+  // header switcher and the Studies panel, same as any sponsor-created study.
+  async function addStudy() {
+    if (!newStudy.study_id || !site || !userRole) return;
+    setCreatingStudy(true);
+    try {
+      const { data: study, error } = await supabase.from('studies').insert([{
+        org_id: userRole.org_id,
+        study_id: newStudy.study_id,
+        protocol: newStudy.protocol,
+        sponsor: newStudy.sponsor,
+        phase: newStudy.phase,
+        status: newStudy.status,
+      }]).select().single();
+      if (error || !study) { console.error(error); setCreatingStudy(false); return; }
+
+      await supabase.from('site_studies').insert([{
+        org_id: userRole.org_id,
+        site_id: site.id,
+        study_id: study.id,
+        status: newStudy.status,
+        activation_date: new Date().toISOString().split('T')[0],
+      }]);
+
+      setShowNewStudy(false);
+      setNewStudy({ study_id: '', protocol: '', sponsor: '', phase: 'Phase I', status: 'Startup' });
+      setCreatingStudy(false);
+      loadData();
+    } catch (e) { console.error(e); setCreatingStudy(false); }
   }
 
   async function updateTask(id: string, status: string) {
@@ -544,7 +582,10 @@ export default function Site360Page() {
           {/* STUDIES */}
           {panel === 'studies' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>Studies ({studies.length})</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>Studies ({studies.length})</div>
+                <button onClick={() => setShowNewStudy(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 500, padding: '9px 16px', background: C.orange, color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}><i className="ti ti-circle-plus" style={{ fontSize: '14px' }} />New study</button>
+              </div>
               {studies.map((s, i) => (
                 <div key={i} style={{ ...card(), cursor: 'pointer', border: activeStudy?.id === s.id ? `1px solid ${C.orange}` : `0.5px solid ${C.border}` }} onClick={() => setActiveStudy(s)}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -895,6 +936,28 @@ export default function Site360Page() {
           </div>
         </>
       ), addAE)}
+
+      {showNewStudy && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: C.bgCard, borderRadius: '14px', padding: '24px', width: '100%', maxWidth: '440px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '18px' }}>
+              <div style={{ fontSize: '15px', fontWeight: 600, color: C.text }}>New study</div>
+              <button onClick={() => setShowNewStudy(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: C.textMuted }}>×</button>
+            </div>
+            {field('Study ID', input(newStudy.study_id, v => setNewStudy(p => ({ ...p, study_id: v })), 'e.g. OIL-BR-US-10'))}
+            {field('Protocol title', input(newStudy.protocol, v => setNewStudy(p => ({ ...p, protocol: v })), 'e.g. A Phase I Study of...'))}
+            {field('Sponsor', input(newStudy.sponsor, v => setNewStudy(p => ({ ...p, sponsor: v })), 'e.g. Optiscan Imaging Ltd.'))}
+            {field('Phase', sel(newStudy.phase, v => setNewStudy(p => ({ ...p, phase: v })), ['Phase I', 'Phase II', 'Phase III', 'Phase IV', 'Observational']))}
+            {field('Status', sel(newStudy.status, v => setNewStudy(p => ({ ...p, status: v })), ['Startup', 'Active', 'Closeout', 'Completed']))}
+            <div style={{ display: 'flex', gap: '8px', marginTop: '18px' }}>
+              <button onClick={() => setShowNewStudy(false)} style={{ flex: 1, padding: '10px', border: `0.5px solid ${C.border}`, borderRadius: '8px', background: C.bgCard, cursor: 'pointer', fontSize: '13px' }}>Cancel</button>
+              <button onClick={addStudy} disabled={creatingStudy || !newStudy.study_id} style={{ flex: 2, padding: '10px', background: C.orange, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, opacity: creatingStudy || !newStudy.study_id ? 0.7 : 1 }}>
+                {creatingStudy ? 'Creating...' : 'Create study'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
