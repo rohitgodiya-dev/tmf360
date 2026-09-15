@@ -17,10 +17,10 @@ const C = {
   purple: '#8B5CF6', purpleLight: '#F5F3FF',
 };
 
-type Panel = 'dashboard' | 'activation' | 'isf' | 'artifacts' | 'gap' |
+type Panel = 'dashboard' | 'activation' | 'isf' |
   'participants' | 'supplies' | 'safety' | 'monitoring' | 'payments' |
-  'readiness' | 'report' | 'auditor' | 'audit' | 'quality' | 'archived' |
-  'tasks' | 'messages' | 'queries' | 'users' | 'siteconfig' | 'ticket' | 'studies';
+  'readiness' | 'report' | 'audit' | 'archived' |
+  'tasks' | 'messages' | 'queries' | 'users' | 'ticket' | 'studies';
 
 // Icon classes are Tabler Icons font classes (`ti ti-*`), loaded via the same
 // CDN link TMF360 uses — see the <link> tag in the header below. This is the
@@ -34,8 +34,6 @@ const NAV_GROUPS = [
   { label: 'Site', items: [
     { key: 'activation', label: 'Site Activation', icon: 'ti-list-check' },
     { key: 'isf', label: 'ISF', icon: 'ti-files' },
-    { key: 'artifacts', label: 'Artifact Browser', icon: 'ti-layout-grid' },
-    { key: 'gap', label: 'Gap Analysis', icon: 'ti-clipboard-check' },
     { key: 'participants', label: 'Participants', icon: 'ti-users' },
     { key: 'supplies', label: 'IP & Supplies', icon: 'ti-pill' },
     { key: 'safety', label: 'Safety Reporting', icon: 'ti-shield-exclamation' },
@@ -45,9 +43,7 @@ const NAV_GROUPS = [
   { label: 'Intelligence', items: [
     { key: 'readiness', label: 'Inspection Readiness', icon: 'ti-shield-check' },
     { key: 'report', label: 'Report', icon: 'ti-file-analytics' },
-    { key: 'auditor', label: 'ISF Auditor', icon: 'ti-checkup-list' },
     { key: 'audit', label: 'Audit Trail', icon: 'ti-lock' },
-    { key: 'quality', label: 'Quality Checks', icon: 'ti-clipboard-list' },
     { key: 'archived', label: 'Archived', icon: 'ti-archive' },
   ]},
   { label: 'Team', items: [
@@ -57,7 +53,6 @@ const NAV_GROUPS = [
     { key: 'queries', label: 'Queries', icon: 'ti-help-circle' },
   ]},
   { label: 'Settings', items: [
-    { key: 'siteconfig', label: 'Site Configuration', icon: 'ti-adjustments' },
     { key: 'ticket', label: 'Ticket', icon: 'ti-ticket' },
   ]},
 ];
@@ -81,6 +76,7 @@ export default function Site360Page() {
   const [aeReports, setAeReports] = useState<any[]>([]);
   const [deviations, setDeviations] = useState<any[]>([]);
   const [activationItems, setActivationItems] = useState<any[]>([]);
+  const [activationLoaded, setActivationLoaded] = useState(false);
   const [actionItems, setActionItems] = useState<any[]>([]);
   const [isfDocs, setIsfDocs] = useState<any[]>([]);
   const [auditTrail, setAuditTrail] = useState<any[]>([]);
@@ -100,6 +96,7 @@ export default function Site360Page() {
 
   useEffect(() => { loadData(); }, []);
   useEffect(() => { if (activeStudy && site) loadStudyData(); }, [activeStudy]);
+  useEffect(() => { if (site && activationLoaded && activationItems.length === 0) seedActivationChecklist(); }, [activationLoaded]);
 
   async function loadData() {
     setLoading(true);
@@ -162,6 +159,7 @@ export default function Site360Page() {
       if (aeData) setAeReports(aeData);
       if (devData) setDeviations(devData);
       if (actData) setActivationItems(actData);
+      setActivationLoaded(true);
       if (aiData) setActionItems(aiData);
       if (isfData) setIsfDocs(isfData);
       if (auditData) setAuditTrail(auditData);
@@ -184,6 +182,47 @@ export default function Site360Page() {
     setShowAddParticipant(false);
     setNewParticipant({ full_name: '', email: '', phone: '', participant_code: '', language_preference: 'en' });
     setAddingParticipant(false);
+    loadStudyData();
+  }
+
+  // Default site regulatory checklist — seeded into site_activation_items for a
+  // site the first time its checklist is empty (see the effect below). After
+  // that, the table is the source of truth and this constant is never read again.
+  const DEFAULT_ACTIVATION_ITEMS = [
+    "Investigator's Agreement completed, signed and dated by the Principal Investigator.",
+    'IRB/IEC Approval Letter',
+    'Current medical license in the state of which the PI and any sub-investigator (if applicable) is conducting the trial.',
+    'IRB/IEC Approved Informed Consent',
+    'Signed Informed Consent Approval Checklist',
+    'Current IRB/IEC membership list, statement of compliance or FWA number',
+    'Curriculum vitae (CV) of PI and Sub-Investigators',
+    'Protocol Signature Page: Signed and dated by PI.',
+    'Financial Disclosure Forms: Financial disclosure forms must be completed, signed and dated by principal investigator and all sub-investigators listed.',
+    'Check all investigators against the FDA Debarment List or Disqualified/Restricted/Assurances List',
+    'Fully executed Clinical Trial Research Agreement (CTRA)',
+  ];
+
+  async function seedActivationChecklist() {
+    if (!site || !userRole) return;
+    await supabase.from('site_activation_items').insert(
+      DEFAULT_ACTIVATION_ITEMS.map(item_name => ({ site_id: site.id, org_id: userRole.org_id, item_name, status: 'Open' }))
+    );
+    loadStudyData();
+  }
+
+  async function addActivationItem() {
+    if (!site || !userRole) return;
+    await supabase.from('site_activation_items').insert([{ site_id: site.id, org_id: userRole.org_id, item_name: 'New item', status: 'Open' }]);
+    loadStudyData();
+  }
+
+  async function updateActivationItem(id: string, fields: Record<string, any>) {
+    await supabase.from('site_activation_items').update(fields).eq('id', id);
+    loadStudyData();
+  }
+
+  async function deleteActivationItem(id: string) {
+    await supabase.from('site_activation_items').delete().eq('id', id);
     loadStudyData();
   }
 
@@ -239,7 +278,7 @@ export default function Site360Page() {
   const enrolled = participants.filter(p => ['enrolled', 'active'].includes(p.status)).length;
   const isfApproved = isfDocs.filter(d => d.status === 'Approved').length;
   const healthScore = Math.min(100, Math.round(
-    (activationItems.filter(i => i.status === 'Completed').length / Math.max(activationItems.length, 1)) * 20 +
+    (activationItems.filter(i => i.status === 'Closed').length / Math.max(activationItems.length, 1)) * 20 +
     (isfApproved / Math.max(isfDocs.length, 1)) * 25 +
     (aeReports.filter(a => a.status !== 'Open').length / Math.max(aeReports.length, 1)) * 20 +
     (participants.filter(p => p.status !== 'withdrawn').length / Math.max(participants.length, 1)) * 20 +
@@ -496,7 +535,7 @@ export default function Site360Page() {
                         <h2 style={{ fontSize: '13px', fontWeight: 700, color: C.text, margin: 0 }}>Site readiness by category</h2>
                       </div>
                       {[
-                        ['Site Activation', 'ti-list-check', activationItems.length > 0 ? Math.round((activationItems.filter(i => i.status === 'Completed').length / activationItems.length) * 100) : 0],
+                        ['Site Activation', 'ti-list-check', activationItems.length > 0 ? Math.round((activationItems.filter(i => i.status === 'Closed').length / activationItems.length) * 100) : 0],
                         ['ISF Completeness', 'ti-files', isfDocs.length > 0 ? Math.round((isfApproved / isfDocs.length) * 100) : 0],
                         ['Safety Compliance', 'ti-shield-exclamation', aeReports.length > 0 ? Math.round((aeReports.filter(a => a.status !== 'Open').length / aeReports.length) * 100) : 100],
                         ['Participant Retention', 'ti-users', participants.length > 0 ? Math.round((participants.filter(p => p.status !== 'withdrawn').length / participants.length) * 100) : 100],
@@ -605,21 +644,38 @@ export default function Site360Page() {
           {/* SITE ACTIVATION */}
           {panel === 'activation' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>Site Activation — {activeStudy?.study_id || '—'}</div>
-              <div style={card()}>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: C.textSec, marginBottom: '12px' }}>Activation Checklist</div>
-                {activationItems.length === 0 ? (
-                  <div style={{ fontSize: '12px', color: C.textMuted }}>No activation items found. Add items via site setup.</div>
-                ) : activationItems.map((item, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 0', borderBottom: i < activationItems.length - 1 ? `0.5px solid ${C.border}` : 'none' }}>
-                    <span style={{ fontSize: '16px' }}>{item.status === 'Completed' ? '✅' : item.status === 'In Progress' ? '🔄' : '⬜'}</span>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '12px', fontWeight: 500, color: item.status === 'Completed' ? C.textMuted : C.text, textDecoration: item.status === 'Completed' ? 'line-through' : 'none' }}>{item.item_name}</div>
-                      {item.notes && <div style={{ fontSize: '10px', color: C.textMuted }}>{item.notes}</div>}
-                    </div>
-                    {badge(item.status || 'Pending', statusColor(item.status || 'Pending'), statusBg(item.status || 'Pending'))}
-                  </div>
-                ))}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>Site Activation — {activeStudy?.study_id || '—'}</div>
+                <button onClick={addActivationItem} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 500, padding: '8px 16px', background: C.orange, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer' }}><i className="ti ti-plus" style={{ fontSize: '14px' }} />Add item</button>
+              </div>
+              <div style={{ ...card(), padding: 0, overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                  <thead><tr style={{ borderBottom: `0.5px solid ${C.border}`, background: C.bg }}>
+                    {['#', 'Description', 'Reviewer Initials', 'Comment', 'Status', ''].map(h => <th key={h} style={{ textAlign: 'left', padding: '10px 14px', fontSize: '11px', fontWeight: 600, color: C.textSec }}>{h}</th>)}
+                  </tr></thead>
+                  <tbody>
+                    {activationItems.length === 0 ? emptyRow(6, 'No activation items yet — click "Add item" to start the checklist.') : activationItems.map((item, i) => (
+                      <tr key={item.id} style={{ borderBottom: `0.5px solid ${C.border}` }}>
+                        <td style={{ padding: '10px 14px', color: C.textMuted, width: '32px' }}>{i + 1}</td>
+                        <td style={{ padding: '8px 14px' }}>
+                          <input defaultValue={item.item_name} onBlur={e => e.target.value !== item.item_name && updateActivationItem(item.id, { item_name: e.target.value })} style={{ width: '100%', fontSize: '12px', padding: '6px 8px', border: `0.5px solid ${C.border}`, borderRadius: '6px', fontFamily: 'inherit', boxSizing: 'border-box' as const }} />
+                        </td>
+                        <td style={{ padding: '8px 14px', width: '120px' }}>
+                          <input defaultValue={item.reviewer_initials || ''} onBlur={e => e.target.value !== (item.reviewer_initials || '') && updateActivationItem(item.id, { reviewer_initials: e.target.value })} placeholder="e.g. JD" style={{ width: '100%', fontSize: '12px', padding: '6px 8px', border: `0.5px solid ${C.border}`, borderRadius: '6px', fontFamily: 'inherit', boxSizing: 'border-box' as const }} />
+                        </td>
+                        <td style={{ padding: '8px 14px', minWidth: '180px' }}>
+                          <input defaultValue={item.notes || ''} onBlur={e => e.target.value !== (item.notes || '') && updateActivationItem(item.id, { notes: e.target.value })} placeholder="Comment" style={{ width: '100%', fontSize: '12px', padding: '6px 8px', border: `0.5px solid ${C.border}`, borderRadius: '6px', fontFamily: 'inherit', boxSizing: 'border-box' as const }} />
+                        </td>
+                        <td style={{ padding: '8px 14px', width: '90px' }}>
+                          <button onClick={() => updateActivationItem(item.id, { status: item.status === 'Closed' ? 'Open' : 'Closed' })} style={{ fontSize: '11px', fontWeight: 600, padding: '5px 12px', borderRadius: '20px', border: 'none', cursor: 'pointer', background: item.status === 'Closed' ? C.greenLight : C.amberLight, color: item.status === 'Closed' ? C.green : C.amber, width: '100%' }}>{item.status === 'Closed' ? 'Closed' : 'Open'}</button>
+                        </td>
+                        <td style={{ padding: '8px 14px', width: '36px' }}>
+                          <button onClick={() => deleteActivationItem(item.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, display: 'flex' }} title="Delete item"><i className="ti ti-trash" style={{ fontSize: '15px' }} /></button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
@@ -855,23 +911,6 @@ export default function Site360Page() {
             </div>
           )}
 
-          {/* SITE CONFIG */}
-          {panel === 'siteconfig' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>Site Configuration</div>
-              <div style={card()}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                  {[['Site Name', site.site_name], ['Site Code', site.site_code], ['Country', site.country || '—'], ['City', site.city || '—'], ['Principal Investigator', site.pi_name || '—'], ['PI Email', site.pi_email || '—'], ['Status', site.status || 'Active'], ['Activation Date', site.activation_date ? new Date(site.activation_date).toLocaleDateString() : '—']].map(([l, v], i) => (
-                    <div key={i} style={{ padding: '10px 0', borderBottom: `0.5px solid ${C.border}` }}>
-                      <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '3px' }}>{l}</div>
-                      <div style={{ fontSize: '13px', fontWeight: 500, color: C.text }}>{v}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* TICKET */}
           {panel === 'ticket' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -886,8 +925,8 @@ export default function Site360Page() {
           )}
 
           {/* PLACEHOLDER PANELS */}
-          {['artifacts', 'gap', 'readiness', 'report', 'auditor', 'quality', 'archived', 'messages', 'users'].includes(panel) && comingSoon(
-            panel === 'artifacts' ? 'Artifact Browser' : panel === 'gap' ? 'Gap Analysis' : panel === 'readiness' ? 'Inspection Readiness' : panel === 'report' ? 'ISF Report' : panel === 'auditor' ? 'ISF Auditor' : panel === 'quality' ? 'Quality Checks' : panel === 'archived' ? 'Archived' : panel === 'messages' ? 'Messages' : 'User Management'
+          {['readiness', 'report', 'archived', 'messages', 'users'].includes(panel) && comingSoon(
+            panel === 'readiness' ? 'Inspection Readiness' : panel === 'report' ? 'ISF Report' : panel === 'archived' ? 'Archived' : panel === 'messages' ? 'Messages' : 'User Management'
           )}
 
         </main>
