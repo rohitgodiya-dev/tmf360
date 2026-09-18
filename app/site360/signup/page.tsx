@@ -11,7 +11,7 @@ function SignupContent(){
   const searchParams=useSearchParams();
   const token=searchParams.get("token")||"";
 
-  const[step,setStep]=useState<"validating"|"invalid"|"expired"|"used"|"form"|"success">("validating");
+  const[step,setStep]=useState<"validating"|"invalid"|"expired"|"used"|"form"|"success"|"check-email">("validating");
   const[tokenData,setTokenData]=useState<any>(null);
   const[fullName,setFullName]=useState("");
   const[email,setEmail]=useState("");
@@ -55,12 +55,16 @@ function SignupContent(){
     if(password!==confirmPassword){setError("Passwords do not match.");return;}
     setLoading(true);
     try{
-      // Create auth account
+      const origin=typeof window!=="undefined"?window.location.origin:"https://www.trial360os.com";
+      // Create auth account. emailRedirectTo tells Supabase where to send the
+      // user after they click the confirmation link in their email — straight
+      // to setup, so they don't have to find their way back here manually.
       const{data:authData,error:signUpError}=await supabase.auth.signUp({
         email:email.trim(),
         password,
-        options:{data:{full_name:fullName.trim()}}
+        options:{data:{full_name:fullName.trim()},emailRedirectTo:`${origin}/site360/setup`}
       });
+
       if(signUpError){
         // Try signing in if the account already exists (invite re-opened)
         const{error:signInErr}=await supabase.auth.signInWithPassword({email:email.trim(),password});
@@ -72,11 +76,16 @@ function SignupContent(){
       // Mark token as used
       await supabase.from("site360_signup_tokens").update({used:true}).eq("token",token);
 
-      setStep("success");
-      // Sign in and redirect to setup
-      const{error:signInError}=await supabase.auth.signInWithPassword({email:email.trim(),password});
-      if(!signInError){
+      // If Supabase already returned a session, email confirmation is OFF
+      // (or this account was already confirmed) — proceed straight through.
+      // If not, confirmation is required: don't attempt to sign in (it will
+      // fail with 400 until they've clicked the email link) — show the
+      // check-your-email screen instead.
+      if(authData?.session){
+        setStep("success");
         setTimeout(()=>router.push("/site360/setup"),1500);
+      }else{
+        setStep("check-email");
       }
     }catch(e:any){
       setError(e.message||"Something went wrong.");
@@ -131,6 +140,22 @@ function SignupContent(){
         <div style={{fontSize:"16px",fontWeight:"600",color:P.text,marginBottom:"8px"}}>Already Used</div>
         <div style={{fontSize:"13px",color:P.textTert,marginBottom:"1rem"}}>This signup link has already been used. Your account may already exist.</div>
         <button onClick={()=>router.push("/site360/login")} style={{fontSize:"13px",padding:"8px 20px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Go to Login</button>
+      </div>
+    </div>
+  );
+
+  if(step==="check-email")return(
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:`linear-gradient(135deg,${P.primaryLight} 0%,#fff 100%)`}}>
+      <div style={{background:P.bg,border:`1px solid ${P.border}`,borderRadius:"16px",padding:"2rem",width:"400px",textAlign:"center"}}>
+        <div style={{fontSize:"24px",fontWeight:"700",color:P.text,marginBottom:"8px"}}>Site<span style={{color:P.primary}}>360</span></div>
+        <div style={{fontSize:"32px",marginBottom:"12px"}}>📬</div>
+        <div style={{fontSize:"16px",fontWeight:"600",color:P.text,marginBottom:"8px"}}>Check your email</div>
+        <div style={{fontSize:"13px",color:P.textTert,lineHeight:1.6,marginBottom:"1rem"}}>
+          We've sent a confirmation link to <strong style={{color:P.text}}>{email}</strong>. Click it to confirm your account — you'll be taken straight to setting up your site.
+        </div>
+        <div style={{fontSize:"11px",color:P.textTert,padding:"10px 12px",background:P.bgSec,borderRadius:"8px"}}>
+          Don't see it? Check spam, or wait a minute and refresh your inbox.
+        </div>
       </div>
     </div>
   );
