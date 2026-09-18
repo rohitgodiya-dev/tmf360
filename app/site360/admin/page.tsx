@@ -1,307 +1,648 @@
-'use client';
-import { useEffect, useState } from 'react';
-import { supabase } from '../../../lib/supabase';
+"use client";
+import{useState,useEffect}from"react";
+import{supabase}from"../../../lib/supabase";
+import{useRouter}from"next/navigation";
 
-const C = {
-  orange: '#F97316', orangeLight: '#FFF7ED',
-  navy: '#0F1E3D', navyLight: '#1E3A5F',
-  bg: '#F8FAFC', bgCard: '#FFFFFF',
-  border: '#E5EDF6', text: '#111827',
-  textSec: '#374151', textMuted: '#6B7280',
-  green: '#10B981', greenLight: '#ECFDF5',
-  red: '#EF4444', redLight: '#FEF2F2',
-  blue: '#3B82F6', blueLight: '#EFF6FF',
-  amber: '#F59E0B', amberLight: '#FFFBEB',
+const P={
+  primary:"#F97316",primaryLight:"#FFEDD5",primaryDark:"#EA580C",
+  navy:"#0F1E3D",navyLight:"#1E3A5F",
+  text:"#111827",textSec:"#374151",textTert:"#6B7280",textMuted:"#9CA3AF",
+  bg:"#FFFFFF",bgSec:"#F9FAFB",bgTert:"#F3F4F6",
+  border:"#E5E7EB",borderSec:"#D1D5DB",
+  success:"#10B981",successLight:"#ECFDF5",
+  danger:"#EF4444",dangerLight:"#FEF2F2",
+  warning:"#F59E0B",warningLight:"#FFFBEB",
+  blue:"#3B82F6",blueLight:"#EFF6FF",
+  purple:"#8B5CF6",purpleLight:"#F5F3FF",
 };
 
-type AdminPanel = 'demo_requests' | 'sites' | 'tokens';
+export default function Site360AdminPortal(){
+  const router=useRouter();
+  const[panel,setPanel]=useState("login");
+  const[adminUser,setAdminUser]=useState<any>(null);
+  const[email,setEmail]=useState("");
+  const[password,setPassword]=useState("");
+  const[authError,setAuthError]=useState("");
+  const[loading,setLoading]=useState(false);
 
-export default function Site360AdminPage() {
-  const [panel, setPanel] = useState<AdminPanel>('demo_requests');
-  const [loading, setLoading] = useState(true);
-  const [authorized, setAuthorized] = useState(false);
-  const [demoRequests, setDemoRequests] = useState<any[]>([]);
-  const [sites, setSites] = useState<any[]>([]);
-  const [tokens, setTokens] = useState<any[]>([]);
-  const [showSendInvite, setShowSendInvite] = useState(false);
-  const [inviteForm, setInviteForm] = useState({ email: '', site_name: '', demo_request_id: '' });
-  const [sendingInvite, setSendingInvite] = useState(false);
-  const [inviteSent, setInviteSent] = useState('');
+  // Data states
+  const[orgs,setOrgs]=useState<any[]>([]);
+  const[sites,setSites]=useState<any[]>([]);
+  const[users,setUsers]=useState<any[]>([]);
+  const[tickets,setTickets]=useState<any[]>([]);
+  const[studies,setStudies]=useState<any[]>([]);
+  const[siteStudies,setSiteStudies]=useState<any[]>([]);
+  const[tokens,setTokens]=useState<any[]>([]);
+  const[isfDocCount,setIsfDocCount]=useState(0);
+  const[demos,setDemos]=useState<any[]>([]);
+  const[selectedDemo,setSelectedDemo]=useState<any>(null);
+  const[demoNotes,setDemoNotes]=useState("");
+  const[stats,setStats]=useState<any>({sites:0,users:0,studies:0,isfDocs:0,tickets:0});
 
-  useEffect(() => { checkAuth(); }, []);
+  // Token generator
+  const[genSiteName,setGenSiteName]=useState("");
+  const[genEmail,setGenEmail]=useState("");
+  const[generatedLink,setGeneratedLink]=useState("");
+  const[genLoading,setGenLoading]=useState(false);
 
-  async function checkAuth() {
-    setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { window.location.href = '/site360/login'; return; }
+  // Selected ticket
+  const[selectedTicket,setSelectedTicket]=useState<any>(null);
+  const[ticketReply,setTicketReply]=useState("");
 
-    const { data: ur } = await supabase.from('user_roles').select('role').eq('user_id', user.id).single();
-    if (!ur || ur.role !== 'System Administrator') {
-      window.location.href = '/site360';
-      return;
+  // Filters
+  const[ticketFilter,setTicketFilter]=useState("All");
+  const[siteSearch,setSiteSearch]=useState("");
+
+  useEffect(()=>{
+    supabase.auth.getSession().then(({data:{session}})=>{
+      if(session?.user){
+        checkAdminAccess(session.user);
+      }
+    });
+  },[]);
+
+  async function checkAdminAccess(user:any){
+    const{data}=await supabase.from("admin_users").select("*").eq("email",user.email).eq("is_active",true).single();
+    if(data){
+      setAdminUser({...user,...data});
+      await supabase.from("admin_users").update({last_login:new Date().toISOString()}).eq("email",user.email);
+      setPanel("dashboard");
+      loadAllData();
+    }else{
+      setAuthError("You do not have admin access.");
     }
-    setAuthorized(true);
-    loadData();
   }
 
-  async function loadData() {
-    const [{ data: dr }, { data: s }, { data: t }] = await Promise.all([
-      supabase.from('demo_requests').select('*').eq('source', 'site360').order('created_at', { ascending: false }),
-      supabase.from('sites').select('*').order('created_at', { ascending: false }),
-      supabase.from('site360_signup_tokens').select('*').order('created_at', { ascending: false }),
-    ]);
-    if (dr) setDemoRequests(dr);
-    if (s) setSites(s);
-    if (t) setTokens(t);
+  async function handleLogin(){
+    setAuthError("");setLoading(true);
+    const{data,error}=await supabase.auth.signInWithPassword({email,password});
+    if(error){setAuthError(error.message);setLoading(false);return;}
+    if(data.user)await checkAdminAccess(data.user);
     setLoading(false);
   }
 
-  async function updateDemoStatus(id: string, status: string) {
-    await supabase.from('demo_requests').update({ status }).eq('id', id);
-    loadData();
+  async function loadAllData(){
+    // Load orgs (type = Site only — this admin portal is Site360-scoped)
+    const{data:orgData}=await supabase.from("organizations").select("*").eq("type","Site").order("created_at",{ascending:false});
+    if(orgData)setOrgs(orgData);
+
+    // Load sites
+    const{data:siteData}=await supabase.from("sites").select("*").order("created_at",{ascending:false});
+    if(siteData)setSites(siteData);
+
+    const siteOrgIds=(orgData||[]).map(o=>o.id);
+
+    // Load users belonging to Site orgs
+    const{data:userData}=await supabase.from("user_roles").select("*").in("org_id",siteOrgIds.length?siteOrgIds:["00000000-0000-0000-0000-000000000000"]).order("created_at",{ascending:false});
+    if(userData)setUsers(userData);
+
+    // Load tickets
+    const{data:ticketData}=await supabase.from("site360_support_tickets").select("*").order("created_at",{ascending:false});
+    if(ticketData)setTickets(ticketData);
+
+    // Load studies (belonging to Site orgs)
+    const{data:studyData}=await supabase.from("studies").select("*").in("org_id",siteOrgIds.length?siteOrgIds:["00000000-0000-0000-0000-000000000000"]).order("created_at",{ascending:false});
+    if(studyData)setStudies(studyData);
+
+    // Load site<->study links
+    const{data:ssData}=await supabase.from("site_studies").select("*");
+    if(ssData)setSiteStudies(ssData);
+
+    // Load tokens
+    const{data:tokenData}=await supabase.from("site360_signup_tokens").select("*").order("created_at",{ascending:false}).limit(20);
+    if(tokenData)setTokens(tokenData);
+
+    // Load demo requests
+    const{data:demoData}=await supabase.from("site360_demo_requests").select("*").order("created_at",{ascending:false});
+    if(demoData)setDemos(demoData);
+
+    // Stats
+    const[{count:siteCount},{count:userCount},{count:studyCount},{count:docCount},{count:ticketCount}]=await Promise.all([
+      supabase.from("sites").select("*",{count:"exact",head:true}),
+      supabase.from("user_roles").select("*",{count:"exact",head:true}).in("org_id",siteOrgIds.length?siteOrgIds:["00000000-0000-0000-0000-000000000000"]),
+      supabase.from("studies").select("*",{count:"exact",head:true}).in("org_id",siteOrgIds.length?siteOrgIds:["00000000-0000-0000-0000-000000000000"]),
+      supabase.from("isf_documents").select("*",{count:"exact",head:true}),
+      supabase.from("site360_support_tickets").select("*",{count:"exact",head:true}),
+    ]);
+    setIsfDocCount(docCount||0);
+    setStats({sites:siteCount||0,users:userCount||0,studies:studyCount||0,isfDocs:docCount||0,tickets:ticketCount||0});
   }
 
-  async function sendInvite() {
-    if (!inviteForm.email || !inviteForm.site_name) return;
-    setSendingInvite(true);
-    const { data: { user } } = await supabase.auth.getUser();
-
-    const { data: token, error } = await supabase
-      .from('site360_signup_tokens')
-      .insert([{
-        email: inviteForm.email,
-        site_name: inviteForm.site_name,
-        demo_request_id: inviteForm.demo_request_id || null,
-        created_by: user?.id,
-      }])
-      .select()
-      .single();
-
-    if (error || !token) {
-      setSendingInvite(false);
-      return;
+  async function generateToken(){
+    if(!genSiteName.trim()){alert("Please enter a site name.");return;}
+    setGenLoading(true);
+    const res=await fetch("/api/generate-site360-token",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({site_name:genSiteName,email:genEmail,secret:process.env.NEXT_PUBLIC_SITE360_TOKEN_SECRET||"site360-admin-2026",created_by:adminUser?.email})});
+    const data=await res.json();
+    if(data.signup_url){
+      setGeneratedLink(data.signup_url);
+      loadAllData();
+    }else{
+      alert("Error: "+data.error);
     }
-
-    const signupLink = `${window.location.origin}/site360/signup?token=${token.token}`;
-    setInviteSent(signupLink);
-
-    // Update demo request status if linked
-    if (inviteForm.demo_request_id) {
-      await supabase.from('demo_requests').update({ status: 'invited' }).eq('id', inviteForm.demo_request_id);
-    }
-
-    setShowSendInvite(false);
-    setInviteForm({ email: '', site_name: '', demo_request_id: '' });
-    setSendingInvite(false);
-    loadData();
+    setGenLoading(false);
   }
 
-  const badge = (text: string, color: string, bg: string) => (
-    <span style={{ fontSize: '10px', fontWeight: 600, padding: '3px 9px', borderRadius: '20px', color, background: bg, whiteSpace: 'nowrap' as const }}>{text}</span>
-  );
+  async function updateTicketStatus(id:string,status:string){
+    await supabase.from("site360_support_tickets").update({status,resolved_at:status==="Resolved"?new Date().toISOString():null}).eq("id",id);
+    setSelectedTicket((prev:any)=>prev?{...prev,status}:null);
+    loadAllData();
+  }
 
-  const statusColor = (s: string) => s === 'approved' || s === 'invited' || s === 'active' ? C.green : s === 'pending' ? C.amber : C.red;
-  const statusBg = (s: string) => s === 'approved' || s === 'invited' || s === 'active' ? C.greenLight : s === 'pending' ? C.amberLight : C.redLight;
+  async function addTicketReply(){
+    if(!ticketReply.trim()||!selectedTicket)return;
+    const existing=selectedTicket.replies||"";
+    const newReplies=existing+(existing?"\n":"")+"["+new Date().toLocaleString()+" - "+adminUser?.email+" (Site360 Support)]: "+ticketReply.trim();
+    await supabase.from("site360_support_tickets").update({replies:newReplies,status:"In progress"}).eq("id",selectedTicket.id);
+    setSelectedTicket((prev:any)=>({...prev,replies:newReplies,status:"In progress"}));
+    setTicketReply("");
+    loadAllData();
+  }
 
-  const card = (extra: any = {}): React.CSSProperties => ({ background: C.bgCard, border: `0.5px solid ${C.border}`, borderRadius: '12px', padding: '18px 20px', ...extra });
+  async function deactivateUser(userId:string){
+    if(!confirm("Deactivate this user?"))return;
+    await supabase.from("user_roles").update({is_active:false}).eq("user_id",userId);
+    loadAllData();
+  }
 
-  if (loading) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'system-ui, sans-serif', background: C.bg }}>
-      <div style={{ color: C.textMuted }}>Loading...</div>
+  async function revokeToken(id:string){
+    if(!confirm("Revoke this token?"))return;
+    await supabase.from("site360_signup_tokens").update({used:true}).eq("id",id);
+    loadAllData();
+  }
+
+  async function updateDemoStatus(id:string,status:string,notes?:string){
+    await supabase.from("site360_demo_requests").update({status,notes:notes||null,confirmed_at:status==="Confirmed"?new Date().toISOString():null,confirmed_by:status==="Confirmed"?adminUser?.email:null}).eq("id",id);
+    setSelectedDemo((prev:any)=>prev?{...prev,status,notes:notes||prev.notes}:null);
+    loadAllData();
+  }
+
+  function navItem(id:string,label:string,icon:string,badge?:number){
+    return(
+      <button onClick={()=>setPanel(id)} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 12px",borderRadius:"8px",border:"none",cursor:"pointer",width:"100%",textAlign:"left",fontSize:"12px",background:panel===id?"rgba(249,115,22,0.15)":"transparent",color:panel===id?"#F97316":"#94A3B8",fontWeight:panel===id?"600":"400",position:"relative" as const}}>
+        <i className={`ti ${icon}`} style={{fontSize:"16px"}}/>
+        {label}
+        {badge?<span style={{marginLeft:"auto",fontSize:"10px",padding:"1px 6px",borderRadius:"20px",background:"#EF4444",color:"#fff",fontWeight:"600"}}>{badge}</span>:null}
+      </button>
+    );
+  }
+
+  const openTickets=tickets.filter(t=>t.status==="Open").length;
+  const filteredTickets=ticketFilter==="All"?tickets:tickets.filter(t=>t.status===ticketFilter);
+  const filteredSites=siteSearch?sites.filter(s=>s.site_name?.toLowerCase().includes(siteSearch.toLowerCase())):sites;
+
+  const priorityColor=(p:string)=>p==="High"?"#EF4444":p==="Medium"?"#F59E0B":"#10B981";
+  const statusBg=(s:string)=>s==="Open"?"#EFF6FF":s==="In progress"?"#FFF7ED":"#ECFDF5";
+  const statusColor=(s:string)=>s==="Open"?"#1D4ED8":s==="In progress"?"#C2410C":"#065F46";
+
+  if(panel==="login")return(
+    <div style={{minHeight:"100vh",background:`linear-gradient(135deg,${P.navy} 0%,${P.navyLight} 100%)`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"system-ui,-apple-system,sans-serif"}}>
+      <div style={{background:P.bg,borderRadius:"16px",padding:"2rem",width:"380px",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+        <div style={{textAlign:"center",marginBottom:"1.5rem"}}>
+          <div style={{fontSize:"24px",fontWeight:"700",color:P.text}}>Site<span style={{color:P.primary}}>360</span></div>
+          <div style={{fontSize:"12px",color:P.textTert,marginTop:"2px"}}>Admin Portal</div>
+          <div style={{fontSize:"10px",color:P.textMuted,marginTop:"4px",padding:"3px 10px",background:P.bgTert,borderRadius:"20px",display:"inline-block"}}>Internal use only</div>
+        </div>
+        <div style={{marginBottom:"10px"}}>
+          <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>Email</label>
+          <input value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="admin@trial360os.com" style={{width:"100%",fontSize:"12px",padding:"9px 12px",border:`1px solid ${P.border}`,borderRadius:"8px",outline:"none"}} onKeyDown={e=>e.key==="Enter"&&handleLogin()}/>
+        </div>
+        <div style={{marginBottom:"1rem"}}>
+          <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>Password</label>
+          <input value={password} onChange={e=>setPassword(e.target.value)} type="password" placeholder="--------" style={{width:"100%",fontSize:"12px",padding:"9px 12px",border:`1px solid ${P.border}`,borderRadius:"8px",outline:"none"}} onKeyDown={e=>e.key==="Enter"&&handleLogin()}/>
+        </div>
+        {authError&&<div style={{fontSize:"11px",marginBottom:"12px",padding:"8px 12px",borderRadius:"8px",background:P.dangerLight,color:P.danger}}>{authError}</div>}
+        <button onClick={handleLogin} disabled={loading} style={{width:"100%",padding:"10px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",fontSize:"13px",fontWeight:"600",cursor:"pointer",opacity:loading?0.7:1}}>{loading?"Signing in...":"Sign in to Admin Portal"}</button>
+        <div style={{textAlign:"center",marginTop:"12px",fontSize:"11px",color:P.textTert}}>
+          <a href="/site360" style={{color:P.primary,textDecoration:"none"}}>← Back to Site360</a>
+        </div>
+      </div>
     </div>
   );
 
-  if (!authorized) return null;
-
-  return (
-    <div style={{ display: 'flex', height: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif', background: C.bg }}>
+  return(
+    <div style={{display:"flex",height:"100vh",fontFamily:"system-ui,-apple-system,sans-serif",background:P.bgSec}}>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css"/>
 
       {/* Sidebar */}
-      <aside style={{ width: '220px', background: C.navy, display: 'flex', flexDirection: 'column', padding: '0 8px 8px', flexShrink: 0 }}>
-        <div style={{ padding: '16px 8px 12px' }}>
-          <div style={{ fontSize: '16px', fontWeight: 700, color: '#fff' }}>Site360 <span style={{ color: C.orange }}>Admin</span></div>
-          <div style={{ fontSize: '10px', color: '#64748B', marginTop: '1px' }}>Trial360 OS Internal</div>
+      <aside style={{width:"200px",background:P.navy,display:"flex",flexDirection:"column",flexShrink:0,padding:"0 8px 8px"}}>
+        <div style={{padding:"16px 8px 12px"}}>
+          <div style={{fontSize:"18px",fontWeight:"700",color:"#fff"}}>Site<span style={{color:P.primary}}>360</span></div>
+          <div style={{fontSize:"10px",color:"#64748B",marginTop:"1px"}}>Admin Portal</div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          {[
-            { key: 'demo_requests', label: 'Demo Requests', icon: '📋', count: demoRequests.filter(d => d.status === 'pending').length },
-            { key: 'sites', label: 'Active Sites', icon: '🏥', count: 0 },
-            { key: 'tokens', label: 'Invite Tokens', icon: '🔑', count: 0 },
-          ].map(item => (
-            <button key={item.key} onClick={() => setPanel(item.key as AdminPanel)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', borderRadius: '8px', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' as const, fontSize: '12px', background: panel === item.key ? 'rgba(249,115,22,0.12)' : 'transparent', color: panel === item.key ? C.orange : '#94A3B8', fontWeight: panel === item.key ? 600 : 400 }}>
-              <span>{item.icon}</span>
-              <span style={{ flex: 1 }}>{item.label}</span>
-              {item.count > 0 && <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '20px', background: C.red, color: '#fff', fontWeight: 600 }}>{item.count}</span>}
-            </button>
-          ))}
+        <div style={{display:"flex",flexDirection:"column",gap:"2px",flex:1}}>
+          <p style={{fontSize:"9px",fontWeight:"600",color:"#475569",padding:"8px 8px 4px",textTransform:"uppercase",letterSpacing:".06em"}}>Overview</p>
+          {navItem("dashboard","Dashboard","ti-layout-dashboard")}
+          {navItem("sites","Sites","ti-building",sites.length)}
+          {navItem("studies","Studies","ti-flask",studies.length)}
+          <p style={{fontSize:"9px",fontWeight:"600",color:"#475569",padding:"10px 8px 4px",textTransform:"uppercase",letterSpacing:".06em"}}>Support</p>
+          {navItem("tickets","All Tickets","ti-ticket",openTickets||undefined)}
+          {navItem("users","All Users","ti-users")}
+          <p style={{fontSize:"9px",fontWeight:"600",color:"#475569",padding:"10px 8px 4px",textTransform:"uppercase",letterSpacing:".06em"}}>Onboarding</p>
+          {navItem("signup","Signup Links","ti-link")}
+          {navItem("tokens","Token History","ti-history")}
+          <p style={{fontSize:"9px",fontWeight:"600",color:"#475569",padding:"10px 8px 4px",textTransform:"uppercase",letterSpacing:".06em"}}>Sales</p>
+          {navItem("demos","Demo Requests","ti-calendar-event",demos.filter(d=>d.status==="Pending").length||undefined)}
         </div>
-        <div style={{ borderTop: '1px solid #1E3A5F', paddingTop: '8px', marginTop: 'auto' }}>
-          <button onClick={() => window.location.href = '/platform'} style={{ fontSize: '11px', color: '#64748B', background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px 8px', width: '100%', textAlign: 'left' as const }}>← Back to Platform</button>
+        <div style={{borderTop:"1px solid #1E3A5F",paddingTop:"8px"}}>
+          <div style={{fontSize:"11px",color:"#64748B",padding:"6px 8px"}}>{adminUser?.email}</div>
+          <button onClick={async()=>{await supabase.auth.signOut();setPanel("login");setAdminUser(null);}} style={{fontSize:"11px",color:"#64748B",background:"transparent",border:"none",cursor:"pointer",padding:"6px 8px",textAlign:"left",width:"100%"}}>Sign out</button>
         </div>
       </aside>
 
       {/* Main */}
-      <main style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+      <main style={{flex:1,overflowY:"auto",padding:"1.25rem"}}>
 
-        {/* DEMO REQUESTS */}
-        {panel === 'demo_requests' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontSize: '20px', fontWeight: 700, color: C.text }}>Demo Requests</div>
-                <div style={{ fontSize: '12px', color: C.textMuted, marginTop: '2px' }}>{demoRequests.filter(d => d.status === 'pending').length} pending · {demoRequests.length} total</div>
-              </div>
-              <button onClick={() => { setInviteForm({ email: '', site_name: '', demo_request_id: '' }); setShowSendInvite(true); }} style={{ fontSize: '12px', padding: '9px 18px', background: C.orange, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>+ Send Invite</button>
+        {/* DASHBOARD */}
+        {panel==="dashboard"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
+            <div>
+              <h1 style={{fontSize:"20px",fontWeight:"700",color:P.text}}>Admin Dashboard</h1>
+              <p style={{fontSize:"12px",color:P.textTert,marginTop:"2px"}}>Platform overview across all Site360 sites</p>
             </div>
-
-            {/* Stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '10px' }}>
-              {[['Total', demoRequests.length, C.blue], ['Pending', demoRequests.filter(d => d.status === 'pending').length, C.amber], ['Invited', demoRequests.filter(d => d.status === 'invited').length, C.orange], ['Approved', demoRequests.filter(d => d.status === 'approved').length, C.green]].map(([l, v, c], i) => (
-                <div key={i} style={{ ...card(), textAlign: 'center' as const, padding: '14px' }}>
-                  <div style={{ fontSize: '24px', fontWeight: 700, color: c as string }}>{v as number}</div>
-                  <div style={{ fontSize: '11px', color: C.textMuted }}>{l as string}</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:"12px"}}>
+              {[
+                {val:stats.sites,label:"Sites",color:P.primary,bg:P.primaryLight,icon:"ti-building"},
+                {val:stats.users,label:"Total Users",color:P.blue,bg:P.blueLight,icon:"ti-users"},
+                {val:stats.studies,label:"Studies",color:P.purple,bg:P.purpleLight,icon:"ti-flask"},
+                {val:stats.isfDocs,label:"ISF Documents",color:P.success,bg:P.successLight,icon:"ti-files"},
+                {val:openTickets,label:"Open Tickets",color:P.danger,bg:P.dangerLight,icon:"ti-ticket"},
+              ].map((m,i)=>(
+                <div key={i} style={{background:m.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"14px"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"8px"}}>
+                    <div style={{width:"36px",height:"36px",borderRadius:"8px",background:P.bg,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                      <i className={`ti ${m.icon}`} style={{fontSize:"18px",color:m.color}}/>
+                    </div>
+                  </div>
+                  <div style={{fontSize:"28px",fontWeight:"700",color:m.color}}>{m.val}</div>
+                  <div style={{fontSize:"11px",color:P.textSec,marginTop:"2px"}}>{m.label}</div>
                 </div>
               ))}
             </div>
 
-            {inviteSent && (
-              <div style={{ ...card(), background: C.greenLight, border: `1px solid ${C.green}` }}>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: C.green, marginBottom: '6px' }}>✅ Invite link generated!</div>
-                <div style={{ fontSize: '11px', color: C.textSec, marginBottom: '8px' }}>Send this link to the site coordinator:</div>
-                <div style={{ fontSize: '12px', fontFamily: 'monospace', color: C.navy, background: '#fff', padding: '8px 12px', borderRadius: '6px', wordBreak: 'break-all' as const }}>{inviteSent}</div>
-                <button onClick={() => { navigator.clipboard.writeText(inviteSent); }} style={{ marginTop: '8px', fontSize: '12px', padding: '6px 14px', background: C.navy, color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Copy Link</button>
+            {/* Recent activity */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px"}}>
+              <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"16px"}}>
+                <h2 style={{fontSize:"13px",fontWeight:"600",marginBottom:"12px"}}>Recent Sites</h2>
+                {sites.slice(0,5).map((s,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:"10px",padding:"8px 0",borderBottom:`0.5px solid ${P.bgTert}`}}>
+                    <div style={{width:"32px",height:"32px",borderRadius:"8px",background:P.primaryLight,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"12px",fontWeight:"700",color:P.primary,flexShrink:0}}>{s.site_code||s.site_name?.slice(0,2).toUpperCase()}</div>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:"12px",fontWeight:"500"}}>{s.site_name}</div>
+                      <div style={{fontSize:"10px",color:P.textTert}}>{s.country}{s.city?` · ${s.city}`:""}</div>
+                    </div>
+                    <div style={{fontSize:"10px",color:P.textTert}}>{new Date(s.created_at).toLocaleDateString()}</div>
+                  </div>
+                ))}
+                {sites.length===0&&<div style={{fontSize:"12px",color:P.textTert}}>No sites yet.</div>}
               </div>
+              <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"16px"}}>
+                <h2 style={{fontSize:"13px",fontWeight:"600",marginBottom:"12px"}}>Open Support Tickets</h2>
+                {tickets.filter(t=>t.status==="Open").slice(0,5).map((t,i)=>(
+                  <div key={i} onClick={()=>{setSelectedTicket(t);setPanel("tickets");}} style={{display:"flex",alignItems:"center",gap:"10px",padding:"8px 0",borderBottom:`0.5px solid ${P.bgTert}`,cursor:"pointer"}}>
+                    <span style={{width:"6px",height:"6px",borderRadius:"50%",background:priorityColor(t.priority),flexShrink:0}}/>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:"12px",fontWeight:"500",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{t.title}</div>
+                      <div style={{fontSize:"10px",color:P.textTert}}>{t.created_by_email}</div>
+                    </div>
+                    <span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"20px",background:statusBg(t.status),color:statusColor(t.status)}}>{t.status}</span>
+                  </div>
+                ))}
+                {tickets.filter(t=>t.status==="Open").length===0&&<div style={{fontSize:"12px",color:P.success}}>No open tickets 🎉</div>}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SITES */}
+        {panel==="sites"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <h1 style={{fontSize:"14px",fontWeight:"600"}}>All Sites ({sites.length})</h1>
+              <div style={{display:"flex",gap:"8px"}}>
+                <input value={siteSearch} onChange={e=>setSiteSearch(e.target.value)} placeholder="Search sites..." style={{fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"6px 10px",width:"200px"}}/>
+                <button onClick={()=>setPanel("signup")} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ Generate Signup Link</button>
+              </div>
+            </div>
+            <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",overflow:"hidden"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px"}}>
+                <thead><tr style={{borderBottom:`0.5px solid ${P.border}`}}>
+                  {["Site","Country","PI","Site Code","Studies","Users","Created"].map(h=><th key={h} style={{textAlign:"left",padding:"10px 12px",fontSize:"11px",fontWeight:"500",color:P.textSec}}>{h}</th>)}
+                </tr></thead>
+                <tbody>
+                  {filteredSites.length===0?<tr><td colSpan={7} style={{textAlign:"center",padding:"2rem",color:P.textTert}}>No sites found.</td></tr>
+                  :filteredSites.map((s,i)=>{
+                    const siteStudyCount=siteStudies.filter(ss=>ss.site_id===s.id).length;
+                    const siteUsers=users.filter(u=>u.org_id===s.org_id);
+                    return(
+                      <tr key={i} style={{borderBottom:`0.5px solid ${P.bgTert}`}}>
+                        <td style={{padding:"10px 12px"}}>
+                          <div style={{fontWeight:"500"}}>{s.site_name}</div>
+                          <div style={{fontSize:"10px",color:P.textTert}}>{s.site_code}</div>
+                        </td>
+                        <td style={{padding:"10px 12px",fontSize:"11px",color:P.textSec}}>{s.country}</td>
+                        <td style={{padding:"10px 12px",fontSize:"11px",color:P.textSec}}>{s.pi_name||"-"}</td>
+                        <td style={{padding:"10px 12px",fontFamily:"monospace",fontSize:"11px"}}>{s.site_code||"-"}</td>
+                        <td style={{padding:"10px 12px"}}><span style={{fontSize:"11px",fontWeight:"600",color:P.blue}}>{siteStudyCount}</span></td>
+                        <td style={{padding:"10px 12px"}}><span style={{fontSize:"11px",fontWeight:"600",color:P.purple}}>{siteUsers.length}</span></td>
+                        <td style={{padding:"10px 12px",fontSize:"11px",color:P.textTert}}>{new Date(s.created_at).toLocaleDateString()}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* STUDIES */}
+        {panel==="studies"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+            <h1 style={{fontSize:"14px",fontWeight:"600"}}>All Studies ({studies.length})</h1>
+            <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",overflow:"hidden"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px"}}>
+                <thead><tr style={{borderBottom:`0.5px solid ${P.border}`}}>
+                  {["Study ID","Protocol","Phase","Status","Sponsor","Site","Created"].map(h=><th key={h} style={{textAlign:"left",padding:"10px 12px",fontSize:"11px",fontWeight:"500",color:P.textSec}}>{h}</th>)}
+                </tr></thead>
+                <tbody>
+                  {studies.length===0?<tr><td colSpan={7} style={{textAlign:"center",padding:"2rem",color:P.textTert}}>No studies yet.</td></tr>
+                  :studies.map((s,i)=>{
+                    const link=siteStudies.find(ss=>ss.study_id===s.id);
+                    const site=link?sites.find(st=>st.id===link.site_id):null;
+                    return(
+                      <tr key={i} style={{borderBottom:`0.5px solid ${P.bgTert}`}}>
+                        <td style={{padding:"10px 12px",fontFamily:"monospace",fontWeight:"600",color:P.primary}}>{s.study_id}</td>
+                        <td style={{padding:"10px 12px",fontSize:"11px",color:P.textSec,maxWidth:"180px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{s.protocol||"-"}</td>
+                        <td style={{padding:"10px 12px",fontSize:"11px"}}>{s.phase}</td>
+                        <td style={{padding:"10px 12px"}}><span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"20px",background:P.primaryLight,color:P.primary}}>{s.status}</span></td>
+                        <td style={{padding:"10px 12px",fontSize:"11px",color:P.textSec}}>{s.sponsor||"-"}</td>
+                        <td style={{padding:"10px 12px",fontSize:"11px",color:P.textSec}}>{site?.site_name||"-"}</td>
+                        <td style={{padding:"10px 12px",fontSize:"11px",color:P.textTert}}>{new Date(s.created_at).toLocaleDateString()}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* TICKETS */}
+        {panel==="tickets"&&(
+          <div style={{display:"flex",gap:"12px",height:"calc(100vh - 80px)"}}>
+            {/* Ticket list */}
+            <div style={{width:"360px",flexShrink:0,display:"flex",flexDirection:"column",gap:"8px"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <h1 style={{fontSize:"14px",fontWeight:"600"}}>Support Tickets</h1>
+                <button onClick={loadAllData} style={{fontSize:"11px",padding:"4px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:P.bg,cursor:"pointer"}}>Refresh</button>
+              </div>
+              <div style={{display:"flex",gap:"4px"}}>
+                {["All","Open","In progress","Resolved"].map(f=>(
+                  <button key={f} onClick={()=>setTicketFilter(f)} style={{fontSize:"10px",padding:"4px 10px",borderRadius:"20px",border:`0.5px solid ${ticketFilter===f?P.primary:P.border}`,background:ticketFilter===f?P.primaryLight:"transparent",color:ticketFilter===f?P.primary:P.textSec,cursor:"pointer"}}>{f}</button>
+                ))}
+              </div>
+              <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:"6px"}}>
+                {filteredTickets.map((t,i)=>(
+                  <div key={i} onClick={()=>setSelectedTicket(t)} style={{background:P.bg,border:`0.5px solid ${selectedTicket?.id===t.id?P.primary:P.border}`,borderRadius:"10px",padding:"12px",cursor:"pointer"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:"6px",marginBottom:"4px"}}>
+                      <span style={{width:"6px",height:"6px",borderRadius:"50%",background:priorityColor(t.priority),flexShrink:0}}/>
+                      <span style={{fontSize:"12px",fontWeight:"500",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{t.title}</span>
+                      <span style={{fontSize:"10px",padding:"2px 7px",borderRadius:"20px",background:statusBg(t.status),color:statusColor(t.status),flexShrink:0}}>{t.status}</span>
+                    </div>
+                    <div style={{fontSize:"10px",color:P.textTert}}>{t.created_by_email} · {new Date(t.created_at).toLocaleDateString()}</div>
+                  </div>
+                ))}
+                {filteredTickets.length===0&&<div style={{textAlign:"center",padding:"2rem",fontSize:"12px",color:P.textTert}}>No tickets.</div>}
+              </div>
+            </div>
+
+            {/* Ticket detail */}
+            {selectedTicket?(
+              <div style={{flex:1,background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+                <div style={{padding:"14px 18px",borderBottom:`0.5px solid ${P.border}`,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                  <div>
+                    <div style={{fontSize:"14px",fontWeight:"600"}}>{selectedTicket.title}</div>
+                    <div style={{fontSize:"10px",color:P.textTert,marginTop:"2px"}}>{selectedTicket.created_by_email} · {new Date(selectedTicket.created_at).toLocaleString()}</div>
+                  </div>
+                  <div style={{display:"flex",gap:"6px"}}>
+                    {["Open","In progress","Resolved"].map(s=>(
+                      <button key={s} onClick={()=>updateTicketStatus(selectedTicket.id,s)} style={{fontSize:"10px",padding:"4px 10px",borderRadius:"20px",border:`0.5px solid ${selectedTicket.status===s?P.primary:P.border}`,background:selectedTicket.status===s?P.primaryLight:"transparent",color:selectedTicket.status===s?P.primary:P.textSec,cursor:"pointer"}}>{s}</button>
+                    ))}
+                  </div>
+                </div>
+                <div style={{flex:1,overflowY:"auto",padding:"16px 18px",display:"flex",flexDirection:"column",gap:"12px"}}>
+                  <div style={{background:P.bgSec,borderRadius:"8px",padding:"12px 14px"}}>
+                    <div style={{fontSize:"10px",fontWeight:"600",color:P.textTert,marginBottom:"4px",textTransform:"uppercase" as const,letterSpacing:".05em"}}>Description</div>
+                    <div style={{fontSize:"12px",color:P.textSec,lineHeight:"1.6",whiteSpace:"pre-wrap" as const}}>{selectedTicket.description}</div>
+                  </div>
+                  {selectedTicket.replies&&(
+                    <div>
+                      <div style={{fontSize:"10px",fontWeight:"600",color:P.textTert,marginBottom:"8px",textTransform:"uppercase" as const,letterSpacing:".05em"}}>Conversation</div>
+                      {selectedTicket.replies.split("\n").map((r:string,i:number)=>{
+                        const isAdmin=r.includes("(Site360 Support)");
+                        return(
+                          <div key={i} style={{background:isAdmin?P.primaryLight:P.bgSec,borderRadius:"8px",padding:"8px 12px",marginBottom:"6px",fontSize:"11px",color:P.textSec,lineHeight:"1.55",borderLeft:isAdmin?`3px solid ${P.primary}`:"none"}}>{r}</div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+                <div style={{padding:"14px 18px",borderTop:`0.5px solid ${P.border}`}}>
+                  <textarea value={ticketReply} onChange={e=>setTicketReply(e.target.value)} placeholder="Type your reply to the site..." rows={3} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px",resize:"vertical" as const,fontFamily:"inherit",marginBottom:"8px"}}/>
+                  <button onClick={addTicketReply} disabled={!ticketReply.trim()} style={{fontSize:"12px",padding:"7px 16px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",opacity:ticketReply.trim()?1:0.4}}>Send Reply</button>
+                </div>
+              </div>
+            ):(
+              <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:P.textTert,fontSize:"12px"}}>Select a ticket to view details</div>
             )}
+          </div>
+        )}
 
-            <div style={{ ...card(), padding: 0, overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-                <thead><tr style={{ borderBottom: `0.5px solid ${C.border}`, background: C.bg }}>
-                  {['Name', 'Site', 'Institution', 'Email', 'Status', 'Date', 'Actions'].map(h => <th key={h} style={{ textAlign: 'left', padding: '10px 14px', fontSize: '11px', fontWeight: 600, color: C.textSec }}>{h}</th>)}
+        {/* USERS */}
+        {panel==="users"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+            <h1 style={{fontSize:"14px",fontWeight:"600"}}>All Users ({users.length})</h1>
+            <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",overflow:"hidden"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px"}}>
+                <thead><tr style={{borderBottom:`0.5px solid ${P.border}`}}>
+                  {["Name","Email","Role","Site","Status","Joined","Action"].map(h=><th key={h} style={{textAlign:"left",padding:"10px 12px",fontSize:"11px",fontWeight:"500",color:P.textSec}}>{h}</th>)}
                 </tr></thead>
                 <tbody>
-                  {demoRequests.length === 0 ? (
-                    <tr><td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: C.textMuted }}>No demo requests yet.</td></tr>
-                  ) : demoRequests.map((d, i) => (
-                    <tr key={i} style={{ borderBottom: `0.5px solid ${C.border}` }}>
-                      <td style={{ padding: '10px 14px', fontWeight: 500 }}>{d.name}</td>
-                      <td style={{ padding: '10px 14px', color: C.textSec }}>{d.message?.split('|')[0]?.replace('Site: ', '') || '—'}</td>
-                      <td style={{ padding: '10px 14px', color: C.textSec }}>{d.company || '—'}</td>
-                      <td style={{ padding: '10px 14px', color: C.textSec, fontSize: '11px' }}>{d.email}</td>
-                      <td style={{ padding: '10px 14px' }}>{badge(d.status || 'pending', statusColor(d.status || 'pending'), statusBg(d.status || 'pending'))}</td>
-                      <td style={{ padding: '10px 14px', color: C.textMuted, fontSize: '11px' }}>{new Date(d.created_at).toLocaleDateString()}</td>
-                      <td style={{ padding: '10px 14px' }}>
-                        <div style={{ display: 'flex', gap: '6px' }}>
-                          {d.status === 'pending' && (
-                            <>
-                              <button onClick={() => { setInviteForm({ email: d.email, site_name: d.message?.split('|')[0]?.replace('Site: ', '').trim() || '', demo_request_id: d.id }); setShowSendInvite(true); }} style={{ fontSize: '10px', padding: '4px 10px', background: C.orangeLight, color: C.orange, border: `0.5px solid ${C.orange}`, borderRadius: '4px', cursor: 'pointer' }}>Send Invite</button>
-                              <button onClick={() => updateDemoStatus(d.id, 'rejected')} style={{ fontSize: '10px', padding: '4px 10px', background: C.redLight, color: C.red, border: `0.5px solid #FECACA`, borderRadius: '4px', cursor: 'pointer' }}>Reject</button>
-                            </>
-                          )}
-                          {d.status === 'invited' && <span style={{ fontSize: '11px', color: C.green, fontWeight: 500 }}>Invite sent ✓</span>}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {users.length===0?<tr><td colSpan={7} style={{textAlign:"center",padding:"2rem",color:P.textTert}}>No users yet.</td></tr>
+                  :users.map((u,i)=>{
+                    const org=orgs.find(o=>o.id===u.org_id);
+                    const site=sites.find(s=>s.org_id===u.org_id);
+                    return(
+                      <tr key={i} style={{borderBottom:`0.5px solid ${P.bgTert}`}}>
+                        <td style={{padding:"10px 12px",fontWeight:"500"}}>{u.full_name||"-"}</td>
+                        <td style={{padding:"10px 12px",fontSize:"11px",color:P.textSec}}>{u.email}</td>
+                        <td style={{padding:"10px 12px"}}><span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"20px",background:P.primaryLight,color:P.primary}}>{u.role}</span></td>
+                        <td style={{padding:"10px 12px",fontSize:"11px",color:P.textSec}}>{site?.site_name||org?.name||"-"}</td>
+                        <td style={{padding:"10px 12px"}}><span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"20px",background:u.is_active?"#ECFDF5":"#F3F4F6",color:u.is_active?"#065F46":"#6B7280"}}>{u.is_active?"Active":"Inactive"}</span></td>
+                        <td style={{padding:"10px 12px",fontSize:"11px",color:P.textTert}}>{new Date(u.created_at).toLocaleDateString()}</td>
+                        <td style={{padding:"10px 12px"}}>
+                          {u.is_active&&<button onClick={()=>deactivateUser(u.user_id)} style={{fontSize:"10px",padding:"3px 8px",background:P.dangerLight,color:P.danger,border:`0.5px solid #FECACA`,borderRadius:"4px",cursor:"pointer"}}>Deactivate</button>}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           </div>
         )}
 
-        {/* ACTIVE SITES */}
-        {panel === 'sites' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ fontSize: '20px', fontWeight: 700, color: C.text }}>Active Sites ({sites.length})</div>
-            <div style={{ ...card(), padding: 0, overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-                <thead><tr style={{ borderBottom: `0.5px solid ${C.border}`, background: C.bg }}>
-                  {['Site Name', 'Code', 'PI', 'Country', 'Status', 'Created'].map(h => <th key={h} style={{ textAlign: 'left', padding: '10px 14px', fontSize: '11px', fontWeight: 600, color: C.textSec }}>{h}</th>)}
-                </tr></thead>
-                <tbody>
-                  {sites.length === 0 ? (
-                    <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: C.textMuted }}>No sites yet.</td></tr>
-                  ) : sites.map((s, i) => (
-                    <tr key={i} style={{ borderBottom: `0.5px solid ${C.border}` }}>
-                      <td style={{ padding: '10px 14px', fontWeight: 500 }}>{s.site_name}</td>
-                      <td style={{ padding: '10px 14px', fontFamily: 'monospace', color: C.orange }}>{s.site_code || '—'}</td>
-                      <td style={{ padding: '10px 14px', color: C.textSec }}>{s.pi_name || '—'}</td>
-                      <td style={{ padding: '10px 14px', color: C.textSec }}>{s.country || '—'}</td>
-                      <td style={{ padding: '10px 14px' }}>{badge(s.status || 'active', statusColor(s.status || 'active'), statusBg(s.status || 'active'))}</td>
-                      <td style={{ padding: '10px 14px', color: C.textMuted, fontSize: '11px' }}>{new Date(s.created_at).toLocaleDateString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* INVITE TOKENS */}
-        {panel === 'tokens' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: C.text }}>Invite Tokens ({tokens.length})</div>
-              <button onClick={() => { setInviteForm({ email: '', site_name: '', demo_request_id: '' }); setShowSendInvite(true); }} style={{ fontSize: '12px', padding: '9px 18px', background: C.orange, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>+ Generate Token</button>
-            </div>
-            <div style={{ ...card(), padding: 0, overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-                <thead><tr style={{ borderBottom: `0.5px solid ${C.border}`, background: C.bg }}>
-                  {['Email', 'Site Name', 'Status', 'Expires', 'Created', 'Link'].map(h => <th key={h} style={{ textAlign: 'left', padding: '10px 14px', fontSize: '11px', fontWeight: 600, color: C.textSec }}>{h}</th>)}
-                </tr></thead>
-                <tbody>
-                  {tokens.length === 0 ? (
-                    <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: C.textMuted }}>No tokens generated yet.</td></tr>
-                  ) : tokens.map((t, i) => (
-                    <tr key={i} style={{ borderBottom: `0.5px solid ${C.border}` }}>
-                      <td style={{ padding: '10px 14px', color: C.textSec }}>{t.email}</td>
-                      <td style={{ padding: '10px 14px', fontWeight: 500 }}>{t.site_name || '—'}</td>
-                      <td style={{ padding: '10px 14px' }}>{badge(t.used ? 'Used' : 'Active', t.used ? C.textMuted : C.green, t.used ? C.bg : C.greenLight)}</td>
-                      <td style={{ padding: '10px 14px', color: C.textMuted, fontSize: '11px' }}>{new Date(t.expires_at).toLocaleDateString()}</td>
-                      <td style={{ padding: '10px 14px', color: C.textMuted, fontSize: '11px' }}>{new Date(t.created_at).toLocaleDateString()}</td>
-                      <td style={{ padding: '10px 14px' }}>
-                        {!t.used && (
-                          <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/site360/signup?token=${t.token}`); }} style={{ fontSize: '10px', padding: '4px 10px', background: C.blueLight, color: C.blue, border: `0.5px solid #BFDBFE`, borderRadius: '4px', cursor: 'pointer' }}>Copy Link</button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-      </main>
-
-      {/* Send Invite Modal */}
-      {showSendInvite && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div style={{ background: C.bgCard, borderRadius: '14px', padding: '24px', width: '100%', maxWidth: '440px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '18px' }}>
-              <div style={{ fontSize: '15px', fontWeight: 600 }}>Send Site360 Invite</div>
-              <button onClick={() => setShowSendInvite(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: C.textMuted }}>×</button>
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ fontSize: '11px', fontWeight: 600, color: C.textSec, display: 'block', marginBottom: '5px' }}>Email Address *</label>
-              <input type="email" value={inviteForm.email} onChange={e => setInviteForm(f => ({ ...f, email: e.target.value }))} placeholder="coordinator@site.com" style={{ width: '100%', fontSize: '13px', padding: '9px 12px', border: `0.5px solid ${C.border}`, borderRadius: '8px', outline: 'none', boxSizing: 'border-box' as const }} />
-            </div>
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ fontSize: '11px', fontWeight: 600, color: C.textSec, display: 'block', marginBottom: '5px' }}>Site Name *</label>
-              <input type="text" value={inviteForm.site_name} onChange={e => setInviteForm(f => ({ ...f, site_name: e.target.value }))} placeholder="Mayo Clinic — Rochester" style={{ width: '100%', fontSize: '13px', padding: '9px 12px', border: `0.5px solid ${C.border}`, borderRadius: '8px', outline: 'none', boxSizing: 'border-box' as const }} />
-            </div>
-            <div style={{ fontSize: '12px', color: C.textMuted, padding: '10px 12px', background: C.bg, borderRadius: '8px', marginBottom: '16px' }}>
-              A unique signup link will be generated valid for 7 days. The site coordinator uses this link to create their account and set up their site.
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={() => setShowSendInvite(false)} style={{ flex: 1, padding: '10px', border: `0.5px solid ${C.border}`, borderRadius: '8px', background: C.bgCard, cursor: 'pointer', fontSize: '13px' }}>Cancel</button>
-              <button onClick={sendInvite} disabled={sendingInvite || !inviteForm.email || !inviteForm.site_name} style={{ flex: 2, padding: '10px', background: C.orange, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, opacity: sendingInvite ? 0.7 : 1 }}>
-                {sendingInvite ? 'Generating...' : 'Generate Invite Link'}
+        {/* SIGNUP LINK GENERATOR */}
+        {panel==="signup"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:"16px",maxWidth:"560px"}}>
+            <h1 style={{fontSize:"14px",fontWeight:"600"}}>Generate Signup Link</h1>
+            <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"20px"}}>
+              <div style={{marginBottom:"12px"}}>
+                <label style={{fontSize:"11px",fontWeight:"600",color:P.textSec,display:"block",marginBottom:"4px"}}>Site Name <span style={{color:P.danger}}>*</span></label>
+                <input value={genSiteName} onChange={e=>setGenSiteName(e.target.value)} placeholder="e.g. Mayo Clinic — Rochester" style={{width:"100%",fontSize:"12px",padding:"9px 12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",outline:"none"}}/>
+              </div>
+              <div style={{marginBottom:"16px"}}>
+                <label style={{fontSize:"11px",fontWeight:"600",color:P.textSec,display:"block",marginBottom:"4px"}}>Pre-fill Email (optional)</label>
+                <input value={genEmail} onChange={e=>setGenEmail(e.target.value)} type="email" placeholder="coordinator@site.com" style={{width:"100%",fontSize:"12px",padding:"9px 12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",outline:"none"}}/>
+                <div style={{fontSize:"10px",color:P.textTert,marginTop:"4px"}}>If provided, the email field will be pre-filled and locked on the signup page</div>
+              </div>
+              <button onClick={generateToken} disabled={genLoading||!genSiteName.trim()} style={{fontSize:"12px",padding:"10px 20px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",opacity:genLoading||!genSiteName.trim()?0.5:1,fontWeight:"600"}}>
+                {genLoading?"Generating...":"Generate Signup Link"}
               </button>
             </div>
+            {generatedLink&&(
+              <div style={{background:P.successLight,border:`0.5px solid #A7F3D0`,borderRadius:"12px",padding:"16px"}}>
+                <div style={{fontSize:"12px",fontWeight:"600",color:P.success,marginBottom:"8px"}}>✅ Signup link generated — valid for 7 days</div>
+                <div style={{fontSize:"11px",color:P.textSec,background:P.bg,borderRadius:"8px",padding:"10px 12px",wordBreak:"break-all" as const,marginBottom:"10px",border:`0.5px solid ${P.border}`}}>{generatedLink}</div>
+                <button onClick={()=>{navigator.clipboard.writeText(generatedLink);alert("Copied to clipboard!");}} style={{fontSize:"11px",padding:"6px 14px",background:P.success,color:"#fff",border:"none",borderRadius:"6px",cursor:"pointer"}}>Copy Link</button>
+              </div>
+            )}
+            <div style={{background:P.blueLight,border:`0.5px solid #BFDBFE`,borderRadius:"10px",padding:"12px 14px",fontSize:"11px",color:"#1E40AF"}}>
+              <strong>How it works:</strong> Send the link to the site coordinator. They click it, create their account, and are automatically guided through the site setup wizard. The link expires after 7 days and can only be used once.
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
+        {/* TOKEN HISTORY */}
+        {panel==="tokens"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <h1 style={{fontSize:"14px",fontWeight:"600"}}>Signup Token History</h1>
+              <button onClick={()=>setPanel("signup")} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ New Token</button>
+            </div>
+            <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",overflow:"hidden"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px"}}>
+                <thead><tr style={{borderBottom:`0.5px solid ${P.border}`}}>
+                  {["Site","Email","Created","Expires","Status","Action"].map(h=><th key={h} style={{textAlign:"left",padding:"10px 12px",fontSize:"11px",fontWeight:"500",color:P.textSec}}>{h}</th>)}
+                </tr></thead>
+                <tbody>
+                  {tokens.length===0?<tr><td colSpan={6} style={{textAlign:"center",padding:"2rem",color:P.textTert}}>No tokens yet.</td></tr>
+                  :tokens.map((t,i)=>{
+                    const isUsed=!!t.used;
+                    const isExpired=!isUsed&&new Date(t.expires_at)<new Date();
+                    const isActive=!isUsed&&!isExpired;
+                    return(
+                      <tr key={i} style={{borderBottom:`0.5px solid ${P.bgTert}`}}>
+                        <td style={{padding:"10px 12px",fontWeight:"500"}}>{t.site_name||"-"}</td>
+                        <td style={{padding:"10px 12px",fontSize:"11px",color:P.textSec}}>{t.email||"-"}</td>
+                        <td style={{padding:"10px 12px",fontSize:"11px",color:P.textTert}}>{new Date(t.created_at).toLocaleDateString()}</td>
+                        <td style={{padding:"10px 12px",fontSize:"11px",color:P.textTert}}>{new Date(t.expires_at).toLocaleDateString()}</td>
+                        <td style={{padding:"10px 12px"}}>
+                          <span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"20px",background:isUsed?"#ECFDF5":isExpired?"#FEF2F2":"#EFF6FF",color:isUsed?"#065F46":isExpired?"#991B1B":"#1D4ED8"}}>
+                            {isUsed?"Used":isExpired?"Expired":"Active"}
+                          </span>
+                        </td>
+                        <td style={{padding:"10px 12px",display:"flex",gap:"6px"}}>
+                          {isActive&&<button onClick={()=>{const url=`${window.location.origin}/site360/signup?token=${t.token}`;navigator.clipboard.writeText(url);alert("Copied!");}} style={{fontSize:"10px",padding:"3px 8px",background:P.blueLight,color:P.blue,border:`0.5px solid #BFDBFE`,borderRadius:"4px",cursor:"pointer"}}>Copy Link</button>}
+                          {isActive&&<button onClick={()=>revokeToken(t.id)} style={{fontSize:"10px",padding:"3px 8px",background:P.dangerLight,color:P.danger,border:`0.5px solid #FECACA`,borderRadius:"4px",cursor:"pointer"}}>Revoke</button>}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* DEMO REQUESTS */}
+        {panel==="demos"&&(
+          <div style={{display:"flex",gap:"12px",height:"calc(100vh - 80px)"}}>
+            <div style={{width:"380px",flexShrink:0,display:"flex",flexDirection:"column",gap:"8px"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <h1 style={{fontSize:"14px",fontWeight:"600"}}>Demo Requests ({demos.length})</h1>
+                <button onClick={loadAllData} style={{fontSize:"11px",padding:"4px 10px",border:"0.5px solid #E5E7EB",borderRadius:"6px",background:"#fff",cursor:"pointer"}}>Refresh</button>
+              </div>
+              <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:"6px"}}>
+                {demos.length===0?<div style={{textAlign:"center",padding:"2rem",fontSize:"12px",color:"#6B7280"}}>No demo requests yet.</div>
+                :demos.map((d:any,i:number)=>(
+                  <div key={i} onClick={()=>{setSelectedDemo(d);setDemoNotes(d.notes||"");}} style={{background:"#fff",border:"0.5px solid "+(selectedDemo?.id===d.id?"#F97316":"#E5E7EB"),borderRadius:"10px",padding:"12px",cursor:"pointer"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:"6px",marginBottom:"4px"}}>
+                      <span style={{fontSize:"12px",fontWeight:"500",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{d.name||"Unknown"}</span>
+                      <span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"20px",fontWeight:"500",background:d.status==="Pending"?"#FFF7ED":d.status==="Confirmed"?"#ECFDF5":"#F3F4F6",color:d.status==="Pending"?"#C2410C":d.status==="Confirmed"?"#065F46":"#6B7280"}}>{d.status}</span>
+                    </div>
+                    <div style={{fontSize:"11px",color:"#6B7280"}}>{d.site_name}</div>
+                    <div style={{fontSize:"10px",color:"#F97316",marginTop:"3px",fontWeight:"500"}}>{d.selected_date} at {d.selected_time}</div>
+                    <div style={{fontSize:"10px",color:"#9CA3AF",marginTop:"2px"}}>{new Date(d.created_at).toLocaleDateString()}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {selectedDemo?(
+              <div style={{flex:1,background:"#fff",border:"0.5px solid #E5E7EB",borderRadius:"12px",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+                <div style={{padding:"14px 18px",borderBottom:"0.5px solid #E5E7EB",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                  <div>
+                    <div style={{fontSize:"14px",fontWeight:"600"}}>{selectedDemo.name}</div>
+                    <div style={{fontSize:"10px",color:"#6B7280",marginTop:"2px"}}>{selectedDemo.email} · {selectedDemo.site_name}</div>
+                  </div>
+                  <div style={{display:"flex",gap:"6px"}}>
+                    {["Pending","Confirmed","Completed","Cancelled"].map((s:string)=>(
+                      <button key={s} onClick={()=>updateDemoStatus(selectedDemo.id,s)} style={{fontSize:"10px",padding:"4px 10px",borderRadius:"20px",border:"0.5px solid "+(selectedDemo.status===s?"#F97316":"#E5E7EB"),background:selectedDemo.status===s?"#FFF7ED":"transparent",color:selectedDemo.status===s?"#F97316":"#374151",cursor:"pointer"}}>{s}</button>
+                    ))}
+                  </div>
+                </div>
+                <div style={{flex:1,overflowY:"auto",padding:"16px 18px",display:"flex",flexDirection:"column",gap:"12px"}}>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px"}}>
+                    {[
+                      {label:"Requested Date",value:selectedDemo.selected_date},
+                      {label:"Requested Time",value:selectedDemo.selected_time+" CST"},
+                      {label:"Role",value:selectedDemo.role},
+                      {label:"Country",value:selectedDemo.country},
+                      {label:"Studies at Site",value:selectedDemo.studies_count},
+                      {label:"Submitted",value:new Date(selectedDemo.created_at).toLocaleString()},
+                    ].map((item:any,i:number)=>(
+                      <div key={i} style={{background:"#F9FAFB",borderRadius:"8px",padding:"10px 12px"}}>
+                        <div style={{fontSize:"10px",color:"#9CA3AF",fontWeight:"600",textTransform:"uppercase" as const,letterSpacing:".05em",marginBottom:"3px"}}>{item.label}</div>
+                        <div style={{fontSize:"12px",color:"#111827",fontWeight:"500"}}>{item.value||"—"}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {selectedDemo.message&&(
+                    <div style={{background:"#F9FAFB",borderRadius:"8px",padding:"12px 14px"}}>
+                      <div style={{fontSize:"10px",color:"#9CA3AF",fontWeight:"600",textTransform:"uppercase" as const,letterSpacing:".05em",marginBottom:"6px"}}>Their message</div>
+                      <div style={{fontSize:"12px",color:"#374151",lineHeight:"1.6"}}>{selectedDemo.message}</div>
+                    </div>
+                  )}
+                  <div>
+                    <label style={{fontSize:"10px",fontWeight:"600",color:"#9CA3AF",display:"block",marginBottom:"5px",textTransform:"uppercase" as const,letterSpacing:".05em"}}>Internal Notes</label>
+                    <textarea value={demoNotes} onChange={(e:any)=>setDemoNotes(e.target.value)} placeholder="Add internal notes..." rows={3} style={{width:"100%",fontSize:"12px",border:"0.5px solid #E5E7EB",borderRadius:"8px",padding:"8px 10px",resize:"vertical" as const,fontFamily:"inherit"}}/>
+                    <button onClick={()=>updateDemoStatus(selectedDemo.id,selectedDemo.status,demoNotes)} style={{marginTop:"6px",fontSize:"11px",padding:"6px 14px",background:"#F97316",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Save Notes</button>
+                  </div>
+                  <div style={{borderTop:"0.5px solid #E5E7EB",paddingTop:"12px"}}>
+                    <div style={{fontSize:"11px",fontWeight:"600",color:"#374151",marginBottom:"8px"}}>Convert to Client</div>
+                    <button onClick={async()=>{
+                      const res=await fetch("/api/generate-site360-token",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({site_name:selectedDemo.site_name,email:selectedDemo.email,secret:process.env.NEXT_PUBLIC_SITE360_TOKEN_SECRET||"site360-admin-2026",created_by:adminUser?.email})});
+                      const data=await res.json();
+                      if(data.signup_url){navigator.clipboard.writeText(data.signup_url);alert("Signup link copied!");}
+                    }} style={{fontSize:"11px",padding:"8px 16px",background:"#ECFDF5",color:"#065F46",border:"0.5px solid #A7F3D0",borderRadius:"8px",cursor:"pointer",fontWeight:"500"}}>Generate & Copy Signup Link</button>
+                  </div>
+                </div>
+              </div>
+            ):(
+              <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#6B7280",fontSize:"12px"}}>Select a demo request to view details</div>
+            )}
+          </div>
+        )}
+      </main>
     </div>
   );
 }
