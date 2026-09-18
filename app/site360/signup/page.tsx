@@ -21,6 +21,8 @@ function SignupContent(){
   const[showConfirm,setShowConfirm]=useState(false);
   const[error,setError]=useState("");
   const[loading,setLoading]=useState(false);
+  const[resending,setResending]=useState(false);
+  const[resendMessage,setResendMessage]=useState<{text:string,ok:boolean}|null>(null);
 
   const P={
     primary:"#F97316",primaryLight:"#FFEDD5",
@@ -93,6 +95,23 @@ function SignupContent(){
     setLoading(false);
   }
 
+  async function handleResend(){
+    setResending(true);
+    setResendMessage(null);
+    const origin=typeof window!=="undefined"?window.location.origin:"https://www.trial360os.com";
+    const{error}=await supabase.auth.resend({
+      type:"signup",
+      email:email.trim(),
+      options:{emailRedirectTo:`${origin}/site360/setup`}
+    });
+    if(error){
+      setResendMessage({text:error.message,ok:false});
+    }else{
+      setResendMessage({text:"Confirmation email resent — check your inbox.",ok:true});
+    }
+    setResending(false);
+  }
+
   const inputStyle={
     width:"100%",fontSize:"13px",
     padding:"10px 12px",
@@ -153,9 +172,13 @@ function SignupContent(){
         <div style={{fontSize:"13px",color:P.textTert,lineHeight:1.6,marginBottom:"1rem"}}>
           We've sent a confirmation link to <strong style={{color:P.text}}>{email}</strong>. Click it to confirm your account — you'll be taken straight to setting up your site.
         </div>
-        <div style={{fontSize:"11px",color:P.textTert,padding:"10px 12px",background:P.bgSec,borderRadius:"8px"}}>
+        {resendMessage&&<div style={{fontSize:"12px",marginBottom:"12px",padding:"8px 10px",borderRadius:"8px",background:resendMessage.ok?P.successLight:P.dangerLight,color:resendMessage.ok?P.success:P.danger}}>{resendMessage.text}</div>}
+        <div style={{fontSize:"11px",color:P.textTert,padding:"10px 12px",background:P.bgSec,borderRadius:"8px",marginBottom:"1rem"}}>
           Don't see it? Check spam, or wait a minute and refresh your inbox.
         </div>
+        <button onClick={handleResend} disabled={resending} style={{width:"100%",padding:"10px",background:"none",color:P.primary,border:`1px solid ${P.primary}`,borderRadius:"8px",fontSize:"13px",fontWeight:"600",cursor:resending?"not-allowed":"pointer",opacity:resending?0.6:1}}>
+          {resending?"Sending...":"Resend confirmation email"}
+        </button>
       </div>
     </div>
   );
