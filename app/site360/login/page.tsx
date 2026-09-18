@@ -28,18 +28,50 @@ export default function Site360LoginPage() {
     setError('');
     setLoading(true);
 
-    const { error: authError } = await supabase.auth.signInWithPassword({
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
     });
 
-    if (authError) {
+    if (authError || !authData.user) {
       setError('Invalid email or password. Please try again.');
       setLoading(false);
       return;
     }
 
-    // Login successful — redirect to dashboard
+    // Authentication succeeded, but TMF360 and Site360 share the same
+    // Supabase project (same auth.users table) — a valid login here doesn't
+    // mean this account is actually a Site360 account. Check the
+    // organization type before letting them in; sign back out if it's not
+    // a Site-type org, so credentials that work for TMF360 can't be used
+    // to reach Site360's dashboard.
+    const { data: userRole } = await supabase
+      .from('user_roles')
+      .select('org_id')
+      .eq('user_id', authData.user.id)
+      .single();
+
+    if (!userRole?.org_id) {
+      await supabase.auth.signOut();
+      setError('No Site360 account found for this login. Contact your administrator.');
+      setLoading(false);
+      return;
+    }
+
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('type')
+      .eq('id', userRole.org_id)
+      .single();
+
+    if (org?.type !== 'Site') {
+      await supabase.auth.signOut();
+      setError('This account isn\'t set up for Site360. If you\'re trying to reach TMF360, use the platform link below.');
+      setLoading(false);
+      return;
+    }
+
+    // Confirmed a genuine Site360 account — redirect to dashboard
     window.location.href = '/site360';
   }
 

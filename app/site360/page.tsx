@@ -26,6 +26,20 @@ type Panel = 'dashboard' | 'activation' | 'isf' |
 // CDN link TMF360 uses — see the <link> tag in the header below. This is the
 // icon system TMF360 uses; Site360 previously used emoji, which is one of the
 // two things that made it look like a different, unrelated product.
+// Site360's own role set — distinct from TMF360's sponsor/CRO-side roles
+// (System Administrator, Sponsor Admin, TMF Lead, CRA, CTA, QA, Trial Manager,
+// Regulatory, Site Team, Auditor) since site staff hold different roles.
+const SITE_ROLES = ['Site Coordinator', 'PI', 'Sub-Investigator', 'CRC', 'Pharmacist', 'Regulatory Coordinator', 'Read Only'];
+const ROLE_COLORS: Record<string, [string, string]> = {
+  'Site Coordinator': ['#3B82F6', '#EFF6FF'],
+  'PI': ['#8B5CF6', '#F5F3FF'],
+  'Sub-Investigator': ['#10B981', '#ECFDF5'],
+  'CRC': ['#F97316', '#FFEDD5'],
+  'Pharmacist': ['#F59E0B', '#FFFBEB'],
+  'Regulatory Coordinator': ['#EF4444', '#FEF2F2'],
+  'Read Only': ['#6B7280', '#F3F4F6'],
+};
+
 const NAV_GROUPS = [
   { label: 'Overview', items: [
     { key: 'dashboard', label: 'Dashboard', icon: 'ti-layout-dashboard' },
@@ -80,6 +94,9 @@ export default function Site360Page() {
   const [isfDocs, setIsfDocs] = useState<any[]>([]);
   const [auditTrail, setAuditTrail] = useState<any[]>([]);
   const [queries, setQueries] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [studyMembers, setStudyMembers] = useState<any[]>([]);
+  const [roleFilter, setRoleFilter] = useState<string | null>(null);
 
   // Forms
   const [showAddTask, setShowAddTask] = useState(false);
@@ -92,9 +109,17 @@ export default function Site360Page() {
   const [showNewStudy, setShowNewStudy] = useState(false);
   const [newStudy, setNewStudy] = useState({ study_id: '', protocol: '', sponsor: '', phase: 'Phase I', status: 'Startup' });
   const [creatingStudy, setCreatingStudy] = useState(false);
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [newUser, setNewUser] = useState({ full_name: '', email: '', role: 'Site Coordinator' });
+  const [addingUser, setAddingUser] = useState(false);
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [newMember, setNewMember] = useState({ name: '', email: '', role: 'Site Coordinator' });
+  const [addingMember, setAddingMember] = useState(false);
 
   useEffect(() => { loadData(); }, []);
   useEffect(() => { if (activeStudy && site) loadStudyData(); }, [activeStudy]);
+  useEffect(() => { if (userRole) loadUsers(); }, [userRole]);
+  useEffect(() => { if (activeStudy) loadStudyMembers(); }, [activeStudy]);
 
   async function loadData() {
     setLoading(true);
@@ -106,6 +131,18 @@ export default function Site360Page() {
       const { data: ur } = await supabase.from('user_roles').select('org_id, full_name, role').eq('user_id', u.id).single();
       if (!ur) { window.location.href = '/site360/login'; return; }
       setUserRole(ur);
+
+      // Backstop for the same shared-login issue the Site360 login page
+      // guards against: a session that's already live (e.g. someone signed
+      // into TMF360 in this browser) could land here directly without ever
+      // going through Site360's login page. Verify the org type before
+      // showing anything.
+      const { data: org } = await supabase.from('organizations').select('type').eq('id', ur.org_id).single();
+      if (org?.type !== 'Site') {
+        await supabase.auth.signOut();
+        window.location.href = '/site360/login';
+        return;
+      }
 
       const { data: siteData } = await supabase.from('sites').select('*').eq('org_id', ur.org_id).single();
       if (!siteData) { setLoading(false); return; }
@@ -228,6 +265,54 @@ export default function Site360Page() {
   async function deleteActivationItem(id: string) {
     await supabase.from('site_activation_items').delete().eq('id', id);
     loadStudyData();
+  }
+
+  // --- User Management ---
+  async function loadUsers() {
+    if (!userRole) return;
+    const { data } = await supabase.from('user_roles').select('*').eq('org_id', userRole.org_id).order('created_at', { ascending: false });
+    if (data) setUsers(data);
+  }
+
+  async function loadStudyMembers() {
+    if (!activeStudy) return;
+    const { data } = await supabase.from('study_members').select('*').eq('study_id', activeStudy.id).order('created_at', { ascending: false });
+    if (data) setStudyMembers(data);
+  }
+
+  // Creates the user_roles record only (metadata + permissions). This does NOT
+  // create a Supabase Auth login — that needs a service-role invite call from
+  // a server route, same as however TMF360's admin signup-link flow issues
+  // credentials today. Until that route exists here, new rows are flagged
+  // 'Invited' so it's clear the person can't sign in yet.
+  async function addUser() {
+    if (!newUser.full_name || !newUser.email || !userRole) return;
+    setAddingUser(true);
+    await supabase.from('user_roles').insert([{ org_id: userRole.org_id, full_name: newUser.full_name, email: newUser.email, role: newUser.role, status: 'Invited', can_upload: false, can_download: false, notifications_enabled: false, can_delete: false }]);
+    setShowAddUser(false);
+    setNewUser({ full_name: '', email: '', role: 'Site Coordinator' });
+    setAddingUser(false);
+    loadUsers();
+  }
+
+  async function updateUser(id: string, fields: Record<string, any>) {
+    await supabase.from('user_roles').update(fields).eq('id', id);
+    loadUsers();
+  }
+
+  async function addStudyMember() {
+    if (!newMember.name || !newMember.email || !activeStudy || !userRole) return;
+    setAddingMember(true);
+    await supabase.from('study_members').insert([{ org_id: userRole.org_id, study_id: activeStudy.id, name: newMember.name, email: newMember.email, role: newMember.role, added_by: site?.user_name || user?.email, status: 'Active' }]);
+    setShowAddMember(false);
+    setNewMember({ name: '', email: '', role: 'Site Coordinator' });
+    setAddingMember(false);
+    loadStudyMembers();
+  }
+
+  async function removeStudyMember(id: string) {
+    await supabase.from('study_members').delete().eq('id', id);
+    loadStudyMembers();
   }
 
   async function addAE() {
@@ -928,9 +1013,93 @@ export default function Site360Page() {
             </div>
           )}
 
+          {/* USER MANAGEMENT */}
+          {panel === 'users' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>User Management</div>
+                <button onClick={() => setShowAddUser(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 500, padding: '9px 16px', background: C.orange, color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer' }}><i className="ti ti-plus" style={{ fontSize: '14px' }} />Add User</button>
+              </div>
+
+              {/* Role filter pills */}
+              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '8px' }}>
+                {SITE_ROLES.map(r => {
+                  const [c, bg] = ROLE_COLORS[r];
+                  const active = roleFilter === r;
+                  return (
+                    <button key={r} onClick={() => setRoleFilter(active ? null : r)} style={{ fontSize: '11px', fontWeight: 600, padding: '5px 12px', borderRadius: '20px', border: active ? `1.5px solid ${c}` : '1.5px solid transparent', background: bg, color: c, cursor: 'pointer' }}>{r}</button>
+                  );
+                })}
+              </div>
+
+              {/* Users table */}
+              <div style={{ ...card(), padding: 0, overflow: 'hidden', overflowX: 'auto' as const }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', minWidth: '1000px' }}>
+                  {tableHead(['Name / Email', 'Role', 'Status', 'Added', 'Upload', 'Download', 'Notifications', 'Can Delete', 'Activate / Deactivate'])}
+                  <tbody>
+                    {users.filter(u => !roleFilter || u.role === roleFilter).length === 0 ? emptyRow(9, 'No users found.') : users.filter(u => !roleFilter || u.role === roleFilter).map((u, i) => {
+                      const [rc, rbg] = ROLE_COLORS[u.role] || [C.textMuted, C.bgTert];
+                      return (
+                        <tr key={u.id || i} style={{ borderBottom: `0.5px solid ${C.border}` }}>
+                          <td style={{ padding: '10px 14px' }}>
+                            <div style={{ fontWeight: 600, color: C.text }}>{u.full_name}</div>
+                            <div style={{ fontSize: '11px', color: C.textMuted }}>{u.email}</div>
+                          </td>
+                          <td style={{ padding: '10px 14px' }}>
+                            <select value={u.role} onChange={e => updateUser(u.id, { role: e.target.value })} style={{ fontSize: '11px', fontWeight: 600, padding: '5px 10px', borderRadius: '20px', border: `0.5px solid ${rc}`, background: rbg, color: rc, cursor: 'pointer' }}>
+                              {SITE_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                            </select>
+                          </td>
+                          <td style={{ padding: '10px 14px' }}>{badge(u.status || 'Active', u.status === 'Inactive' ? C.red : u.status === 'Invited' ? C.blue : C.green, u.status === 'Inactive' ? C.redLight : u.status === 'Invited' ? C.blueLight : C.greenLight)}</td>
+                          <td style={{ padding: '10px 14px', color: C.textMuted }}>{u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</td>
+                          {(['can_upload', 'can_download', 'notifications_enabled', 'can_delete'] as const).map(f => (
+                            <td key={f} style={{ padding: '10px 14px' }}>
+                              <button onClick={() => updateUser(u.id, { [f]: !u[f] })} style={{ fontSize: '10px', fontWeight: 700, padding: '3px 10px', borderRadius: '20px', border: 'none', cursor: 'pointer', color: u[f] ? C.green : C.red, background: u[f] ? C.greenLight : C.redLight }}>{u[f] ? (f === 'notifications_enabled' ? 'ON' : 'YES') : (f === 'notifications_enabled' ? 'OFF' : 'NO')}</button>
+                            </td>
+                          ))}
+                          <td style={{ padding: '10px 14px' }}>
+                            <button onClick={() => updateUser(u.id, { status: u.status === 'Inactive' ? 'Active' : 'Inactive' })} style={{ fontSize: '11px', fontWeight: 600, color: u.status === 'Inactive' ? C.green : C.red, background: 'none', border: 'none', cursor: 'pointer' }}>{u.status === 'Inactive' ? 'Activate' : 'Deactivate'}</button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div style={{ fontSize: '11px', color: C.textMuted }}>"Add User" creates the account record and role here. Sending sign-in credentials still needs an invite step — tell me if you want that wired up next.</div>
+
+              {/* Study Members */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
+                <div>
+                  <div style={{ fontSize: '15px', fontWeight: 700, color: C.text }}>Study Members {activeStudy ? `— ${activeStudy.study_id}` : ''}</div>
+                  <div style={{ fontSize: '11px', color: C.textMuted, marginTop: '1px' }}>Users with access to this study</div>
+                </div>
+                <button onClick={() => setShowAddMember(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 500, padding: '9px 16px', background: C.orange, color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer' }}><i className="ti ti-plus" style={{ fontSize: '14px' }} />Add Member</button>
+              </div>
+              <div style={{ ...card(), padding: 0, overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                  {tableHead(['Name', 'Email', 'Role', 'Added By', 'Added At', 'Status', 'Action'])}
+                  <tbody>
+                    {studyMembers.length === 0 ? emptyRow(7, 'No members yet.') : studyMembers.map((m, i) => (
+                      <tr key={m.id || i} style={{ borderBottom: `0.5px solid ${C.border}` }}>
+                        <td style={{ padding: '10px 14px', fontWeight: 500 }}>{m.name}</td>
+                        <td style={{ padding: '10px 14px', color: C.textSec }}>{m.email}</td>
+                        <td style={{ padding: '10px 14px' }}>{badge(m.role, (ROLE_COLORS[m.role] || [C.textMuted, C.bgTert])[0], (ROLE_COLORS[m.role] || [C.textMuted, C.bgTert])[1])}</td>
+                        <td style={{ padding: '10px 14px', color: C.textMuted }}>{m.added_by || '—'}</td>
+                        <td style={{ padding: '10px 14px', color: C.textMuted }}>{m.created_at ? new Date(m.created_at).toLocaleDateString() : '—'}</td>
+                        <td style={{ padding: '10px 14px' }}>{badge(m.status || 'Active', C.green, C.greenLight)}</td>
+                        <td style={{ padding: '10px 14px' }}><button onClick={() => removeStudyMember(m.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.red, fontSize: '11px', fontWeight: 600 }}>Remove</button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
           {/* PLACEHOLDER PANELS */}
-          {['readiness', 'report', 'archived', 'messages', 'users'].includes(panel) && comingSoon(
-            panel === 'readiness' ? 'Inspection Readiness' : panel === 'report' ? 'ISF Report' : panel === 'archived' ? 'Archived' : panel === 'messages' ? 'Messages' : 'User Management'
+          {['readiness', 'report', 'archived', 'messages'].includes(panel) && comingSoon(
+            panel === 'readiness' ? 'Inspection Readiness' : panel === 'report' ? 'ISF Report' : panel === 'archived' ? 'Archived' : 'Messages'
           )}
 
         </main>
@@ -1001,6 +1170,23 @@ export default function Site360Page() {
           </div>
         </div>
       )}
+
+      {showAddUser && modal('Add User', () => setShowAddUser(false), (
+        <>
+          {field('Full Name *', input(newUser.full_name, v => setNewUser(p => ({ ...p, full_name: v })), 'Jane Smith'))}
+          {field('Email *', input(newUser.email, v => setNewUser(p => ({ ...p, email: v })), 'jane@site.com', 'email'))}
+          {field('Role', sel(newUser.role, v => setNewUser(p => ({ ...p, role: v })), SITE_ROLES))}
+          <div style={{ fontSize: '11px', color: C.textMuted, padding: '8px 10px', background: C.bg, borderRadius: '8px' }}>This creates the user's record and role. Sign-in credentials are issued separately.</div>
+        </>
+      ), addUser, addingUser)}
+
+      {showAddMember && modal('Add Study Member', () => setShowAddMember(false), (
+        <>
+          {field('Name *', input(newMember.name, v => setNewMember(p => ({ ...p, name: v })), 'Jane Smith'))}
+          {field('Email *', input(newMember.email, v => setNewMember(p => ({ ...p, email: v })), 'jane@site.com', 'email'))}
+          {field('Role', sel(newMember.role, v => setNewMember(p => ({ ...p, role: v })), SITE_ROLES))}
+        </>
+      ), addStudyMember, addingMember)}
 
     </div>
   );
