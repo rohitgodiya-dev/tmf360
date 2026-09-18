@@ -392,23 +392,37 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
     blue:"#3B82F6",blueLight:"#EFF6FF",
   };
 
+  async function checkOrgAndEnter(uid:string){
+    const{data}=await supabase.from("user_roles").select("org_id").eq("user_id",uid).single();
+    if(!data||!data.org_id){window.location.href="/setup";return;}
+    // TMF360 and Site360 share the same Supabase auth.users table, so a
+    // valid login here doesn't guarantee this is a TMF360 (sponsor/CRO)
+    // account — it could be a Site360 account. Site360 organizations are
+    // type "Site"; reject those from TMF360's platform.
+    const{data:org}=await supabase.from("organizations").select("type").eq("id",data.org_id).single();
+    if(org?.type==="Site"){
+      await supabase.auth.signOut();
+      setUser(null);
+      setPanel("auth");
+      setAuthError("This account isn't set up for TMF360. It looks like a Site360 account — please sign in at Site360 instead.");
+      return;
+    }
+    const saved=typeof window!=="undefined"?localStorage.getItem("tmf_panel"):null;
+    setPanel(saved&&saved!=="auth"?saved:"dashboard");
+    loadUserRole(uid);
+  }
+
   useEffect(()=>{
     supabase.auth.getSession().then(({data:{session}})=>{
       if(session?.user){
         setUser(session.user);
-        supabase.from("user_roles").select("org_id").eq("user_id",session.user.id).single().then(({data})=>{
-          if(!data||!data.org_id){window.location.href="/setup";}
-          else{const saved=typeof window!=="undefined"?localStorage.getItem("tmf_panel"):null;setPanel(saved&&saved!=="auth"?saved:"dashboard");loadUserRole(session.user.id);}
-        });
+        checkOrgAndEnter(session.user.id);
       }
     });
     supabase.auth.onAuthStateChange((_,session)=>{
       if(session?.user){
         setUser(session.user);
-        supabase.from("user_roles").select("org_id").eq("user_id",session.user.id).single().then(({data})=>{
-          if(!data||!data.org_id){window.location.href="/setup";}
-          else{const saved=typeof window!=="undefined"?localStorage.getItem("tmf_panel"):null;setPanel(saved&&saved!=="auth"?saved:"dashboard");loadUserRole(session.user.id);}
-        });
+        checkOrgAndEnter(session.user.id);
       }else{
         setUser(null);setPanel("auth");setStudies([]);setDocs([]);setActiveStudy(null);
       }
