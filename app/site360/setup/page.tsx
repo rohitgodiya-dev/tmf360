@@ -102,7 +102,7 @@ export default function Site360SetupPage(){
 
       // Create study
       const{data:newStudy,error:studyErr}=await supabase.from("studies").insert([{
-        org_id:orgId,study_id:studyId.trim(),protocol,phase,sponsor,status:"Active",created_by:user.id,
+        org_id:orgId,study_id:studyId.trim(),protocol,phase,sponsor,status:"Active",
       }]).select().single();
       if(studyErr||!newStudy){showMsg("Error: "+(studyErr?.message||"Failed to create study"),"error");setSaving(false);return;}
 
