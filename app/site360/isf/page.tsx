@@ -160,7 +160,9 @@ export default function ISFPage() {
         .eq('site_id', siteData.id)
         .eq('org_id', ur.org_id);
       if (siteStudies && siteStudies.length > 0) {
-        setStudy(siteStudies[0].studies);
+        const savedId = typeof window !== 'undefined' ? localStorage.getItem('site360_active_study') : null;
+        const match = savedId ? siteStudies.find(ss => ss.studies?.id === savedId) : null;
+        setStudy((match || siteStudies[0]).studies);
       }
 
       setUploadForm(f => ({ ...f, owner: ur.full_name || u.email?.split('@')[0] || '' }));

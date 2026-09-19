@@ -158,7 +158,9 @@ export default function Site360Page() {
       if (siteStudies && siteStudies.length > 0) {
         const studyList = siteStudies.map(ss => ({ ...ss.studies, site_study_id: ss.id, site_study_status: ss.status, activation_date: ss.activation_date }));
         setStudies(studyList);
-        setActiveStudy(studyList[0]);
+        const savedId = typeof window !== 'undefined' ? localStorage.getItem('site360_active_study') : null;
+        const toSelect = savedId ? studyList.find(s => s.id === savedId) || studyList[0] : studyList[0];
+        setActiveStudy(toSelect);
       }
     } catch (e) { console.error(e); }
     setLoading(false);
@@ -506,7 +508,7 @@ export default function Site360Page() {
                 {studies.length === 0 ? (
                   <div style={{ padding: '12px 14px', fontSize: '12px', color: C.textMuted }}>No studies found for this site.</div>
                 ) : studies.map((s, i) => (
-                  <button key={i} onClick={() => { setActiveStudy(s); setShowStudyDropdown(false); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '10px 14px', border: 'none', background: activeStudy?.id === s.id ? C.orangeLight : 'transparent', cursor: 'pointer', textAlign: 'left' as const, borderBottom: i < studies.length - 1 ? `0.5px solid ${C.border}` : 'none' }}>
+                  <button key={i} onClick={() => { setActiveStudy(s); localStorage.setItem('site360_active_study', s.id); setShowStudyDropdown(false); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '10px 14px', border: 'none', background: activeStudy?.id === s.id ? C.orangeLight : 'transparent', cursor: 'pointer', textAlign: 'left' as const, borderBottom: i < studies.length - 1 ? `0.5px solid ${C.border}` : 'none' }}>
                     <div>
                       <div style={{ fontSize: '12px', fontWeight: 600, color: activeStudy?.id === s.id ? C.orange : C.text }}>{s.study_id} — {s.protocol || 'Protocol TBD'}</div>
                       <div style={{ fontSize: '10px', color: C.textMuted, marginTop: '1px' }}>{s.phase || ''} {s.sponsor ? `· ${s.sponsor}` : ''}</div>
@@ -718,7 +720,7 @@ export default function Site360Page() {
                 <button onClick={() => setShowNewStudy(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 500, padding: '9px 16px', background: C.orange, color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}><i className="ti ti-circle-plus" style={{ fontSize: '14px' }} />New study</button>
               </div>
               {studies.map((s, i) => (
-                <div key={i} style={{ ...card(), cursor: 'pointer', border: activeStudy?.id === s.id ? `1px solid ${C.orange}` : `0.5px solid ${C.border}` }} onClick={() => setActiveStudy(s)}>
+                <div key={i} style={{ ...card(), cursor: 'pointer', border: activeStudy?.id === s.id ? `1px solid ${C.orange}` : `0.5px solid ${C.border}` }} onClick={() => { setActiveStudy(s); localStorage.setItem('site360_active_study', s.id); }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
                       <div style={{ fontSize: '15px', fontWeight: 700, color: C.text, marginBottom: '4px' }}>{s.study_id} — {s.protocol || 'Protocol TBD'}</div>
