@@ -15,7 +15,7 @@ const C = {
   amber: '#F59E0B', amberLight: '#FFFBEB',
 };
 
-type Panel = 'dashboard' | 'sites' | 'documents' | 'artifacts' | 'gap' | 'readiness' | 'report' | 'audit' | 'quality' | 'auditor' | 'queries' | 'messages' | 'users' | 'config' | 'ticket' | 'archived';
+type Panel = 'dashboard' | 'documents' | 'artifacts' | 'gap' | 'readiness' | 'report' | 'audit' | 'quality' | 'auditor' | 'queries' | 'messages' | 'users' | 'config' | 'ticket' | 'archived';
 
 const ISF_ARTIFACTS = [
   { zone: '5', zname: 'Site Management', section: '5.01', sname: 'Ethics', num: '05.01.01', name: 'IRB/IEC Approval Letter', cl: 'Core' },
@@ -373,7 +373,6 @@ Your role:
         <aside style={{ width: '192px', borderRight: `0.5px solid ${C.border}`, background: C.bgCard, overflowY: 'auto', flexShrink: 0, padding: '8px' }}>
           <p style={{ fontSize: '9px', fontWeight: 500, color: C.textMuted, padding: '8px 10px 4px', textTransform: 'uppercase' as const, letterSpacing: '.06em', margin: 0 }}>Overview</p>
           {navItem('dashboard', 'Dashboard', 'ti-layout-dashboard')}
-          {navItem('sites', 'Sites', 'ti-building')}
           <p style={{ fontSize: '9px', fontWeight: 500, color: C.textMuted, padding: '10px 10px 4px', textTransform: 'uppercase' as const, letterSpacing: '.06em', margin: 0 }}>ISF Documents</p>
           {navItem('documents', 'Documents', 'ti-files', draftDocs.length || undefined)}
           {navItem('artifacts', 'Artifact browser', 'ti-layout-grid')}
@@ -480,36 +479,6 @@ Your role:
               </div>
             </div>
           )}
-
-          {panel === 'sites' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>Sites</div>
-              <div style={card()}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                  {[
-                    ['Site Name', site.site_name],
-                    ['Site Code', site.site_code],
-                    ['Country', site.country || '—'],
-                    ['City', site.city || '—'],
-                    ['Principal Investigator', site.pi_name || '—'],
-                    ['PI Email', site.pi_email || '—'],
-                    ['Study ID', study?.study_id || '—'],
-                    ['Protocol', study?.protocol || '—'],
-                    ['Status', site.status || 'Active'],
-                    ['Activation Date', site.activation_date ? new Date(site.activation_date).toLocaleDateString() : '—'],
-                    ['IRB Number', config?.irb_number || '—'],
-                    ['ISF Effective Date', config?.effective_date ? new Date(config.effective_date).toLocaleDateString() : '—'],
-                  ].map(([l, v], i) => (
-                    <div key={i} style={{ padding: '10px 0', borderBottom: `0.5px solid ${C.border}` }}>
-                      <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '3px' }}>{l}</div>
-                      <div style={{ fontSize: '13px', fontWeight: 500, color: C.text }}>{v}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
           {panel === 'documents' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
