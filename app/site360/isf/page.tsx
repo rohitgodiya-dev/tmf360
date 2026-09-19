@@ -15,7 +15,7 @@ const C = {
   amber: '#F59E0B', amberLight: '#FFFBEB',
 };
 
-type Panel = 'dashboard' | 'documents' | 'artifacts' | 'gap' | 'readiness' | 'report' | 'audit' | 'quality' | 'auditor' | 'queries' | 'messages' | 'users' | 'config' | 'ticket' | 'archived';
+type Panel = 'dashboard' | 'documents' | 'artifacts' | 'gap' | 'readiness' | 'report' | 'audit' | 'quality' | 'auditor' | 'queries' | 'users' | 'config' | 'ticket' | 'archived';
 
 const ISF_ARTIFACTS = [
   { zone: '5', zname: 'Site Management', section: '5.01', sname: 'Ethics', num: '05.01.01', name: 'IRB/IEC Approval Letter', cl: 'Core' },
@@ -79,6 +79,23 @@ const ISF_FLAG_LABELS: Record<string, { label: string; color: string; bg: string
   EXPIRED: { label: 'Document expired', color: '#991B1B', bg: '#FEF2F2', fix: 'Renew or replace the expired document', pts: 15 },
 };
 
+function appendNote(existing: string | undefined | null, text: string, email: string): string {
+  const stamp = `[${new Date().toLocaleString()} - ${email}]: ${text.trim()}`;
+  return existing ? `${existing}\n${stamp}` : stamp;
+}
+
+function formatFileSize(bytes?: number): string {
+  if (!bytes) return '—';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function isPreviewable(name?: string): boolean {
+  if (!name) return false;
+  return /\.(png|jpg|jpeg|gif|webp|pdf)$/i.test(name);
+}
+
 export default function ISFPage() {
   const [panel, setPanel] = useState<Panel>('dashboard');
   const [site, setSite] = useState<any>(null);
@@ -101,12 +118,19 @@ export default function ISFPage() {
 
   const [showUpload, setShowUpload] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [uploadForm, setUploadForm] = useState({ title: '', zone: '5', section: '', artifact_num: '', artifact_name: '', version: '1.0', effective_date: '', expiry_date: '', comments: '' });
+  const [uploadForm, setUploadForm] = useState({ title: '', zone: '5', artifact_num: '', artifact_name: '', section: '', version: '1.0', owner: '', status: 'Draft', effective_date: '', expiry_date: '', comments: '' });
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [showAddQuery, setShowAddQuery] = useState(false);
-  const [newQuery, setNewQuery] = useState({ query_number: '', description: '', raised_by_name: '', assigned_to_name: '', priority: 'Medium', due_date: '' });
+  const [newQuery, setNewQuery] = useState({ query_number: '', description: '', raised_by_name: '', assigned_to_name: '', priority: 'Medium', due_date: '', artifact_name: '', zone: '', document_id: '' });
+
+  const [showCommentModal, setShowCommentModal] = useState(false);
+  const [commentTarget, setCommentTarget] = useState<any>(null);
+  const [commentText, setCommentText] = useState('');
+
+  const [previewDoc, setPreviewDoc] = useState<any>(null);
 
   const [chatMessages, setChatMessages] = useState<{ role: string; content: string }[]>([
     { role: 'assistant', content: 'Hello! I am the ISF Auditor, powered by Trinity AI. I can help you review your ISF for inspection readiness, identify gaps, and answer questions about ICH E6(R3) site obligations. What would you like to know?' }
@@ -130,8 +154,16 @@ export default function ISFPage() {
       if (!siteData) { setLoading(false); return; }
       setSite({ ...siteData, user_name: ur.full_name || u.email?.split('@')[0], user_role: ur.role });
 
-      const { data: studyData } = await supabase.from('studies').select('*').eq('id', siteData.study_id).single();
-      if (studyData) setStudy(studyData);
+      const { data: siteStudies } = await supabase
+        .from('site_studies')
+        .select('*, studies(*)')
+        .eq('site_id', siteData.id)
+        .eq('org_id', ur.org_id);
+      if (siteStudies && siteStudies.length > 0) {
+        setStudy(siteStudies[0].studies);
+      }
+
+      setUploadForm(f => ({ ...f, owner: ur.full_name || u.email?.split('@')[0] || '' }));
 
       const [{ data: docsData }, { data: auditData }, { data: queryData }, { data: configData }, { data: memberData }] = await Promise.all([
         supabase.from('isf_documents').select('*').eq('site_id', siteData.id).order('created_at', { ascending: false }),
@@ -153,7 +185,7 @@ export default function ISFPage() {
   async function logAudit(action: string, docId?: string, prev?: string, next?: string) {
     if (!site || !user) return;
     await supabase.from('isf_audit_trail').insert([{
-      org_id: site.org_id, site_id: site.id, study_id: site.study_id,
+      org_id: site.org_id, site_id: site.id, study_id: study?.id,
       document_id: docId || null, action, actor_id: user.id,
       actor_email: user.email, previous_value: prev || null, new_value: next || null,
     }]);
@@ -170,22 +202,45 @@ export default function ISFPage() {
       const { data: urlData } = supabase.storage.from('isf-documents').getPublicUrl(path);
       const { data: ur } = await supabase.from('user_roles').select('org_id').eq('user_id', user.id).single();
       const { data: newDoc } = await supabase.from('isf_documents').insert([{
-        org_id: ur?.org_id, site_id: site.id, study_id: site.study_id,
-        ...uploadForm, file_url: urlData?.publicUrl, file_name: uploadFile.name,
-        file_size: uploadFile.size, uploaded_by: user.id, uploaded_by_email: user.email, status: 'Draft',
+        org_id: ur?.org_id, site_id: site.id, study_id: study?.id,
+        title: uploadForm.title, zone: uploadForm.zone, section: uploadForm.section,
+        artifact_num: uploadForm.artifact_num, artifact_name: uploadForm.artifact_name,
+        version: uploadForm.version, owner: uploadForm.owner, status: uploadForm.status,
+        effective_date: uploadForm.effective_date || null, expiry_date: uploadForm.expiry_date || null,
+        comments: uploadForm.comments || null,
+        file_url: urlData?.publicUrl, file_name: uploadFile.name,
+        file_size: uploadFile.size, uploaded_by: user.id, uploaded_by_email: user.email,
       }]).select().single();
       if (newDoc) await logAudit('UPLOAD', newDoc.id, undefined, uploadForm.title);
       setShowUpload(false);
-      setUploadForm({ title: '', zone: '5', section: '', artifact_num: '', artifact_name: '', version: '1.0', effective_date: '', expiry_date: '', comments: '' });
+      setUploadForm(f => ({ title: '', zone: '5', artifact_num: '', artifact_name: '', section: '', version: '1.0', owner: f.owner, status: 'Draft', effective_date: '', expiry_date: '', comments: '' }));
       setUploadFile(null);
       loadData();
     } catch (e) { console.error(e); }
     setUploading(false);
   }
 
-  async function approveDoc(doc: any) {
-    await supabase.from('isf_documents').update({ status: 'Approved', approved_by: user.id, approved_at: new Date().toISOString() }).eq('id', doc.id);
-    await logAudit('APPROVE', doc.id, 'Draft', 'Approved');
+  async function approveDoc(doc: any, comment?: string) {
+    const now = new Date().toISOString();
+    const updates: any = { status: 'Approved', approved_by: user.id, approved_by_email: user.email, approved_at: now };
+    if (comment) updates.comments = appendNote(doc.comments, comment, user.email);
+    await supabase.from('isf_documents').update(updates).eq('id', doc.id);
+    await logAudit('APPROVE', doc.id, doc.status, 'Approved');
+    loadData();
+  }
+
+  async function moveToReview(doc: any, comment: string) {
+    const updates: any = { status: 'Draft', comments: appendNote(doc.comments, comment, user.email) };
+    await supabase.from('isf_documents').update(updates).eq('id', doc.id);
+    await logAudit('MOVE_TO_REVIEW', doc.id, doc.status, 'Draft');
+    loadData();
+  }
+
+  async function addDocComment(doc: any, text: string) {
+    if (!text.trim()) return;
+    const newComments = appendNote(doc.comments, text, user.email);
+    await supabase.from('isf_documents').update({ comments: newComments }).eq('id', doc.id);
+    await logAudit('COMMENT', doc.id, undefined, text.trim());
     loadData();
   }
 
@@ -210,12 +265,18 @@ export default function ISFPage() {
     loadData();
   }
 
+  function openQueryForDoc(doc: any) {
+    setNewQuery({ query_number: '', description: '', raised_by_name: '', assigned_to_name: '', priority: 'Medium', due_date: '', artifact_name: doc.artifact_name || doc.title, zone: doc.zone, document_id: doc.id });
+    setShowAddQuery(true);
+  }
+
   async function addQuery() {
     if (!newQuery.description || !site) return;
     const { data: ur } = await supabase.from('user_roles').select('org_id').eq('user_id', user.id).single();
-    await supabase.from('isf_queries').insert([{ org_id: ur?.org_id, site_id: site.id, study_id: site.study_id, ...newQuery, raised_by: user.id, status: 'Open' }]);
+    await supabase.from('isf_queries').insert([{ org_id: ur?.org_id, site_id: site.id, study_id: study?.id, ...newQuery, raised_by: user.id, status: 'Open' }]);
+    if (newQuery.document_id) await logAudit('QUERY', newQuery.document_id, undefined, 'Query: ' + newQuery.description);
     setShowAddQuery(false);
-    setNewQuery({ query_number: '', description: '', raised_by_name: '', assigned_to_name: '', priority: 'Medium', due_date: '' });
+    setNewQuery({ query_number: '', description: '', raised_by_name: '', assigned_to_name: '', priority: 'Medium', due_date: '', artifact_name: '', zone: '', document_id: '' });
     loadData();
   }
 
@@ -286,6 +347,7 @@ Your role:
   });
 
   const artifactsByZone = ISF_ARTIFACTS.filter(a => !artZone || a.zone === artZone);
+  const uploadZoneArtifacts = ISF_ARTIFACTS.filter(a => a.zone === uploadForm.zone);
 
   const statusColor = (s: string) => ['Approved', 'Resolved', 'Closed'].includes(s) ? C.green : ['Draft', 'Open'].includes(s) ? C.blue : s === 'Archived' ? C.textMuted : C.amber;
   const statusBg = (s: string) => ['Approved', 'Resolved', 'Closed'].includes(s) ? C.greenLight : ['Draft', 'Open'].includes(s) ? C.blueLight : s === 'Archived' ? C.bg : C.amberLight;
@@ -386,7 +448,6 @@ Your role:
           {navItem('archived', 'Archived', 'ti-archive')}
           <p style={{ fontSize: '9px', fontWeight: 500, color: C.textMuted, padding: '10px 10px 4px', textTransform: 'uppercase' as const, letterSpacing: '.06em', margin: 0 }}>Team</p>
           {navItem('queries', 'Queries', 'ti-help-circle', queries.filter(q => q.status === 'Open').length || undefined)}
-          {navItem('messages', 'Messages', 'ti-message-2')}
           {navItem('users', 'User management', 'ti-users')}
           <p style={{ fontSize: '9px', fontWeight: 500, color: C.textMuted, padding: '10px 10px 4px', textTransform: 'uppercase' as const, letterSpacing: '.06em', margin: 0 }}>Settings</p>
           {navItem('config', 'ISF Configuration', 'ti-adjustments')}
@@ -479,11 +540,12 @@ Your role:
               </div>
             </div>
           )}
+
           {panel === 'documents' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>Documents ({docs.length})</div>
-                <button onClick={() => setShowUpload(true)} style={{ fontSize: '12px', padding: '8px 16px', background: C.orange, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>+ Upload Document</button>
+                <button onClick={() => setShowUpload(true)} style={{ fontSize: '12px', padding: '8px 16px', background: C.orange, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>+ Add document</button>
               </div>
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                 <input value={docSearch} onChange={e => setDocSearch(e.target.value)} placeholder="Search documents..." style={{ flex: 1, minWidth: '200px', fontSize: '13px', padding: '8px 12px', border: `0.5px solid ${C.border}`, borderRadius: '8px', outline: 'none' }} />
@@ -504,25 +566,33 @@ Your role:
               <div style={{ ...card(), padding: 0, overflow: 'hidden' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                   <thead><tr style={{ borderBottom: `0.5px solid ${C.border}`, background: C.bg }}>
-                    {['Title', 'Zone', 'Artifact', 'Version', 'Status', 'Uploaded', 'Actions'].map(h => <th key={h} style={{ textAlign: 'left', padding: '10px 14px', fontSize: '11px', fontWeight: 600, color: C.textSec }}>{h}</th>)}
+                    {['Artifact', 'Zone', 'File name', 'Version', 'Effective', 'Expiry', 'Status', 'Owner', 'Actions'].map(h => <th key={h} style={{ textAlign: 'left', padding: '10px 14px', fontSize: '11px', fontWeight: 600, color: C.textSec }}>{h}</th>)}
                   </tr></thead>
                   <tbody>
                     {filteredDocs.length === 0 ? (
-                      <tr><td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: C.textMuted }}>No documents found. Upload your first ISF document.</td></tr>
+                      <tr><td colSpan={9} style={{ textAlign: 'center', padding: '2rem', color: C.textMuted }}>No documents found. Add your first ISF document.</td></tr>
                     ) : filteredDocs.map((d, i) => (
                       <tr key={i} style={{ borderBottom: `0.5px solid ${C.border}` }}>
-                        <td style={{ padding: '10px 14px', fontWeight: 500, maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{d.title}</td>
-                        <td style={{ padding: '10px 14px' }}>{badge(`Zone ${d.zone}`, C.blue, C.blueLight)}</td>
-                        <td style={{ padding: '10px 14px', color: C.textSec, fontSize: '11px' }}>{d.artifact_name || '—'}</td>
-                        <td style={{ padding: '10px 14px', color: C.textMuted }}>{d.version}</td>
-                        <td style={{ padding: '10px 14px' }}>{badge(d.status, statusColor(d.status), statusBg(d.status))}</td>
-                        <td style={{ padding: '10px 14px', color: C.textMuted }}>{new Date(d.created_at).toLocaleDateString()}</td>
                         <td style={{ padding: '10px 14px' }}>
-                          <div style={{ display: 'flex', gap: '6px' }}>
-                            {d.file_url && <a href={d.file_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '10px', padding: '3px 8px', background: C.blueLight, color: C.blue, border: `0.5px solid #BFDBFE`, borderRadius: '4px', textDecoration: 'none' }}>View</a>}
-                            {d.status === 'Draft' && <button onClick={() => approveDoc(d)} style={{ fontSize: '10px', padding: '3px 8px', background: C.greenLight, color: C.green, border: `0.5px solid #A7F3D0`, borderRadius: '4px', cursor: 'pointer' }}>Approve</button>}
-                            {d.status !== 'Archived' && <button onClick={() => { const reason = prompt('Reason for archiving:'); if (reason) archiveDoc(d, reason); }} style={{ fontSize: '10px', padding: '3px 8px', background: C.amberLight, color: '#92400E', border: `0.5px solid #FDE68A`, borderRadius: '4px', cursor: 'pointer' }}>Archive</button>}
+                          <div style={{ fontFamily: 'monospace', fontSize: '9px', color: C.textMuted }}>{d.artifact_num || '—'}</div>
+                          <div style={{ fontWeight: 500, maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{d.title}</div>
+                        </td>
+                        <td style={{ padding: '10px 14px' }}>{badge(`Zone ${d.zone}`, C.blue, C.blueLight)}</td>
+                        <td style={{ padding: '10px 14px', color: C.textSec, fontSize: '11px', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{d.file_name || '—'}</td>
+                        <td style={{ padding: '10px 14px', color: C.textMuted }}>{d.version || '—'}</td>
+                        <td style={{ padding: '10px 14px', color: C.textMuted, fontSize: '11px' }}>{d.effective_date || '—'}</td>
+                        <td style={{ padding: '10px 14px', color: d.expiry_date && new Date(d.expiry_date) < new Date() ? C.red : C.textMuted, fontSize: '11px' }}>{d.expiry_date || '—'}</td>
+                        <td style={{ padding: '10px 14px' }}>{badge(d.status, statusColor(d.status), statusBg(d.status))}</td>
+                        <td style={{ padding: '10px 14px', color: C.textSec, fontSize: '11px' }}>{d.owner || '—'}</td>
+                        <td style={{ padding: '10px 14px' }}>
+                          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' as const }}>
+                            {isPreviewable(d.file_name) && d.file_url && <button onClick={() => setPreviewDoc(d)} style={{ fontSize: '9px', padding: '3px 8px', background: C.bg, border: `0.5px solid ${C.border}`, borderRadius: '4px', cursor: 'pointer' }}>Preview</button>}
+                            {d.status === 'Draft' && <button onClick={() => approveDoc(d)} style={{ fontSize: '9px', padding: '3px 8px', background: C.blueLight, color: '#1D4ED8', border: `0.5px solid #BFDBFE`, borderRadius: '4px', cursor: 'pointer' }}>Review</button>}
+                            <button onClick={() => { setCommentTarget(d); setCommentText(''); setShowCommentModal(true); }} style={{ fontSize: '9px', padding: '3px 8px', background: C.bg, border: `0.5px solid ${C.border}`, borderRadius: '4px', cursor: 'pointer' }}>Comment</button>
+                            {d.status !== 'Archived' && <button onClick={() => { const reason = prompt('Reason for archiving:'); if (reason) archiveDoc(d, reason); }} style={{ fontSize: '9px', padding: '3px 8px', background: C.amberLight, color: '#92400E', border: `0.5px solid #FDE68A`, borderRadius: '4px', cursor: 'pointer' }}>Archive</button>}
+                            <button onClick={() => openQueryForDoc(d)} style={{ fontSize: '9px', padding: '3px 8px', background: C.blueLight, color: C.blue, border: `0.5px solid #BFDBFE`, borderRadius: '4px', cursor: 'pointer' }}>Query</button>
                           </div>
+                          {d.comments && <div style={{ fontSize: '9px', color: C.textMuted, marginTop: '4px' }}>Has comments</div>}
                         </td>
                       </tr>
                     ))}
@@ -859,7 +929,7 @@ Your role:
           })()}
 
           {panel === 'auditor' && (
-            <ISFAuditorPanel site={site} study={study} docs={docs} approveDoc={approveDoc} archiveDoc={archiveDoc} logAudit={logAudit} />
+            <ISFAuditorPanel site={site} study={study} docs={docs} approveDoc={approveDoc} archiveDoc={archiveDoc} moveToReview={moveToReview} />
           )}
 
           {panel === 'queries' && (() => {
@@ -869,7 +939,7 @@ Your role:
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>Queries — {study?.study_id}</div>
-                  <button onClick={() => setShowAddQuery(true)} style={{ fontSize: '12px', padding: '8px 16px', background: C.orange, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>+ New Query</button>
+                  <button onClick={() => { setNewQuery({ query_number: '', description: '', raised_by_name: '', assigned_to_name: '', priority: 'Medium', due_date: '', artifact_name: '', zone: '', document_id: '' }); setShowAddQuery(true); }} style={{ fontSize: '12px', padding: '8px 16px', background: C.orange, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>+ New Query</button>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
                   {[{ val: openQ, label: 'Open queries', color: C.blue, bg: C.blueLight }, { val: closedQ, label: 'Closed queries', color: C.textSec, bg: C.bg }, { val: queries.length, label: 'All queries', color: C.orange, bg: C.orangeLight }].map((s, i) => (
@@ -891,7 +961,7 @@ Your role:
                       </div>
                       {q.due_date && <span style={{ fontSize: '10px', color: new Date(q.due_date) < new Date() ? C.red : C.textMuted }}>Due: {new Date(q.due_date).toLocaleDateString()}</span>}
                     </div>
-                    <div style={{ fontSize: '13px', fontWeight: 600, color: C.text }}>{q.description?.split('\n')[0] || 'Query'} — {q.artifact_name || ''}</div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: C.text }}>{q.description?.split('\n')[0] || 'Query'}{q.artifact_name ? ` — ${q.artifact_name}` : ''}{q.zone ? ` (Zone ${q.zone})` : ''}</div>
                     <div style={{ fontSize: '11px', color: C.textSec, marginTop: '4px' }}>{q.description}</div>
                     <div style={{ fontSize: '10px', color: C.textMuted, marginTop: '6px' }}>Raised by {q.raised_by_name || '—'} · {new Date(q.created_at).toLocaleDateString()}</div>
                     {q.status === 'Open' && <button onClick={() => resolveQuery(q.id)} style={{ marginTop: '8px', fontSize: '10px', padding: '4px 10px', background: C.greenLight, color: C.green, border: `0.5px solid #A7F3D0`, borderRadius: '4px', cursor: 'pointer' }}>Resolve</button>}
@@ -900,17 +970,6 @@ Your role:
               </div>
             );
           })()}
-
-          {panel === 'messages' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>Messages</div>
-              <div style={{ ...card(), textAlign: 'center' as const, padding: '60px' }}>
-                <i className="ti ti-messages" style={{ fontSize: '40px', color: C.textMuted, marginBottom: '16px', display: 'block' }} />
-                <div style={{ fontSize: '15px', fontWeight: 600, color: C.text, marginBottom: '8px' }}>Messages — Coming in Phase 2</div>
-                <div style={{ fontSize: '13px', color: C.textMuted }}>Site team messaging will be powered by Connect360.</div>
-              </div>
-            </div>
-          )}
 
           {panel === 'users' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -955,30 +1014,78 @@ Your role:
         </main>
       </div>
 
-      {showUpload && modal('Upload ISF Document', () => setShowUpload(false), (
+      {showUpload && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: C.bgCard, borderRadius: '14px', padding: '24px', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+              <div style={{ fontSize: '15px', fontWeight: 600, color: C.text }}>Add document</div>
+              <button onClick={() => { setShowUpload(false); setUploadFile(null); }} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: C.textMuted }}>×</button>
+            </div>
+
+            {field('Zone', select(uploadForm.zone, v => {
+              const firstArt = ISF_ARTIFACTS.find(a => a.zone === v);
+              setUploadForm(f => ({ ...f, zone: v, section: firstArt?.section || '', artifact_num: firstArt?.num || '', artifact_name: firstArt?.name || '' }));
+            }, [{ value: '5', label: 'Zone 5 — Site Management' }, { value: '6', label: 'Zone 6 — IP Management' }, { value: '7', label: 'Zone 7 — Site Operations' }, { value: '8', label: 'Zone 8 — Subject Data' }]))}
+
+            {field('Artifact', select(`${uploadForm.artifact_num}|${uploadForm.artifact_name}|${uploadForm.section}`, v => {
+              const [num, name, section] = v.split('|');
+              setUploadForm(f => ({ ...f, artifact_num: num, artifact_name: name, section }));
+            }, uploadZoneArtifacts.map(a => ({ value: `${a.num}|${a.name}|${a.section}`, label: `${a.num} — ${a.name}` }))))}
+
+            <div style={{ marginBottom: '12px' }}>
+              <label style={{ fontSize: '11px', fontWeight: 600, color: C.textSec, display: 'block', marginBottom: '5px' }}>File</label>
+              <div
+                onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) setUploadFile(f); }}
+                onClick={() => fileRef.current?.click()}
+                style={{ border: `1.5px dashed ${dragOver ? C.orange : C.border}`, borderRadius: '10px', padding: '1.25rem', textAlign: 'center' as const, cursor: 'pointer', background: dragOver ? C.orangeLight : C.bg }}
+              >
+                <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) setUploadFile(f); }} />
+                {uploadFile ? (
+                  <div style={{ fontSize: '12px', color: C.text }}>✓ {uploadFile.name}</div>
+                ) : (
+                  <div style={{ fontSize: '12px', color: C.textMuted }}>Drag & drop or click to browse</div>
+                )}
+              </div>
+            </div>
+
+            {field('Document name', input(uploadForm.title, v => setUploadForm(f => ({ ...f, title: v })), 'Custom name for this document'))}
+            {field('Version', input(uploadForm.version, v => setUploadForm(f => ({ ...f, version: v })), 'e.g. 1.0'))}
+            {field('Owner', input(uploadForm.owner, v => setUploadForm(f => ({ ...f, owner: v })), 'Document owner'))}
+            {field('Status', select(uploadForm.status, v => setUploadForm(f => ({ ...f, status: v })), [{ value: 'Draft', label: 'Draft' }, { value: 'Approved', label: 'Approved' }]))}
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              {field('Effective date', input(uploadForm.effective_date, v => setUploadForm(f => ({ ...f, effective_date: v })), '', 'date'))}
+              {field('Expiry date', input(uploadForm.expiry_date, v => setUploadForm(f => ({ ...f, expiry_date: v })), '', 'date'))}
+            </div>
+            {field('Comments', <textarea value={uploadForm.comments} onChange={e => setUploadForm(f => ({ ...f, comments: e.target.value }))} placeholder="Optional comments..." rows={3} style={{ width: '100%', fontSize: '13px', padding: '8px 10px', border: `0.5px solid ${C.border}`, borderRadius: '8px', fontFamily: 'inherit', resize: 'vertical' as const, boxSizing: 'border-box' as const }} />)}
+
+            <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+              <button onClick={() => { setShowUpload(false); setUploadFile(null); }} style={{ flex: 1, padding: '10px', border: `0.5px solid ${C.border}`, borderRadius: '8px', background: C.bgCard, cursor: 'pointer', fontSize: '13px' }}>Cancel</button>
+              <button onClick={handleUpload} disabled={uploading || !uploadFile || !uploadForm.title} style={{ flex: 2, padding: '10px', background: C.orange, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, opacity: uploading || !uploadFile || !uploadForm.title ? 0.6 : 1 }}>
+                {uploading ? 'Adding...' : 'Add document'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCommentModal && commentTarget && modal('Add Comment', () => setShowCommentModal(false), (
         <>
-          {field('Document Title *', input(uploadForm.title, v => setUploadForm(f => ({ ...f, title: v })), 'e.g. IRB Approval Letter'))}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            {field('Zone *', select(uploadForm.zone, v => setUploadForm(f => ({ ...f, zone: v })), [{ value: '5', label: 'Zone 5 — Site Management' }, { value: '6', label: 'Zone 6 — IP Management' }, { value: '7', label: 'Zone 7 — Site Operations' }, { value: '8', label: 'Zone 8 — Subject Data' }]))}
-            {field('Version', input(uploadForm.version, v => setUploadForm(f => ({ ...f, version: v })), '1.0'))}
-          </div>
-          {field('Artifact Number', input(uploadForm.artifact_num, v => setUploadForm(f => ({ ...f, artifact_num: v })), 'e.g. 05.01.01'))}
-          {field('Artifact Name', input(uploadForm.artifact_name, v => setUploadForm(f => ({ ...f, artifact_name: v })), 'e.g. IRB/IEC Approval Letter'))}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            {field('Effective Date', input(uploadForm.effective_date, v => setUploadForm(f => ({ ...f, effective_date: v })), '', 'date'))}
-            {field('Expiry Date', input(uploadForm.expiry_date, v => setUploadForm(f => ({ ...f, expiry_date: v })), '', 'date'))}
-          </div>
-          {field('Comments', input(uploadForm.comments, v => setUploadForm(f => ({ ...f, comments: v })), 'Optional notes'))}
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ fontSize: '11px', fontWeight: 600, color: C.textSec, display: 'block', marginBottom: '5px' }}>File *</label>
-            <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg" onChange={e => setUploadFile(e.target.files?.[0] || null)} style={{ fontSize: '13px' }} />
-            {uploadFile && <div style={{ fontSize: '11px', color: C.green, marginTop: '4px' }}>✓ {uploadFile.name}</div>}
-          </div>
+          <div style={{ fontSize: '12px', color: C.textSec, marginBottom: '10px' }}>{commentTarget.title}</div>
+          {commentTarget.comments && (
+            <div style={{ background: C.bg, borderRadius: '8px', padding: '10px 12px', marginBottom: '12px', maxHeight: '120px', overflowY: 'auto' }}>
+              {commentTarget.comments.split('\n').map((c: string, i: number) => <div key={i} style={{ fontSize: '11px', color: C.textSec, marginBottom: '4px' }}>{c}</div>)}
+            </div>
+          )}
+          {field('New comment', <textarea value={commentText} onChange={e => setCommentText(e.target.value)} placeholder="Add your comment..." rows={3} style={{ width: '100%', fontSize: '13px', padding: '8px 10px', border: `0.5px solid ${C.border}`, borderRadius: '8px', fontFamily: 'inherit', resize: 'vertical' as const, boxSizing: 'border-box' as const }} />)}
         </>
-      ), handleUpload, uploading)}
+      ), async () => { await addDocComment(commentTarget, commentText); setShowCommentModal(false); })}
 
       {showAddQuery && modal('New Monitoring Query', () => setShowAddQuery(false), (
         <>
+          {newQuery.artifact_name && <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '10px' }}>{newQuery.artifact_name}{newQuery.zone ? ` — Zone ${newQuery.zone}` : ''}</div>}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             {field('Query Number', input(newQuery.query_number, v => setNewQuery(q => ({ ...q, query_number: v })), 'Q-001'))}
             {field('Priority', select(newQuery.priority, v => setNewQuery(q => ({ ...q, priority: v })), [{ value: 'High', label: 'High' }, { value: 'Medium', label: 'Medium' }, { value: 'Low', label: 'Low' }]))}
@@ -989,6 +1096,25 @@ Your role:
           {field('Due Date', input(newQuery.due_date, v => setNewQuery(q => ({ ...q, due_date: v })), '', 'date'))}
         </>
       ), addQuery)}
+
+      {previewDoc && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: C.bgCard, borderRadius: '16px', overflow: 'hidden', maxWidth: '90vw', width: '800px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' as const }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: `0.5px solid ${C.border}` }}>
+              <span style={{ fontSize: '13px', fontWeight: 600 }}>{previewDoc.title}</span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <a href={previewDoc.file_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', padding: '5px 12px', background: C.bg, color: C.textSec, borderRadius: '6px', textDecoration: 'none' }}>Open in New Tab</a>
+                <button onClick={() => setPreviewDoc(null)} style={{ fontSize: '11px', padding: '5px 12px', background: C.redLight, color: '#991B1B', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Close</button>
+              </div>
+            </div>
+            <div style={{ flex: 1, overflow: 'auto' }}>
+              {previewDoc.file_name?.match(/\.(png|jpg|jpeg|gif|webp)$/i)
+                ? <img src={previewDoc.file_url} alt={previewDoc.file_name} style={{ maxWidth: '100%', height: 'auto' }} />
+                : <iframe src={previewDoc.file_url} style={{ width: '100%', height: '70vh', border: 'none' }} />}
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
@@ -1499,10 +1625,12 @@ function ISFArchivedPanel({ site, docs, restoreDoc, permanentDeleteDoc, currentU
   );
 }
 
-function ISFAuditorPanel({ site, study, docs, approveDoc, archiveDoc, logAudit }: { site: any; study: any; docs: any[]; approveDoc: (d: any) => void; archiveDoc: (d: any, r: string) => void; logAudit: any }) {
+function ISFAuditorPanel({ site, study, docs, approveDoc, archiveDoc, moveToReview }: { site: any; study: any; docs: any[]; approveDoc: (d: any, comment?: string) => void; archiveDoc: (d: any, r: string) => void; moveToReview: (d: any, comment: string) => void }) {
   const [expandedZones, setExpandedZones] = useState<Set<string>>(new Set(['5']));
   const [selectedDoc, setSelectedDoc] = useState<any>(null);
   const [actionComment, setActionComment] = useState('');
+  const [actionType, setActionType] = useState<'approve' | 'review' | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   function toggleZone(z: string) { setExpandedZones(prev => { const n = new Set(prev); n.has(z) ? n.delete(z) : n.add(z); return n; }); }
   function getArtifactDocs(num: string) { return docs.filter(d => d.artifact_num === num); }
@@ -1518,6 +1646,20 @@ function ISFAuditorPanel({ site, study, docs, approveDoc, archiveDoc, logAudit }
     const colors: Record<string, string> = { complete: C.green, approved: C.green, partial: C.amber, review: C.blue, draft: '#9CA3AF', missing: C.red, empty: C.border };
     return <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: colors[s] || C.border, display: 'inline-block', flexShrink: 0 }} />;
   };
+
+  function selectDoc(d: any) {
+    setSelectedDoc(d);
+    setActionComment('');
+    setActionType(null);
+    setShowPreview(false);
+  }
+
+  function submitAction() {
+    if (!selectedDoc || !actionType || !actionComment.trim()) return;
+    if (actionType === 'approve') approveDoc(selectedDoc, actionComment.trim());
+    else moveToReview(selectedDoc, actionComment.trim());
+    setSelectedDoc(null);
+  }
 
   return (
     <div style={{ display: 'flex', height: 'calc(100vh - 110px)', border: `0.5px solid ${C.border}`, borderRadius: '14px', overflow: 'hidden', background: C.bgCard }}>
@@ -1547,7 +1689,7 @@ function ISFAuditorPanel({ site, study, docs, approveDoc, archiveDoc, logAudit }
                         {a.num} — {a.name}
                       </div>
                       {aDocs.map(d => (
-                        <div key={d.id} onClick={() => { setSelectedDoc(d); setActionComment(''); }} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px 6px 44px', cursor: 'pointer', background: selectedDoc?.id === d.id ? C.orangeLight : 'transparent' }}>
+                        <div key={d.id} onClick={() => selectDoc(d)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px 6px 44px', cursor: 'pointer', background: selectedDoc?.id === d.id ? C.orangeLight : 'transparent' }}>
                           {statusDot(d.status === 'Approved' ? 'approved' : 'draft')}
                           <span style={{ fontSize: '10px', color: selectedDoc?.id === d.id ? C.orange : C.textSec }}>{d.title}</span>
                         </div>
@@ -1566,23 +1708,77 @@ function ISFAuditorPanel({ site, study, docs, approveDoc, archiveDoc, logAudit }
           <div style={{ fontSize: '13px', fontWeight: 500, color: C.textSec }}>Select a document to review</div>
         </div>
       ) : (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' as const }}>
-          <div style={{ padding: '12px 20px', borderBottom: `0.5px solid ${C.border}`, background: C.bg }}>
-            <div style={{ fontSize: '13px', fontWeight: 600 }}>{selectedDoc.title}</div>
-            <div style={{ fontSize: '10px', color: C.textMuted, marginTop: '2px' }}>{selectedDoc.artifact_num} — Zone {selectedDoc.zone}</div>
-          </div>
-          <div style={{ flex: 1, overflow: 'auto', padding: '16px 20px' }}>
-            {[['Version', selectedDoc.version], ['Status', selectedDoc.status], ['Effective Date', selectedDoc.effective_date || '—'], ['Expiry Date', selectedDoc.expiry_date || '—'], ['File', selectedDoc.file_name || '—']].map(([l, v], i) => (
-              <div key={i} style={{ marginBottom: '8px' }}>
-                <div style={{ fontSize: '9px', color: C.textMuted, fontWeight: 600, textTransform: 'uppercase' as const }}>{l}</div>
-                <div style={{ fontSize: '12px', color: C.text }}>{v}</div>
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+          <div style={{ width: '260px', borderRight: `0.5px solid ${C.border}`, display: 'flex', flexDirection: 'column' as const, overflowY: 'auto', flexShrink: 0 }}>
+            <div style={{ padding: '14px 16px', borderBottom: `0.5px solid ${C.border}` }}>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: C.text }}>{selectedDoc.title}</div>
+              <div style={{ fontSize: '10px', color: C.textMuted, marginTop: '2px' }}>{selectedDoc.artifact_num} — Zone {selectedDoc.zone}</div>
+              <span style={{ display: 'inline-block', marginTop: '8px' }}>{selectedDoc.status === 'Approved' ? <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '20px', background: C.greenLight, color: C.green, fontWeight: 600 }}>Approved</span> : <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '20px', background: C.blueLight, color: '#1D4ED8', fontWeight: 600 }}>{selectedDoc.status}</span>}</span>
+            </div>
+            <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column' as const, gap: '10px' }}>
+              <div>
+                <div style={{ fontSize: '9px', color: C.textMuted, fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '.04em' }}>File size</div>
+                <div style={{ fontSize: '12px', color: C.text, marginTop: '2px' }}>{formatFileSize(selectedDoc.file_size)}</div>
               </div>
-            ))}
-            {selectedDoc.file_url && <a href={selectedDoc.file_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: C.orange }}>Open document →</a>}
+              {selectedDoc.status === 'Approved' && (
+                <>
+                  <div>
+                    <div style={{ fontSize: '9px', color: C.textMuted, fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '.04em' }}>Approved by</div>
+                    <div style={{ fontSize: '12px', color: C.text, marginTop: '2px' }}>{selectedDoc.approved_by_email || '—'}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '9px', color: C.textMuted, fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '.04em' }}>Approved at</div>
+                    <div style={{ fontSize: '12px', color: C.text, marginTop: '2px' }}>{selectedDoc.approved_at ? new Date(selectedDoc.approved_at).toLocaleDateString() : '—'}</div>
+                  </div>
+                </>
+              )}
+              {selectedDoc.comments && (
+                <div>
+                  <div style={{ fontSize: '9px', color: C.textMuted, fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '.04em' }}>Comments</div>
+                  <div style={{ fontSize: '11px', color: C.textSec, marginTop: '4px', whiteSpace: 'pre-wrap' as const }}>{selectedDoc.comments}</div>
+                </div>
+              )}
+              {selectedDoc.file_url && (
+                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '6px', marginTop: '4px' }}>
+                  <button onClick={() => setShowPreview(!showPreview)} style={{ fontSize: '11px', padding: '6px 10px', background: showPreview ? C.orange : C.orangeLight, color: showPreview ? '#fff' : C.orange, border: `0.5px solid ${C.orange}`, borderRadius: '6px', cursor: 'pointer' }}>{showPreview ? 'Hide Preview' : 'Show Preview'}</button>
+                  <a href={selectedDoc.file_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', padding: '6px 10px', background: C.bg, color: C.textSec, border: `0.5px solid ${C.border}`, borderRadius: '6px', textDecoration: 'none', textAlign: 'center' as const }}>Open in New Tab</a>
+                </div>
+              )}
+            </div>
           </div>
-          <div style={{ padding: '14px 20px', borderTop: `0.5px solid ${C.border}`, display: 'flex', gap: '10px' }}>
-            {selectedDoc.status === 'Draft' && <button onClick={() => { approveDoc(selectedDoc); setSelectedDoc(null); }} style={{ fontSize: '11px', fontWeight: 600, padding: '8px 16px', background: C.green, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Mark Complete</button>}
-            <button onClick={() => { const r = prompt('Reason for archiving:'); if (r) { archiveDoc(selectedDoc, r); setSelectedDoc(null); } }} style={{ fontSize: '11px', fontWeight: 600, padding: '8px 16px', background: 'transparent', color: C.amber, border: `1.5px solid ${C.amber}`, borderRadius: '8px', cursor: 'pointer' }}>Archive</button>
+
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' as const }}>
+            <div style={{ flex: 1, overflow: 'auto', background: C.bg, display: 'flex', alignItems: showPreview ? 'flex-start' : 'center', justifyContent: 'center', padding: '16px' }}>
+              {showPreview && selectedDoc.file_url ? (
+                selectedDoc.file_name?.match(/\.(png|jpg|jpeg|gif|webp)$/i)
+                  ? <img src={selectedDoc.file_url} alt={selectedDoc.file_name} style={{ maxWidth: '100%', height: 'auto', borderRadius: '8px', boxShadow: '0 2px 12px rgba(0,0,0,0.1)' }} />
+                  : <iframe src={selectedDoc.file_url} style={{ width: '100%', height: 'calc(100vh - 320px)', border: 'none', borderRadius: '8px', background: '#fff' }} />
+              ) : (
+                <div style={{ textAlign: 'center' as const, color: C.textMuted }}>
+                  <i className="ti ti-file-description" style={{ fontSize: '48px', color: C.border }} />
+                  <div style={{ fontSize: '12px', marginTop: '8px' }}>Click "Show Preview" to view</div>
+                </div>
+              )}
+            </div>
+
+            <div style={{ padding: '14px 20px', borderTop: `0.5px solid ${C.border}`, background: C.bgCard, display: 'flex', flexDirection: 'column' as const, gap: '10px' }}>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: '10px', color: C.textSec, display: 'block', marginBottom: '4px', fontWeight: 600 }}>
+                    {actionType === 'approve' ? 'Approval reason (required)' : actionType === 'review' ? 'Reason for moving to review (required)' : 'Add a comment to take action'}
+                  </label>
+                  <textarea value={actionComment} onChange={e => setActionComment(e.target.value)} placeholder={actionType === 'approve' ? 'e.g. Reviewed and approved — document is accurate and complete' : actionType === 'review' ? 'e.g. Missing signature — please update' : 'Select an action below...'} rows={2} style={{ width: '100%', fontSize: '11px', border: `0.5px solid ${C.border}`, borderRadius: '8px', padding: '8px 10px', resize: 'vertical' as const, boxSizing: 'border-box' as const }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '6px', flexShrink: 0 }}>
+                  <button onClick={() => setActionType('approve')} style={{ fontSize: '11px', fontWeight: 600, padding: '8px 16px', background: actionType === 'approve' ? C.green : 'transparent', color: actionType === 'approve' ? '#fff' : C.green, border: `1.5px solid ${C.green}`, borderRadius: '8px', cursor: 'pointer', minWidth: '150px' }}>✓ Mark Complete</button>
+                  <button onClick={() => setActionType('review')} style={{ fontSize: '11px', fontWeight: 600, padding: '8px 16px', background: actionType === 'review' ? C.blue : 'transparent', color: actionType === 'review' ? '#fff' : C.blue, border: `1.5px solid ${C.blue}`, borderRadius: '8px', cursor: 'pointer', minWidth: '150px' }}>↩ Move to Review</button>
+                  {actionType && (
+                    <button onClick={submitAction} disabled={!actionComment.trim()} style={{ fontSize: '11px', fontWeight: 700, padding: '8px 16px', background: actionType === 'approve' ? C.green : C.blue, color: '#fff', border: 'none', borderRadius: '8px', cursor: actionComment.trim() ? 'pointer' : 'not-allowed', opacity: actionComment.trim() ? 1 : 0.5 }}>Confirm</button>
+                  )}
+                </div>
+              </div>
+              <button onClick={() => { const r = prompt('Reason for archiving:'); if (r) { archiveDoc(selectedDoc, r); setSelectedDoc(null); } }} style={{ alignSelf: 'flex-start' as const, fontSize: '11px', fontWeight: 600, padding: '6px 14px', background: 'transparent', color: C.amber, border: `1.5px solid ${C.amber}`, borderRadius: '8px', cursor: 'pointer' }}>Archive</button>
+            </div>
           </div>
         </div>
       )}
