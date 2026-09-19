@@ -329,6 +329,9 @@ export default function Site360Page() {
   async function addStudy() {
     if (!newStudy.study_id || !site || !userRole) return;
     setCreatingStudy(true);
+    console.log('DEBUG addStudy — userRole.org_id:', userRole?.org_id, 'user.id:', user?.id);
+    const { data: { session } } = await supabase.auth.getSession();
+    console.log('DEBUG session user:', session?.user?.id, 'session exists:', !!session);
     try {
       const { data: study, error } = await supabase.from('studies').insert([{
         org_id: userRole.org_id,
