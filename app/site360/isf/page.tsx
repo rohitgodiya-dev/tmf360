@@ -15,11 +15,9 @@ const C = {
   amber: '#F59E0B', amberLight: '#FFFBEB',
 };
 
-type Panel = 'dashboard' | 'sites' | 'documents' | 'artifacts' | 'gap' | 'readiness' | 'report' | 'audit' | 'quality' | 'auditor' | 'queries' | 'messages' | 'users' | 'config' | 'ticket';
+type Panel = 'dashboard' | 'sites' | 'documents' | 'artifacts' | 'gap' | 'readiness' | 'report' | 'audit' | 'quality' | 'auditor' | 'queries' | 'messages' | 'users' | 'config' | 'ticket' | 'archived';
 
-// DIA ISF Artifact List — Zones 5-8
 const ISF_ARTIFACTS = [
-  // Zone 5
   { zone: '5', zname: 'Site Management', section: '5.01', sname: 'Ethics', num: '05.01.01', name: 'IRB/IEC Approval Letter', cl: 'Core' },
   { zone: '5', zname: 'Site Management', section: '5.01', sname: 'Ethics', num: '05.01.02', name: 'Ethics Submission', cl: 'Core' },
   { zone: '5', zname: 'Site Management', section: '5.01', sname: 'Ethics', num: '05.01.03', name: 'Ethics Correspondence', cl: 'Recommended' },
@@ -32,7 +30,6 @@ const ISF_ARTIFACTS = [
   { zone: '5', zname: 'Site Management', section: '5.03', sname: 'Site Agreements', num: '05.03.03', name: 'Confidentiality Agreement', cl: 'Recommended' },
   { zone: '5', zname: 'Site Management', section: '5.04', sname: 'Financial', num: '05.04.01', name: 'Financial Disclosure Form', cl: 'Core' },
   { zone: '5', zname: 'Site Management', section: '5.04', sname: 'Financial', num: '05.04.02', name: 'Investigator Payment Records', cl: 'Recommended' },
-  // Zone 6
   { zone: '6', zname: 'IP Management', section: '6.01', sname: 'IP Accountability', num: '06.01.01', name: 'IP Receipt Records', cl: 'Core' },
   { zone: '6', zname: 'IP Management', section: '6.01', sname: 'IP Accountability', num: '06.01.02', name: 'IP Accountability Log', cl: 'Core' },
   { zone: '6', zname: 'IP Management', section: '6.01', sname: 'IP Accountability', num: '06.01.03', name: 'IP Disposition Records', cl: 'Core' },
@@ -40,7 +37,6 @@ const ISF_ARTIFACTS = [
   { zone: '6', zname: 'IP Management', section: '6.02', sname: 'IP Storage', num: '06.02.01', name: 'Storage Condition Records', cl: 'Core' },
   { zone: '6', zname: 'IP Management', section: '6.02', sname: 'IP Storage', num: '06.02.02', name: 'Temperature Excursion Log', cl: 'Core' },
   { zone: '6', zname: 'IP Management', section: '6.02', sname: 'IP Storage', num: '06.02.03', name: 'Equipment Calibration Records', cl: 'Recommended' },
-  // Zone 7
   { zone: '7', zname: 'Site Operations', section: '7.01', sname: 'Staff Qualifications', num: '07.01.01', name: 'Principal Investigator CV', cl: 'Core' },
   { zone: '7', zname: 'Site Operations', section: '7.01', sname: 'Staff Qualifications', num: '07.01.02', name: 'Sub-Investigator CVs', cl: 'Core' },
   { zone: '7', zname: 'Site Operations', section: '7.01', sname: 'Staff Qualifications', num: '07.01.03', name: 'GCP Training Certificates', cl: 'Core' },
@@ -51,7 +47,6 @@ const ISF_ARTIFACTS = [
   { zone: '7', zname: 'Site Operations', section: '7.03', sname: 'Site Visits', num: '07.03.01', name: 'Site Initiation Visit Report', cl: 'Core' },
   { zone: '7', zname: 'Site Operations', section: '7.03', sname: 'Site Visits', num: '07.03.02', name: 'Interim Monitoring Visit Reports', cl: 'Core' },
   { zone: '7', zname: 'Site Operations', section: '7.03', sname: 'Site Visits', num: '07.03.03', name: 'Close-Out Visit Report', cl: 'Core' },
-  // Zone 8
   { zone: '8', zname: 'Subject Data', section: '8.01', sname: 'Consent', num: '08.01.01', name: 'IRB-Approved Informed Consent Form', cl: 'Core' },
   { zone: '8', zname: 'Subject Data', section: '8.01', sname: 'Consent', num: '08.01.02', name: 'Consent Form Translations', cl: 'Recommended' },
   { zone: '8', zname: 'Subject Data', section: '8.01', sname: 'Consent', num: '08.01.03', name: 'Translation Certificates', cl: 'Recommended' },
@@ -63,6 +58,26 @@ const ISF_ARTIFACTS = [
 ];
 
 const ISF_ZONE_NAMES: Record<string, string> = { '5': 'Site Management', '6': 'IP Management', '7': 'Site Operations', '8': 'Subject Data' };
+
+function isfCalcQuality(d: any): { score: number; flags: string[] } {
+  const flags: string[] = [];
+  if (!d.file_url) flags.push('NO_FILE');
+  if (!d.effective_date) flags.push('MISSING_DATE');
+  if (!d.version || d.version.trim() === '') flags.push('MISSING_VERSION');
+  if (d.expiry_date && new Date(d.expiry_date) < new Date()) flags.push('EXPIRED');
+  let score = 100;
+  if (flags.includes('NO_FILE')) score -= 30;
+  if (flags.includes('MISSING_DATE')) score -= 10;
+  if (flags.includes('MISSING_VERSION')) score -= 10;
+  if (flags.includes('EXPIRED')) score -= 15;
+  return { score: Math.max(0, score), flags };
+}
+const ISF_FLAG_LABELS: Record<string, { label: string; color: string; bg: string; fix: string; pts: number }> = {
+  NO_FILE: { label: 'No file uploaded', color: '#991B1B', bg: '#FEF2F2', fix: 'Upload the document file', pts: 30 },
+  MISSING_DATE: { label: 'Missing effective date', color: '#92400E', bg: '#FFFBEB', fix: 'Add the effective date', pts: 10 },
+  MISSING_VERSION: { label: 'Missing version', color: '#92400E', bg: '#FFFBEB', fix: 'Add version number (e.g. 1.0)', pts: 10 },
+  EXPIRED: { label: 'Document expired', color: '#991B1B', bg: '#FEF2F2', fix: 'Renew or replace the expired document', pts: 15 },
+};
 
 export default function ISFPage() {
   const [panel, setPanel] = useState<Panel>('dashboard');
@@ -76,25 +91,23 @@ export default function ISFPage() {
   const [config, setConfig] = useState<any>(null);
   const [members, setMembers] = useState<any[]>([]);
 
-  // Filters
   const [zoneFilter, setZoneFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [docSearch, setDocSearch] = useState('');
   const [artZone, setArtZone] = useState('5');
+  const [artSearch, setArtSearch] = useState('');
+  const [artCl, setArtCl] = useState('core+rec');
   const [gapZone, setGapZone] = useState('');
 
-  // Upload
   const [showUpload, setShowUpload] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadForm, setUploadForm] = useState({ title: '', zone: '5', section: '', artifact_num: '', artifact_name: '', version: '1.0', effective_date: '', expiry_date: '', comments: '' });
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Query form
   const [showAddQuery, setShowAddQuery] = useState(false);
   const [newQuery, setNewQuery] = useState({ query_number: '', description: '', raised_by_name: '', assigned_to_name: '', priority: 'Medium', due_date: '' });
 
-  // Trinity chat
   const [chatMessages, setChatMessages] = useState<{ role: string; content: string }[]>([
     { role: 'assistant', content: 'Hello! I am the ISF Auditor, powered by Trinity AI. I can help you review your ISF for inspection readiness, identify gaps, and answer questions about ICH E6(R3) site obligations. What would you like to know?' }
   ]);
@@ -159,7 +172,7 @@ export default function ISFPage() {
       const { data: newDoc } = await supabase.from('isf_documents').insert([{
         org_id: ur?.org_id, site_id: site.id, study_id: site.study_id,
         ...uploadForm, file_url: urlData?.publicUrl, file_name: uploadFile.name,
-        file_size: uploadFile.size, uploaded_by: user.id, status: 'Draft',
+        file_size: uploadFile.size, uploaded_by: user.id, uploaded_by_email: user.email, status: 'Draft',
       }]).select().single();
       if (newDoc) await logAudit('UPLOAD', newDoc.id, undefined, uploadForm.title);
       setShowUpload(false);
@@ -173,6 +186,27 @@ export default function ISFPage() {
   async function approveDoc(doc: any) {
     await supabase.from('isf_documents').update({ status: 'Approved', approved_by: user.id, approved_at: new Date().toISOString() }).eq('id', doc.id);
     await logAudit('APPROVE', doc.id, 'Draft', 'Approved');
+    loadData();
+  }
+
+  async function archiveDoc(doc: any, reason: string) {
+    const now = new Date().toISOString();
+    await supabase.from('isf_documents').update({ status: 'Archived', archived_by: user.email, archived_at: now, archive_reason: reason, pre_archive_status: doc.status }).eq('id', doc.id);
+    await logAudit('ARCHIVE', doc.id, doc.status, 'Archived');
+    loadData();
+  }
+
+  async function restoreDoc(doc: any) {
+    const restoreStatus = doc.pre_archive_status || 'Draft';
+    await supabase.from('isf_documents').update({ status: restoreStatus, archived_by: null, archived_at: null, archive_reason: null, pre_archive_status: null }).eq('id', doc.id);
+    await logAudit('RESTORE', doc.id, 'Archived', restoreStatus);
+    loadData();
+  }
+
+  async function permanentDeleteDoc(doc: any) {
+    if (!confirm('Permanently delete this document? This cannot be undone.')) return;
+    await supabase.from('isf_documents').delete().eq('id', doc.id);
+    await logAudit('DELETE', doc.id, doc.status, 'Permanently deleted');
     loadData();
   }
 
@@ -234,7 +268,6 @@ Your role:
     setChatLoading(false);
   }
 
-  // Computed values
   const approvedDocs = docs.filter(d => d.status === 'Approved');
   const draftDocs = docs.filter(d => d.status === 'Draft');
   const coreMissing = ISF_ARTIFACTS.filter(a => a.cl === 'Core' && !docs.some(d => d.artifact_num === a.num));
@@ -253,13 +286,9 @@ Your role:
   });
 
   const artifactsByZone = ISF_ARTIFACTS.filter(a => !artZone || a.zone === artZone);
-  const gapArtifacts = ISF_ARTIFACTS.filter(a => {
-    const filed = docs.some(d => d.artifact_num === a.num);
-    return !filed && (!gapZone || a.zone === gapZone);
-  });
 
-  const statusColor = (s: string) => ['Approved', 'Resolved', 'Closed'].includes(s) ? C.green : ['Draft', 'Open'].includes(s) ? C.blue : C.amber;
-  const statusBg = (s: string) => ['Approved', 'Resolved', 'Closed'].includes(s) ? C.greenLight : ['Draft', 'Open'].includes(s) ? C.blueLight : C.amberLight;
+  const statusColor = (s: string) => ['Approved', 'Resolved', 'Closed'].includes(s) ? C.green : ['Draft', 'Open'].includes(s) ? C.blue : s === 'Archived' ? C.textMuted : C.amber;
+  const statusBg = (s: string) => ['Approved', 'Resolved', 'Closed'].includes(s) ? C.greenLight : ['Draft', 'Open'].includes(s) ? C.blueLight : s === 'Archived' ? C.bg : C.amberLight;
   const priorityColor = (p: string) => p === 'High' ? C.red : p === 'Medium' ? C.amber : C.green;
 
   const card = (extra: any = {}): React.CSSProperties => ({ background: C.bgCard, border: `0.5px solid ${C.border}`, borderRadius: '12px', padding: '16px 18px', ...extra });
@@ -329,7 +358,6 @@ Your role:
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: C.bg, fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}>
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css" />
 
-      {/* Header */}
       <header style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '0 1.25rem', height: '48px', borderBottom: `0.5px solid ${C.border}`, background: C.bgCard, flexShrink: 0 }}>
         <span style={{ fontSize: '16px', fontWeight: 500 }}>ISF<span style={{ color: C.orange }}>360</span></span>
         <span style={{ fontSize: '11px', color: C.textMuted }}>Investigator Site File Platform</span>
@@ -342,7 +370,6 @@ Your role:
       </header>
 
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        {/* Sidebar */}
         <aside style={{ width: '192px', borderRight: `0.5px solid ${C.border}`, background: C.bgCard, overflowY: 'auto', flexShrink: 0, padding: '8px' }}>
           <p style={{ fontSize: '9px', fontWeight: 500, color: C.textMuted, padding: '8px 10px 4px', textTransform: 'uppercase' as const, letterSpacing: '.06em', margin: 0 }}>Overview</p>
           {navItem('dashboard', 'Dashboard', 'ti-layout-dashboard')}
@@ -357,6 +384,7 @@ Your role:
           {navItem('audit', 'Audit trail', 'ti-lock')}
           {navItem('quality', 'Quality checks', 'ti-clipboard-list')}
           {navItem('auditor', 'ISF Auditor', 'ti-checkup-list')}
+          {navItem('archived', 'Archived', 'ti-archive')}
           <p style={{ fontSize: '9px', fontWeight: 500, color: C.textMuted, padding: '10px 10px 4px', textTransform: 'uppercase' as const, letterSpacing: '.06em', margin: 0 }}>Team</p>
           {navItem('queries', 'Queries', 'ti-help-circle', queries.filter(q => q.status === 'Open').length || undefined)}
           {navItem('messages', 'Messages', 'ti-message-2')}
@@ -366,10 +394,8 @@ Your role:
           {navItem('ticket', 'Ticket', 'ti-ticket')}
         </aside>
 
-        {/* Main */}
         <main style={{ flex: 1, overflowY: 'auto', padding: '1.25rem' }}>
 
-          {/* DASHBOARD */}
           {panel === 'dashboard' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -380,7 +406,6 @@ Your role:
                 <button onClick={() => setShowUpload(true)} style={{ fontSize: '12px', padding: '8px 16px', background: C.orange, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>+ Upload Document</button>
               </div>
 
-              {/* Stat cards */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px' }}>
                 {[
                   { val: docs.length, label: 'Total Documents', color: C.blue, bg: C.blueLight, icon: 'ti-files' },
@@ -398,7 +423,6 @@ Your role:
                 ))}
               </div>
 
-              {/* Zone breakdown + Missing */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <div style={card()}>
                   <div style={{ fontSize: '13px', fontWeight: 600, color: C.textSec, marginBottom: '12px' }}>Documents by Zone</div>
@@ -440,7 +464,6 @@ Your role:
                 </div>
               </div>
 
-              {/* Recent activity */}
               <div style={card()}>
                 <div style={{ fontSize: '13px', fontWeight: 600, color: C.textSec, marginBottom: '12px' }}>Recent Activity</div>
                 {auditTrail.length === 0 ? (
@@ -458,7 +481,6 @@ Your role:
             </div>
           )}
 
-          {/* SITES */}
           {panel === 'sites' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>Sites</div>
@@ -488,7 +510,6 @@ Your role:
             </div>
           )}
 
-          {/* DOCUMENTS */}
           {panel === 'documents' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -508,6 +529,7 @@ Your role:
                   <option value="">All Status</option>
                   <option value="Draft">Draft</option>
                   <option value="Approved">Approved</option>
+                  <option value="Archived">Archived</option>
                 </select>
               </div>
               <div style={{ ...card(), padding: 0, overflow: 'hidden' }}>
@@ -530,6 +552,7 @@ Your role:
                           <div style={{ display: 'flex', gap: '6px' }}>
                             {d.file_url && <a href={d.file_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '10px', padding: '3px 8px', background: C.blueLight, color: C.blue, border: `0.5px solid #BFDBFE`, borderRadius: '4px', textDecoration: 'none' }}>View</a>}
                             {d.status === 'Draft' && <button onClick={() => approveDoc(d)} style={{ fontSize: '10px', padding: '3px 8px', background: C.greenLight, color: C.green, border: `0.5px solid #A7F3D0`, borderRadius: '4px', cursor: 'pointer' }}>Approve</button>}
+                            {d.status !== 'Archived' && <button onClick={() => { const reason = prompt('Reason for archiving:'); if (reason) archiveDoc(d, reason); }} style={{ fontSize: '10px', padding: '3px 8px', background: C.amberLight, color: '#92400E', border: `0.5px solid #FDE68A`, borderRadius: '4px', cursor: 'pointer' }}>Archive</button>}
                           </div>
                         </td>
                       </tr>
@@ -540,97 +563,107 @@ Your role:
             </div>
           )}
 
-          {/* ARTIFACT BROWSER */}
-          {panel === 'artifacts' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>Artifact Browser</div>
-                <select value={artZone} onChange={e => setArtZone(e.target.value)} style={{ fontSize: '13px', padding: '8px 12px', border: `0.5px solid ${C.border}`, borderRadius: '8px', outline: 'none', background: C.bgCard }}>
-                  <option value="5">Zone 5 — Site Management</option>
-                  <option value="6">Zone 6 — IP Management</option>
-                  <option value="7">Zone 7 — Site Operations</option>
-                  <option value="8">Zone 8 — Subject Data</option>
-                </select>
-              </div>
-              {Array.from(new Set(artifactsByZone.map(a => a.section))).map(section => {
-                const sectionArts = artifactsByZone.filter(a => a.section === section);
-                const sname = sectionArts[0]?.sname;
-                return (
-                  <div key={section} style={card()}>
-                    <div style={{ fontSize: '13px', fontWeight: 600, color: C.navy, marginBottom: '10px' }}>Section {section} — {sname}</div>
-                    {sectionArts.map((a, i) => {
-                      const filed = docs.find(d => d.artifact_num === a.num);
-                      return (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: i < sectionArts.length - 1 ? `0.5px solid ${C.border}` : 'none' }}>
-                          <i className={filed ? 'ti ti-circle-check' : 'ti ti-square'} style={{ fontSize: '15px', color: filed ? C.green : C.textMuted }} />
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: '12px', fontWeight: 500, color: filed ? C.green : C.text }}>{a.num} — {a.name}</div>
-                            <div style={{ fontSize: '10px', color: C.textMuted, marginTop: '1px' }}>
-                              {badge(a.cl, a.cl === 'Core' ? C.orange : C.textMuted, a.cl === 'Core' ? C.orangeLight : C.bg)}
-                              {filed && <span style={{ marginLeft: '6px', fontSize: '10px', color: C.green }}>Filed: {filed.title} (v{filed.version})</span>}
-                            </div>
-                          </div>
-                          {!filed && (
-                            <button onClick={() => { setUploadForm(f => ({ ...f, zone: a.zone, section: a.section, artifact_num: a.num, artifact_name: a.name })); setShowUpload(true); }} style={{ fontSize: '10px', padding: '4px 10px', background: C.orangeLight, color: C.orange, border: `0.5px solid ${C.orange}`, borderRadius: '6px', cursor: 'pointer', whiteSpace: 'nowrap' as const }}>Upload</button>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* GAP ANALYSIS */}
-          {panel === 'gap' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>Gap Analysis</div>
-                  <div style={{ fontSize: '12px', color: C.textMuted, marginTop: '2px' }}>{gapArtifacts.length} documents missing</div>
+          {panel === 'artifacts' && (() => {
+            const filtered = ISF_ARTIFACTS.filter(a => {
+              if (artZone && a.zone !== artZone) return false;
+              if (artCl === 'core' && a.cl !== 'Core') return false;
+              if (artCl === 'rec' && a.cl !== 'Recommended') return false;
+              if (artSearch && !a.name.toLowerCase().includes(artSearch.toLowerCase()) && !a.num.includes(artSearch)) return false;
+              return true;
+            });
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>Artifact Browser — DIA TMF Reference Model v3.3.1</div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <input value={artSearch} onChange={e => setArtSearch(e.target.value)} placeholder="Search artifacts..." style={{ flex: 1, fontSize: '13px', padding: '8px 12px', border: `0.5px solid ${C.border}`, borderRadius: '8px', outline: 'none' }} />
+                  <select value={artZone} onChange={e => setArtZone(e.target.value)} style={{ fontSize: '13px', padding: '8px 12px', border: `0.5px solid ${C.border}`, borderRadius: '8px', outline: 'none', background: C.bgCard }}>
+                    <option value="">All zones</option>
+                    <option value="5">Zone 5 — Site Management</option>
+                    <option value="6">Zone 6 — IP Management</option>
+                    <option value="7">Zone 7 — Site Operations</option>
+                    <option value="8">Zone 8 — Subject Data</option>
+                  </select>
+                  <select value={artCl} onChange={e => setArtCl(e.target.value)} style={{ fontSize: '13px', padding: '8px 12px', border: `0.5px solid ${C.border}`, borderRadius: '8px', outline: 'none', background: C.bgCard }}>
+                    <option value="core+rec">Core + Recommended</option>
+                    <option value="core">Core only</option>
+                    <option value="rec">Recommended only</option>
+                  </select>
                 </div>
-                <select value={gapZone} onChange={e => setGapZone(e.target.value)} style={{ fontSize: '13px', padding: '8px 12px', border: `0.5px solid ${C.border}`, borderRadius: '8px', outline: 'none', background: C.bgCard }}>
-                  <option value="">All Zones</option>
-                  <option value="5">Zone 5</option>
-                  <option value="6">Zone 6</option>
-                  <option value="7">Zone 7</option>
-                  <option value="8">Zone 8</option>
-                </select>
-              </div>
-              {['Core', 'Recommended'].map(cl => {
-                const missing = gapArtifacts.filter(a => a.cl === cl);
-                if (missing.length === 0) return null;
-                return (
-                  <div key={cl} style={card()}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                      <span style={{ fontSize: '13px', fontWeight: 600, color: C.text }}>{cl} Documents Missing</span>
-                      {badge(`${missing.length} missing`, cl === 'Core' ? C.red : C.amber, cl === 'Core' ? C.redLight : C.amberLight)}
+                <div style={{ fontSize: '11px', color: C.textMuted }}>{filtered.length} artifacts</div>
+                {filtered.map((a, i) => {
+                  const filed = docs.find(d => d.artifact_num === a.num);
+                  return (
+                    <div key={i} style={{ ...card(), display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontFamily: 'monospace', fontSize: '10px', color: C.textMuted, flexShrink: 0 }}>{a.num}</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '12px', fontWeight: 600, color: C.text }}>{a.name}</div>
+                        <div style={{ fontSize: '10px', color: C.textMuted, marginTop: '2px' }}>Zone {a.zone} · {a.sname}</div>
+                        {filed && <div style={{ fontSize: '10px', color: C.green, marginTop: '4px' }}>Filed: {filed.title} (v{filed.version})</div>}
+                      </div>
+                      {badge(a.cl, a.cl === 'Core' ? C.red : C.textMuted, a.cl === 'Core' ? C.redLight : C.bg)}
+                      {!filed && <button onClick={() => { setUploadForm(f => ({ ...f, zone: a.zone, section: a.section, artifact_num: a.num, artifact_name: a.name })); setShowUpload(true); }} style={{ fontSize: '10px', padding: '4px 10px', background: C.orangeLight, color: C.orange, border: `0.5px solid ${C.orange}`, borderRadius: '6px', cursor: 'pointer', whiteSpace: 'nowrap' as const }}>+ Upload document to this artifact</button>}
                     </div>
-                    {missing.map((a, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: i < missing.length - 1 ? `0.5px solid ${C.border}` : 'none' }}>
-                        <i className="ti ti-alert-triangle" style={{ fontSize: '15px', color: cl === 'Core' ? C.red : C.amber }} />
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: '12px', fontWeight: 500, color: C.text }}>{a.num} — {a.name}</div>
-                          <div style={{ fontSize: '10px', color: C.textMuted }}>Zone {a.zone} · {a.sname}</div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
+          {panel === 'gap' && (() => {
+            const critZones = ['5'];
+            const majZones = ['7'];
+            const minZones = ['6', '8'];
+            const bySeverity = (zones: string[]) => ISF_ARTIFACTS.filter(a => a.cl === 'Core' && zones.includes(a.zone) && !docs.some(d => d.artifact_num === a.num) && (!gapZone || a.zone === gapZone));
+            const crit = bySeverity(critZones);
+            const maj = bySeverity(majZones);
+            const min = bySeverity(minZones);
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>Gap Analysis</div>
+                    <div style={{ fontSize: '12px', color: C.textMuted, marginTop: '2px' }}>Comparing filed documents against all Core artifacts in DIA TMF Reference Model v3.3.1</div>
+                  </div>
+                  <select value={gapZone} onChange={e => setGapZone(e.target.value)} style={{ fontSize: '13px', padding: '8px 12px', border: `0.5px solid ${C.border}`, borderRadius: '8px', outline: 'none', background: C.bgCard }}>
+                    <option value="">All Zones</option>
+                    <option value="5">Zone 5</option>
+                    <option value="6">Zone 6</option>
+                    <option value="7">Zone 7</option>
+                    <option value="8">Zone 8</option>
+                  </select>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
+                  {[{ val: crit.length, label: 'Critical gaps', color: C.red, bg: C.redLight }, { val: maj.length, label: 'Major gaps', color: C.amber, bg: C.amberLight }, { val: min.length, label: 'Minor gaps', color: C.textSec, bg: C.bg }].map((s, i) => (
+                    <div key={i} style={{ background: s.bg, border: `0.5px solid ${C.border}`, borderRadius: '12px', padding: '14px' }}>
+                      <div style={{ fontSize: '28px', fontWeight: 700, color: s.color }}>{s.val}</div>
+                      <div style={{ fontSize: '11px', color: C.textSec, marginTop: '2px' }}>{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+                {[{ items: crit, label: 'CRITICAL', color: '#991B1B', bg: C.redLight, border: '#FECACA' }, { items: maj, label: 'MAJOR', color: '#92400E', bg: C.amberLight, border: '#FDE68A' }, { items: min, label: 'MINOR', color: '#374151', bg: '#F9FAFB', border: C.border }].map(({ items, label, color, bg, border }) => items.length > 0 && (
+                  <div key={label} style={{ border: `0.5px solid ${border}`, borderRadius: '12px', overflow: 'hidden' }}>
+                    <div style={{ background: bg, color, padding: '8px 12px', fontSize: '11px', fontWeight: 600 }}>{label} — {items.length} gap{items.length !== 1 ? 's' : ''}</div>
+                    {items.map((a, i) => (
+                      <div key={i} style={{ borderTop: `0.5px solid ${C.border}`, padding: '8px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: C.bgCard }}>
+                        <div>
+                          <div style={{ fontSize: '12px', fontWeight: 500, color: C.text }}>{a.name}</div>
+                          <div style={{ fontSize: '10px', color: C.textMuted, marginTop: '2px' }}>Zone {a.zone} · {a.sname}</div>
                         </div>
-                        <button onClick={() => { setUploadForm(f => ({ ...f, zone: a.zone, section: a.section, artifact_num: a.num, artifact_name: a.name })); setShowUpload(true); setPanel('documents'); }} style={{ fontSize: '10px', padding: '4px 10px', background: C.orangeLight, color: C.orange, border: `0.5px solid ${C.orange}`, borderRadius: '6px', cursor: 'pointer' }}>Upload</button>
+                        <div style={{ fontFamily: 'monospace', fontSize: '10px', color: C.textMuted, flexShrink: 0 }}>{a.num}</div>
                       </div>
                     ))}
                   </div>
-                );
-              })}
-              {gapArtifacts.length === 0 && (
-                <div style={{ ...card(), textAlign: 'center' as const, padding: '40px' }}>
-                  <i className="ti ti-confetti" style={{ fontSize: '32px', color: C.green, marginBottom: '12px', display: 'block' }} />
-                  <div style={{ fontSize: '15px', fontWeight: 600, color: C.green }}>No gaps found!</div>
-                  <div style={{ fontSize: '13px', color: C.textMuted, marginTop: '4px' }}>All expected ISF documents have been filed.</div>
-                </div>
-              )}
-            </div>
-          )}
+                ))}
+                {crit.length === 0 && maj.length === 0 && min.length === 0 && (
+                  <div style={{ ...card(), textAlign: 'center' as const, padding: '40px' }}>
+                    <i className="ti ti-confetti" style={{ fontSize: '32px', color: C.green, marginBottom: '12px', display: 'block' }} />
+                    <div style={{ fontSize: '15px', fontWeight: 600, color: C.green }}>No gaps found!</div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
-          {/* INSPECTION READINESS */}
           {panel === 'readiness' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>Inspection Readiness</div>
@@ -680,59 +713,119 @@ Your role:
             </div>
           )}
 
-          {/* ISF REPORT */}
           {panel === 'report' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>ISF Report</div>
-                <button onClick={() => window.print()} style={{ fontSize: '12px', padding: '8px 16px', background: C.orange, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>Export PDF</button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>Inspection Package Export — {study?.study_id}</div>
+                <div style={{ fontSize: '12px', color: C.textMuted, marginTop: '2px' }}>Export all approved ISF documents as an inspection-ready package</div>
               </div>
               <div style={card()}>
-                <div style={{ fontSize: '15px', fontWeight: 700, color: C.navy, marginBottom: '4px' }}>Investigator Site File — Health Report</div>
-                <div style={{ fontSize: '12px', color: C.textMuted, marginBottom: '20px' }}>Generated: {new Date().toLocaleDateString()} · {site.site_name} · {study?.study_id}</div>
-                {[
-                  ['Site Name', site.site_name],
-                  ['Site Code', site.site_code],
-                  ['Principal Investigator', site.pi_name || '—'],
-                  ['Study ID', study?.study_id || '—'],
-                  ['Protocol', study?.protocol || '—'],
-                  ['IRB Number', config?.irb_number || '—'],
-                  ['ISF Readiness Score', `${readinessScore}/100`],
-                  ['Total Documents', docs.length],
-                  ['Approved Documents', approvedDocs.length],
-                  ['Draft Documents', draftDocs.length],
-                  ['Missing Core Documents', coreMissing.length],
-                  ['Open Queries', queries.filter(q => q.status === 'Open').length],
-                ].map(([l, v], i) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: `0.5px solid ${C.border}` }}>
-                    <span style={{ fontSize: '12px', color: C.textMuted }}>{l}</span>
-                    <span style={{ fontSize: '12px', fontWeight: 600, color: C.text }}>{String(v)}</span>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: C.textSec, marginBottom: '12px', textTransform: 'uppercase' as const, letterSpacing: '.06em' }}>Study Summary</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px', marginBottom: '16px' }}>
+                  {[
+                    { val: `${readinessScore}%`, label: 'ISF Completeness', color: C.blue, bg: C.blueLight },
+                    { val: `${readinessScore}/100`, label: 'Readiness Score', color: readinessScore >= 80 ? C.green : C.red, bg: readinessScore >= 80 ? C.greenLight : C.redLight },
+                    { val: coreMissing.length, label: 'Missing Core Docs', color: C.red, bg: C.redLight },
+                    { val: approvedDocs.length, label: 'Approved Documents', color: C.green, bg: C.greenLight },
+                    { val: draftDocs.length, label: 'Pending Review', color: C.blue, bg: C.blueLight },
+                    { val: docs.filter(d => d.expiry_date && new Date(d.expiry_date) < new Date(Date.now() + 90 * 86400000)).length, label: 'Expiring (90 days)', color: C.amber, bg: C.amberLight },
+                  ].map((m, i) => (
+                    <div key={i} style={{ background: m.bg, borderRadius: '10px', padding: '12px 14px' }}>
+                      <div style={{ fontSize: '22px', fontWeight: 700, color: m.color }}>{m.val}</div>
+                      <div style={{ fontSize: '11px', color: C.textSec, marginTop: '2px' }}>{m.label}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '6px', fontSize: '11px', color: C.textSec }}>
+                  <div><strong>Study ID:</strong> {study?.study_id}</div>
+                  <div><strong>Protocol:</strong> {study?.protocol}</div>
+                  <div><strong>Sponsor:</strong> {study?.sponsor}</div>
+                  <div><strong>Phase:</strong> {study?.phase}</div>
+                  <div><strong>Site:</strong> {site.site_name} ({site.site_code})</div>
+                  <div><strong>Export Date:</strong> {new Date().toLocaleDateString()}</div>
+                </div>
+              </div>
+              <div style={card()}>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: C.textSec, marginBottom: '12px', textTransform: 'uppercase' as const, letterSpacing: '.06em' }}>Export Inspection Package</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
+                  <div style={{ border: `0.5px solid ${C.border}`, borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column' as const, gap: '10px' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: C.greenLight, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><i className="ti ti-file-spreadsheet" style={{ fontSize: '22px', color: C.green }} /></div>
+                    <div><div style={{ fontSize: '13px', fontWeight: 600, color: C.text }}>Excel</div><div style={{ fontSize: '11px', color: C.textMuted, marginTop: '2px' }}>Document tracker with full metadata for approved documents.</div></div>
+                    <button onClick={() => {
+                      if (!approvedDocs.length) { alert('No approved documents to export.'); return; }
+                      const headers = ['Artifact', 'Zone', 'Title', 'Version', 'Status', 'Effective Date', 'Expiry Date'];
+                      const rows = approvedDocs.map(d => [d.artifact_num, d.zone, d.title, d.version, d.status, d.effective_date || '', d.expiry_date || '']);
+                      const csv = [headers, ...rows].map(r => r.map(v => JSON.stringify(v)).join(',')).join('\n');
+                      const blob = new Blob([csv], { type: 'application/vnd.ms-excel' });
+                      const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `ISF_${study?.study_id}_Tracker_${Date.now()}.xls`; a.click(); URL.revokeObjectURL(url);
+                    }} style={{ fontSize: '11px', fontWeight: 500, padding: '8px 14px', background: C.green, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Download Excel</button>
                   </div>
-                ))}
+                  <div style={{ border: `0.5px solid ${C.border}`, borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column' as const, gap: '10px' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: C.redLight, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><i className="ti ti-file-type-pdf" style={{ fontSize: '22px', color: C.red }} /></div>
+                    <div><div style={{ fontSize: '13px', fontWeight: 600, color: C.text }}>PDF Report</div><div style={{ fontSize: '11px', color: C.textMuted, marginTop: '2px' }}>Formatted inspection report with cover page and document index.</div></div>
+                    <button onClick={() => {
+                      const rows = approvedDocs.map(d => `<tr><td>${d.artifact_num}</td><td>Zone ${d.zone}</td><td>${d.title}</td><td>${d.version}</td></tr>`).join('');
+                      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>ISF Inspection Report</title><style>body{font-family:Arial;margin:30px;}h1{color:#F97316;}table{width:100%;border-collapse:collapse;margin-top:20px;}th{background:#F97316;color:#fff;padding:6px 8px;text-align:left;}td{padding:5px 8px;border-bottom:1px solid #E5E7EB;}</style></head><body><h1>ISF Inspection Readiness Report</h1><p>${site.site_name} — ${study?.study_id} — Generated ${new Date().toLocaleDateString()}</p><p>Readiness Score: ${readinessScore}/100 | Approved Documents: ${approvedDocs.length}</p><table><thead><tr><th>Artifact</th><th>Zone</th><th>Title</th><th>Version</th></tr></thead><tbody>${rows}</tbody></table></body></html>`;
+                      const w = window.open('', '_blank'); if (w) { w.document.write(html); w.document.close(); }
+                    }} style={{ fontSize: '11px', fontWeight: 500, padding: '8px 14px', background: C.red, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Open PDF</button>
+                  </div>
+                  <div style={{ border: `0.5px solid ${C.border}`, borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column' as const, gap: '10px' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: C.blueLight, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><i className="ti ti-file-type-doc" style={{ fontSize: '22px', color: C.blue }} /></div>
+                    <div><div style={{ fontSize: '13px', fontWeight: 600, color: C.text }}>Word Document</div><div style={{ fontSize: '11px', color: C.textMuted, marginTop: '2px' }}>Editable Word report with study summary and document index.</div></div>
+                    <button onClick={() => {
+                      const rows = approvedDocs.map(d => `<tr><td>${d.artifact_num}</td><td>Zone ${d.zone}</td><td>${d.title}</td><td>${d.version}</td></tr>`).join('');
+                      const html = `<html><head><meta charset="UTF-8"/></head><body><h1>ISF Inspection Report</h1><p>${site.site_name} — ${study?.study_id}</p><table border="1" cellpadding="6"><tr><th>Artifact</th><th>Zone</th><th>Title</th><th>Version</th></tr>${rows}</table></body></html>`;
+                      const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+                      const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `ISF_${study?.study_id}_Report_${Date.now()}.doc`; a.click(); URL.revokeObjectURL(url);
+                    }} style={{ fontSize: '11px', fontWeight: 500, padding: '8px 14px', background: C.blue, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Download Word</button>
+                  </div>
+                </div>
+                <div style={{ marginTop: '12px', padding: '10px 14px', background: C.bg, borderRadius: '8px', fontSize: '11px', color: C.textMuted }}>
+                  Only <strong style={{ color: C.text }}>Approved</strong> documents are included. Currently {approvedDocs.length} approved document{approvedDocs.length !== 1 ? 's' : ''} available.
+                </div>
               </div>
             </div>
           )}
 
-          {/* AUDIT TRAIL */}
           {panel === 'audit' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div style={{ background: C.amberLight, border: '0.5px solid #FDE68A', borderRadius: '10px', padding: '10px 14px', fontSize: '11px', color: '#92400E' }}>
-                This audit trail is read-only and tamper-evident in compliance with 21 CFR Part 11. All document actions are permanently recorded.
+                This audit trail is read-only and tamper-evident in compliance with 21 CFR Part 11.
               </div>
-              <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>Audit Trail</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>Audit Trail — 21 CFR Part 11</div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button onClick={() => {
+                    const headers = ['Timestamp', 'User', 'Action', 'Document', 'Old Value', 'New Value', 'Signature Reason'];
+                    const rows = auditTrail.map(l => [new Date(l.created_at).toLocaleString(), l.actor_email, l.action, l.document_id || '', l.previous_value || '', l.new_value || '', l.signature_reason || '']);
+                    const csv = [headers, ...rows].map(r => r.map(v => JSON.stringify(v)).join(',')).join('\n');
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a'); a.href = url; a.download = 'ISF_AuditTrail_' + Date.now() + '.csv'; a.click(); URL.revokeObjectURL(url);
+                  }} style={{ fontSize: '11px', fontWeight: 500, padding: '6px 14px', background: C.green, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}><i className="ti ti-download" style={{ fontSize: '13px' }} />Download CSV</button>
+                  <button onClick={() => {
+                    const rows = auditTrail.map(l => `<tr><td>${new Date(l.created_at).toLocaleString()}</td><td>${l.actor_email || ''}</td><td>${l.action || ''}</td><td>${l.document_id || ''}</td><td>${l.previous_value || ''}</td><td>${l.new_value || ''}</td><td>${l.signature_reason || ''}</td></tr>`).join('');
+                    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>ISF Audit Trail</title><style>body{font-family:Arial;font-size:10px;margin:20px;}table{width:100%;border-collapse:collapse;}th{background:#F97316;color:#fff;padding:6px 8px;text-align:left;}td{padding:5px 8px;border-bottom:1px solid #E5E7EB;}</style></head><body><h1>ISF Audit Trail — ${site.site_name}</h1><table><thead><tr><th>Timestamp</th><th>User</th><th>Action</th><th>Document</th><th>Old Value</th><th>New Value</th><th>Signature Reason</th></tr></thead><tbody>${rows}</tbody></table></body></html>`;
+                    const w = window.open('', '_blank'); if (w) { w.document.write(html); w.document.close(); }
+                  }} style={{ fontSize: '11px', fontWeight: 500, padding: '6px 14px', background: C.red, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}><i className="ti ti-file-type-pdf" style={{ fontSize: '13px' }} />Download PDF</button>
+                </div>
+              </div>
               <div style={{ ...card(), padding: 0, overflow: 'hidden' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                   <thead><tr style={{ borderBottom: `0.5px solid ${C.border}`, background: C.bg }}>
-                    {['Action', 'Document', 'Actor', 'Timestamp'].map(h => <th key={h} style={{ textAlign: 'left', padding: '10px 14px', fontSize: '11px', fontWeight: 600, color: C.textSec }}>{h}</th>)}
+                    {['Timestamp', 'User', 'Action', 'Document', 'Old Value', 'New Value', 'Signature Reason'].map(h => <th key={h} style={{ textAlign: 'left', padding: '10px 14px', fontSize: '11px', fontWeight: 600, color: C.textSec }}>{h}</th>)}
                   </tr></thead>
                   <tbody>
-                    {auditTrail.length === 0 ? <tr><td colSpan={4} style={{ textAlign: 'center', padding: '2rem', color: C.textMuted }}>No audit entries yet.</td></tr>
+                    {auditTrail.length === 0 ? <tr><td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: C.textMuted }}>No audit entries yet.</td></tr>
                     : auditTrail.map((a, i) => (
                       <tr key={i} style={{ borderBottom: `0.5px solid ${C.border}` }}>
+                        <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontSize: '10px', color: C.textMuted, whiteSpace: 'nowrap' as const }}>{new Date(a.created_at).toLocaleString()}</td>
+                        <td style={{ padding: '10px 14px', color: C.textSec }}>{a.actor_email}</td>
                         <td style={{ padding: '10px 14px' }}>{badge(a.action, a.action === 'APPROVE' ? C.green : a.action === 'UPLOAD' ? C.blue : C.textMuted, a.action === 'APPROVE' ? C.greenLight : a.action === 'UPLOAD' ? C.blueLight : C.bg)}</td>
-                        <td style={{ padding: '10px 14px', color: C.textSec }}>{a.new_value || '—'}</td>
-                        <td style={{ padding: '10px 14px', color: C.textMuted, fontSize: '11px' }}>{a.actor_email}</td>
-                        <td style={{ padding: '10px 14px', color: C.textMuted, fontSize: '11px' }}>{new Date(a.created_at).toLocaleString()}</td>
+                        <td style={{ padding: '10px 14px', color: C.textSec, fontSize: '10px', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{a.document_id ? a.document_id.slice(0, 8) : '—'}</td>
+                        <td style={{ padding: '10px 14px', color: C.textMuted }}>{a.previous_value || '—'}</td>
+                        <td style={{ padding: '10px 14px', color: C.textSec, maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{a.new_value || '—'}</td>
+                        <td style={{ padding: '10px 14px', color: C.textSec, fontSize: '10px' }}>{a.signature_reason || '—'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -741,108 +834,104 @@ Your role:
             </div>
           )}
 
-          {/* QUALITY CHECKS */}
-          {panel === 'quality' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>Quality Checks</div>
-              <div style={{ ...card(), padding: 0, overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-                  <thead><tr style={{ borderBottom: `0.5px solid ${C.border}`, background: C.bg }}>
-                    {['Document', 'Zone', 'File Size', 'Has Expiry', 'Version Format', 'Quality Score'].map(h => <th key={h} style={{ textAlign: 'left', padding: '10px 14px', fontSize: '11px', fontWeight: 600, color: C.textSec }}>{h}</th>)}
-                  </tr></thead>
-                  <tbody>
-                    {docs.length === 0 ? <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: C.textMuted }}>No documents to check.</td></tr>
-                    : docs.map((d, i) => {
-                      const sizeOk = d.file_size && d.file_size > 1024;
-                      const hasExpiry = !!d.expiry_date;
-                      const versionOk = /^\d+\.\d+$/.test(d.version || '');
-                      const score = Math.round((sizeOk ? 40 : 0) + (hasExpiry ? 30 : 0) + (versionOk ? 30 : 0));
-                      return (
-                        <tr key={i} style={{ borderBottom: `0.5px solid ${C.border}` }}>
-                          <td style={{ padding: '10px 14px', fontWeight: 500, maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{d.title}</td>
-                          <td style={{ padding: '10px 14px' }}>{badge(`Zone ${d.zone}`, C.blue, C.blueLight)}</td>
-                          <td style={{ padding: '10px 14px' }}>{badge(sizeOk ? 'OK' : '!', sizeOk ? C.green : C.red, sizeOk ? C.greenLight : C.redLight)}</td>
-                          <td style={{ padding: '10px 14px' }}>{badge(hasExpiry ? 'OK' : '!', hasExpiry ? C.green : C.amber, hasExpiry ? C.greenLight : C.amberLight)}</td>
-                          <td style={{ padding: '10px 14px' }}>{badge(versionOk ? 'OK' : '!', versionOk ? C.green : C.red, versionOk ? C.greenLight : C.redLight)}</td>
-                          <td style={{ padding: '10px 14px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <div style={{ width: '60px', height: '6px', background: C.border, borderRadius: '20px', overflow: 'hidden' }}>
-                                <div style={{ height: '100%', width: `${score}%`, background: score >= 80 ? C.green : score >= 60 ? C.amber : C.red, borderRadius: '20px' }} />
-                              </div>
-                              <span style={{ fontSize: '11px', fontWeight: 600, color: score >= 80 ? C.green : score >= 60 ? C.amber : C.red }}>{score}</span>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* ISF AUDITOR */}
-          {panel === 'auditor' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', height: 'calc(100vh - 80px)' }}>
-              <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>ISF Auditor <span style={{ fontSize: '12px', fontWeight: 400, color: C.orange }}>Powered by Trinity AI</span></div>
-              <div style={{ ...card(), flex: 1, display: 'flex', flexDirection: 'column', padding: '16px', minHeight: 0 }}>
-                <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '14px' }}>
-                  {chatMessages.map((m, i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
-                      <div style={{ maxWidth: '75%', padding: '10px 14px', borderRadius: m.role === 'user' ? '14px 14px 2px 14px' : '14px 14px 14px 2px', background: m.role === 'user' ? C.orange : C.bg, color: m.role === 'user' ? '#fff' : C.text, fontSize: '13px', lineHeight: 1.6 }}>
-                        {m.content}
-                      </div>
+          {panel === 'quality' && (() => {
+            const withQ = docs.map(d => ({ ...d, ...isfCalcQuality(d) }));
+            const avg = withQ.length ? Math.round(withQ.reduce((s, d) => s + d.score, 0) / withQ.length) : 0;
+            const perfect = withQ.filter(d => d.score === 100).length;
+            const needsWork = withQ.filter(d => d.score < 70).length;
+            const scoreColor = (s: number) => s >= 90 ? C.green : s >= 70 ? C.amber : C.red;
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>Quality Checks</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '10px' }}>
+                  {[{ val: avg, label: 'Average quality score', color: scoreColor(avg) }, { val: docs.length, label: 'Total documents', color: C.orange }, { val: perfect, label: 'Perfect score (100)', color: C.green }, { val: needsWork, label: 'Needs attention (<70)', color: C.red }].map((m, i) => (
+                    <div key={i} style={{ background: C.bgCard, border: `0.5px solid ${C.border}`, borderTop: `3px solid ${m.color}`, borderRadius: '12px', padding: '14px' }}>
+                      <div style={{ fontSize: '26px', fontWeight: 700, color: m.color }}>{m.val}</div>
+                      <div style={{ fontSize: '11px', color: C.textSec, marginTop: '3px' }}>{m.label}</div>
                     </div>
                   ))}
-                  {chatLoading && (
-                    <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                      <div style={{ padding: '10px 14px', borderRadius: '14px 14px 14px 2px', background: C.bg, fontSize: '13px', color: C.textMuted }}>Trinity is thinking...</div>
+                </div>
+                {Object.keys(ISF_FLAG_LABELS).map(flag => {
+                  const affected = withQ.filter(d => d.flags.includes(flag));
+                  if (!affected.length) return null;
+                  const f = ISF_FLAG_LABELS[flag];
+                  return (
+                    <div key={flag} style={{ background: f.bg, border: `0.5px solid ${C.border}`, borderRadius: '10px', padding: '10px 14px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: f.color }}>{f.label}</span>
+                      <span style={{ fontSize: '11px', color: C.textMuted, marginLeft: '8px' }}>{affected.length} document{affected.length !== 1 ? 's' : ''}</span>
+                      <div style={{ fontSize: '10px', color: C.textMuted, marginTop: '2px' }}>Fix: {f.fix} — -{f.pts} pts each</div>
                     </div>
-                  )}
-                </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendChat()} placeholder="Ask about your ISF, GCP compliance, inspection readiness..." style={{ flex: 1, fontSize: '13px', padding: '10px 14px', border: `1px solid ${C.border}`, borderRadius: '10px', outline: 'none', fontFamily: 'inherit' }} />
-                  <button onClick={sendChat} disabled={chatLoading || !chatInput.trim()} style={{ padding: '10px 20px', background: C.orange, color: '#fff', border: 'none', borderRadius: '10px', cursor: chatLoading ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: '13px', opacity: chatLoading ? 0.7 : 1 }}>Send</button>
+                  );
+                })}
+                <div style={{ ...card(), padding: 0, overflow: 'hidden' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                    <thead><tr style={{ borderBottom: `0.5px solid ${C.border}`, background: C.bg }}>
+                      {['Score', 'Artifact', 'Zone', 'File', 'Issues', 'Status'].map(h => <th key={h} style={{ textAlign: 'left', padding: '10px 14px', fontSize: '11px', fontWeight: 600, color: C.textSec }}>{h}</th>)}
+                    </tr></thead>
+                    <tbody>
+                      {withQ.length === 0 ? <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: C.textMuted }}>No documents to check.</td></tr>
+                      : withQ.sort((a, b) => a.score - b.score).map((d, i) => (
+                        <tr key={i} style={{ borderBottom: `0.5px solid ${C.border}` }}>
+                          <td style={{ padding: '10px 14px' }}>
+                            <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 600, color: scoreColor(d.score), border: `1.5px solid ${scoreColor(d.score)}` }}>{d.score}</div>
+                          </td>
+                          <td style={{ padding: '10px 14px' }}>{d.artifact_num} — {d.title}</td>
+                          <td style={{ padding: '10px 14px' }}>{badge(`Zone ${d.zone}`, C.blue, C.blueLight)}</td>
+                          <td style={{ padding: '10px 14px', color: C.textSec, fontSize: '11px' }}>{d.file_name || '—'}</td>
+                          <td style={{ padding: '10px 14px' }}>{d.flags.length === 0 ? <span style={{ fontSize: '10px', color: C.green }}>No issues</span> : <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap' as const }}>{d.flags.map((f: string, fi: number) => <span key={fi} style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '4px', background: ISF_FLAG_LABELS[f]?.bg, color: ISF_FLAG_LABELS[f]?.color }}>{ISF_FLAG_LABELS[f]?.label}</span>)}</div>}</td>
+                          <td style={{ padding: '10px 14px' }}>{badge(d.status, statusColor(d.status), statusBg(d.status))}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
-            </div>
+            );
+          })()}
+
+          {panel === 'auditor' && (
+            <ISFAuditorPanel site={site} study={study} docs={docs} approveDoc={approveDoc} archiveDoc={archiveDoc} logAudit={logAudit} />
           )}
 
-          {/* QUERIES */}
-          {panel === 'queries' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>Monitoring Queries ({queries.filter(q => q.status === 'Open').length} open)</div>
-                <button onClick={() => setShowAddQuery(true)} style={{ fontSize: '12px', padding: '8px 16px', background: C.orange, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>+ New Query</button>
+          {panel === 'queries' && (() => {
+            const openQ = queries.filter(q => q.status === 'Open').length;
+            const closedQ = queries.filter(q => q.status === 'Resolved').length;
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>Queries — {study?.study_id}</div>
+                  <button onClick={() => setShowAddQuery(true)} style={{ fontSize: '12px', padding: '8px 16px', background: C.orange, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>+ New Query</button>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
+                  {[{ val: openQ, label: 'Open queries', color: C.blue, bg: C.blueLight }, { val: closedQ, label: 'Closed queries', color: C.textSec, bg: C.bg }, { val: queries.length, label: 'All queries', color: C.orange, bg: C.orangeLight }].map((s, i) => (
+                    <div key={i} style={{ background: s.bg, border: `0.5px solid ${C.border}`, borderRadius: '12px', padding: '14px' }}>
+                      <div style={{ fontSize: '28px', fontWeight: 700, color: s.color }}>{s.val}</div>
+                      <div style={{ fontSize: '11px', color: C.textSec, marginTop: '2px' }}>{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+                {queries.length === 0 ? (
+                  <div style={{ textAlign: 'center' as const, padding: '2rem', color: C.textMuted, fontSize: '12px' }}>No queries yet.</div>
+                ) : queries.map((q, i) => (
+                  <div key={i} style={card()}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' as const }}>
+                        {badge(q.status, statusColor(q.status), statusBg(q.status))}
+                        {q.status === 'Open' && badge('Missing Info', C.amber, C.amberLight)}
+                        <span style={{ fontSize: '10px', display: 'flex', alignItems: 'center', gap: '3px' }}><span style={{ width: '6px', height: '6px', borderRadius: '50%', background: priorityColor(q.priority), display: 'inline-block' }} />{q.priority}</span>
+                      </div>
+                      {q.due_date && <span style={{ fontSize: '10px', color: new Date(q.due_date) < new Date() ? C.red : C.textMuted }}>Due: {new Date(q.due_date).toLocaleDateString()}</span>}
+                    </div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: C.text }}>{q.description?.split('\n')[0] || 'Query'} — {q.artifact_name || ''}</div>
+                    <div style={{ fontSize: '11px', color: C.textSec, marginTop: '4px' }}>{q.description}</div>
+                    <div style={{ fontSize: '10px', color: C.textMuted, marginTop: '6px' }}>Raised by {q.raised_by_name || '—'} · {new Date(q.created_at).toLocaleDateString()}</div>
+                    {q.status === 'Open' && <button onClick={() => resolveQuery(q.id)} style={{ marginTop: '8px', fontSize: '10px', padding: '4px 10px', background: C.greenLight, color: C.green, border: `0.5px solid #A7F3D0`, borderRadius: '4px', cursor: 'pointer' }}>Resolve</button>}
+                  </div>
+                ))}
               </div>
-              <div style={{ ...card(), padding: 0, overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-                  <thead><tr style={{ borderBottom: `0.5px solid ${C.border}`, background: C.bg }}>
-                    {['#', 'Description', 'Raised By', 'Assigned To', 'Priority', 'Status', 'Due Date', 'Action'].map(h => <th key={h} style={{ textAlign: 'left', padding: '10px 14px', fontSize: '11px', fontWeight: 600, color: C.textSec }}>{h}</th>)}
-                  </tr></thead>
-                  <tbody>
-                    {queries.length === 0 ? <tr><td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: C.textMuted }}>No queries yet.</td></tr>
-                    : queries.map((q, i) => (
-                      <tr key={i} style={{ borderBottom: `0.5px solid ${C.border}` }}>
-                        <td style={{ padding: '10px 14px', fontFamily: 'monospace', color: C.orange, fontSize: '11px' }}>{q.query_number || `Q-${String(i + 1).padStart(3, '0')}`}</td>
-                        <td style={{ padding: '10px 14px', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{q.description}</td>
-                        <td style={{ padding: '10px 14px', color: C.textSec }}>{q.raised_by_name || '—'}</td>
-                        <td style={{ padding: '10px 14px', color: C.textSec }}>{q.assigned_to_name || '—'}</td>
-                        <td style={{ padding: '10px 14px' }}>{badge(q.priority, priorityColor(q.priority), q.priority === 'High' ? C.redLight : q.priority === 'Medium' ? C.amberLight : C.greenLight)}</td>
-                        <td style={{ padding: '10px 14px' }}>{badge(q.status, statusColor(q.status), statusBg(q.status))}</td>
-                        <td style={{ padding: '10px 14px', color: C.textMuted }}>{q.due_date ? new Date(q.due_date).toLocaleDateString() : '—'}</td>
-                        <td style={{ padding: '10px 14px' }}>
-                          {q.status === 'Open' && <button onClick={() => resolveQuery(q.id)} style={{ fontSize: '10px', padding: '3px 8px', background: C.greenLight, color: C.green, border: `0.5px solid #A7F3D0`, borderRadius: '4px', cursor: 'pointer' }}>Resolve</button>}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+            );
+          })()}
 
-          {/* MESSAGES */}
           {panel === 'messages' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>Messages</div>
@@ -854,7 +943,6 @@ Your role:
             </div>
           )}
 
-          {/* USER MANAGEMENT */}
           {panel === 'users' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>User Management</div>
@@ -883,28 +971,21 @@ Your role:
             </div>
           )}
 
-          {/* ISF CONFIG */}
           {panel === 'config' && (
             <ISFConfigPanel site={site} study={study} user={user} currentUserRole={site.user_role} logAudit={logAudit} />
           )}
 
-          {/* TICKET */}
           {panel === 'ticket' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>Support Ticket</div>
-              <div style={card()}>
-                {field('Subject', input('', () => {}, 'Describe your issue'))}
-                {field('Description', <textarea rows={5} placeholder="Provide details about the issue..." style={{ width: '100%', fontSize: '13px', padding: '8px 10px', border: `0.5px solid ${C.border}`, borderRadius: '8px', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box' as const }} />)}
-                {field('Priority', select('Medium', () => {}, [{ value: 'Low', label: 'Low' }, { value: 'Medium', label: 'Medium' }, { value: 'High', label: 'High' }]))}
-                <button style={{ padding: '10px 20px', background: C.orange, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>Submit Ticket</button>
-              </div>
-            </div>
+            <ISFTicketPanel site={site} study={study} user={user} currentUserRole={site.user_role} />
+          )}
+
+          {panel === 'archived' && (
+            <ISFArchivedPanel site={site} docs={docs} restoreDoc={restoreDoc} permanentDeleteDoc={permanentDeleteDoc} currentUserRole={site.user_role} />
           )}
 
         </main>
       </div>
 
-      {/* UPLOAD MODAL */}
       {showUpload && modal('Upload ISF Document', () => setShowUpload(false), (
         <>
           {field('Document Title *', input(uploadForm.title, v => setUploadForm(f => ({ ...f, title: v })), 'e.g. IRB Approval Letter'))}
@@ -927,7 +1008,6 @@ Your role:
         </>
       ), handleUpload, uploading)}
 
-      {/* ADD QUERY MODAL */}
       {showAddQuery && modal('New Monitoring Query', () => setShowAddQuery(false), (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -1251,6 +1331,289 @@ function ISFConfigPanel({ site, study, user, currentUserRole, logAudit }: { site
               <button onClick={() => setShowAddSub(false)} style={{ fontSize: '11px', padding: '6px 14px', border: `0.5px solid ${C.border}`, borderRadius: '8px', background: 'transparent', cursor: 'pointer' }}>Cancel</button>
               <button onClick={addSubArtifact} style={{ fontSize: '11px', padding: '6px 14px', background: C.orange, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Add sub-artifact</button>
             </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ISFTicketPanel({ site, study, user, currentUserRole }: { site: any; study: any; user: any; currentUserRole: string }) {
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('All');
+  const [showModal, setShowModal] = useState(false);
+  const [selected, setSelected] = useState<any>(null);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [priority, setPriority] = useState('Medium');
+  const [replyText, setReplyText] = useState('');
+  const canManage = ['System Administrator', 'Site Coordinator', 'PI'].includes(currentUserRole);
+
+  useEffect(() => { if (site) loadTickets(); }, [site]);
+
+  async function loadTickets() {
+    setLoading(true);
+    let q = supabase.from('isf_tickets').select('*').eq('site_id', site.id).order('created_at', { ascending: false });
+    if (!canManage) q = q.eq('created_by', user.id);
+    const { data } = await q;
+    if (data) setTickets(data);
+    setLoading(false);
+  }
+
+  async function createTicket() {
+    if (!title.trim() || !description.trim()) return;
+    await supabase.from('isf_tickets').insert([{ org_id: site.org_id, site_id: site.id, study_id: study?.id, created_by: user.id, created_by_email: user.email, title: title.trim(), description: description.trim(), priority, status: 'Open' }]);
+    setShowModal(false); setTitle(''); setDescription(''); setPriority('Medium'); loadTickets();
+  }
+
+  async function updateStatus(id: string, status: string) {
+    await supabase.from('isf_tickets').update({ status, resolved_at: status === 'Resolved' ? new Date().toISOString() : null }).eq('id', id);
+    setSelected((p: any) => p ? { ...p, status } : null); loadTickets();
+  }
+
+  async function addReply() {
+    if (!replyText.trim() || !selected) return;
+    const existing = selected.replies || '';
+    const newReplies = existing + (existing ? '\n' : '') + `[${new Date().toLocaleString()} - ${user.email}]: ${replyText.trim()}`;
+    await supabase.from('isf_tickets').update({ replies: newReplies }).eq('id', selected.id);
+    setSelected((p: any) => ({ ...p, replies: newReplies })); setReplyText(''); loadTickets();
+  }
+
+  const filtered = filter === 'All' ? tickets : tickets.filter(t => t.status === filter);
+  const counts = { Open: tickets.filter(t => t.status === 'Open').length, 'In progress': tickets.filter(t => t.status === 'In progress').length, Resolved: tickets.filter(t => t.status === 'Resolved').length };
+  const priorityColor = (p: string) => p === 'High' ? C.red : p === 'Medium' ? C.amber : C.green;
+  const statusBg = (s: string) => s === 'Open' ? C.blueLight : s === 'In progress' ? C.orangeLight : C.greenLight;
+  const statusColor = (s: string) => s === 'Open' ? '#1D4ED8' : s === 'In progress' ? '#C2410C' : '#065F46';
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>Support Tickets — {study?.study_id}</div>
+        <button onClick={() => setShowModal(true)} style={{ fontSize: '12px', padding: '8px 16px', background: C.orange, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>+ New ticket</button>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
+        {[{ label: 'Open', color: '#1D4ED8', bg: C.blueLight }, { label: 'In progress', color: '#C2410C', bg: C.orangeLight }, { label: 'Resolved', color: '#065F46', bg: C.greenLight }].map(s => (
+          <div key={s.label} style={{ background: s.bg, border: `0.5px solid ${C.border}`, borderRadius: '12px', padding: '14px' }}>
+            <div style={{ fontSize: '28px', fontWeight: 700, color: s.color }}>{counts[s.label as keyof typeof counts] || 0}</div>
+            <div style={{ fontSize: '11px', color: C.textSec, marginTop: '2px' }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: '6px' }}>
+        {['All', 'Open', 'In progress', 'Resolved'].map(f => (
+          <button key={f} onClick={() => setFilter(f)} style={{ fontSize: '11px', padding: '5px 12px', borderRadius: '20px', border: `0.5px solid ${filter === f ? C.orange : C.border}`, background: filter === f ? C.orangeLight : 'transparent', color: filter === f ? C.orange : C.textSec, cursor: 'pointer' }}>{f}</button>
+        ))}
+      </div>
+      {loading ? <div style={{ fontSize: '12px', color: C.textMuted }}>Loading...</div>
+      : filtered.length === 0 ? <div style={{ textAlign: 'center' as const, padding: '2rem', fontSize: '12px', color: C.textMuted }}>No tickets found.</div>
+      : filtered.map(t => (
+        <div key={t.id} onClick={() => setSelected(t)} style={{ background: C.bgCard, border: `0.5px solid ${C.border}`, borderRadius: '10px', padding: '14px', cursor: 'pointer' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 600 }}>{t.title}</span>
+            <span style={{ fontSize: '10px', padding: '2px 9px', borderRadius: '20px', fontWeight: 600, background: statusBg(t.status), color: statusColor(t.status) }}>{t.status}</span>
+          </div>
+          <div style={{ fontSize: '11px', color: C.textSec, marginBottom: '8px' }}>{t.description}</div>
+          <div style={{ display: 'flex', gap: '12px', fontSize: '10px', color: C.textMuted }}>
+            <span><span style={{ width: '6px', height: '6px', borderRadius: '50%', background: priorityColor(t.priority), display: 'inline-block', marginRight: '4px' }} />{t.priority}</span>
+            <span>{new Date(t.created_at).toLocaleDateString()}</span>
+            <span>{t.created_by_email}</span>
+          </div>
+        </div>
+      ))}
+      {selected && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: C.bgCard, borderRadius: '16px', width: '520px', maxHeight: '85vh', display: 'flex', flexDirection: 'column' as const, border: `0.5px solid ${C.border}` }}>
+            <div style={{ padding: '14px 18px', borderBottom: `0.5px solid ${C.border}`, display: 'flex', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: '14px', fontWeight: 600 }}>{selected.title}</div>
+              <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer' }}>×</button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 18px', display: 'flex', flexDirection: 'column' as const, gap: '12px' }}>
+              <div style={{ fontSize: '12px', color: C.textSec }}>{selected.description}</div>
+              {selected.replies && selected.replies.split('\n').map((r: string, i: number) => <div key={i} style={{ background: C.bg, borderRadius: '8px', padding: '8px 12px', fontSize: '11px' }}>{r}</div>)}
+              <textarea value={replyText} onChange={e => setReplyText(e.target.value)} placeholder="Type a reply..." rows={2} style={{ width: '100%', fontSize: '12px', border: `0.5px solid ${C.border}`, borderRadius: '8px', padding: '8px', boxSizing: 'border-box' as const }} />
+              <button onClick={addReply} style={{ alignSelf: 'flex-start' as const, fontSize: '11px', padding: '6px 14px', background: C.orange, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Send reply</button>
+              {canManage && (
+                <div style={{ display: 'flex', gap: '6px', borderTop: `0.5px solid ${C.border}`, paddingTop: '12px' }}>
+                  {['Open', 'In progress', 'Resolved'].map(s => <button key={s} onClick={() => updateStatus(selected.id, s)} style={{ fontSize: '11px', padding: '5px 12px', borderRadius: '20px', border: `0.5px solid ${selected.status === s ? C.orange : C.border}`, background: selected.status === s ? C.orangeLight : 'transparent', color: selected.status === s ? C.orange : C.textSec, cursor: 'pointer' }}>{s}</button>)}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {showModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: C.bgCard, borderRadius: '16px', padding: '1.5rem', width: '440px', border: `0.5px solid ${C.border}` }}>
+            <div style={{ fontSize: '14px', fontWeight: 600, marginBottom: '1rem' }}>New support ticket</div>
+            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Brief summary" style={{ width: '100%', fontSize: '12px', border: `0.5px solid ${C.border}`, borderRadius: '8px', padding: '8px', marginBottom: '10px', boxSizing: 'border-box' as const }} />
+            <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Describe the issue..." rows={4} style={{ width: '100%', fontSize: '12px', border: `0.5px solid ${C.border}`, borderRadius: '8px', padding: '8px', marginBottom: '10px', boxSizing: 'border-box' as const }} />
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '1rem' }}>
+              {['Low', 'Medium', 'High'].map(p => <button key={p} onClick={() => setPriority(p)} style={{ flex: 1, fontSize: '11px', padding: '6px', borderRadius: '8px', border: `0.5px solid ${priority === p ? priorityColor(p) : C.border}`, background: priority === p ? priorityColor(p) + '22' : 'transparent', cursor: 'pointer' }}>{p}</button>)}
+            </div>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowModal(false)} style={{ fontSize: '11px', padding: '6px 14px', border: `0.5px solid ${C.border}`, borderRadius: '8px', background: 'transparent', cursor: 'pointer' }}>Cancel</button>
+              <button onClick={createTicket} style={{ fontSize: '11px', padding: '6px 14px', background: C.orange, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Submit</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ISFArchivedPanel({ site, docs, restoreDoc, permanentDeleteDoc, currentUserRole }: { site: any; docs: any[]; restoreDoc: (d: any) => void; permanentDeleteDoc: (d: any) => void; currentUserRole: string }) {
+  const [filterZone, setFilterZone] = useState('');
+  const [filterFrom, setFilterFrom] = useState('');
+  const [filterTo, setFilterTo] = useState('');
+  const canManage = ['System Administrator', 'Site Coordinator', 'PI'].includes(currentUserRole);
+  const archived = docs.filter(d => d.status === 'Archived').filter(d => {
+    if (filterZone && d.zone !== filterZone) return false;
+    if (filterFrom && d.archived_at && new Date(d.archived_at) < new Date(filterFrom)) return false;
+    if (filterTo && d.archived_at && new Date(d.archived_at) > new Date(filterTo + 'T23:59:59')) return false;
+    return true;
+  });
+  function exportCSV() {
+    const headers = ['Document', 'Artifact', 'Zone', 'Archive Reason', 'Archived By', 'Archived At', 'Owner'];
+    const rows = archived.map(d => [d.title, d.artifact_num, d.zone, d.archive_reason || '', d.archived_by || '', d.archived_at ? new Date(d.archived_at).toLocaleString() : '', d.uploaded_by_email || '']);
+    const csv = [headers, ...rows].map(r => r.map(v => JSON.stringify(v)).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'ISF_Archived_' + Date.now() + '.csv'; a.click(); URL.revokeObjectURL(url);
+  }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <div style={{ fontSize: '18px', fontWeight: 700, color: C.text }}>Archived Documents</div>
+          <div style={{ fontSize: '12px', color: C.textMuted, marginTop: '2px' }}>Documents archived from the ISF. Restore or permanently delete.</div>
+        </div>
+        <button onClick={exportCSV} style={{ fontSize: '12px', padding: '8px 16px', background: C.green, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}><i className="ti ti-download" style={{ fontSize: '14px' }} />Export CSV</button>
+      </div>
+      <div style={{ background: '#FFFBEB', border: '0.5px solid #FDE68A', borderRadius: '10px', padding: '10px 14px', fontSize: '11px', color: '#92400E' }}>
+        Archived documents are excluded from ISF completeness, gap analysis, and inspection readiness calculations.
+      </div>
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' as const }}>
+        <select value={filterZone} onChange={e => setFilterZone(e.target.value)} style={{ fontSize: '11px', border: `0.5px solid ${C.border}`, borderRadius: '8px', padding: '6px 10px' }}>
+          <option value="">All zones</option><option value="5">Zone 5</option><option value="6">Zone 6</option><option value="7">Zone 7</option><option value="8">Zone 8</option>
+        </select>
+        <input type="date" value={filterFrom} onChange={e => setFilterFrom(e.target.value)} style={{ fontSize: '11px', border: `0.5px solid ${C.border}`, borderRadius: '8px', padding: '6px 10px' }} />
+        <input type="date" value={filterTo} onChange={e => setFilterTo(e.target.value)} style={{ fontSize: '11px', border: `0.5px solid ${C.border}`, borderRadius: '8px', padding: '6px 10px' }} />
+      </div>
+      <div style={{ background: C.bgCard, border: `0.5px solid ${C.border}`, borderRadius: '12px', overflow: 'hidden' }}>
+        <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse' }}>
+          <thead><tr style={{ borderBottom: `0.5px solid ${C.border}` }}>
+            {['Document', 'Artifact', 'Zone', 'Archive Reason', 'Archived By', 'Archived At', 'Owner', 'Actions'].map(h => <th key={h} style={{ textAlign: 'left', padding: '8px 10px', fontSize: '10px', fontWeight: 600, color: C.textSec }}>{h}</th>)}
+          </tr></thead>
+          <tbody>
+            {archived.length === 0 ? <tr><td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: C.textMuted }}>No archived documents.</td></tr>
+            : archived.map((d, i) => (
+              <tr key={i} style={{ borderBottom: `0.5px solid ${C.bg}` }}>
+                <td style={{ padding: '8px 10px', fontWeight: 500 }}>{d.title}</td>
+                <td style={{ padding: '8px 10px', fontFamily: 'monospace', fontSize: '9px', color: C.textMuted }}>{d.artifact_num}</td>
+                <td style={{ padding: '8px 10px' }}>Zone {d.zone}</td>
+                <td style={{ padding: '8px 10px', color: '#92400E' }}>{d.archive_reason || '—'}</td>
+                <td style={{ padding: '8px 10px' }}>{d.archived_by || '—'}</td>
+                <td style={{ padding: '8px 10px' }}>{d.archived_at ? new Date(d.archived_at).toLocaleDateString() : '—'}</td>
+                <td style={{ padding: '8px 10px' }}>{d.uploaded_by_email || '—'}</td>
+                <td style={{ padding: '8px 10px' }}>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    {canManage && <button onClick={() => restoreDoc(d)} style={{ fontSize: '9px', padding: '3px 8px', background: C.greenLight, color: C.green, border: `0.5px solid #A7F3D0`, borderRadius: '4px', cursor: 'pointer' }}>Restore</button>}
+                    {canManage && <button onClick={() => permanentDeleteDoc(d)} style={{ fontSize: '9px', padding: '3px 8px', background: '#FEF2F2', color: '#991B1B', border: '0.5px solid #FECACA', borderRadius: '4px', cursor: 'pointer' }}>Delete</button>}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function ISFAuditorPanel({ site, study, docs, approveDoc, archiveDoc, logAudit }: { site: any; study: any; docs: any[]; approveDoc: (d: any) => void; archiveDoc: (d: any, r: string) => void; logAudit: any }) {
+  const [expandedZones, setExpandedZones] = useState<Set<string>>(new Set(['5']));
+  const [selectedDoc, setSelectedDoc] = useState<any>(null);
+  const [actionComment, setActionComment] = useState('');
+
+  function toggleZone(z: string) { setExpandedZones(prev => { const n = new Set(prev); n.has(z) ? n.delete(z) : n.add(z); return n; }); }
+  function getArtifactDocs(num: string) { return docs.filter(d => d.artifact_num === num); }
+  function getZoneStatus(z: string) {
+    const coreArts = ISF_ARTIFACTS.filter(a => a.cl === 'Core' && a.zone === z);
+    const approved = coreArts.filter(a => docs.some(d => d.artifact_num === a.num && d.status === 'Approved'));
+    if (coreArts.length === 0) return 'empty';
+    if (approved.length === coreArts.length) return 'complete';
+    if (approved.length > 0) return 'partial';
+    return 'missing';
+  }
+  const statusDot = (s: string) => {
+    const colors: Record<string, string> = { complete: C.green, approved: C.green, partial: C.amber, review: C.blue, draft: '#9CA3AF', missing: C.red, empty: C.border };
+    return <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: colors[s] || C.border, display: 'inline-block', flexShrink: 0 }} />;
+  };
+
+  return (
+    <div style={{ display: 'flex', height: 'calc(100vh - 110px)', border: `0.5px solid ${C.border}`, borderRadius: '14px', overflow: 'hidden', background: C.bgCard }}>
+      <div style={{ width: '320px', borderRight: `0.5px solid ${C.border}`, display: 'flex', flexDirection: 'column' as const, flexShrink: 0 }}>
+        <div style={{ padding: '12px 14px', borderBottom: `0.5px solid ${C.border}`, background: C.bg }}>
+          <div style={{ fontSize: '13px', fontWeight: 600, color: C.text }}>ISF Auditor</div>
+          <div style={{ fontSize: '11px', color: C.textMuted, marginTop: '2px' }}>{study?.study_id} — Document review</div>
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          {['5', '6', '7', '8'].map(z => {
+            const zoneArts = ISF_ARTIFACTS.filter(a => a.zone === z);
+            const isExp = expandedZones.has(z);
+            return (
+              <div key={z}>
+                <div onClick={() => toggleZone(z)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', cursor: 'pointer', background: isExp ? C.orangeLight : 'transparent', borderBottom: `0.5px solid ${C.bg}` }}>
+                  <i className={`ti ${isExp ? 'ti-chevron-down' : 'ti-chevron-right'}`} style={{ fontSize: '12px', color: C.textMuted }} />
+                  {statusDot(getZoneStatus(z))}
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: isExp ? C.orange : C.text, flex: 1 }}>Zone {z} — {ISF_ZONE_NAMES[z]}</span>
+                  <span style={{ fontSize: '9px', color: C.textMuted }}>{zoneArts.length}</span>
+                </div>
+                {isExp && zoneArts.map(a => {
+                  const aDocs = getArtifactDocs(a.num);
+                  return (
+                    <div key={a.num}>
+                      <div style={{ padding: '6px 12px 6px 28px', fontSize: '10px', color: C.textSec, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {statusDot(aDocs.some(d => d.status === 'Approved') ? 'approved' : aDocs.length ? 'draft' : 'empty')}
+                        {a.num} — {a.name}
+                      </div>
+                      {aDocs.map(d => (
+                        <div key={d.id} onClick={() => { setSelectedDoc(d); setActionComment(''); }} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px 6px 44px', cursor: 'pointer', background: selectedDoc?.id === d.id ? C.orangeLight : 'transparent' }}>
+                          {statusDot(d.status === 'Approved' ? 'approved' : 'draft')}
+                          <span style={{ fontSize: '10px', color: selectedDoc?.id === d.id ? C.orange : C.textSec }}>{d.title}</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      {!selectedDoc ? (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', gap: '10px', color: C.textMuted }}>
+          <i className="ti ti-file-search" style={{ fontSize: '40px', color: C.border }} />
+          <div style={{ fontSize: '13px', fontWeight: 500, color: C.textSec }}>Select a document to review</div>
+        </div>
+      ) : (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' as const }}>
+          <div style={{ padding: '12px 20px', borderBottom: `0.5px solid ${C.border}`, background: C.bg }}>
+            <div style={{ fontSize: '13px', fontWeight: 600 }}>{selectedDoc.title}</div>
+            <div style={{ fontSize: '10px', color: C.textMuted, marginTop: '2px' }}>{selectedDoc.artifact_num} — Zone {selectedDoc.zone}</div>
+          </div>
+          <div style={{ flex: 1, overflow: 'auto', padding: '16px 20px' }}>
+            {[['Version', selectedDoc.version], ['Status', selectedDoc.status], ['Effective Date', selectedDoc.effective_date || '—'], ['Expiry Date', selectedDoc.expiry_date || '—'], ['File', selectedDoc.file_name || '—']].map(([l, v], i) => (
+              <div key={i} style={{ marginBottom: '8px' }}>
+                <div style={{ fontSize: '9px', color: C.textMuted, fontWeight: 600, textTransform: 'uppercase' as const }}>{l}</div>
+                <div style={{ fontSize: '12px', color: C.text }}>{v}</div>
+              </div>
+            ))}
+            {selectedDoc.file_url && <a href={selectedDoc.file_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: C.orange }}>Open document →</a>}
+          </div>
+          <div style={{ padding: '14px 20px', borderTop: `0.5px solid ${C.border}`, display: 'flex', gap: '10px' }}>
+            {selectedDoc.status === 'Draft' && <button onClick={() => { approveDoc(selectedDoc); setSelectedDoc(null); }} style={{ fontSize: '11px', fontWeight: 600, padding: '8px 16px', background: C.green, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Mark Complete</button>}
+            <button onClick={() => { const r = prompt('Reason for archiving:'); if (r) { archiveDoc(selectedDoc, r); setSelectedDoc(null); } }} style={{ fontSize: '11px', fontWeight: 600, padding: '8px 16px', background: 'transparent', color: C.amber, border: `1.5px solid ${C.amber}`, borderRadius: '8px', cursor: 'pointer' }}>Archive</button>
           </div>
         </div>
       )}
