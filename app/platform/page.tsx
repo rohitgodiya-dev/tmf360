@@ -353,6 +353,10 @@ export default function Platform(){
   const[dragOver,setDragOver]=useState(false);
   const[selectedFile,setSelectedFile]=useState<File|null>(null);
   const[pendingFileHash,setPendingFileHash]=useState<string>("");
+  const[showDuplicateModal,setShowDuplicateModal]=useState(false);
+  const[duplicateDoc,setDuplicateDoc]=useState<any>(null);
+  const[pendingDuplicateFile,setPendingDuplicateFile]=useState<File|null>(null);
+  const[pendingDuplicateHash,setPendingDuplicateHash]=useState<string>("");
   const[pendingFilePath,setPendingFilePath]=useState("");
   const[pendingFileName,setPendingFileName]=useState("");
   const[pendingFileType,setPendingFileType]=useState("");
@@ -511,17 +515,15 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
       const hashBuffer=await crypto.subtle.digest('SHA-256',arrayBuffer);
       const hashArray=Array.from(new Uint8Array(hashBuffer));
       const fileHash=hashArray.map(b=>b.toString(16).padStart(2,'0')).join('');
-      const{data:existing}=await supabase.from('documents').select('id,custom_file_name,file_name,artifact_name,status').eq('org_id',orgId).eq('study_id',activeStudy.study_id).eq('file_hash',fileHash).neq('status','Archived');
+      const{data:existing}=await supabase.from('documents').select('id,custom_file_name,file_name,artifact_name,status,zone').eq('org_id',orgId).eq('study_id',activeStudy.study_id).eq('file_hash',fileHash).neq('status','Archived');
       if(existing&&existing.length>0){
         const match=existing[0];
-        const matchName=match.custom_file_name||match.file_name||match.artifact_name||'Unknown';
-        if(match.status==='Approved'){
-          setUploadProgress(`⛔ Duplicate blocked — this file already exists as "${matchName}" (Approved).`);
-          setUploading(false);return;
-        }else{
-          const proceed=window.confirm(`⚠️ Duplicate detected\n\nThis file already exists as "${matchName}" (${match.status}).\n\nUpload anyway?`);
-          if(!proceed){setUploadProgress('Upload cancelled.');setUploading(false);return;}
-        }
+        setDuplicateDoc(match);
+        setPendingDuplicateFile(file);
+        setPendingDuplicateHash(fileHash);
+        setShowDuplicateModal(true);
+        setUploading(false);
+        return;
       }
       setUploadProgress('Uploading...');
       const ext=file.name.split('.').pop()||'bin';
@@ -531,6 +533,27 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
       setPendingFilePath(path);setPendingFileName(file.name);setPendingFileType(file.type);setPendingFileSize(file.size);setPendingFileHash(fileHash);
       setSelectedFile(file);setUploadProgress('✓ '+file.name+' ready');
     }catch(err:any){setUploadProgress('Error: '+(err.message||'Unknown error'));}
+    setUploading(false);
+  }
+
+  async function continueDuplicateUpload(){
+    if(!pendingDuplicateFile||!user||!activeStudy)return;
+    setShowDuplicateModal(false);
+    setUploading(true);
+    setUploadProgress('Uploading...');
+    const ext=pendingDuplicateFile.name.split('.').pop()||'bin';
+    const path=`${orgId}/${activeStudy.study_id}/${pendingDuplicateHash}.${ext}`;
+    const{error:upErr}=await supabase.storage.from('Documents').upload(path,pendingDuplicateFile,{upsert:true});
+    if(upErr){setUploadProgress('Upload failed: '+upErr.message);setUploading(false);return;}
+    setPendingFilePath(path);
+    setPendingFileName(pendingDuplicateFile.name);
+    setPendingFileType(pendingDuplicateFile.type);
+    setPendingFileSize(pendingDuplicateFile.size);
+    setPendingFileHash(pendingDuplicateHash);
+    setSelectedFile(pendingDuplicateFile);
+    setUploadProgress('✓ '+pendingDuplicateFile.name+' ready');
+    setPendingDuplicateFile(null);
+    setPendingDuplicateHash('');
     setUploading(false);
   }
 
@@ -1873,6 +1896,56 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
             <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
               <button onClick={()=>setShowStudyModal(false)} style={{fontSize:"11px",padding:"6px 14px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>Cancel</button>
               <button onClick={createStudy} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Create study</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Duplicate Document Modal */}
+      {showDuplicateModal&&duplicateDoc&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
+          <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"460px",border:`0.5px solid ${P.border}`,boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"1rem"}}>
+              <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+                <div style={{width:"32px",height:"32px",borderRadius:"50%",background:"#FEF2F2",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </div>
+                <h2 style={{fontSize:"14px",fontWeight:"600",color:P.text,margin:0}}>Duplicate Document Detected</h2>
+              </div>
+              <button onClick={()=>{setShowDuplicateModal(false);setUploadProgress('Upload cancelled.');}} style={{background:"none",border:"none",cursor:"pointer",fontSize:"18px",color:P.textSec,lineHeight:1}}>×</button>
+            </div>
+            <p style={{fontSize:"12px",color:P.textSec,marginBottom:"1rem",lineHeight:1.6}}>
+              This file already exists in the TMF. Uploading it again may create a duplicate record.
+            </p>
+            <div style={{background:"#FEF2F2",border:"0.5px solid #FECACA",borderRadius:"10px",padding:"12px 14px",marginBottom:"1rem"}}>
+              <div style={{fontSize:"11px",fontWeight:"600",color:"#991B1B",marginBottom:"8px",textTransform:"uppercase" as const,letterSpacing:"0.05em"}}>Existing Document</div>
+              {[
+                ["Name", duplicateDoc.custom_file_name||duplicateDoc.file_name||duplicateDoc.artifact_name||"—"],
+                ["Zone", `Zone ${duplicateDoc.zone||"—"}`],
+                ["Artifact", duplicateDoc.artifact_name||"—"],
+                ["Status", duplicateDoc.status||"—"],
+              ].map(([label,value])=>(
+                <div key={label} style={{display:"flex",gap:"8px",marginBottom:"4px"}}>
+                  <span style={{fontSize:"11px",color:"#6B7280",width:"60px",flexShrink:0}}>{label}</span>
+                  <span style={{fontSize:"11px",fontWeight:"500",color:"#111827"}}>{value}</span>
+                </div>
+              ))}
+            </div>
+            {duplicateDoc.status==='Approved'?(
+              <div style={{background:"#FEF2F2",border:"0.5px solid #FECACA",borderRadius:"8px",padding:"10px 12px",marginBottom:"1rem",fontSize:"11px",color:"#991B1B"}}>
+                ⛔ This document is <strong>Approved</strong>. Uploading an identical file is blocked to protect TMF integrity.
+              </div>
+            ):(
+              <div style={{background:"#FFFBEB",border:"0.5px solid #FDE68A",borderRadius:"8px",padding:"10px 12px",marginBottom:"1rem",fontSize:"11px",color:"#92400E"}}>
+                ⚠️ This document is currently <strong>{duplicateDoc.status}</strong>. You can still upload, but consider updating the existing record instead.
+              </div>
+            )}
+            <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
+              <button onClick={()=>{setShowDuplicateModal(false);setUploadProgress('Upload cancelled.');}} style={{fontSize:"12px",padding:"8px 16px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:P.bg,cursor:"pointer"}}>Cancel</button>
+              {duplicateDoc.status!=='Approved'&&(
+                <button onClick={continueDuplicateUpload} style={{fontSize:"12px",padding:"8px 16px",background:"#F97316",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",fontWeight:"600"}}>Upload Anyway</button>
+              )}
+              <button onClick={()=>setShowDuplicateModal(false)} style={{fontSize:"12px",padding:"8px 16px",background:P.text,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",fontWeight:"600"}}>OK</button>
             </div>
           </div>
         </div>
