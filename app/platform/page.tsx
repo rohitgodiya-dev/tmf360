@@ -1,6 +1,7 @@
 ﻿"use client";
 import{useState,useEffect,useRef}from"react";
 import{supabase}from"../../lib/supabase";
+import{hasPermission,type Role}from"../../lib/permissions";
 import JSZip from"jszip";
 
 
@@ -311,6 +312,7 @@ export default function Platform(){
   const[user,setUser]=useState<any>(null);
   const[currentUserRole,setCurrentUserRole]=useState<string>("");
   const[canUploadDownload,setCanUploadDownload]=useState<boolean>(true);
+  const[canDelete,setCanDelete]=useState<boolean>(false);
   const[canDownload,setCanDownload]=useState<boolean>(true);
   const[orgId,setOrgId]=useState<string>("");
   const[authMode,setAuthMode]=useState<"login"|"signup">("login");
@@ -392,6 +394,10 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
   const[queryType,setQueryType]=useState("Question");
   const[queryPriority,setQueryPriority]=useState("Medium");
   const[queryDueDate,setQueryDueDate]=useState("");
+  const[showDeleteModal,setShowDeleteModal]=useState(false);
+  const[deleteTarget,setDeleteTarget]=useState<any>(null);
+  const[deletionReason,setDeletionReason]=useState("");
+  const[deletedDocs,setDeletedDocs]=useState<any[]>([]);
 
   const P={
     primary:"#F97316",primaryLight:"#FFEDD5",primaryDark:"#EA580C",
@@ -444,11 +450,13 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
   useEffect(()=>{messagesEnd.current?.scrollIntoView({behavior:"smooth"});},[chatMessages]);
 
   async function loadUserRole(uid:string){
-    const{data}=await supabase.from("user_roles").select("role,can_upload_download,can_download,org_id,full_name").eq("user_id",uid).single();
+    const{data}=await supabase.from("user_roles").select("role,can_upload_download,can_download,can_delete,org_id,full_name").eq("user_id",uid).single();
     if(data){
       setCurrentUserRole(data.role);
       setCanUploadDownload(data.can_upload_download!==false);
       setCanDownload(data.can_download!==false);
+      // Explicit per-user toggle from User management wins; otherwise fall back to the role default.
+      setCanDelete(data.can_delete===true||(data.can_delete==null&&hasPermission(data.role as Role,"delete_document")));
       setUserFullName(data.full_name||"");
       if(data.org_id){setOrgId(data.org_id);const savedStudyId=typeof window!=="undefined"?localStorage.getItem("tmf_active_study"):"";loadStudiesWithOrg(data.org_id,savedStudyId||undefined);}
     }
@@ -461,7 +469,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
   }
 
   async function loadDocsWithOrg(studyId:string,oid:string){
-    const{data}=await supabase.from("documents").select("*").eq("study_id",studyId).eq("org_id",oid).order("created_at",{ascending:false});
+    const{data}=await supabase.from("documents").select("*").eq("study_id",studyId).eq("org_id",oid).is("deleted_at",null).order("created_at",{ascending:false});
     if(data)setDocs(data);
     loadTmfConfig(studyId,oid);
   }
@@ -515,7 +523,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
       const hashBuffer=await crypto.subtle.digest('SHA-256',arrayBuffer);
       const hashArray=Array.from(new Uint8Array(hashBuffer));
       const fileHash=hashArray.map(b=>b.toString(16).padStart(2,'0')).join('');
-      const{data:existing}=await supabase.from('documents').select('id,custom_file_name,file_name,artifact_name,status,zone').eq('org_id',orgId).eq('study_id',activeStudy.study_id).eq('file_hash',fileHash).neq('status','Archived');
+      const{data:existing}=await supabase.from('documents').select('id,custom_file_name,file_name,artifact_name,status,zone').eq('org_id',orgId).eq('study_id',activeStudy.study_id).eq('file_hash',fileHash).neq('status','Archived').is('deleted_at',null);
       if(existing&&existing.length>0){
         const match=existing[0];
         setDuplicateDoc(match);
@@ -585,6 +593,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
     const{error:signInErr}=await supabase.auth.signInWithPassword({email:user.email,password:approvePassword});
     if(signInErr){setApproveError("Incorrect password.");return;}
     const now=new Date().toISOString();
+    await saveMetadataVersion(selectedDoc,approveReason||"Status changed to Approved");
     const{error}=await supabase.from("documents").update({status:"Approved",approved_by:user.email,approved_at:now,signature_reason:approveReason}).eq("id",selectedDoc.id);
     if(!error){
       await logAudit("Document approved",selectedDoc.id,selectedDoc.study_id,"status","Under Review","Approved",approveReason,selectedDoc.custom_file_name||selectedDoc.artifact_name);
@@ -605,6 +614,83 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
       setShowCommentModal(false);setCommentText("");setSelectedDoc(null);
     }
   }
+
+  // Snapshot of the document's metadata as it was before a change (Pillar 3).
+  async function saveMetadataVersion(doc:any,changeReason:string){
+    if(!doc?.id||!orgId||!user)return;
+    const{data:latest}=await supabase.from("document_metadata_versions")
+      .select("version_no").eq("document_id",doc.id)
+      .order("version_no",{ascending:false}).limit(1).maybeSingle();
+    const nextVersion=(latest?.version_no||0)+1;
+    await supabase.from("document_metadata_versions").insert([{
+      document_id:doc.id,
+      org_id:orgId,
+      study_id:doc.study_id,
+      version_no:nextVersion,
+      snapshot:{
+        artifact_name:doc.artifact_name,
+        artifact_num:doc.artifact_num,
+        zone:doc.zone,
+        status:doc.status,
+        version:doc.version,
+        owner:doc.owner,
+        effective_date:doc.effective_date,
+        expiry_date:doc.expiry_date,
+        comments:doc.comments,
+        custom_file_name:doc.custom_file_name,
+      },
+      change_reason:changeReason,
+      changed_by_id:user.id,
+      changed_by_email:user.email,
+    }]);
+  }
+
+  async function loadDeletedDocs(){
+    if(!orgId||!activeStudy)return;
+    const{data}=await supabase.from("documents").select("*")
+      .eq("org_id",orgId).eq("study_id",activeStudy.study_id)
+      .not("deleted_at","is",null)
+      .order("deleted_at",{ascending:false});
+    if(data)setDeletedDocs(data);
+  }
+
+  async function handleDelete(){
+    if(!deleteTarget||!deletionReason.trim()||!user)return;
+    const now=new Date().toISOString();
+    const{error}=await supabase.from("documents").update({
+      deleted_at:now,
+      deleted_by:user.email,
+      deleted_by_id:user.id,
+      deletion_reason:deletionReason,
+      pre_deletion_status:deleteTarget.status,
+      status:"Deleted",
+    }).eq("id",deleteTarget.id);
+    if(error){alert("Delete failed: "+error.message);return;}
+    await logAudit("Document deleted",deleteTarget.id,deleteTarget.study_id,"status",deleteTarget.status,"Deleted",deletionReason,deleteTarget.custom_file_name||deleteTarget.artifact_name);
+    setDocs(prev=>prev.filter(d=>d.id!==deleteTarget.id));
+    if(previewDoc?.id===deleteTarget.id){setPreviewUrl(null);setPreviewDoc(null);}
+    setShowDeleteModal(false);
+    setDeleteTarget(null);
+    setDeletionReason("");
+  }
+
+  async function handleRestore(doc:any){
+    const restoredStatus=doc.pre_deletion_status||"Draft";
+    const{error}=await supabase.from("documents").update({
+      deleted_at:null,
+      deleted_by:null,
+      deleted_by_id:null,
+      deletion_reason:null,
+      pre_deletion_status:null,
+      status:restoredStatus,
+    }).eq("id",doc.id);
+    if(error){alert("Restore failed: "+error.message);return;}
+    await logAudit("Document restored",doc.id,doc.study_id,"status","Deleted",restoredStatus,"",doc.custom_file_name||doc.artifact_name);
+    loadDeletedDocs();
+    if(activeStudy&&orgId)loadDocsWithOrg(activeStudy.study_id,orgId);
+  }
+
+  useEffect(()=>{if(panel==="recyclebin")loadDeletedDocs();},[panel,activeStudy,orgId]);
 
   function openPreview(d:Doc){
     const url=supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl;
@@ -836,6 +922,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {navItem("quality","Quality checks","ti-clipboard-list")}
           {navItem("tmfauditor","TMF Auditor","ti-checkup-list")}
           {navItem("archived","Archived","ti-archive")}
+          {navItem("recyclebin","Recycle Bin","ti-trash")}
           <p style={{fontSize:"9px",fontWeight:"500",color:P.textTert,padding:"10px 10px 4px",textTransform:"uppercase",letterSpacing:".06em"}}>Team</p>
           {navItem("users","User management","ti-users")}
           {navItem("profile","My profile","ti-user-circle")}
@@ -1063,7 +1150,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                       </div>
                       <div style={{fontSize:"10px",color:P.textTert}}>Zone {d.zone} - {d.owner||"-"}</div>
                     </div>
-                    {d.file_path&&canDownload&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none"}}>Download</a>}{canUploadDownload&&<button onClick={async()=>{const reason=prompt("Reason for archiving:");if(!reason)return;const now=new Date().toISOString();await supabase.from("documents").update({status:"Archived",archived_by:user.email,archived_at:now,archive_reason:reason,pre_archive_status:d.status}).eq("id",d.id);setDocs((prev:any)=>prev.map((x:any)=>x.id===d.id?{...x,status:"Archived"}:x));}} style={{fontSize:"9px",padding:"2px 6px",background:"#FFFBEB",color:"#92400E",border:"0.5px solid #FDE68A",borderRadius:"4px",cursor:"pointer"}}>Archive</button>}
+                    {d.file_path&&canDownload&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none"}}>Download</a>}{canUploadDownload&&<button onClick={async()=>{const reason=prompt("Reason for archiving:");if(!reason)return;const now=new Date().toISOString();await supabase.from("documents").update({status:"Archived",archived_by:user.email,archived_at:now,archive_reason:reason,pre_archive_status:d.status}).eq("id",d.id);setDocs((prev:any)=>prev.map((x:any)=>x.id===d.id?{...x,status:"Archived"}:x));}} style={{fontSize:"9px",padding:"2px 6px",background:"#FFFBEB",color:"#92400E",border:"0.5px solid #FDE68A",borderRadius:"4px",cursor:"pointer"}}>Archive</button>}{canDelete&&<button onClick={()=>{setDeleteTarget(d);setDeletionReason("");setShowDeleteModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:"#FEF2F2",color:"#991B1B",border:"0.5px solid #FECACA",borderRadius:"4px",cursor:"pointer"}}>Delete</button>}
                   </div>
                   <div style={{background:"#FEF2F2",borderRadius:"8px",padding:"10px 12px"}}>
                     <div style={{fontSize:"10px",fontWeight:"500",color:"#991B1B",marginBottom:"3px"}}>Rejection reason:</div>
@@ -1249,7 +1336,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                             {d.status==="Draft"&&<button onClick={()=>{setSelectedDoc(d);setShowSubmitModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:"#EFF6FF",color:"#1D4ED8",border:"0.5px solid #BFDBFE",borderRadius:"4px",cursor:"pointer"}}>Submit</button>}
                             {d.status==="Under Review"&&<button onClick={()=>{setSelectedDoc(d);setShowApproveModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:"#ECFDF5",color:"#065F46",border:"0.5px solid #A7F3D0",borderRadius:"4px",cursor:"pointer"}}>Review</button>}
                             <button onClick={()=>{setSelectedDoc(d);setCommentText("");setShowCommentModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,border:`0.5px solid ${P.border}`,borderRadius:"4px",cursor:"pointer"}}>Comment</button>
-                            {canUploadDownload&&<button onClick={async()=>{const reason=prompt("Reason for archiving:");if(!reason)return;const now=new Date().toISOString();const{error}=await supabase.from("documents").update({status:"Archived",archived_by:user.email,archived_at:now,archive_reason:reason,pre_archive_status:d.status}).eq("id",d.id);if(!error){await logAudit("Document archived",d.id,d.study_id,"status",d.status,"Archived - Reason: "+reason,reason,d.custom_file_name||d.artifact_name);setDocs(prev=>prev.map(x=>x.id===d.id?{...x,status:"Archived",archived_by:user.email,archived_at:now,archive_reason:reason}:x));}}} style={{fontSize:"9px",padding:"2px 6px",background:"#FFFBEB",color:"#92400E",border:"0.5px solid #FDE68A",borderRadius:"4px",cursor:"pointer"}}>Archive</button>}<button onClick={()=>{setQueryDoc(d);setShowQueryModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:"#EFF6FF",color:"#1D4ED8",border:"0.5px solid #BFDBFE",borderRadius:"4px",cursor:"pointer"}}>Query</button>
+                            {canUploadDownload&&<button onClick={async()=>{const reason=prompt("Reason for archiving:");if(!reason)return;const now=new Date().toISOString();const{error}=await supabase.from("documents").update({status:"Archived",archived_by:user.email,archived_at:now,archive_reason:reason,pre_archive_status:d.status}).eq("id",d.id);if(!error){await logAudit("Document archived",d.id,d.study_id,"status",d.status,"Archived - Reason: "+reason,reason,d.custom_file_name||d.artifact_name);setDocs(prev=>prev.map(x=>x.id===d.id?{...x,status:"Archived",archived_by:user.email,archived_at:now,archive_reason:reason}:x));}}} style={{fontSize:"9px",padding:"2px 6px",background:"#FFFBEB",color:"#92400E",border:"0.5px solid #FDE68A",borderRadius:"4px",cursor:"pointer"}}>Archive</button>}{canDelete&&<button onClick={()=>{setDeleteTarget(d);setDeletionReason("");setShowDeleteModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:"#FEF2F2",color:"#991B1B",border:"0.5px solid #FECACA",borderRadius:"4px",cursor:"pointer"}}>Delete</button>}<button onClick={()=>{setQueryDoc(d);setShowQueryModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:"#EFF6FF",color:"#1D4ED8",border:"0.5px solid #BFDBFE",borderRadius:"4px",cursor:"pointer"}}>Query</button>
                           </div>
                           {d.comments&&<div style={{fontSize:"9px",color:P.textTert,marginTop:"3px"}}>Has comments</div>}
                           {d.approved_by&&<div style={{fontSize:"9px",color:"#065F46",marginTop:"2px"}}>{d.approved_by}</div>}
@@ -1838,6 +1925,45 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
             <ArchivedPanel user={user} P={P} supabase={supabase} orgId={orgId} activeStudy={activeStudy} currentUserRole={currentUserRole} logAudit={logAudit} setDocs={setDocs}/>
           )}
 
+          {/* RECYCLE BIN */}
+          {panel==="recyclebin"&&(
+            <div style={{display:"flex",flexDirection:"column",gap:"14px"}}>
+              <div>
+                <div style={{fontSize:"18px",fontWeight:"700",color:P.text}}>Recycle Bin</div>
+                <div style={{fontSize:"12px",color:P.textTert,marginTop:"2px"}}>Deleted documents can be restored within 180 days</div>
+              </div>
+              <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:0,overflow:"hidden"}}>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px"}}>
+                  <thead><tr style={{borderBottom:`0.5px solid ${P.border}`,background:P.bgSec}}>
+                    {["Document","Zone","Artifact","Deleted By","Reason","Deleted","Days Left","Action"].map(h=><th key={h} style={{textAlign:"left",padding:"10px 14px",fontSize:"11px",fontWeight:"600",color:P.textSec}}>{h}</th>)}
+                  </tr></thead>
+                  <tbody>
+                    {deletedDocs.length===0?(
+                      <tr><td colSpan={8} style={{textAlign:"center",padding:"2rem",color:P.textTert}}>Recycle bin is empty.</td></tr>
+                    ):deletedDocs.map(d=>{
+                      const daysLeft=d.deleted_at?Math.max(0,180-Math.floor((Date.now()-new Date(d.deleted_at).getTime())/86400000)):180;
+                      const isExpired=daysLeft===0;
+                      return(
+                        <tr key={d.id} style={{borderBottom:`0.5px solid ${P.border}`,opacity:isExpired?0.5:1}}>
+                          <td style={{padding:"10px 14px",fontWeight:"500",maxWidth:"160px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.custom_file_name||d.file_name||"—"}</td>
+                          <td style={{padding:"10px 14px",color:P.textTert}}>Zone {d.zone}</td>
+                          <td style={{padding:"10px 14px",fontSize:"11px",color:P.textTert,maxWidth:"140px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.artifact_name||"—"}</td>
+                          <td style={{padding:"10px 14px",color:P.textTert,fontSize:"11px"}}>{d.deleted_by||"—"}</td>
+                          <td style={{padding:"10px 14px",color:P.textTert,fontSize:"11px"}}>{d.deletion_reason||"—"}</td>
+                          <td style={{padding:"10px 14px",color:P.textTert,fontSize:"11px"}}>{d.deleted_at?new Date(d.deleted_at).toLocaleDateString():"—"}</td>
+                          <td style={{padding:"10px 14px"}}><span style={{fontSize:"10px",fontWeight:"600",padding:"3px 8px",borderRadius:"20px",background:daysLeft>30?"#ECFDF5":daysLeft>7?"#FFFBEB":"#FEF2F2",color:daysLeft>30?"#065F46":daysLeft>7?"#92400E":"#991B1B"}}>{isExpired?"Expired":`${daysLeft}d`}</span></td>
+                          <td style={{padding:"10px 14px"}}>
+                            {!isExpired&&canDelete&&<button onClick={()=>handleRestore(d)} style={{fontSize:"10px",padding:"3px 10px",background:"#ECFDF5",color:"#065F46",border:"0.5px solid #A7F3D0",borderRadius:"4px",cursor:"pointer"}}>Restore</button>}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
           {/* TMF AUDITOR */}
           {panel==="tmfauditor"&&(
             <TmfAuditorPanel
@@ -1846,7 +1972,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
               currentUserRole={currentUserRole}
               activeTMF={activeTMF} activeZONES={activeZONES}
               studyDocs={studyDocs} setDocs={setDocs}
-              logAudit={logAudit}
+              logAudit={logAudit} saveMetadataVersion={saveMetadataVersion}
             />
           )}
 
@@ -1946,6 +2072,46 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                 <button onClick={continueDuplicateUpload} style={{fontSize:"12px",padding:"8px 16px",background:"#F97316",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",fontWeight:"600"}}>Upload Anyway</button>
               )}
               <button onClick={()=>setShowDuplicateModal(false)} style={{fontSize:"12px",padding:"8px 16px",background:P.text,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",fontWeight:"600"}}>OK</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Document Modal */}
+      {showDeleteModal&&deleteTarget&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
+          <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"440px",border:`0.5px solid ${P.border}`,boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"1rem"}}>
+              <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+                <div style={{width:"32px",height:"32px",borderRadius:"50%",background:"#FEF2F2",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                </div>
+                <h2 style={{fontSize:"14px",fontWeight:"600",color:P.text,margin:0}}>Delete Document</h2>
+              </div>
+              <button onClick={()=>setShowDeleteModal(false)} style={{background:"none",border:"none",cursor:"pointer",fontSize:"18px",color:P.textTert,lineHeight:1}}>×</button>
+            </div>
+            <div style={{background:P.bgSec,border:`0.5px solid ${P.border}`,borderRadius:"10px",padding:"12px 14px",marginBottom:"1rem"}}>
+              <div style={{fontSize:"12px",fontWeight:"500",color:P.text,marginBottom:"4px"}}>{deleteTarget.custom_file_name||deleteTarget.file_name||deleteTarget.artifact_name}</div>
+              <div style={{fontSize:"11px",color:P.textTert}}>Zone {deleteTarget.zone} · {deleteTarget.artifact_name} · {deleteTarget.status}</div>
+            </div>
+            <div style={{background:"#FFFBEB",border:"0.5px solid #FDE68A",borderRadius:"8px",padding:"10px 12px",marginBottom:"1rem",fontSize:"11px",color:"#92400E"}}>
+              This document will be moved to the Recycle Bin. It can be restored within 180 days.
+            </div>
+            <div style={{marginBottom:"1rem"}}>
+              <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>Reason for deletion <span style={{color:"#EF4444"}}>*</span></label>
+              <select value={deletionReason} onChange={e=>setDeletionReason(e.target.value)} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px"}}>
+                <option value="">Select a reason...</option>
+                <option value="Incorrectly indexed">Incorrectly indexed</option>
+                <option value="Not TMF relevant">Not TMF relevant</option>
+                <option value="Duplicate document">Duplicate document</option>
+                <option value="Superseded by new version">Superseded by new version</option>
+                <option value="Uploaded in error">Uploaded in error</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
+              <button onClick={()=>setShowDeleteModal(false)} style={{fontSize:"12px",padding:"8px 16px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:P.bg,cursor:"pointer"}}>Cancel</button>
+              <button onClick={handleDelete} disabled={!deletionReason} style={{fontSize:"12px",padding:"8px 16px",background:deletionReason?"#EF4444":P.bgTert,color:deletionReason?"#fff":P.textMuted,border:"none",borderRadius:"8px",cursor:deletionReason?"pointer":"not-allowed",fontWeight:"600"}}>Move to Recycle Bin</button>
             </div>
           </div>
         </div>
@@ -2131,7 +2297,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
               <div style={{display:"flex",gap:"8px"}}>
                 <a href={previewUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:"11px",padding:"5px 12px",background:P.bgTert,color:P.textSec,borderRadius:"6px",textDecoration:"none"}}>Open</a>
                 <a href={previewUrl} download style={{fontSize:"11px",padding:"5px 12px",background:P.bgTert,color:P.textSec,borderRadius:"6px",textDecoration:"none"}}>Download</a>
-                {previewDoc&&<button onClick={()=>{setQueryDoc(previewDoc);setShowQueryModal(true);}} style={{fontSize:"11px",padding:"5px 12px",background:"#EFF6FF",color:"#1D4ED8",border:"none",borderRadius:"6px",cursor:"pointer"}}>Query</button>}{previewDoc&&canUploadDownload&&<button onClick={async()=>{const reason=prompt("Reason for archiving:");if(!reason)return;const now=new Date().toISOString();const{error}=await supabase.from("documents").update({status:"Archived",archived_by:user.email,archived_at:now,archive_reason:reason,pre_archive_status:previewDoc.status}).eq("id",previewDoc.id);if(!error){await logAudit("Document archived",previewDoc.id,previewDoc.study_id,"status",previewDoc.status,"Archived - Reason: "+reason,reason,previewDoc.custom_file_name||previewDoc.artifact_name);setDocs((prev:any)=>prev.map((x:any)=>x.id===previewDoc.id?{...x,status:"Archived"}:x));setPreviewUrl(null);setPreviewDoc(null);}}} style={{fontSize:"11px",padding:"5px 12px",background:"#FFFBEB",color:"#92400E",border:"none",borderRadius:"6px",cursor:"pointer"}}>Archive</button>}<button onClick={()=>{setPreviewUrl(null);setPreviewDoc(null);}} style={{fontSize:"11px",padding:"5px 12px",background:"#FEF2F2",color:"#991B1B",border:"none",borderRadius:"6px",cursor:"pointer"}}>Close</button>
+                {previewDoc&&<button onClick={()=>{setQueryDoc(previewDoc);setShowQueryModal(true);}} style={{fontSize:"11px",padding:"5px 12px",background:"#EFF6FF",color:"#1D4ED8",border:"none",borderRadius:"6px",cursor:"pointer"}}>Query</button>}{previewDoc&&canUploadDownload&&<button onClick={async()=>{const reason=prompt("Reason for archiving:");if(!reason)return;const now=new Date().toISOString();const{error}=await supabase.from("documents").update({status:"Archived",archived_by:user.email,archived_at:now,archive_reason:reason,pre_archive_status:previewDoc.status}).eq("id",previewDoc.id);if(!error){await logAudit("Document archived",previewDoc.id,previewDoc.study_id,"status",previewDoc.status,"Archived - Reason: "+reason,reason,previewDoc.custom_file_name||previewDoc.artifact_name);setDocs((prev:any)=>prev.map((x:any)=>x.id===previewDoc.id?{...x,status:"Archived"}:x));setPreviewUrl(null);setPreviewDoc(null);}}} style={{fontSize:"11px",padding:"5px 12px",background:"#FFFBEB",color:"#92400E",border:"none",borderRadius:"6px",cursor:"pointer"}}>Archive</button>}{previewDoc&&canDelete&&<button onClick={()=>{setDeleteTarget(previewDoc);setDeletionReason("");setShowDeleteModal(true);}} style={{fontSize:"11px",padding:"5px 12px",background:"#FEF2F2",color:"#991B1B",border:"0.5px solid #FECACA",borderRadius:"6px",cursor:"pointer"}}>Delete</button>}<button onClick={()=>{setPreviewUrl(null);setPreviewDoc(null);}} style={{fontSize:"11px",padding:"5px 12px",background:"#FEF2F2",color:"#991B1B",border:"none",borderRadius:"6px",cursor:"pointer"}}>Close</button>
               </div>
             </div>
             <div style={{flex:1,overflow:"auto"}}>
@@ -3008,7 +3174,7 @@ function UserManagementPanel({user, P, supabase, activeStudy, orgId}: {user: any
 
 
 
-function TmfAuditorPanel({user,P,supabase,activeStudy,orgId,currentUserRole,activeTMF,activeZONES,studyDocs,setDocs,logAudit}:{user:any,P:any,supabase:any,activeStudy:any,orgId:string,currentUserRole:string,activeTMF:any[],activeZONES:any[],studyDocs:any[],setDocs:any,logAudit:any}){
+function TmfAuditorPanel({user,P,supabase,activeStudy,orgId,currentUserRole,activeTMF,activeZONES,studyDocs,setDocs,logAudit,saveMetadataVersion}:{user:any,P:any,supabase:any,activeStudy:any,orgId:string,currentUserRole:string,activeTMF:any[],activeZONES:any[],studyDocs:any[],setDocs:any,logAudit:any,saveMetadataVersion:(doc:any,changeReason:string)=>Promise<void>}){
   const [selectedDoc, setSelectedDoc] = useState<any>(null);
   const [expandedZones, setExpandedZones] = useState<Set<string>>(new Set(["1"]));
   const [expandedArtifacts, setExpandedArtifacts] = useState<Set<string>>(new Set());
@@ -3074,6 +3240,7 @@ function TmfAuditorPanel({user,P,supabase,activeStudy,orgId,currentUserRole,acti
       updateData.signature_reason = actionComment.trim();
     }
 
+    await saveMetadataVersion(selectedDoc, "Metadata updated");
     const { error } = await supabase.from("documents").update(updateData).eq("id", selectedDoc.id);
     if (!error) {
       await logAudit(

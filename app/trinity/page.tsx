@@ -185,7 +185,7 @@ export default function TrinityPage(){
 
   async function loadStudyData(studyId:string,oid:string,uid?:string){
     const[{data:docData},{data:configData},{data:vaultData}]=await Promise.all([
-      supabase.from("documents").select("*").eq("study_id",studyId).eq("org_id",oid).order("created_at",{ascending:false}),
+      supabase.from("documents").select("*").eq("study_id",studyId).eq("org_id",oid).is("deleted_at",null).order("created_at",{ascending:false}),
       supabase.from("tmf_config").select("*").eq("org_id",oid).eq("study_id",studyId).eq("is_enabled",true),
       supabase.from("study_vault").select("*").eq("org_id",oid).eq("study_id",studyId).eq("is_active",true).order("uploaded_at",{ascending:false}),
 

@@ -28,7 +28,8 @@ export async function GET(req: NextRequest) {
     const { data: docs } = await supabaseAdmin
       .from("documents")
       .select("*")
-      .not("expiry_date", "is", null);
+      .not("expiry_date", "is", null)
+      .is("deleted_at", null);
 
     if (!docs || docs.length === 0) return NextResponse.json({ sent: 0 });
 

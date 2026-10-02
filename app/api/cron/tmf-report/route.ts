@@ -69,7 +69,8 @@ export async function GET(req: NextRequest) {
       const { data: docs } = await supabaseAdmin
         .from("documents")
         .select("*")
-        .eq("org_id", pref.org_id);
+        .eq("org_id", pref.org_id)
+        .is("deleted_at", null);
 
       const allDocs = docs || [];
       const approved = allDocs.filter((d: any) => d.status === "Approved").length;
