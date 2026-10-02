@@ -284,7 +284,7 @@ const FILE_ICONS:Record<string,string>={
 };
 
 interface Study{study_id:string;protocol:string;phase:string;status:string;sponsor:string;user_id:string;org_id?:string;}
-interface Doc{id?:string;study_id:string;user_id:string;org_id?:string;artifact_num:string;artifact_name:string;zone:string;version:string;status:string;owner:string;effective_date:string;expiry_date:string;file_path:string;file_name:string;custom_file_name:string;file_type:string;file_size:number;comments:string;approved_by?:string;approved_at?:string;signature_reason?:string;submission_reason?:string;rejection_reason?:string;rejected_by?:string;rejected_at?:string;appeal_reason?:string;quality_score?:number;quality_flags?:string[];}
+interface Doc{id?:string;study_id:string;user_id:string;org_id?:string;artifact_num:string;artifact_name:string;zone:string;version:string;status:string;owner:string;effective_date:string;expiry_date:string;file_path:string;file_name:string;custom_file_name:string;file_type:string;file_size:number;file_hash?:string;file_size_bytes?:number;comments:string;approved_by?:string;approved_at?:string;signature_reason?:string;submission_reason?:string;rejection_reason?:string;rejected_by?:string;rejected_at?:string;appeal_reason?:string;quality_score?:number;quality_flags?:string[];}
 
 function fileIcon(n:string){return FILE_ICONS[n.split(".").pop()?.toLowerCase()||""]||"FILE";}
 function canPreview(n:string){return["pdf","png","jpg","jpeg","gif","webp","doc","docx","xls","xlsx","ppt","pptx"].includes(n.split(".").pop()?.toLowerCase()||"");}
