@@ -352,6 +352,7 @@ export default function Platform(){
   const[uploadProgress,setUploadProgress]=useState("");
   const[dragOver,setDragOver]=useState(false);
   const[selectedFile,setSelectedFile]=useState<File|null>(null);
+  const[pendingFileHash,setPendingFileHash]=useState<string>("");
   const[pendingFilePath,setPendingFilePath]=useState("");
   const[pendingFileName,setPendingFileName]=useState("");
   const[pendingFileType,setPendingFileType]=useState("");
@@ -504,12 +505,33 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
 
   async function handleFileUpload(file:File){
     if(!user||!activeStudy)return;
-    setUploading(true);setUploadProgress("Uploading...");
-    const path=`${user.id}/${activeStudy.study_id}/${Date.now()}_${file.name}`;
-    const{error:upErr}=await supabase.storage.from("Documents").upload(path,file);
-    if(upErr){setUploadProgress("Upload failed: "+upErr.message);setUploading(false);return;}
-    setPendingFilePath(path);setPendingFileName(file.name);setPendingFileType(file.type);setPendingFileSize(file.size);
-    setSelectedFile(file);setUploadProgress("v "+file.name+" ready");setUploading(false);
+    setUploading(true);setUploadProgress("Computing file hash...");
+    try{
+      const arrayBuffer=await file.arrayBuffer();
+      const hashBuffer=await crypto.subtle.digest('SHA-256',arrayBuffer);
+      const hashArray=Array.from(new Uint8Array(hashBuffer));
+      const fileHash=hashArray.map(b=>b.toString(16).padStart(2,'0')).join('');
+      const{data:existing}=await supabase.from('documents').select('id,custom_file_name,file_name,artifact_name,status').eq('org_id',orgId).eq('study_id',activeStudy.study_id).eq('file_hash',fileHash).neq('status','Archived');
+      if(existing&&existing.length>0){
+        const match=existing[0];
+        const matchName=match.custom_file_name||match.file_name||match.artifact_name||'Unknown';
+        if(match.status==='Approved'){
+          setUploadProgress(`⛔ Duplicate blocked — this file already exists as "${matchName}" (Approved).`);
+          setUploading(false);return;
+        }else{
+          const proceed=window.confirm(`⚠️ Duplicate detected\n\nThis file already exists as "${matchName}" (${match.status}).\n\nUpload anyway?`);
+          if(!proceed){setUploadProgress('Upload cancelled.');setUploading(false);return;}
+        }
+      }
+      setUploadProgress('Uploading...');
+      const ext=file.name.split('.').pop()||'bin';
+      const path=`${orgId}/${activeStudy.study_id}/${fileHash}.${ext}`;
+      const{error:upErr}=await supabase.storage.from('Documents').upload(path,file,{upsert:true});
+      if(upErr){setUploadProgress('Upload failed: '+upErr.message);setUploading(false);return;}
+      setPendingFilePath(path);setPendingFileName(file.name);setPendingFileType(file.type);setPendingFileSize(file.size);setPendingFileHash(fileHash);
+      setSelectedFile(file);setUploadProgress('✓ '+file.name+' ready');
+    }catch(err:any){setUploadProgress('Error: '+(err.message||'Unknown error'));}
+    setUploading(false);
   }
 
   async function addDocument(){
@@ -521,7 +543,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
       version:fVersion,status:fDocStatus,owner:fOwner,
       effective_date:fEff,expiry_date:fExp,comments:fComments,
       file_path:pendingFilePath,file_name:pendingFileName,
-      custom_file_name:fCustomName,file_type:pendingFileType,file_size:pendingFileSize,
+      custom_file_name:fCustomName,file_type:pendingFileType,file_size:pendingFileSize,file_hash:pendingFileHash,file_size_bytes:pendingFileSize,
     };
     const{data,error}=await supabase.from("documents").insert([d]).select();
     if(!error&&data){
@@ -529,7 +551,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
       await logAudit("Document uploaded",data[0].id,activeStudy.study_id,"status","",fDocStatus,"",fCustomName||pendingFileName||an);
       fetch("/api/notify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"document_uploaded",document_name:fCustomName||pendingFileName||an,artifact_name:an,zone,study_id:activeStudy.study_id,uploaded_by:user.email})});
     }
-    setShowDocModal(false);setFArtifact("");setFVersion("");setFOwner("");setFEff("");setFExp("");setFComments("");setFCustomName("");setPendingFilePath("");setPendingFileName("");setPendingFileType("");setPendingFileSize(0);setSelectedFile(null);setUploadProgress("");
+    setShowDocModal(false);setFArtifact("");setFVersion("");setFOwner("");setFEff("");setFExp("");setFComments("");setFCustomName("");setPendingFilePath("");setPendingFileName("");setPendingFileType("");setPendingFileSize(0);setPendingFileHash("");setSelectedFile(null);setUploadProgress("");
   }
 
   async function handleApprove(){
