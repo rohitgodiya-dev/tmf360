@@ -135,6 +135,9 @@ export default function TrinityPage(){
   const[chatDocAction,setChatDocAction]=useState<{msgIdx:number;stage:number;disabled:boolean}|null>(null);
   const[approveStage,setApproveStage]=useState<0|1|2|3>(0);
   const[approveDocId,setApproveDocId]=useState<string|null>(null);
+  const[signPassword,setSignPassword]=useState("");
+  const[signReason,setSignReason]=useState("");
+  const[signError,setSignError]=useState("");
   const[flagStage,setFlagStage]=useState<"idle"|"form"|"done">("idle");
   const[flagMsgIdx,setFlagMsgIdx]=useState<number|null>(null);
   const[flagDocId,setFlagDocId]=useState<string|null>(null);
@@ -726,7 +729,22 @@ Return ONLY valid JSON array.`;
                         <button onClick={async()=>{const pendingDoc=docs.find(d=>d.id===approveDocId);if(!pendingDoc)return;const art=activeTMF.find(a=>a.a===pendingDoc.artifact_num);setApproveStage(2);setChatMessages(prev=>[...prev,{role:"ai",text:`Artifact - ${art?.an||pendingDoc.artifact_name}\nConfirm this is the correct artifact type.`}]);}} style={{fontSize:"12px",fontWeight:"600",padding:"7px 16px",background:P.success,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",alignSelf:"flex-start"}}>Approve Zone</button>
                       )}
                       {approveStage===2&&i===chatMessages.length-1&&m.text.startsWith("Artifact -")&&(
-                        <button onClick={async()=>{const pendingDoc=docs.find(d=>d.id===approveDocId);if(!pendingDoc)return;const art=activeTMF.find(a=>a.a===pendingDoc.artifact_num);const now=new Date().toISOString();const{error}=await supabase.from("documents").update({status:"Approved",approved_by:user?.email,approved_at:now,signature_reason:"Approved via Trinity AI"}).eq("id",pendingDoc.id);if(!error){await insertAudit({user_id:user?.id,user_email:user?.email,action:"Document approved via Trinity",document_id:pendingDoc.id,study_id:pendingDoc.study_id,field_changed:"status",old_value:pendingDoc.status,new_value:"Approved",signature_reason:"Approved via Trinity AI",document_name:pendingDoc.custom_file_name||pendingDoc.artifact_name});setDocs(prev=>prev.map(d=>d.id===pendingDoc.id?{...d,status:"Approved",approved_by:user?.email,approved_at:now}:d));const filedMsg:ChatMsg={role:"ai",text:`__FILED__Filed to Zone ${padZone(pendingDoc.zone)} — Section ${formatSection(art?.s||"")}\nAudit trail entry recorded.`};const final=[...chatMessages,filedMsg];setChatMessages(final);scheduleSave(final);}setApproveStage(0);setApproveDocId(null);}} style={{fontSize:"12px",fontWeight:"600",padding:"7px 16px",background:P.success,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",alignSelf:"flex-start"}}>Approve & File</button>
+                        <div style={{display:"flex",flexDirection:"column",gap:"6px",maxWidth:"320px"}}>
+                          <select value={signReason} onChange={e=>setSignReason(e.target.value)} style={{fontSize:"12px",padding:"6px 8px",border:`1px solid ${P.border}`,borderRadius:"7px"}}>
+                            <option value="">Select reason...</option>
+                            <option>Reviewed and approved - document is accurate and complete</option>
+                            <option>QC review complete - no findings</option>
+                            <option>Regulatory review complete</option>
+                            <option>Final approval for TMF filing</option>
+                          </select>
+                          <input type="password" value={signPassword} onChange={e=>setSignPassword(e.target.value)} placeholder="Password to sign" style={{fontSize:"12px",padding:"6px 8px",border:`1px solid ${P.border}`,borderRadius:"7px"}}/>
+                          {signError&&<div style={{fontSize:"11px",color:P.danger}}>{signError}</div>}
+                          <button onClick={async()=>{const pendingDoc=docs.find(d=>d.id===approveDocId);if(!pendingDoc||!user)return;setSignError("");if(!signReason){setSignError("Please select a reason.");return;}if(!signPassword){setSignError("Please enter your password.");return;}
+                            // Approval is a signed action: re-authenticate before changing status.
+                            const{error:signInErr}=await supabase.auth.signInWithPassword({email:user.email,password:signPassword});setSignPassword("");if(signInErr){setSignError("Incorrect password.");return;}
+                            const art=activeTMF.find(a=>a.a===pendingDoc.artifact_num);const now=new Date().toISOString();const{error}=await supabase.from("documents").update({status:"Approved",approved_by:user.email,approved_at:now,signature_reason:signReason}).eq("id",pendingDoc.id);if(error){setSignError("Approval failed: "+error.message);return;}await insertAudit({user_id:user.id,user_email:user.email,action:"Document approved via Trinity",document_id:pendingDoc.id,study_id:pendingDoc.study_id,field_changed:"status",old_value:pendingDoc.status,new_value:"Approved",signature_reason:signReason,document_name:pendingDoc.custom_file_name||pendingDoc.artifact_name});setDocs(prev=>prev.map(d=>d.id===pendingDoc.id?{...d,status:"Approved",approved_by:user.email,approved_at:now}:d));const filedMsg:ChatMsg={role:"ai",text:`__FILED__Filed to Zone ${padZone(pendingDoc.zone)} — Section ${formatSection(art?.s||"")}
+Audit trail entry recorded.`};const final=[...chatMessages,filedMsg];setChatMessages(final);scheduleSave(final);setSignReason("");setApproveStage(0);setApproveDocId(null);}} style={{fontSize:"12px",fontWeight:"600",padding:"7px 16px",background:P.success,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",alignSelf:"flex-start"}}>Sign & File</button>
+                        </div>
                       )}
                       {flagStage==="form"&&i===chatMessages.length-1&&m.text.includes("Flag initiated")&&(
                         <div style={{background:P.dangerLight,border:"1px solid #FECACA",borderRadius:"12px",padding:"14px",display:"flex",flexDirection:"column",gap:"10px"}}>

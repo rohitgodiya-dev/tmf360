@@ -1,7 +1,8 @@
 ﻿"use client";
 import{useState,useEffect,useRef}from"react";
 import{supabase}from"../../lib/supabase";
-import{hasPermission,type Role}from"../../lib/permissions";
+import{ROLES,hasPermission,getRoleColor,type Role}from"../../lib/permissions";
+import{signedFileUrl,previewFileUrl,openFile,downloadFile}from"../../lib/files";
 import JSZip from"jszip";
 
 
@@ -694,8 +695,10 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
 
   useEffect(()=>{if(panel==="recyclebin")loadDeletedDocs();},[panel,activeStudy,orgId]);
 
-  function openPreview(d:Doc){
-    const url=supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl;
+  async function openPreview(d:Doc){
+    if(!d.file_path)return;
+    let url:string;
+    try{url=await previewFileUrl(d.file_path);}catch(e:any){alert("Could not open preview: "+e.message);return;}
     setPreviewUrl(url);setPreviewName(d.custom_file_name||d.file_name||"Document");setPreviewDoc(d);
   }
 
@@ -1089,7 +1092,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                           <span style={{fontFamily:"monospace",fontSize:"9px",color:P.textTert,flexShrink:0}}>{a.a}</span>
                           <span style={{fontSize:"11px",flex:1,color:filed?P.text:P.textSec}}>{a.an}</span>
                           {filed&&filed.file_path&&canDownload&&(
-                            <a href={supabase.storage.from("Documents").getPublicUrl(filed.file_path).data.publicUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none"}}>View</a>
+                            <a href="#" onClick={e=>{e.preventDefault();openFile(filed.file_path);}} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none"}}>View</a>
                           )}
                           {filed&&<span style={{fontSize:"9px",color:"#065F46",flexShrink:0}}>v{filed.version||"1"}</span>}
                           {!filed&&canUploadDownload&&<button onClick={()=>{setFZone(a.z);setFArtifact(a.a+"|"+a.an+"|"+a.z);setShowDocModal(true);}} style={{fontSize:"9px",padding:"2px 8px",background:P.primaryLight,color:P.primary,border:`0.5px solid ${P.primary}`,borderRadius:"4px",cursor:"pointer"}}>+ Upload</button>}
@@ -1152,7 +1155,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                       </div>
                       <div style={{fontSize:"10px",color:P.textTert}}>Zone {d.zone} - {d.owner||"-"}</div>
                     </div>
-                    {d.file_path&&canDownload&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none"}}>Download</a>}{canUploadDownload&&<button onClick={async()=>{const reason=prompt("Reason for archiving:");if(!reason)return;const now=new Date().toISOString();await supabase.from("documents").update({status:"Archived",archived_by:user.email,archived_at:now,archive_reason:reason,pre_archive_status:d.status}).eq("id",d.id);setDocs((prev:any)=>prev.map((x:any)=>x.id===d.id?{...x,status:"Archived"}:x));}} style={{fontSize:"9px",padding:"2px 6px",background:"#FFFBEB",color:"#92400E",border:"0.5px solid #FDE68A",borderRadius:"4px",cursor:"pointer"}}>Archive</button>}{canDelete&&<button onClick={()=>{setDeleteTarget(d);setDeletionReason("");setShowDeleteModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:"#FEF2F2",color:"#991B1B",border:"0.5px solid #FECACA",borderRadius:"4px",cursor:"pointer"}}>Delete</button>}
+                    {d.file_path&&canDownload&&<button onClick={()=>downloadFile(d.file_path,d.custom_file_name||d.file_name)} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none",border:"none",cursor:"pointer"}}>Download</button>}{canUploadDownload&&<button onClick={async()=>{const reason=prompt("Reason for archiving:");if(!reason)return;const now=new Date().toISOString();await supabase.from("documents").update({status:"Archived",archived_by:user.email,archived_at:now,archive_reason:reason,pre_archive_status:d.status}).eq("id",d.id);setDocs((prev:any)=>prev.map((x:any)=>x.id===d.id?{...x,status:"Archived"}:x));}} style={{fontSize:"9px",padding:"2px 6px",background:"#FFFBEB",color:"#92400E",border:"0.5px solid #FDE68A",borderRadius:"4px",cursor:"pointer"}}>Archive</button>}{canDelete&&<button onClick={()=>{setDeleteTarget(d);setDeletionReason("");setShowDeleteModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:"#FEF2F2",color:"#991B1B",border:"0.5px solid #FECACA",borderRadius:"4px",cursor:"pointer"}}>Delete</button>}
                   </div>
                   <div style={{background:"#FEF2F2",borderRadius:"8px",padding:"10px 12px"}}>
                     <div style={{fontSize:"10px",fontWeight:"500",color:"#991B1B",marginBottom:"3px"}}>Rejection reason:</div>
@@ -1208,7 +1211,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                       </div>
                       <div style={{fontSize:"10px",color:P.textTert}}>Expires: <span style={{color:isExpired?"#EF4444":"inherit"}}>{d.expiry_date}</span></div>
                     </div>
-                    {d.file_path&&canDownload&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none"}}>Download</a>}
+                    {d.file_path&&canDownload&&<button onClick={()=>downloadFile(d.file_path,d.custom_file_name||d.file_name)} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none",border:"none",cursor:"pointer"}}>Download</button>}
                   </div>
                 );
               })}
@@ -1238,7 +1241,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                     </div>
                     <div style={{display:"flex",gap:"6px"}}>
                       {d.file_path&&<button onClick={()=>openPreview(d)} style={{fontSize:"9px",padding:"3px 8px",background:P.bgTert,border:`0.5px solid ${P.border}`,borderRadius:"4px",cursor:"pointer"}}>Preview</button>}
-                      {d.file_path&&canDownload&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"9px",padding:"3px 8px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none"}}>Download</a>}
+                      {d.file_path&&canDownload&&<button onClick={()=>downloadFile(d.file_path,d.custom_file_name||d.file_name)} style={{fontSize:"9px",padding:"3px 8px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none",border:"none",cursor:"pointer"}}>Download</button>}
                     </div>
                   </div>
                   {(d as any).submission_reason&&<div style={{background:"#EFF6FF",borderRadius:"8px",padding:"10px 12px"}}><div style={{fontSize:"10px",fontWeight:"500",color:"#1E40AF",marginBottom:"3px"}}>Submission reason:</div><div style={{fontSize:"11px",color:"#1E3A5F"}}>{(d as any).submission_reason}</div></div>}
@@ -1334,7 +1337,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                         <td style={{padding:"8px 10px"}}>
                           <div style={{display:"flex",gap:"4px",flexWrap:"wrap" as const}}>
                             {d.file_path&&<button onClick={()=>openPreview(d)} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,border:`0.5px solid ${P.border}`,borderRadius:"4px",cursor:"pointer"}}>Preview</button>}
-                            {d.file_path&&canDownload&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none"}}>Download</a>}
+                            {d.file_path&&canDownload&&<button onClick={()=>downloadFile(d.file_path,d.custom_file_name||d.file_name)} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none",border:"none",cursor:"pointer"}}>Download</button>}
                             {d.status==="Draft"&&<button onClick={()=>{setSelectedDoc(d);setShowSubmitModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:"#EFF6FF",color:"#1D4ED8",border:"0.5px solid #BFDBFE",borderRadius:"4px",cursor:"pointer"}}>Submit</button>}
                             {d.status==="Under Review"&&<button onClick={()=>{setSelectedDoc(d);setShowApproveModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:"#ECFDF5",color:"#065F46",border:"0.5px solid #A7F3D0",borderRadius:"4px",cursor:"pointer"}}>Review</button>}
                             <button onClick={()=>{setSelectedDoc(d);setCommentText("");setShowCommentModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,border:`0.5px solid ${P.border}`,borderRadius:"4px",cursor:"pointer"}}>Comment</button>
@@ -1391,7 +1394,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                                   <span style={{fontSize:"11px",flex:1}}>{d.custom_file_name||d.file_name}</span>
                                   <span style={{fontSize:"9px",color:P.textTert}}>v{d.version||"1"}</span>
                                   {d.file_path&&canPreview(d.file_name||"")&&<button onClick={()=>openPreview(d)} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,border:`0.5px solid ${P.border}`,borderRadius:"4px",cursor:"pointer"}}>Preview</button>}
-                                  {d.file_path&&canDownload&&<a href={supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl} download={d.custom_file_name||d.file_name} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none"}}>Download</a>}
+                                  {d.file_path&&canDownload&&<button onClick={()=>downloadFile(d.file_path,d.custom_file_name||d.file_name)} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none",border:"none",cursor:"pointer"}}>Download</button>}
                                 </div>
                               ))}
                             </div>
@@ -1660,20 +1663,13 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                               <div style={{fontSize:"12.8px",fontWeight:"600"}}>{m.text.split("\n")[0]}</div>
                               <div style={{fontSize:"11px",color:P.textTert,marginTop:"2px"}}>Confirm this is the correct artifact type.</div>
                             </div>
-                            <button onClick={async()=>{
+                            <button onClick={()=>{
                               const doc=studyDocs.find(d=>d.id===approveDocId);
                               if(!doc)return;
-                              const art=activeTMF.find(a=>a.a===doc.artifact_num);
-                              const now=new Date().toISOString();
-                              const{error}=await supabase.from("documents").update({status:"Approved",approved_by:user.email,approved_at:now,signature_reason:"Approved via Trinity AI specialist"}).eq("id",doc.id);
-                              if(!error){
-                                await logAudit("Document approved via Trinity",doc.id,doc.study_id,"status",doc.status,"Approved","Approved via Trinity AI specialist");
-                                setDocs(prev=>prev.map(d=>d.id===doc.id?{...d,status:"Approved",approved_by:user.email,approved_at:now,signature_reason:"Approved via Trinity AI specialist"}:d));
-                              }
-                              setChatMessages(prev=>[...prev,
-                                {role:"ai",text:`__FILED__Filed to Zone ${padZone(doc.zone)} - Section ${formatSection(art?.s||"")}\nAudit trail entry recorded.`},
-                                {role:"ai",text:"Your document has been successfully filed."}
-                              ]);
+                              // Approval is a signed action: hand off to the standard approval modal,
+                              // which re-authenticates the user and records the reason (handleApprove).
+                              setSelectedDoc(doc);setApprovePassword("");setApproveReason("");setApproveError("");setShowApproveModal(true);
+                              setChatMessages(prev=>[...prev,{role:"ai",text:"Enter your password and a reason to sign this approval."}]);
                               setApproveStage(0);setApproveDocId(null);
                             }} style={{fontSize:"12px",fontWeight:"600",padding:"6px 15px",background:P.success,color:"#fff",border:"none",borderRadius:"7px",cursor:"pointer",alignSelf:"flex-start" as const}}>Approve</button>
                           </div>
@@ -2342,11 +2338,14 @@ function ArchivedPanel({user,P,supabase,orgId,activeStudy,currentUserRole,logAud
     }
   }
 
+  // No physical deletes within retention (DI-06): archived documents go to the Recycle Bin like any other.
   async function permanentDelete(d:any){
-    if(!confirm("Permanently delete this document? This cannot be undone."))return;
-    if(d.file_path)await supabase.storage.from("Documents").remove([d.file_path]);
-    await supabase.from("documents").delete().eq("id",d.id);
-    await logAudit("Document permanently deleted",d.id,d.study_id,"status","Archived","Permanently deleted","",d.custom_file_name||d.artifact_name);
+    const reason=prompt("Reason for deletion (the document moves to the Recycle Bin and can be restored within 180 days):");
+    if(!reason?.trim())return;
+    const now=new Date().toISOString();
+    const{error}=await supabase.from("documents").update({deleted_at:now,deleted_by:user.email,deleted_by_id:user.id,deletion_reason:reason.trim(),pre_deletion_status:d.status,status:"Deleted"}).eq("id",d.id);
+    if(error){alert("Delete failed: "+error.message);return;}
+    await logAudit("Document deleted",d.id,d.study_id,"status",d.status,"Deleted",reason.trim(),d.custom_file_name||d.artifact_name);
     setLocalDocs(prev=>prev.filter((x:any)=>x.id!==d.id));
     setDocs((prev:any)=>prev.filter((x:any)=>x.id!==d.id));
   }
@@ -2556,7 +2555,7 @@ function QueriesPanel({user,P,supabase,orgId,activeStudy,currentUserRole,logAudi
                 {selectedQuery.document_id&&(
                   <button onClick={async()=>{
                     const{data}=await supabase.from("documents").select("file_path,file_name").eq("id",selectedQuery.document_id).single();
-                    if(data?.file_path){const url=supabase.storage.from("Documents").getPublicUrl(data.file_path).data.publicUrl;setPreviewUrl(previewUrl?null:url);}
+                    if(previewUrl){setPreviewUrl(null);return;}if(data?.file_path){setPreviewUrl(await previewFileUrl(data.file_path));}
                   }} style={{fontSize:"11px",padding:"5px 12px",background:"#FFEDD5",color:"#F97316",border:"0.5px solid #F97316",borderRadius:"6px",cursor:"pointer"}}>{previewUrl?"Hide preview":"Preview document"}</button>
                 )}
                 {previewUrl&&<iframe src={previewUrl} style={{width:"100%",height:"300px",border:"none",borderRadius:"8px",marginTop:"8px"}}/>}
@@ -2935,8 +2934,8 @@ function AuditTrail({user,activeStudy,P}:{user:any,activeStudy:any,P:any}){
   );
 }
 
-const ROLES=["System Administrator","Sponsor Admin","TMF Lead","CRA","CTA","QA","Trial Manager","Regulatory","Site Team","Auditor"];
-const RC:Record<string,string>={"System Administrator":"#7C3AED","Sponsor Admin":"#2563EB","TMF Lead":"#0891B2","CRA":"#059669","CTA":"#D97706","QA":"#DC2626","Trial Manager":"#7C3AED","Regulatory":"#0891B2","Site Team":"#059669","Auditor":"#6B7280"};
+// Role names and colours come from lib/permissions so every screen uses one list.
+const RC:Record<string,string>=Object.fromEntries(ROLES.map(r=>[r,getRoleColor(r)]));
 
 function UserManagementPanel({user, P, supabase, activeStudy, orgId}: {user: any, P: any, supabase: any, activeStudy: any, orgId: string}) {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -3139,7 +3138,7 @@ function UserManagementPanel({user, P, supabase, activeStudy, orgId}: {user: any
                 <div style={{marginBottom:"1rem"}}>
                   <label style={{fontSize:"11px",color:"#374151",display:"block",marginBottom:"3px"}}>Role in this study</label>
                   <select value={memberRole} onChange={e=>setMemberRole(e.target.value)} style={{width:"100%",fontSize:"12px",border:"0.5px solid #E5E7EB",borderRadius:"8px",padding:"7px 10px"}}>
-                    {["System Administrator","Sponsor Admin","TMF Lead","CRA","CTA","QA","Trial Manager","Regulatory","Site Team","Auditor"].map(r=>(<option key={r}>{r}</option>))}
+                    {ROLES.map(r=>(<option key={r}>{r}</option>))}
                   </select>
                 </div>
                 <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
@@ -3286,7 +3285,7 @@ function TmfAuditorPanel({user,P,supabase,activeStudy,orgId,currentUserRole,acti
                   const docs=studyDocs.filter(d=>d.artifact_num===a.a&&d.file_path);
                   for(const d of docs){
                     try{
-                      const url=supabase.storage.from("Documents").getPublicUrl(d.file_path).data.publicUrl;
+                      const url=await signedFileUrl(d.file_path);
                       const res=await fetch(url);
                       const blob=await res.blob();
                       const folderName=`Zone ${z.padStart(2,"0")} - ${zn}/${a.a} - ${a.an}`;
@@ -3413,13 +3412,13 @@ function TmfAuditorPanel({user,P,supabase,activeStudy,orgId,currentUserRole,acti
               )}
               {selectedDoc.file_path && (
                 <div style={{marginTop:"12px",display:"flex",flexDirection:"column" as const,gap:"6px"}}>
-                  <button onClick={()=>{
-                    const url = supabase.storage.from("Documents").getPublicUrl(selectedDoc.file_path).data.publicUrl;
-                    setPreviewUrl(previewUrl ? null : url);
+                  <button onClick={async()=>{
+                    if (previewUrl) { setPreviewUrl(null); return; }
+                    setPreviewUrl(await previewFileUrl(selectedDoc.file_path));
                   }} style={{fontSize:"10px",padding:"5px 10px",background:P.primaryLight,color:P.primary,border:`0.5px solid ${P.primary}`,borderRadius:"6px",cursor:"pointer"}}>
                     {previewUrl ? "Hide Preview" : "Preview Document"}
                   </button>
-                  <a href={supabase.storage.from("Documents").getPublicUrl(selectedDoc.file_path).data.publicUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:"10px",padding:"5px 10px",background:P.bgTert,color:P.textSec,border:`0.5px solid ${P.border}`,borderRadius:"6px",textDecoration:"none",textAlign:"center" as const}}>
+                  <a href="#" onClick={e=>{e.preventDefault();openFile(selectedDoc.file_path);}} style={{fontSize:"10px",padding:"5px 10px",background:P.bgTert,color:P.textSec,border:`0.5px solid ${P.border}`,borderRadius:"6px",textDecoration:"none",textAlign:"center" as const}}>
                     Open in New Tab
                   </a>
                 </div>
@@ -3946,7 +3945,7 @@ function MessagesPanel({user, P, supabase, activeStudy}: {user: any, P: any, sup
                     {msg.content&&<div style={{background:isMe?P.primary:P.bgSec,color:isMe?"#fff":P.text,padding:"8px 12px",borderRadius:isMe?"12px 12px 2px 12px":"12px 12px 12px 2px",fontSize:"12px",lineHeight:"1.5"}}>{msg.content}</div>}
                     {msg.message_attachments?.map((att:any)=>(
                       <div key={att.id} style={{marginTop:"4px"}}>
-                        <a href={supabase.storage.from("Documents").getPublicUrl(att.file_path).data.publicUrl} target="_blank" rel="noopener noreferrer"
+                        <a href="#" onClick={e=>{e.preventDefault();openFile(att.file_path);}}
                           style={{display:"flex",alignItems:"center",gap:"6px",padding:"6px 10px",background:isMe?"rgba(255,255,255,0.2)":P.bgTert,borderRadius:"8px",textDecoration:"none",color:isMe?"#fff":P.text,fontSize:"11px"}}>
                           Attachment: {att.file_name}
                         </a>
