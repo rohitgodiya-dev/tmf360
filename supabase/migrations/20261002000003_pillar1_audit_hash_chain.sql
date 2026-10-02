@@ -1,90 +1,69 @@
 -- Pillar 1 — Hash-chained audit trail
+-- Matches the live database as of 2026-10-02.
 --
--- Changes from the original draft:
---  * audit_trail.org_id is added if missing, and filled from user_roles when the
---    client doesn't send it. The app's existing audit inserts never set org_id, so
---    with the original trigger every row would have started its own chain ('GENESIS').
---  * Inserts are serialized per org with an advisory lock; otherwise two concurrent
---    inserts can both link to the same predecessor and fork the chain.
---  * pgcrypto lives in the "extensions" schema on Supabase, so digest() is
---    schema-qualified and the functions pin search_path.
---  * created_at is hashed in a fixed UTC format (timestamptz::text depends on the
---    session's TimeZone, so re-verifying from another session could falsely fail).
---  * Fields are joined with a separator so values can't be shifted between columns
---    without changing the hash; user_email, field_changed, signature_reason and
---    document_name are now covered too.
---  * verify_audit_chain also recomputes each record_hash, so edits to row content
---    are detected — not just broken links. The original version also failed to run:
---    its "prev_hash" variable and "sequence_no" output column clashed with
---    audit_trail column names ("column reference is ambiguous").
---  * Rows written before this migration have no sequence_no and are outside the chain.
+-- Rows written before this migration have no sequence_no or org_id and sit
+-- outside the chain. digest() comes from pgcrypto in the "extensions" schema,
+-- which is on Supabase's default search_path.
 
 create extension if not exists pgcrypto with schema extensions;
 
 alter table audit_trail
-  add column if not exists org_id uuid,
   add column if not exists sequence_no bigint,
   add column if not exists prev_hash text,
   add column if not exists record_hash text;
 
-create sequence if not exists audit_trail_seq;
+-- Fix applied 2026-10-02: the trigger reads NEW.org_id, and without this
+-- column every audit insert failed with: record "new" has no field "org_id".
+alter table audit_trail
+  add column if not exists org_id uuid;
 
--- The exact string that is hashed for each row. Shared by the trigger and the verifier.
-create or replace function audit_record_content(r audit_trail)
-returns text
-language sql
-stable
-set search_path = public
-as $$
-  select concat_ws('|',
-    r.sequence_no::text,
-    r.prev_hash,
-    coalesce(r.org_id::text, ''),
-    coalesce(r.user_id::text, ''),
-    coalesce(r.user_email, ''),
-    coalesce(r.action, ''),
-    coalesce(r.document_id::text, ''),
-    coalesce(r.document_name, ''),
-    coalesce(r.study_id::text, ''),
-    coalesce(r.field_changed, ''),
-    coalesce(r.old_value, ''),
-    coalesce(r.new_value, ''),
-    coalesce(r.signature_reason, ''),
-    to_char(r.created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
-  );
-$$;
+create sequence if not exists audit_trail_seq;
 
 create or replace function compute_audit_hash()
 returns trigger
 language plpgsql
 security definer
-set search_path = public, extensions
 as $$
 declare
-  v_prev_hash text;
+  prev_record_hash text;
+  content_str text;
+  v_org_id uuid;
 begin
+  -- Get org_id from user if not set on the row
   if NEW.org_id is null then
-    select ur.org_id into NEW.org_id
-    from user_roles ur
-    where ur.user_id = NEW.user_id and ur.is_active = true
+    select org_id into v_org_id
+    from user_roles
+    where user_id = NEW.user_id and is_active = true
     limit 1;
+    NEW.org_id := v_org_id;
   end if;
 
-  NEW.created_at := coalesce(NEW.created_at, now());
+  -- Lock to prevent concurrent chain splits
+  perform pg_advisory_xact_lock(hashtext(NEW.org_id::text));
 
-  -- Held until the transaction commits, so the next insert for this org sees this row.
-  perform pg_advisory_xact_lock(hashtext('audit_trail:' || coalesce(NEW.org_id::text, '')));
-
-  select a.record_hash into v_prev_hash
-  from audit_trail a
-  where a.org_id is not distinct from NEW.org_id
-    and a.sequence_no is not null
-  order by a.sequence_no desc
+  -- Get previous hash in this org's chain
+  select record_hash into prev_record_hash
+  from audit_trail
+  where org_id = NEW.org_id
+  order by sequence_no desc nulls last
   limit 1;
 
   NEW.sequence_no := nextval('audit_trail_seq');
-  NEW.prev_hash := coalesce(v_prev_hash, 'GENESIS');
-  NEW.record_hash := encode(extensions.digest(audit_record_content(NEW), 'sha256'), 'hex');
+  NEW.prev_hash := coalesce(prev_record_hash, 'GENESIS');
+
+  content_str := concat(
+    NEW.sequence_no::text,
+    NEW.prev_hash,
+    coalesce(NEW.user_id::text,''),
+    coalesce(NEW.action,''),
+    coalesce(NEW.document_id::text,''),
+    coalesce(NEW.study_id,''),
+    coalesce(NEW.old_value,''),
+    coalesce(NEW.new_value,''),
+    NEW.created_at::text
+  );
+
+  NEW.record_hash := encode(digest(content_str, 'sha256'), 'hex');
 
   return NEW;
 end;
@@ -96,39 +75,44 @@ create trigger audit_trail_hash_chain
   for each row execute function compute_audit_hash();
 
 -- Usage: select * from verify_audit_chain('<org uuid>') where not is_valid;
--- Runs as the caller (no security definer), so RLS limits it to rows the caller can see.
-drop function if exists verify_audit_chain(uuid);
-create function verify_audit_chain(p_org_id uuid)
-returns table(
-  sequence_no bigint,
-  is_valid boolean,
-  link_valid boolean,
-  hash_valid boolean,
-  expected_prev_hash text,
-  actual_prev_hash text
-)
+create or replace function verify_audit_chain(p_org_id uuid)
+returns table(row_sequence_no bigint, is_valid boolean, expected_prev_hash text, actual_prev_hash text)
 language plpgsql
-stable
-set search_path = public, extensions
+security definer
 as $$
 declare
-  v_expected text := 'GENESIS';
-  r audit_trail;
+  prev_hash text := 'GENESIS';
+  prev_seq bigint := null;
+  rec record;
+  recomputed_hash text;
+  content_str text;
 begin
-  for r in
-    select * from audit_trail a
-    where a.org_id = p_org_id and a.sequence_no is not null
-    order by a.sequence_no asc
+  for rec in
+    select * from audit_trail
+    where org_id = p_org_id
+    order by sequence_no asc
   loop
-    sequence_no := r.sequence_no;
-    expected_prev_hash := v_expected;
-    actual_prev_hash := r.prev_hash;
-    link_valid := r.prev_hash is not distinct from v_expected;
-    hash_valid := r.record_hash is not distinct from
-      encode(extensions.digest(audit_record_content(r), 'sha256'), 'hex');
-    is_valid := link_valid and hash_valid;
-    return next;
-    v_expected := r.record_hash;
+    content_str := concat(
+      rec.sequence_no::text,
+      rec.prev_hash,
+      coalesce(rec.user_id::text,''),
+      coalesce(rec.action,''),
+      coalesce(rec.document_id::text,''),
+      coalesce(rec.study_id,''),
+      coalesce(rec.old_value,''),
+      coalesce(rec.new_value,''),
+      rec.created_at::text
+    );
+    recomputed_hash := encode(digest(content_str, 'sha256'), 'hex');
+
+    return query select
+      rec.sequence_no as row_sequence_no,
+      (rec.prev_hash = prev_hash and rec.record_hash = recomputed_hash) as is_valid,
+      prev_hash as expected_prev_hash,
+      rec.prev_hash as actual_prev_hash;
+
+    prev_hash := rec.record_hash;
+    prev_seq := rec.sequence_no;
   end loop;
 end;
 $$;

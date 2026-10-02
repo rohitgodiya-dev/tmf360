@@ -501,10 +501,12 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
   }
 
   async function logAudit(action:string,docId:string|undefined,studyId:string,field:string,oldVal:string,newVal:string,sigReason:string="",docName:string=""){
-    await supabase.from("audit_trail").insert([{
+    const{error}=await supabase.from("audit_trail").insert([{
       user_id:user.id,user_email:user.email,action,document_id:docId,
       study_id:studyId,field_changed:field,old_value:oldVal,new_value:newVal,signature_reason:sigReason,document_name:docName,
     }]);
+    // A missing audit entry is a compliance gap, so never let it fail silently.
+    if(error){console.error("Audit trail write failed:",action,error);alert(`Audit trail entry could not be recorded for "${action}": ${error.message}`);}
   }
 
   async function createStudy(){
