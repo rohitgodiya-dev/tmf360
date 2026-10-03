@@ -3,6 +3,7 @@ import{useState,useEffect,useRef}from"react";
 import{supabase}from"../../lib/supabase";
 import{ROLES,hasPermission,getRoleColor,type Role}from"../../lib/permissions";
 import{signedFileUrl,previewFileUrl,openFile,downloadFile}from"../../lib/files";
+import{apiFetch}from"../../lib/api/client";
 import JSZip from"jszip";
 
 
@@ -583,7 +584,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
     if(!error&&data){
       setDocs(prev=>[data[0],...prev]);
       await logAudit("Document uploaded",data[0].id,activeStudy.study_id,"status","",fDocStatus,"",fCustomName||pendingFileName||an);
-      fetch("/api/notify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"document_uploaded",document_name:fCustomName||pendingFileName||an,artifact_name:an,zone,study_id:activeStudy.study_id,uploaded_by:user.email})});
+      apiFetch("/notifications",{method:"POST",body:JSON.stringify({type:"document_uploaded",document_id:data[0].id})}).catch(e=>console.error("Notification failed:",e));
     }
     setShowDocModal(false);setFArtifact("");setFVersion("");setFOwner("");setFEff("");setFExp("");setFComments("");setFCustomName("");setPendingFilePath("");setPendingFileName("");setPendingFileType("");setPendingFileSize(0);setPendingFileHash("");setSelectedFile(null);setUploadProgress("");
   }
@@ -2949,7 +2950,7 @@ function UserManagementPanel({user, P, supabase, activeStudy, orgId}: {user: any
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteName, setInviteName] = useState("");
   const [inviteRole, setInviteRole] = useState("CRA");
-  const [invitePassword, setInvitePassword] = useState("");
+  const [inviteLink, setInviteLink] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [showPwdModal, setShowPwdModal] = useState(false);
@@ -2994,12 +2995,12 @@ function UserManagementPanel({user, P, supabase, activeStudy, orgId}: {user: any
     if (!inviteEmail.trim()) return;
     setMessage("Sending invitation...");
     try {
-      const res = await fetch("/api/invite", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:inviteEmail.trim(),role:inviteRole,full_name:inviteName.trim(),password:invitePassword,invited_by_email:user?.email})});
-      const data = await res.json();
-      if (data.error) { setMessage("Error: "+data.error); }
-      else { setMessage("Invitation sent to "+inviteEmail); setShowModal(false); setInviteEmail(""); setInviteName(""); loadUsers(); }
+      const data = await apiFetch<{emailed:boolean;inviteUrl:string}>("/invitations",{method:"POST",body:JSON.stringify({email:inviteEmail.trim(),role:inviteRole,full_name:inviteName.trim()})});
+      setShowModal(false); setInviteEmail(""); setInviteName(""); loadUsers();
+      if (data.emailed) setMessage("Invitation sent to "+inviteEmail);
+      else { setInviteLink(data.inviteUrl); setMessage(""); }
     } catch(e: any) { setMessage("Error: "+e.message); }
-    setTimeout(()=>setMessage(""),4000);
+    setTimeout(()=>setMessage(""),6000);
   }
 
   async function updateRole(id: string, role: string) {
@@ -3041,6 +3042,14 @@ function UserManagementPanel({user, P, supabase, activeStudy, orgId}: {user: any
         {isAdmin&&<button onClick={()=>setShowModal(true)} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>+ Add User</button>}
       </div>
       {message&&<div style={{padding:"8px 12px",borderRadius:"8px",fontSize:"12px",background:message.includes("Error")?P.dangerLight:P.successLight,color:message.includes("Error")?P.danger:P.success}}>{message}</div>}
+      {inviteLink&&<div style={{padding:"10px 12px",borderRadius:"8px",fontSize:"12px",background:P.warningLight,border:"0.5px solid #FDE68A",color:"#92400E"}}>
+        <div style={{fontWeight:600,marginBottom:"4px"}}>Invitation created, but email delivery isn&apos;t set up. Send this one-time link to the person yourself:</div>
+        <div style={{display:"flex",gap:"6px",alignItems:"center"}}>
+          <input readOnly value={inviteLink} onFocus={e=>e.target.select()} style={{flex:1,fontSize:"11px",padding:"5px 8px",border:"0.5px solid #FDE68A",borderRadius:"6px",background:"#fff"}}/>
+          <button onClick={()=>{navigator.clipboard?.writeText(inviteLink);}} style={{fontSize:"11px",padding:"5px 10px",border:"none",borderRadius:"6px",background:"#92400E",color:"#fff",cursor:"pointer"}}>Copy</button>
+          <button onClick={()=>setInviteLink("")} style={{fontSize:"11px",padding:"5px 10px",border:"0.5px solid #FDE68A",borderRadius:"6px",background:"transparent",cursor:"pointer"}}>Done</button>
+        </div>
+      </div>}
       <div style={{display:"flex",gap:"6px",flexWrap:"wrap" as const,padding:"10px 14px",background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px"}}>
         {ROLES.map(r=><span key={r} style={{fontSize:"10px",padding:"3px 10px",borderRadius:"20px",background:(RC[r]||"#6366F1")+"22",color:RC[r]||"#6366F1",fontWeight:"500"}}>{r}</span>)}
       </div>
@@ -3078,11 +3087,11 @@ function UserManagementPanel({user, P, supabase, activeStudy, orgId}: {user: any
       {showModal&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
           <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"400px",border:`0.5px solid ${P.border}`}}>
-            <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"1rem"}}>Add Team Member</h2>
+            <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"4px"}}>Add Team Member</h2>
+            <p style={{fontSize:"11px",color:P.textTert,marginBottom:"1rem"}}>They'll get a link to set their own password. The link works once and expires in 7 days.</p>
             <div style={{marginBottom:"10px"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Full Name</label><input value={inviteName} onChange={e=>setInviteName(e.target.value)} placeholder="e.g. Jane Smith" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/></div>
             <div style={{marginBottom:"10px"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Email</label><input value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)} placeholder="jane@organization.com" type="email" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/></div>
-            <div style={{marginBottom:"10px"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Password</label><input value={invitePassword} onChange={e=>setInvitePassword(e.target.value)} placeholder="Create a password for this user" type="password" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/></div>
-            <div style={{marginBottom:"1rem"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Role</label>
+                        <div style={{marginBottom:"1rem"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Role</label>
               <select value={inviteRole} onChange={e=>setInviteRole(e.target.value)} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}>
                 {ROLES.map(r=><option key={r} value={r}>{r}</option>)}
               </select>

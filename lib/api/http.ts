@@ -11,6 +11,7 @@ export type ErrorCode =
   | "not_found"
   | "invalid_request"
   | "conflict"
+  | "gone"
   | "internal";
 
 const STATUS: Record<ErrorCode, number> = {
@@ -19,6 +20,7 @@ const STATUS: Record<ErrorCode, number> = {
   not_found: 404,
   invalid_request: 400,
   conflict: 409,
+  gone: 410,
   internal: 500,
 };
 
@@ -36,6 +38,7 @@ export const forbidden = (message = "You do not have permission for this action"
 export const notFound = (message = "Not found") => new ApiError("not_found", message);
 export const invalidRequest = (message: string, details?: unknown) => new ApiError("invalid_request", message, details);
 export const conflict = (message: string) => new ApiError("conflict", message);
+export const gone = (message: string) => new ApiError("gone", message);
 
 export function errorResponse(err: unknown): Response {
   if (err instanceof ApiError) {

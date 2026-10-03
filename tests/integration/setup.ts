@@ -18,3 +18,8 @@ if (!url.includes(DEV_PROJECT_REF)) {
 for (const name of ["NEXT_PUBLIC_SUPABASE_ANON_KEY", "DEV_SUPABASE_SERVICE_ROLE_KEY"]) {
   if (!process.env[name]) throw new Error(`Missing ${name} in .env.dev`);
 }
+
+// Server code under test (lib/api/service.ts) reads the standard variable name; point it at DEV.
+process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.DEV_SUPABASE_SERVICE_ROLE_KEY;
+// Never send real email from tests.
+delete process.env.RESEND_API_KEY;

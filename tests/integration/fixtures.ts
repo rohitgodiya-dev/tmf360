@@ -31,6 +31,18 @@ export class Fixtures {
   private studyIds: string[] = [];
   private memberUserIds: string[] = [];
 
+  private emails: string[] = [];
+
+  /** Registers an email whose auth account (created by code under test) is removed in cleanup(). */
+  trackEmail(email: string) {
+    this.emails.push(email.toLowerCase());
+  }
+
+  /** Registers an organisation created by code under test for removal in cleanup(). */
+  trackOrg(id: string) {
+    this.orgIds.push(id);
+  }
+
   /** Registers a storage file for removal in cleanup(). */
   trackFile(bucket: string, path: string) {
     this.files.push({ bucket, path });
@@ -110,6 +122,14 @@ export class Fixtures {
     if (this.memberUserIds.length) await a.from("study_members").delete().in("user_id", this.memberUserIds);
     if (this.studyIds.length) await a.from("studies").delete().in("id", this.studyIds);
     if (this.documentIds.length) await a.from("documents").delete().in("id", this.documentIds);
+    if (this.orgIds.length) await a.from("user_invitations").delete().in("org_id", this.orgIds);
+    if (this.emails.length) {
+      const { data } = await a.auth.admin.listUsers({ perPage: 1000 });
+      for (const u of data?.users ?? []) {
+        if (u.email && this.emails.includes(u.email.toLowerCase())) this.userIds.push(u.id);
+      }
+    }
+    if (this.orgIds.length) await a.from("user_roles").delete().in("org_id", this.orgIds);
     if (this.userIds.length) await a.from("user_roles").delete().in("user_id", this.userIds);
     for (const id of this.userIds) await a.auth.admin.deleteUser(id);
     if (this.orgIds.length) await a.from("organizations").delete().in("id", this.orgIds);
