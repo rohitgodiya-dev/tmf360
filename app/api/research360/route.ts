@@ -1,3 +1,4 @@
+import { signedIn } from "@/lib/api/guard";
 import{NextRequest,NextResponse}from"next/server";
 const REG_KEYWORDS=["ich","fda","ema","cfr","21 cfr","gcp","iso 14155","guidance","regulation","regulatory","directive","authority"];
 function detectMode(query:string,requested?:string):"regulatory"|"publication"{
@@ -150,9 +151,16 @@ async function handleRegulatorySearch(query:string,studyContext?:string){
 }
 export async function POST(req:NextRequest){
   try{
-    const{query,mode:requestedMode,orgId,studyId,studyContext,userId,userEmail}=await req.json();
+    const{query,mode:requestedMode,studyId,studyContext}=await req.json();
     if(!query||typeof query!=="string")return NextResponse.json({error:"Query is required"},{status:400});
-    const mode=detectMode(query,requestedMode);
+    let mode=detectMode(query,requestedMode);
+    // Publication search (free public sources) is open; the AI answer needs a signed-in user.
+    const auth=req.headers.get("authorization")?await signedIn(req):null;
+    const ctx=auth?.ctx??null;
+    if(mode!=="publication"&&!ctx){
+      if(requestedMode==="regulatory")return auth?.denied??NextResponse.json({error:"Sign in to ask regulatory questions"},{status:401});
+      mode="publication";
+    }
     let result:any;
     if(mode==="publication"){
       const papers=await handlePublicationSearch(query);
@@ -161,15 +169,15 @@ export async function POST(req:NextRequest){
       const{answer,sources}=await handleRegulatorySearch(query,studyContext);
       result={mode,answer,sources};
     }
-    if(orgId&&userId){
+    if(ctx){
       try{
         const{createClient}=await import("@supabase/supabase-js");
         const supabaseAdmin=createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!,process.env.SUPABASE_SERVICE_ROLE_KEY!);
         await supabaseAdmin.from("research360_queries").insert({
-          org_id:orgId,
+          org_id:ctx.orgId,
           study_id:studyId||null,
-          user_id:userId,
-          user_email:userEmail||null,
+          user_id:ctx.user.id,
+          user_email:ctx.user.email||null,
           query_text:query,
           mode,
           response_summary:mode==="publication"?`${result.papers.length} papers found`:result.answer?.slice(0,300),

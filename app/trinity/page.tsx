@@ -1,6 +1,7 @@
 ﻿"use client";
 import{useState,useEffect,useRef}from"react";
 import{supabase}from"../../lib/supabase";
+import{authHeaders}from"../../lib/api/client";
 
 // A missing audit entry is a compliance gap, so never let it fail silently.
 async function insertAudit(row:Record<string,any>){
@@ -273,7 +274,7 @@ export default function TrinityPage(){
     const userMsgs=msgs.filter(m=>m.role==="user"&&m.text&&m.text.length>2);
     if(userMsgs.length===0)return;
     try{
-      const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:`Generate a short 4-6 word title for a clinical trial TMF conversation that starts with: "${userMsgs[0].text.slice(0,100)}". Return ONLY the title text, no quotes, no punctuation at end.`,context:"You generate short conversation titles for a clinical trial management platform. Return only the title."})});
+      const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json",...(await authHeaders())},body:JSON.stringify({message:`Generate a short 4-6 word title for a clinical trial TMF conversation that starts with: "${userMsgs[0].text.slice(0,100)}". Return ONLY the title text, no quotes, no punctuation at end.`,context:"You generate short conversation titles for a clinical trial management platform. Return only the title."})});
       const data=await res.json();
       const title=(data.response||"").trim().replace(/^["']|["']$/g,"").slice(0,60);
       if(title&&title.length>3){
@@ -300,7 +301,7 @@ export default function TrinityPage(){
     const recentAI=msgs.filter(m=>m.role==="ai"&&m.text&&m.text.length>50).slice(-3).map(m=>m.text).join("\n");
     if(!recentAI)return;
     try{
-      const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:`Extract 1-3 key factual statements worth remembering. Only concrete facts. Return JSON array: ["fact1"]. If nothing, return []. Text:\n${recentAI}`,context:"Return only valid JSON array."})});
+      const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json",...(await authHeaders())},body:JSON.stringify({message:`Extract 1-3 key factual statements worth remembering. Only concrete facts. Return JSON array: ["fact1"]. If nothing, return []. Text:\n${recentAI}`,context:"Return only valid JSON array."})});
       const data=await res.json();
       const facts:string[]=JSON.parse((data.response||"[]").replace(/```json|```/g,"").trim());
       if(facts.length>0){
@@ -392,7 +393,7 @@ export default function TrinityPage(){
       const studyContext=activeStudy?`Active study: ${activeStudy.study_id}. Sponsor: ${activeStudy.sponsor||""}. Phase: ${activeStudy.phase||""}.\nTMF completeness: ${donePct}%. Inspection readiness: ${ri}/100. Missing (${missing} total):\n${missingList}\nPending: ${pending}. Expiring 90d: ${expiring}.`:"No active study.";
       const recentTurns=chatMessages.slice(-6).map(m=>`${m.role==="user"?"User":"Trinity"}: ${m.text}`).join("\n");
       const context=`${studyContext}${memCtx}\n\nVAULT:\n${vaultCtx}\n\nRecent:\n${recentTurns}\n\nOnly answer for study ${activeStudy?.study_id||""}.`;
-      const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:userMsg,context})});
+      const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json",...(await authHeaders())},body:JSON.stringify({message:userMsg,context})});
       const data=await res.json();
       const aiMsg:ChatMsg={role:"ai",text:data.response||"I couldn't process that request."};
       const final=[...newMsgs,aiMsg];
@@ -441,7 +442,7 @@ export default function TrinityPage(){
     if(upErr){setVaultProgress("Upload failed: "+upErr.message);setVaultUploading(false);return;}
     setVaultProgress("Extracting text...");
     let extractedText="";
-    try{const reader=new FileReader();const base64=await new Promise<string>((res,rej)=>{reader.onload=()=>res((reader.result as string).split(",")[1]);reader.onerror=rej;reader.readAsDataURL(vaultFile);});const resp=await fetch("/api/vault/extract",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pdfBase64:base64,fileName:vaultFile.name})});const data=await resp.json();extractedText=data.text||"";}catch{extractedText="";}
+    try{const reader=new FileReader();const base64=await new Promise<string>((res,rej)=>{reader.onload=()=>res((reader.result as string).split(",")[1]);reader.onerror=rej;reader.readAsDataURL(vaultFile);});const resp=await fetch("/api/vault/extract",{method:"POST",headers:{"Content-Type":"application/json",...(await authHeaders())},body:JSON.stringify({pdfBase64:base64,fileName:vaultFile.name})});const data=await resp.json();extractedText=data.text||"";}catch{extractedText="";}
     setVaultProgress("Saving...");
     const{data:inserted}=await supabase.from("study_vault").insert([{org_id:orgId,study_id:activeStudy.study_id,file_name:vaultFile.name,custom_name:vaultCustomName||vaultFile.name,document_type:vaultDocType,file_path:path,file_size:vaultFile.size,extracted_text:extractedText,uploaded_by:user?.email,is_active:true}]).select();
     if(inserted){
@@ -452,7 +453,7 @@ export default function TrinityPage(){
         try{
           const reader2=new FileReader();
           const base64=await new Promise<string>((res,rej)=>{reader2.onload=()=>res((reader2.result as string).split(",")[1]);reader2.onerror=rej;reader2.readAsDataURL(vaultFile);});
-          const idRes=await fetch("/api/trinity/extract-identity",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pdfBase64:base64,fileName:vaultFile.name,orgId,studyId:activeStudy.study_id,vaultDocId:inserted[0].id})});
+          const idRes=await fetch("/api/trinity/extract-identity",{method:"POST",headers:{"Content-Type":"application/json",...(await authHeaders())},body:JSON.stringify({pdfBase64:base64,fileName:vaultFile.name,orgId,studyId:activeStudy.study_id,vaultDocId:inserted[0].id})});
           const idData=await idRes.json();
           if(idData.identity&&Object.keys(idData.identity).length>0){
             await supabase.from("study_identity").update({is_active:false}).eq("org_id",orgId).eq("study_id",activeStudy.study_id);
@@ -519,7 +520,7 @@ Evaluate each question. Reference exact artifact numbers. Return JSON array only
 
 Return ONLY valid JSON array.`;
 
-      const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:prompt,context:`You are a strict FDA/EMA TMF auditor. The TMF has ${approvedCount} approved documents. You ONLY award Pass for documents explicitly in the approved list. ${approvedCount===0?"There are zero approved documents — every document-presence question is Fail.":""} Return only valid JSON array, no other text.`})});
+      const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json",...(await authHeaders())},body:JSON.stringify({message:prompt,context:`You are a strict FDA/EMA TMF auditor. The TMF has ${approvedCount} approved documents. You ONLY award Pass for documents explicitly in the approved list. ${approvedCount===0?"There are zero approved documents — every document-presence question is Fail.":""} Return only valid JSON array, no other text.`})});
       const data=await res.json();
       let results:any[]=[];
       try{results=JSON.parse((data.response||"[]").replace(/```json|```/g,"").trim());}catch{results=[];}
@@ -553,7 +554,7 @@ Return ONLY valid JSON array.`;
       const penalty=(criticalFails.length*15)+(majorFails.length*7)+(minorFails.length*3)+(partial.length*2);
       const riskScore=Math.max(0,Math.min(baseScore,100-penalty));
       const narrativePrompt=`Write a 3-4 sentence formal inspection readiness assessment in FDA Form 483 observation style for study ${activeStudy.study_id}. ${approvedCount} documents approved of ${totalCore} required (${donePct}% complete). ${criticalFails.length} critical failures, ${majorFails.length} major findings, ${passing.length} passing, ${unverifiable.length} unable to verify. Risk score: ${riskScore}/100. Be direct and use formal regulatory language.`;
-      const narrativeRes=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:narrativePrompt,context:"You are a senior FDA auditor writing a formal inspection narrative."})});
+      const narrativeRes=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json",...(await authHeaders())},body:JSON.stringify({message:narrativePrompt,context:"You are a senior FDA auditor writing a formal inspection narrative."})});
       const narrativeData=await narrativeRes.json();
       setInspectionReport({questions:results,passing,failing,partial,unverifiable,critical_fails:criticalFails,major_fails:majorFails,risk_score:riskScore,inspection_ready:criticalFails.length===0&&majorFails.length<3,summary:narrativeData.response||"",generated_at:new Date().toISOString()});
     }catch{alert("Inspection simulation failed.");}
@@ -761,7 +762,7 @@ Audit trail entry recorded.`};const final=[...chatMessages,filedMsg];setChatMess
                       )}
                       {(m as any).classStage==="artifact"&&(m as any).pendingClassification&&(
                         <div style={{display:"flex",gap:"8px"}}>
-                          <button onClick={async()=>{const cl=(m as any).pendingClassification;setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,classStage:"done_artifact"} as any:msg));setChatLoading(true);try{const vRes=await fetch("/api/trinity/validate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pdfBase64:cl.base64,fileName:cl.fileName,artifactNum:cl.artifact_num,artifactName:cl.artifact_name,zoneNum:cl.zone_num,zoneName:cl.zone_name,vaultDocs:vaultDocs.map(d=>({document_type:d.document_type,custom_name:d.custom_name,extracted_text:d.extracted_text?.slice(0,2000)||""})),filedDocs:docs.filter(d=>d.status==="Approved").map(d=>({artifact_num:d.artifact_num,artifact_name:d.artifact_name,custom_file_name:d.custom_file_name,status:d.status})),activeStudy:activeStudy?.study_id||"",orgId,userEmail:user?.email||"",userId:user?.id||"",studyIdentity})});const validation=await vRes.json();const valMsg={role:"ai",text:"__VALIDATE__",pendingClassification:cl,validation} as any;const final=[...chatMessages,valMsg];setChatMessages(final);scheduleSave(final);}catch{await fileDocument(cl,null);}setChatLoading(false);}} style={{fontSize:"12px",fontWeight:"600",padding:"7px 16px",background:P.success,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Approve & Validate</button>
+                          <button onClick={async()=>{const cl=(m as any).pendingClassification;setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,classStage:"done_artifact"} as any:msg));setChatLoading(true);try{const vRes=await fetch("/api/trinity/validate",{method:"POST",headers:{"Content-Type":"application/json",...(await authHeaders())},body:JSON.stringify({pdfBase64:cl.base64,fileName:cl.fileName,artifactNum:cl.artifact_num,artifactName:cl.artifact_name,zoneNum:cl.zone_num,zoneName:cl.zone_name,vaultDocs:vaultDocs.map(d=>({document_type:d.document_type,custom_name:d.custom_name,extracted_text:d.extracted_text?.slice(0,2000)||""})),filedDocs:docs.filter(d=>d.status==="Approved").map(d=>({artifact_num:d.artifact_num,artifact_name:d.artifact_name,custom_file_name:d.custom_file_name,status:d.status})),activeStudy:activeStudy?.study_id||"",orgId,userEmail:user?.email||"",userId:user?.id||"",studyIdentity})});const validation=await vRes.json();const valMsg={role:"ai",text:"__VALIDATE__",pendingClassification:cl,validation} as any;const final=[...chatMessages,valMsg];setChatMessages(final);scheduleSave(final);}catch{await fileDocument(cl,null);}setChatLoading(false);}} style={{fontSize:"12px",fontWeight:"600",padding:"7px 16px",background:P.success,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Approve & Validate</button>
                           <button onClick={()=>{setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,classStage:"done_artifact"} as any:msg));setChatMessages(prev=>[...prev,{role:"ai",text:"Artifact rejected. Which artifact should this be filed under?"}]);}} style={{fontSize:"12px",fontWeight:"600",padding:"7px 16px",background:P.bgTert,color:P.textSec,border:`1px solid ${P.border}`,borderRadius:"8px",cursor:"pointer"}}>Reject</button>
                         </div>
                       )}
@@ -783,7 +784,7 @@ Audit trail entry recorded.`};const final=[...chatMessages,filedMsg];setChatMess
                   const base64=((ev.target?.result as string)||"").split(",")[1];
                   setChatMessages(prev=>[...prev,{role:"ai",text:"Reading your document... I'll analyse the content and suggest the correct TMF zone and artifact."}]);
                   try{
-                    const res=await fetch("/api/classify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pdfBase64:base64,fileName:file.name,activeZONES,activeTMF})});
+                    const res=await fetch("/api/classify",{method:"POST",headers:{"Content-Type":"application/json",...(await authHeaders())},body:JSON.stringify({pdfBase64:base64,fileName:file.name,activeZONES,activeTMF})});
                     const data=await res.json();
                     if(data.error){setChatMessages(prev=>[...prev,{role:"ai",text:"Could not classify: "+data.error}]);setChatLoading(false);return;}
                     const clMsg={role:"ai",text:`I've analysed your document.\n\n${data.reasoning}\n\nSuggested Zone: Zone ${data.zone_num} - ${data.zone_name}\nConfidence: ${data.confidence}%\n\nApprove this zone?`,pendingClassification:{...data,base64,fileName:file.name},classStage:"zone"} as any;

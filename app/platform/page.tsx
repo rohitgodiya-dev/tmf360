@@ -3,7 +3,7 @@ import{useState,useEffect,useRef}from"react";
 import{supabase}from"../../lib/supabase";
 import{ROLES,hasPermission,getRoleColor,type Role}from"../../lib/permissions";
 import{signedFileUrl,previewFileUrl,openFile,downloadFile}from"../../lib/files";
-import{apiFetch}from"../../lib/api/client";
+import{apiFetch,authHeaders}from"../../lib/api/client";
 import JSZip from"jszip";
 
 
@@ -769,7 +769,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
       const recentTurns=chatMessages.slice(-6).map(m=>`${m.role==="user"?"User":"Trinity"}: ${m.text}`).join("\n");
       const scopeNote=activeStudy?`Only answer using data for study ${activeStudy.study_id}. Never reference other studies or organisation-wide data.`:"";
       const context=`${studyContext}\nRecent conversation:\n${recentTurns}\n${scopeNote}`;
-      const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:userMsg,context})});
+      const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json",...(await authHeaders())},body:JSON.stringify({message:userMsg,context})});
       const data=await res.json();
       setChatMessages(prev=>[...prev,{role:"ai",text:data.response||"I couldn't process that request."}]);
     }catch{setChatMessages(prev=>[...prev,{role:"ai",text:"Error connecting to AI. Please try again."}]);}
@@ -1745,7 +1745,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                       const base64=((ev.target?.result as string)||"").split(",")[1];
                       setChatMessages(prev=>[...prev,{role:"ai",text:"Reading your document... I will analyse the content and suggest the correct TMF zone and artifact."}]);
                       try{
-                        const res=await fetch("/api/classify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pdfBase64:base64,fileName:file.name,activeZONES,activeTMF})});
+                        const res=await fetch("/api/classify",{method:"POST",headers:{"Content-Type":"application/json",...(await authHeaders())},body:JSON.stringify({pdfBase64:base64,fileName:file.name,activeZONES,activeTMF})});
                         const data=await res.json();
                         if(data.error){setChatMessages(prev=>[...prev,{role:"ai",text:"I could not classify this document: "+data.error}]);setChatLoading(false);return;}
                         const classResult={file,base64,fileName:file.name,...data};
@@ -1853,7 +1853,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                         <button onClick={async()=>{
                           const approvedDocs=studyDocs.filter(d=>d.status==="Approved");
                           if(!approvedDocs.length){alert("No approved documents to export.");return;}
-                          const res=await fetch("/api/export/excel",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({docs:approvedDocs,study:activeStudy,donePct,ri,missing,pending})});
+                          const res=await fetch("/api/export/excel",{method:"POST",headers:{"Content-Type":"application/json",...(await authHeaders())},body:JSON.stringify({docs:approvedDocs,study:activeStudy,donePct,ri,missing,pending})});
                           const blob=await res.blob();
                           const url=URL.createObjectURL(blob);
                           const a=document.createElement("a");a.href=url;a.download=`TMF360_${activeStudy.study_id}_Tracker_${Date.now()}.xls`;a.click();URL.revokeObjectURL(url);
@@ -1874,7 +1874,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                         <button onClick={async()=>{
                           const approvedDocs=studyDocs.filter(d=>d.status==="Approved");
                           if(!approvedDocs.length){alert("No approved documents to export.");return;}
-                          const res=await fetch("/api/export/pdf",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({docs:approvedDocs,study:activeStudy,donePct,ri,missing,pending})});
+                          const res=await fetch("/api/export/pdf",{method:"POST",headers:{"Content-Type":"application/json",...(await authHeaders())},body:JSON.stringify({docs:approvedDocs,study:activeStudy,donePct,ri,missing,pending})});
                           const html=await res.text();
                           const w=window.open("","_blank");
                           if(w){w.document.write(html);w.document.close();}
@@ -1895,7 +1895,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                         <button onClick={async()=>{
                           const approvedDocs=studyDocs.filter(d=>d.status==="Approved");
                           if(!approvedDocs.length){alert("No approved documents to export.");return;}
-                          const res=await fetch("/api/export/word",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({docs:approvedDocs,study:activeStudy,donePct,ri,missing,pending})});
+                          const res=await fetch("/api/export/word",{method:"POST",headers:{"Content-Type":"application/json",...(await authHeaders())},body:JSON.stringify({docs:approvedDocs,study:activeStudy,donePct,ri,missing,pending})});
                           const blob=await res.blob();
                           const url=URL.createObjectURL(blob);
                           const a=document.createElement("a");a.href=url;a.download=`TMF360_${activeStudy.study_id}_Report_${Date.now()}.doc`;a.click();URL.revokeObjectURL(url);

@@ -1,3 +1,4 @@
+import { signedIn } from "@/lib/api/guard";
 import{NextRequest,NextResponse}from"next/server";
 
 const INSPECTION_QUESTIONS=[
@@ -19,6 +20,9 @@ const INSPECTION_QUESTIONS=[
 ];
 
 export async function POST(req:NextRequest){
+  // Signed-in users only: these routes spend Anthropic credits or expose study data.
+  const auth = await signedIn(req);
+  if (auth.denied) return auth.denied;
   try{
     const{filedDocs,studyIdentity,activeStudy,orgId,vaultDocs}=await req.json();
 

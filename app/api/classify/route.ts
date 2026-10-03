@@ -1,9 +1,13 @@
+import { signedIn } from "@/lib/api/guard";
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic();
 
 export async function POST(req: NextRequest) {
+  // Signed-in users only: these routes spend Anthropic credits or expose study data.
+  const auth = await signedIn(req);
+  if (auth.denied) return auth.denied;
   try {
     const { pdfBase64, fileName, activeZONES, activeTMF } = await req.json();
     if (!pdfBase64) return NextResponse.json({ error: "No PDF data" }, { status: 400 });

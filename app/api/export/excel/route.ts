@@ -1,6 +1,10 @@
+import { signedIn } from "@/lib/api/guard";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
+  // Signed-in users only: these routes spend Anthropic credits or expose study data.
+  const auth = await signedIn(req);
+  if (auth.denied) return auth.denied;
   try {
     const { docs, study, donePct, ri, missing, pending } = await req.json();
     

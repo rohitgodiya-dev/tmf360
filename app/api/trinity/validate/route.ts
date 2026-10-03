@@ -1,3 +1,4 @@
+import { signedIn } from "@/lib/api/guard";
 import{NextRequest,NextResponse}from"next/server";
 
 const ANTHROPIC_API="https://api.anthropic.com/v1/messages";
@@ -36,6 +37,9 @@ function generateHash(data:string):string{
 }
 
 export async function POST(req:NextRequest){
+  // Signed-in users only: these routes spend Anthropic credits or expose study data.
+  const auth = await signedIn(req);
+  if (auth.denied) return auth.denied;
   try{
     const{
       pdfBase64,fileName,artifactNum,artifactName,zoneNum,zoneName,
