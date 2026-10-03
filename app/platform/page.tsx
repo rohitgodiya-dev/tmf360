@@ -33,6 +33,8 @@ function canPreview(n:string){return["pdf","png","jpg","jpeg","gif","webp","doc"
 function formatSize(b:number){if(b<1024)return b+" B";if(b<1024*1024)return(b/1024).toFixed(1)+" KB";return(b/(1024*1024)).toFixed(1)+" MB";}
 function scoreColor(s:number){return s>=80?"#10B981":s>=60?"#F59E0B":"#EF4444";}
 function padZone(z:string){return z.padStart(2,"0");}
+// Stored files can't be overwritten. For a path named by the file's hash, "already exists" means this exact file is stored.
+function isAlreadyStored(e:{message?:string;statusCode?:unknown}){return String(e.statusCode)==="409"||/already exists|duplicate/i.test(e.message||"");}
 const ZONE_ICONS:Record<string,string>={
   "1":"ti-clipboard-list","2":"ti-users","3":"ti-shield-check","4":"ti-certificate",
   "5":"ti-building","6":"ti-file-check","7":"ti-package","8":"ti-alert-triangle",
@@ -279,8 +281,9 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
       setUploadProgress('Uploading...');
       const ext=file.name.split('.').pop()||'bin';
       const path=`${orgId}/${activeStudy.study_id}/${fileHash}.${ext}`;
-      const{error:upErr}=await supabase.storage.from('Documents').upload(path,file,{upsert:true});
-      if(upErr){setUploadProgress('Upload failed: '+upErr.message);setUploading(false);return;}
+      // Files are stored under their SHA-256 hash and are never overwritten; "already exists" means this exact file is stored.
+      const{error:upErr}=await supabase.storage.from('Documents').upload(path,file);
+      if(upErr&&!isAlreadyStored(upErr)){setUploadProgress('Upload failed: '+upErr.message);setUploading(false);return;}
       setPendingFilePath(path);setPendingFileName(file.name);setPendingFileType(file.type);setPendingFileSize(file.size);setPendingFileHash(fileHash);
       setSelectedFile(file);setUploadProgress('✓ '+file.name+' ready');
     }catch(err:any){setUploadProgress('Error: '+(err.message||'Unknown error'));}
@@ -294,8 +297,8 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
     setUploadProgress('Uploading...');
     const ext=pendingDuplicateFile.name.split('.').pop()||'bin';
     const path=`${orgId}/${activeStudy.study_id}/${pendingDuplicateHash}.${ext}`;
-    const{error:upErr}=await supabase.storage.from('Documents').upload(path,pendingDuplicateFile,{upsert:true});
-    if(upErr){setUploadProgress('Upload failed: '+upErr.message);setUploading(false);return;}
+    const{error:upErr}=await supabase.storage.from('Documents').upload(path,pendingDuplicateFile);
+    if(upErr&&!isAlreadyStored(upErr)){setUploadProgress('Upload failed: '+upErr.message);setUploading(false);return;}
     setPendingFilePath(path);
     setPendingFileName(pendingDuplicateFile.name);
     setPendingFileType(pendingDuplicateFile.type);
