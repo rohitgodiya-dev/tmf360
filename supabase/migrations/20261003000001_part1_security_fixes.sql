@@ -93,7 +93,8 @@ begin
   end if;
 
   if v_top = 'messages' then
-    return exists (
+    -- The uploader always keeps access (covers conversations with no study).
+    return p_owner = v_uid or exists (
       select 1
       from conversations c
       join studies s on s.study_id::text = c.study_id::text and s.org_id = v_org
