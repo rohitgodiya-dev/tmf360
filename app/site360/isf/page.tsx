@@ -1151,37 +1151,39 @@ function ISFConfigPanel({ site, study, user, currentUserRole, logAudit }: { site
   const [newSubParent, setNewSubParent] = useState('');
   const [newSubZone, setNewSubZone] = useState('5');
 
-  const isAdmin = ['System Administrator', 'Site Coordinator', 'PI'].includes(currentUserRole);
+  const isAdmin = ['System Administrator', 'Site Coordinator', 'Investigator', 'PI'].includes(currentUserRole);
 
   useEffect(() => { if (site && study) loadConfig(); }, [site, study]);
 
   async function loadConfig() {
     setLoading(true);
-    const { data } = await supabase.from('isf_config').select('*').eq('site_id', site.id).eq('study_id', study.id).order('zone_num', { ascending: true });
+    const { data } = await supabase.from('isf_artifact_config').select('*').eq('site_id', site.id).eq('study_id', study.id).order('zone_num', { ascending: true });
     if (data) setConfig(data);
     setLoading(false);
   }
 
   async function seedIfEmpty() {
-    const { data } = await supabase.from('isf_config').select('id').eq('site_id', site.id).eq('study_id', study.id).limit(1);
+    const { data } = await supabase.from('isf_artifact_config').select('id').eq('site_id', site.id).eq('study_id', study.id).limit(1);
     if (data && data.length > 0) return;
     const zoneRows = Object.entries(ISF_ZONE_NAMES).map(([z, zn]) => ({ type: 'zone', zone_num: z, zone_name: zn }));
     const artRows = ISF_ARTIFACTS.map(a => ({ type: 'artifact', zone_num: a.zone, section_num: a.section, artifact_num: a.num, artifact_name: a.name, classification: a.cl }));
     const seed = [...zoneRows, ...artRows].map(r => ({ ...r, org_id: site.org_id, site_id: site.id, study_id: study.id, is_enabled: true, is_locked: false, is_custom: false, created_by: user.email }));
-    await supabase.from('isf_config').insert(seed);
+    const { error } = await supabase.from('isf_artifact_config').insert(seed);
+    if (error) { setMsg('Could not set up the default ISF configuration: ' + error.message); return; }
     await loadConfig();
   }
 
-  useEffect(() => { if (site && study && !loading && config.length === 0) seedIfEmpty(); }, [loading]);
+  // Only administrators can write settings, so only they trigger the first-time setup.
+  useEffect(() => { if (site && study && isAdmin && !loading && config.length === 0) seedIfEmpty(); }, [loading]);
 
   async function toggleEnabled(item: any) {
     if (!item.is_enabled) {
-      const { error } = await supabase.from('isf_config').update({ is_enabled: true, disabled_reason: null, disabled_by: null, disabled_at: null }).eq('id', item.id);
+      const { error } = await supabase.from('isf_artifact_config').update({ is_enabled: true, disabled_reason: null, disabled_by: null, disabled_at: null }).eq('id', item.id);
       if (!error) {
-        if (item.type === 'zone') supabase.from('isf_config').update({ is_enabled: true, disabled_reason: null, disabled_by: null, disabled_at: null }).eq('site_id', site.id).eq('study_id', study.id).eq('zone_num', item.zone_num).eq('type', 'artifact').then(() => {});
+        if (item.type === 'zone') supabase.from('isf_artifact_config').update({ is_enabled: true, disabled_reason: null, disabled_by: null, disabled_at: null }).eq('site_id', site.id).eq('study_id', study.id).eq('zone_num', item.zone_num).eq('type', 'artifact').then(() => {});
         await logAudit('ISF config enabled', undefined, 'false', 'true');
         loadConfig();
-      }
+      } else setMsg('Save failed: ' + error.message);
     } else {
       setDisableTarget(item); setDisableReason(''); setShowDisableModal(true);
     }
@@ -1190,47 +1192,53 @@ function ISFConfigPanel({ site, study, user, currentUserRole, logAudit }: { site
   async function submitDisable() {
     if (!disableReason.trim()) { setMsg('Reason is required.'); return; }
     const now = new Date().toISOString();
-    const { error } = await supabase.from('isf_config').update({ is_enabled: false, disabled_reason: disableReason.trim(), disabled_by: user.email, disabled_at: now }).eq('id', disableTarget.id);
+    const { error } = await supabase.from('isf_artifact_config').update({ is_enabled: false, disabled_reason: disableReason.trim(), disabled_by: user.email, disabled_at: now }).eq('id', disableTarget.id);
     if (!error) {
       await logAudit('ISF config disabled', undefined, 'true', 'false');
-      if (disableTarget.type === 'zone') supabase.from('isf_config').update({ is_enabled: false, disabled_reason: 'Parent zone disabled', disabled_by: user.email, disabled_at: now }).eq('site_id', site.id).eq('study_id', study.id).eq('zone_num', disableTarget.zone_num).eq('type', 'artifact').then(() => {});
+      if (disableTarget.type === 'zone') supabase.from('isf_artifact_config').update({ is_enabled: false, disabled_reason: 'Parent zone disabled', disabled_by: user.email, disabled_at: now }).eq('site_id', site.id).eq('study_id', study.id).eq('zone_num', disableTarget.zone_num).eq('type', 'artifact').then(() => {});
       setShowDisableModal(false); setDisableTarget(null); setDisableReason(''); loadConfig();
-    }
+    } else setMsg('Save failed: ' + error.message);
   }
 
   async function toggleLock(item: any) {
-    const { error } = await supabase.from('isf_config').update({ is_locked: !item.is_locked }).eq('id', item.id);
+    const { error } = await supabase.from('isf_artifact_config').update({ is_locked: !item.is_locked }).eq('id', item.id);
     if (!error) { await logAudit(item.is_locked ? 'ISF artifact unlocked' : 'ISF artifact locked'); loadConfig(); }
+    else setMsg('Save failed: ' + error.message);
   }
 
   async function saveEdit() {
     if (!editName.trim() || !editTarget) return;
     const field = editTarget.type === 'zone' ? 'zone_name' : 'artifact_name';
-    const { error } = await supabase.from('isf_config').update({ [field]: editName.trim() }).eq('id', editTarget.id);
+    const { error } = await supabase.from('isf_artifact_config').update({ [field]: editName.trim() }).eq('id', editTarget.id);
     if (!error) { await logAudit('ISF config name edited', undefined, editTarget[field] || '', editName.trim()); setShowEditModal(false); setEditTarget(null); setEditName(''); loadConfig(); setMsg('Name updated.'); }
+    else setMsg('Save failed: ' + error.message);
   }
 
   async function addZone() {
     if (!newZoneNum.trim() || !newZoneName.trim()) return;
-    const { error } = await supabase.from('isf_config').insert([{ org_id: site.org_id, site_id: site.id, study_id: study.id, type: 'zone', zone_num: newZoneNum.trim(), zone_name: newZoneName.trim(), is_enabled: true, is_locked: false, is_custom: true, created_by: user.email }]);
+    const { error } = await supabase.from('isf_artifact_config').insert([{ org_id: site.org_id, site_id: site.id, study_id: study.id, type: 'zone', zone_num: newZoneNum.trim(), zone_name: newZoneName.trim(), is_enabled: true, is_locked: false, is_custom: true, created_by: user.email }]);
     if (!error) { await logAudit('Custom ISF zone added', undefined, '', newZoneNum.trim()); setShowAddZone(false); setNewZoneNum(''); setNewZoneName(''); loadConfig(); setMsg('Zone added.'); }
+    else setMsg('Save failed: ' + error.message);
   }
 
   async function addArtifact() {
     if (!newArtNum.trim() || !newArtName.trim() || !newArtZone.trim()) return;
-    const { error } = await supabase.from('isf_config').insert([{ org_id: site.org_id, site_id: site.id, study_id: study.id, type: 'artifact', zone_num: newArtZone.trim(), section_num: newArtSection.trim(), artifact_num: newArtNum.trim(), artifact_name: newArtName.trim(), classification: newArtCl, is_enabled: true, is_locked: false, is_custom: true, created_by: user.email }]);
+    const { error } = await supabase.from('isf_artifact_config').insert([{ org_id: site.org_id, site_id: site.id, study_id: study.id, type: 'artifact', zone_num: newArtZone.trim(), section_num: newArtSection.trim(), artifact_num: newArtNum.trim(), artifact_name: newArtName.trim(), classification: newArtCl, is_enabled: true, is_locked: false, is_custom: true, created_by: user.email }]);
     if (!error) { await logAudit('Custom ISF artifact added', undefined, '', newArtNum.trim()); setShowAddArtifact(false); setNewArtNum(''); setNewArtName(''); setNewArtSection(''); loadConfig(); setMsg('Artifact added.'); }
+    else setMsg('Save failed: ' + error.message);
   }
 
   async function addSubArtifact() {
     if (!newSubNum.trim() || !newSubName.trim() || !newSubParent.trim()) return;
-    const { error } = await supabase.from('isf_config').insert([{ org_id: site.org_id, site_id: site.id, study_id: study.id, type: 'sub_artifact', zone_num: newSubZone.trim(), artifact_num: newSubNum.trim(), artifact_name: newSubName.trim(), parent_artifact_num: newSubParent.trim(), classification: 'Core', is_enabled: true, is_locked: false, is_custom: true, created_by: user.email }]);
+    const { error } = await supabase.from('isf_artifact_config').insert([{ org_id: site.org_id, site_id: site.id, study_id: study.id, type: 'sub_artifact', zone_num: newSubZone.trim(), artifact_num: newSubNum.trim(), artifact_name: newSubName.trim(), parent_artifact_num: newSubParent.trim(), classification: 'Core', is_enabled: true, is_locked: false, is_custom: true, created_by: user.email }]);
     if (!error) { await logAudit('Custom ISF sub-artifact added', undefined, '', newSubNum.trim()); setShowAddSub(false); setNewSubNum(''); setNewSubName(''); setNewSubParent(''); loadConfig(); setMsg('Sub-artifact added.'); }
+    else setMsg('Save failed: ' + error.message);
   }
 
   async function resetToDefault() {
     if (!confirm('This will delete all custom config and reset to DIA ISF standard. Continue?')) return;
-    await supabase.from('isf_config').delete().eq('site_id', site.id).eq('study_id', study.id);
+    const { error } = await supabase.from('isf_artifact_config').delete().eq('site_id', site.id).eq('study_id', study.id);
+    if (error) { setMsg('Reset failed: ' + error.message); return; }
     await logAudit('ISF config reset to DIA standard', undefined, 'custom', 'default');
     await seedIfEmpty();
     setMsg('Reset to DIA TMF Reference Model v3.3.1 (Zones 5-8).');
