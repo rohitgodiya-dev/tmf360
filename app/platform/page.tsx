@@ -327,7 +327,11 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
       setDocs(prev=>[data[0],...prev]);
       await logAudit("Document uploaded",data[0].id,activeStudy.study_id,"status","",fDocStatus,"",fCustomName||pendingFileName||an);
       apiFetch("/notifications",{method:"POST",body:JSON.stringify({type:"document_uploaded",document_id:data[0].id})}).catch(e=>console.error("Notification failed:",e));
-    }
+      // The server re-hashes the stored file; a mismatch means storage doesn't hold what was uploaded.
+      if(pendingFilePath)apiFetch<{status:string}>(`/documents/${data[0].id}/verify-file`,{method:"POST"})
+        .then(r=>{if(r.status==="mismatch"||r.status==="missing")alert(`File integrity check failed (${r.status}) for "${fCustomName||pendingFileName}". Please upload the file again.`);})
+        .catch(e=>console.error("File integrity check failed:",e));
+    }else if(error){alert("Upload failed: "+error.message);}
     setShowDocModal(false);setFArtifact("");setFVersion("");setFOwner("");setFEff("");setFExp("");setFComments("");setFCustomName("");setPendingFilePath("");setPendingFileName("");setPendingFileType("");setPendingFileSize(0);setPendingFileHash("");setSelectedFile(null);setUploadProgress("");
   }
 
