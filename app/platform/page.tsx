@@ -286,7 +286,7 @@ const FILE_ICONS:Record<string,string>={
   png:"IMG",jpg:"IMG",jpeg:"IMG",gif:"IMG",mp4:"VID",zip:"ZIP",csv:"CSV",txt:"TXT",
 };
 
-interface Study{study_id:string;protocol:string;phase:string;status:string;sponsor:string;user_id:string;org_id?:string;}
+interface Study{id?:string;study_id:string;protocol:string;phase:string;status:string;sponsor:string;user_id:string;org_id?:string;}
 interface Doc{id?:string;study_id:string;user_id:string;org_id?:string;artifact_num:string;artifact_name:string;zone:string;version:string;status:string;owner:string;effective_date:string;expiry_date:string;file_path:string;file_name:string;custom_file_name:string;file_type:string;file_size:number;file_hash?:string;file_size_bytes?:number;comments:string;approved_by?:string;approved_at?:string;signature_reason?:string;submission_reason?:string;rejection_reason?:string;rejected_by?:string;rejected_at?:string;appeal_reason?:string;quality_score?:number;quality_flags?:string[];}
 
 function fileIcon(n:string){return FILE_ICONS[n.split(".").pop()?.toLowerCase()||""]||"FILE";}
@@ -915,6 +915,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           <p style={{fontSize:"9px",fontWeight:"500",color:P.textTert,padding:"8px 10px 4px",textTransform:"uppercase",letterSpacing:".06em"}}>Overview</p>
           {navItem("dashboard","Dashboard","ti-layout-dashboard")}
           {navItem("studies","Studies","ti-flask")}
+          {activeStudy?.id&&<a href={`/platform/studies/${activeStudy.id}/structure`} style={{display:"flex",alignItems:"center",gap:"8px",padding:"7px 10px",borderRadius:"8px",fontSize:"12px",color:"#374151",textDecoration:"none",fontWeight:"400"}}><i className="ti ti-sitemap" style={{fontSize:"15px"}}/>Study structure</a>}
           <p style={{fontSize:"9px",fontWeight:"500",color:P.textTert,padding:"10px 10px 4px",textTransform:"uppercase",letterSpacing:".06em"}}>TMF</p>
           {navItem("documents","Documents","ti-files")}
           {navItem("artifacts","Artifact browser","ti-layout-grid")}

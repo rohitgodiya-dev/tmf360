@@ -11,6 +11,7 @@ import * as siteById from "@/app/api/v1/studies/[studyId]/sites/[siteId]/route";
 import * as studyParties from "@/app/api/v1/studies/[studyId]/parties/route";
 import * as contacts from "@/app/api/v1/studies/[studyId]/contacts/route";
 import * as contactById from "@/app/api/v1/studies/[studyId]/contacts/[contactId]/route";
+import * as contactRoleTypes from "@/app/api/v1/contact-role-types/route";
 import { PERMISSIONS } from "@/lib/permissions";
 import { Fixtures, admin, call, type TestUser } from "./fixtures";
 
@@ -257,6 +258,13 @@ describe("study structure", () => {
 });
 
 describe("configuration", () => {
+  it("lists contact role types for signed-in users only", async () => {
+    const r = await call(contactRoleTypes.GET, { token: craA.token });
+    expect(r.status).toBe(200);
+    expect(r.body.data).toContainEqual({ code: "PI", label: "Principal Investigator" });
+    expect((await call(contactRoleTypes.GET, {})).status).toBe(401);
+  });
+
   it("the database role/permission matrix matches lib/permissions.ts", async () => {
     const { data, error } = await admin().from("role_permissions").select("role, permission");
     expect(error).toBeNull();
