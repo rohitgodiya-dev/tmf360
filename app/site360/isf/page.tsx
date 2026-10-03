@@ -1,6 +1,9 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { openFile, useSignedUrl } from '../../../lib/files';
+
+const ISF_BUCKET = 'isf-documents';
 
 const C = {
   orange: '#F97316', orangeLight: '#FFF7ED',
@@ -61,7 +64,7 @@ const ISF_ZONE_NAMES: Record<string, string> = { '5': 'Site Management', '6': 'I
 
 function isfCalcQuality(d: any): { score: number; flags: string[] } {
   const flags: string[] = [];
-  if (!d.file_url) flags.push('NO_FILE');
+  if (!d.file_path) flags.push('NO_FILE');
   if (!d.effective_date) flags.push('MISSING_DATE');
   if (!d.version || d.version.trim() === '') flags.push('MISSING_VERSION');
   if (d.expiry_date && new Date(d.expiry_date) < new Date()) flags.push('EXPIRED');
@@ -131,6 +134,7 @@ export default function ISFPage() {
   const [commentText, setCommentText] = useState('');
 
   const [previewDoc, setPreviewDoc] = useState<any>(null);
+  const previewSrc = useSignedUrl(previewDoc?.file_path, ISF_BUCKET);
 
   const [chatMessages, setChatMessages] = useState<{ role: string; content: string }[]>([
     { role: 'assistant', content: 'Hello! I am the ISF Auditor, powered by Trinity AI. I can help you review your ISF for inspection readiness, identify gaps, and answer questions about ICH E6(R3) site obligations. What would you like to know?' }
@@ -201,7 +205,6 @@ export default function ISFPage() {
       const path = `${site.id}/${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from('isf-documents').upload(path, uploadFile);
       if (upErr) throw upErr;
-      const { data: urlData } = supabase.storage.from('isf-documents').getPublicUrl(path);
       const { data: ur } = await supabase.from('user_roles').select('org_id').eq('user_id', user.id).single();
       const { data: newDoc } = await supabase.from('isf_documents').insert([{
         org_id: ur?.org_id, site_id: site.id, study_id: study?.id,
@@ -210,7 +213,7 @@ export default function ISFPage() {
         version: uploadForm.version, owner: uploadForm.owner, status: uploadForm.status,
         effective_date: uploadForm.effective_date || null, expiry_date: uploadForm.expiry_date || null,
         comments: uploadForm.comments || null,
-        file_url: urlData?.publicUrl, file_name: uploadFile.name,
+        file_path: path, file_name: uploadFile.name,
         file_size: uploadFile.size, uploaded_by: user.id, uploaded_by_email: user.email,
       }]).select().single();
       if (newDoc) await logAudit('UPLOAD', newDoc.id, undefined, uploadForm.title);
@@ -588,7 +591,7 @@ Your role:
                         <td style={{ padding: '10px 14px', color: C.textSec, fontSize: '11px' }}>{d.owner || '—'}</td>
                         <td style={{ padding: '10px 14px' }}>
                           <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' as const }}>
-                            {isPreviewable(d.file_name) && d.file_url && <button onClick={() => setPreviewDoc(d)} style={{ fontSize: '9px', padding: '3px 8px', background: C.bg, border: `0.5px solid ${C.border}`, borderRadius: '4px', cursor: 'pointer' }}>Preview</button>}
+                            {isPreviewable(d.file_name) && d.file_path && <button onClick={() => setPreviewDoc(d)} style={{ fontSize: '9px', padding: '3px 8px', background: C.bg, border: `0.5px solid ${C.border}`, borderRadius: '4px', cursor: 'pointer' }}>Preview</button>}
                             {d.status === 'Draft' && <button onClick={() => approveDoc(d)} style={{ fontSize: '9px', padding: '3px 8px', background: C.blueLight, color: '#1D4ED8', border: `0.5px solid #BFDBFE`, borderRadius: '4px', cursor: 'pointer' }}>Review</button>}
                             <button onClick={() => { setCommentTarget(d); setCommentText(''); setShowCommentModal(true); }} style={{ fontSize: '9px', padding: '3px 8px', background: C.bg, border: `0.5px solid ${C.border}`, borderRadius: '4px', cursor: 'pointer' }}>Comment</button>
                             {d.status !== 'Archived' && <button onClick={() => { const reason = prompt('Reason for archiving:'); if (reason) archiveDoc(d, reason); }} style={{ fontSize: '9px', padding: '3px 8px', background: C.amberLight, color: '#92400E', border: `0.5px solid #FDE68A`, borderRadius: '4px', cursor: 'pointer' }}>Archive</button>}
@@ -1105,14 +1108,14 @@ Your role:
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: `0.5px solid ${C.border}` }}>
               <span style={{ fontSize: '13px', fontWeight: 600 }}>{previewDoc.title}</span>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <a href={previewDoc.file_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', padding: '5px 12px', background: C.bg, color: C.textSec, borderRadius: '6px', textDecoration: 'none' }}>Open in New Tab</a>
+                <a href="#" onClick={e => { e.preventDefault(); openFile(previewDoc.file_path, ISF_BUCKET); }} style={{ fontSize: '11px', padding: '5px 12px', background: C.bg, color: C.textSec, borderRadius: '6px', textDecoration: 'none' }}>Open in New Tab</a>
                 <button onClick={() => setPreviewDoc(null)} style={{ fontSize: '11px', padding: '5px 12px', background: C.redLight, color: '#991B1B', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Close</button>
               </div>
             </div>
             <div style={{ flex: 1, overflow: 'auto' }}>
               {previewDoc.file_name?.match(/\.(png|jpg|jpeg|gif|webp)$/i)
-                ? <img src={previewDoc.file_url} alt={previewDoc.file_name} style={{ maxWidth: '100%', height: 'auto' }} />
-                : <iframe src={previewDoc.file_url} style={{ width: '100%', height: '70vh', border: 'none' }} />}
+                ? <img src={previewSrc || undefined} alt={previewDoc.file_name} style={{ maxWidth: '100%', height: 'auto' }} />
+                : <iframe src={previewSrc || undefined} style={{ width: '100%', height: '70vh', border: 'none' }} />}
             </div>
           </div>
         </div>
@@ -1633,6 +1636,7 @@ function ISFAuditorPanel({ site, study, docs, approveDoc, archiveDoc, moveToRevi
   const [actionComment, setActionComment] = useState('');
   const [actionType, setActionType] = useState<'approve' | 'review' | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const selectedSrc = useSignedUrl(showPreview ? selectedDoc?.file_path : null, ISF_BUCKET);
 
   function toggleZone(z: string) { setExpandedZones(prev => { const n = new Set(prev); n.has(z) ? n.delete(z) : n.add(z); return n; }); }
   function getArtifactDocs(num: string) { return docs.filter(d => d.artifact_num === num); }
@@ -1740,10 +1744,10 @@ function ISFAuditorPanel({ site, study, docs, approveDoc, archiveDoc, moveToRevi
                   <div style={{ fontSize: '11px', color: C.textSec, marginTop: '4px', whiteSpace: 'pre-wrap' as const }}>{selectedDoc.comments}</div>
                 </div>
               )}
-              {selectedDoc.file_url && (
+              {selectedDoc.file_path && (
                 <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '6px', marginTop: '4px' }}>
                   <button onClick={() => setShowPreview(!showPreview)} style={{ fontSize: '11px', padding: '6px 10px', background: showPreview ? C.orange : C.orangeLight, color: showPreview ? '#fff' : C.orange, border: `0.5px solid ${C.orange}`, borderRadius: '6px', cursor: 'pointer' }}>{showPreview ? 'Hide Preview' : 'Show Preview'}</button>
-                  <a href={selectedDoc.file_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', padding: '6px 10px', background: C.bg, color: C.textSec, border: `0.5px solid ${C.border}`, borderRadius: '6px', textDecoration: 'none', textAlign: 'center' as const }}>Open in New Tab</a>
+                  <a href="#" onClick={e => { e.preventDefault(); openFile(selectedDoc.file_path, ISF_BUCKET); }} style={{ fontSize: '11px', padding: '6px 10px', background: C.bg, color: C.textSec, border: `0.5px solid ${C.border}`, borderRadius: '6px', textDecoration: 'none', textAlign: 'center' as const }}>Open in New Tab</a>
                 </div>
               )}
             </div>
@@ -1751,10 +1755,10 @@ function ISFAuditorPanel({ site, study, docs, approveDoc, archiveDoc, moveToRevi
 
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column' as const }}>
             <div style={{ flex: 1, overflow: 'auto', background: C.bg, display: 'flex', alignItems: showPreview ? 'flex-start' : 'center', justifyContent: 'center', padding: '16px' }}>
-              {showPreview && selectedDoc.file_url ? (
+              {showPreview && selectedDoc.file_path ? (
                 selectedDoc.file_name?.match(/\.(png|jpg|jpeg|gif|webp)$/i)
-                  ? <img src={selectedDoc.file_url} alt={selectedDoc.file_name} style={{ maxWidth: '100%', height: 'auto', borderRadius: '8px', boxShadow: '0 2px 12px rgba(0,0,0,0.1)' }} />
-                  : <iframe src={selectedDoc.file_url} style={{ width: '100%', height: 'calc(100vh - 320px)', border: 'none', borderRadius: '8px', background: '#fff' }} />
+                  ? <img src={selectedSrc || undefined} alt={selectedDoc.file_name} style={{ maxWidth: '100%', height: 'auto', borderRadius: '8px', boxShadow: '0 2px 12px rgba(0,0,0,0.1)' }} />
+                  : <iframe src={selectedSrc || undefined} style={{ width: '100%', height: 'calc(100vh - 320px)', border: 'none', borderRadius: '8px', background: '#fff' }} />
               ) : (
                 <div style={{ textAlign: 'center' as const, color: C.textMuted }}>
                   <i className="ti ti-file-description" style={{ fontSize: '48px', color: C.border }} />
