@@ -31,6 +31,9 @@ export const PERMISSIONS = {
   edit_study:          ['System Administrator','Sponsor Admin','TMF Lead','Clinical Trial Manager'],
   view_study:          ['System Administrator','Sponsor Admin','TMF Lead','Clinical Trial Manager','Clinical Trial Associate','CRA','Regulatory','Quality Assurance','Medical Monitor','Site Coordinator','Investigator','Auditor','Inspector'],
 
+  // Organisation and people directory (parties, persons)
+  manage_directory:    ['System Administrator','Sponsor Admin','TMF Lead','Clinical Trial Manager'],
+
   // User management
   invite_users:        ['System Administrator','Sponsor Admin','TMF Lead'],
   manage_roles:        ['System Administrator','Sponsor Admin'],

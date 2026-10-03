@@ -29,7 +29,10 @@ export const POST = handle(async (req: Request) => {
 | API checks (`requirePermission`) are added on top of RLS, never instead of it. | Defence in depth. |
 | Errors are `{ error: { code, message, details? } }` with codes `unauthenticated`, `forbidden`, `not_found`, `invalid_request`, `conflict`, `internal`. | One error model for every client (Plan §13). |
 | Return `not_found` for records the user may not see; never a distinct "forbidden". | Do not reveal that a record exists (AZB-07). |
-| Every change to GxP data calls `writeAudit`; if the audit write fails, the request fails. | REG-01. |
+| Every change to GxP data is audited. The study-structure and directory tables (Part 2b) audit themselves with database triggers (before/after values, `change_reason`); don't also call `writeAudit` for them. Elsewhere call `writeAudit`; if it fails, the request fails. | REG-01. |
+| `org_id`, `created_*`, `updated_*` and `row_version` are set by the database. Clients never send them. | Tenancy cannot be chosen by the client. |
+| Updates send the `row_version` the client last saw (`updateVersioned`); a mismatch returns 409. | No silent overwrites. |
+| Role permissions live in `lib/permissions.ts` **and** the `role_permissions` table; change both in the same migration (a test checks they match). | RLS and the API enforce the same matrix. |
 | No hard deletes. Use soft-delete columns. | DI-06. |
 | Route params are a Promise in this Next.js version: `const { id } = await ctx.params`. | Next.js 16. |
 

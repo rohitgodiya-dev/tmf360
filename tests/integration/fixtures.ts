@@ -28,6 +28,8 @@ export class Fixtures {
   private orgIds: string[] = [];
   private documentIds: string[] = [];
   private files: { bucket: string; path: string }[] = [];
+  private studyIds: string[] = [];
+  private memberUserIds: string[] = [];
 
   /** Registers a storage file for removal in cleanup(). */
   trackFile(bucket: string, path: string) {
@@ -67,6 +69,25 @@ export class Fixtures {
     return { id: data.user.id, email, token: session.session.access_token, orgId: opts.orgId ?? null, db };
   }
 
+  /** Creates a study and returns its row id (studies.id) and code (studies.study_id). */
+  async study(orgId: string, label: string): Promise<{ id: string; code: string }> {
+    const code = `S-${this.runId}-${label}`;
+    const { data, error } = await admin().from("studies").insert([{ org_id: orgId, study_id: code, status: "Startup" }])
+      .select("id").single();
+    if (error) throw error;
+    this.studyIds.push(data.id);
+    return { id: data.id, code };
+  }
+
+  /** Gives a user access to a study through study membership (as User Management does). */
+  async member(orgId: string, studyCode: string, user: TestUser, role: string) {
+    const { error } = await admin().from("study_members").insert([{
+      org_id: orgId, study_id: studyCode, user_id: user.id, email: user.email, role, is_active: true,
+    }]);
+    if (error) throw error;
+    this.memberUserIds.push(user.id);
+  }
+
   async document(fields: { orgId: string; userId: string; studyId: string; title?: string }): Promise<string> {
     const { data, error } = await admin().from("documents").insert([{
       org_id: fields.orgId, user_id: fields.userId, study_id: fields.studyId,
@@ -80,11 +101,36 @@ export class Fixtures {
   async cleanup() {
     const a = admin();
     for (const f of this.files) await a.storage.from(f.bucket).remove([f.path]);
+    // Study structure and directory rows (children first).
+    if (this.orgIds.length) {
+      for (const t of ["contact_roles", "study_sites", "study_countries", "study_parties", "persons", "parties"]) {
+        await a.from(t).delete().in("org_id", this.orgIds);
+      }
+    }
+    if (this.memberUserIds.length) await a.from("study_members").delete().in("user_id", this.memberUserIds);
+    if (this.studyIds.length) await a.from("studies").delete().in("id", this.studyIds);
     if (this.documentIds.length) await a.from("documents").delete().in("id", this.documentIds);
     if (this.userIds.length) await a.from("user_roles").delete().in("user_id", this.userIds);
     for (const id of this.userIds) await a.auth.admin.deleteUser(id);
     if (this.orgIds.length) await a.from("organizations").delete().in("id", this.orgIds);
   }
+}
+
+type Handler<P> = (req: Request, ctx: { params: Promise<P> }) => Promise<Response>;
+
+/** Calls a route handler the way Next.js would, returning status and parsed JSON. */
+export async function call<P extends Record<string, string>>(
+  handler: Handler<P>,
+  opts: { token?: string; method?: string; body?: unknown; params?: P },
+): Promise<{ status: number; body: any }> { // eslint-disable-line @typescript-eslint/no-explicit-any
+  const req = apiRequest("/api/v1/test", {
+    method: opts.method ?? "GET",
+    token: opts.token,
+    body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
+    headers: opts.body === undefined ? undefined : { "Content-Type": "application/json" },
+  });
+  const res = await handler(req, { params: Promise.resolve((opts.params ?? {}) as P) });
+  return { status: res.status, body: await res.json() };
 }
 
 /** Builds a Request like the browser would send to an API route. */
