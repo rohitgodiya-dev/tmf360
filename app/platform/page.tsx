@@ -896,7 +896,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                       </div>
                       <div style={{fontSize:"10px",color:P.textTert}}>Zone {d.zone} - {d.owner||"-"}</div>
                     </div>
-                    {d.file_path&&canDownload&&<button onClick={()=>downloadFile(d.file_path,d.custom_file_name||d.file_name)} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none",border:"none",cursor:"pointer"}}>Download</button>}{canUploadDownload&&<button onClick={async()=>{const reason=prompt("Reason for archiving:");if(!reason)return;const now=new Date().toISOString();await supabase.from("documents").update({status:"Archived",archived_by:user.email,archived_at:now,archive_reason:reason,pre_archive_status:d.status}).eq("id",d.id);setDocs((prev:any)=>prev.map((x:any)=>x.id===d.id?{...x,status:"Archived"}:x));}} style={{fontSize:"9px",padding:"2px 6px",background:"#FFFBEB",color:"#92400E",border:"0.5px solid #FDE68A",borderRadius:"4px",cursor:"pointer"}}>Archive</button>}{canDelete&&<button onClick={()=>{setDeleteTarget(d);setDeletionReason("");setShowDeleteModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:"#FEF2F2",color:"#991B1B",border:"0.5px solid #FECACA",borderRadius:"4px",cursor:"pointer"}}>Delete</button>}
+                    {d.file_path&&canDownload&&<button onClick={()=>downloadFile(d.file_path,d.custom_file_name||d.file_name)} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none",border:"none",cursor:"pointer"}}>Download</button>}{canUploadDownload&&<button onClick={async()=>{const reason=prompt("Reason for archiving:");if(!reason)return;const now=new Date().toISOString();const{error}=await supabase.from("documents").update({status:"Archived",archived_by:user.email,archived_at:now,archive_reason:reason,pre_archive_status:d.status}).eq("id",d.id);if(error){alert("Archive failed: "+error.message);return;}await logAudit("Document archived",d.id,d.study_id,"status",d.status,"Archived - Reason: "+reason,reason,d.custom_file_name||d.artifact_name);setDocs((prev:any)=>prev.map((x:any)=>x.id===d.id?{...x,status:"Archived",archived_by:user.email,archived_at:now,archive_reason:reason}:x));}} style={{fontSize:"9px",padding:"2px 6px",background:"#FFFBEB",color:"#92400E",border:"0.5px solid #FDE68A",borderRadius:"4px",cursor:"pointer"}}>Archive</button>}{canDelete&&<button onClick={()=>{setDeleteTarget(d);setDeletionReason("");setShowDeleteModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:"#FEF2F2",color:"#991B1B",border:"0.5px solid #FECACA",borderRadius:"4px",cursor:"pointer"}}>Delete</button>}
                   </div>
                   <div style={{background:"#FEF2F2",borderRadius:"8px",padding:"10px 12px"}}>
                     <div style={{fontSize:"10px",fontWeight:"500",color:"#991B1B",marginBottom:"3px"}}>Rejection reason:</div>
@@ -4056,7 +4056,7 @@ setShowDisableModal(false);setDisableTarget(null);setDisableReason("");loadConfi
           </div>
         </div>
       )}
-
+ 
       {showAddZone&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
           <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"400px",border:`0.5px solid ${P.border}`}}>
