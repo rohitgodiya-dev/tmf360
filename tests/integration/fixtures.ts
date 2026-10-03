@@ -103,7 +103,7 @@ export class Fixtures {
     for (const f of this.files) await a.storage.from(f.bucket).remove([f.path]);
     // Study structure and directory rows (children first).
     if (this.orgIds.length) {
-      for (const t of ["contact_roles", "study_sites", "study_countries", "study_parties", "persons", "parties"]) {
+      for (const t of ["milestones", "contact_roles", "study_sites", "study_countries", "study_parties", "persons", "parties"]) {
         await a.from(t).delete().in("org_id", this.orgIds);
       }
     }
