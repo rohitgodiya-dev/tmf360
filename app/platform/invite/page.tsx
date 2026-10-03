@@ -2,7 +2,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-type Invite = { email: string; full_name: string; role: string; organisation: string | null; expires_at: string };
+type Invite = { email: string; full_name: string; role: string; organisation: string | null; expires_at: string; product: "tmf360" | "site360" };
 
 async function post<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`/api/v1/invitations/${path}`, {
@@ -54,7 +54,7 @@ function AcceptInvite() {
 
   return (
     <div style={box}>
-      <h1 style={{ fontSize: 22, margin: "0 0 4px" }}>TMF<span style={{ color: "#F97316" }}>360</span></h1>
+      <h1 style={{ fontSize: 22, margin: "0 0 4px" }}>{invite?.product === "site360" ? "Site" : "TMF"}<span style={{ color: "#F97316" }}>360</span></h1>
       {loadError && <p style={{ color: "#991B1B", fontSize: 13 }}>{loadError}</p>}
       {!loadError && !invite && <p style={{ color: "#6B7280", fontSize: 13 }}>Checking your invitation…</p>}
       {invite && !done && (
@@ -74,7 +74,7 @@ function AcceptInvite() {
       {done && (
         <>
           <p style={{ color: "#065F46", fontSize: 13 }}>Your account is ready.</p>
-          <a href="/platform" style={{ display: "inline-block", padding: "9px 18px", fontSize: 13, fontWeight: 700, color: "#fff", background: "#F97316", borderRadius: 8, textDecoration: "none" }}>Sign in</a>
+          <a href={invite?.product === "site360" ? "/site360/login" : "/platform"} style={{ display: "inline-block", padding: "9px 18px", fontSize: 13, fontWeight: 700, color: "#fff", background: "#F97316", borderRadius: 8, textDecoration: "none" }}>Sign in</a>
         </>
       )}
     </div>

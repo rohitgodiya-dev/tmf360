@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
+import { apiFetch } from '../../lib/api/client';
+import { SITE_ROLES } from '../../lib/permissions';
 
 // Design tokens — matched 1:1 to TMF360's palette (app/platform/page.tsx `P` object)
 // so Site360 and TMF360 read as one product. Key names kept as before so every
@@ -26,12 +28,15 @@ type Panel = 'dashboard' | 'activation' | 'isf' |
 // CDN link TMF360 uses — see the <link> tag in the header below. This is the
 // icon system TMF360 uses; Site360 previously used emoji, which is one of the
 // two things that made it look like a different, unrelated product.
-// Site360's own role set — distinct from TMF360's sponsor/CRO-side roles
-// (System Administrator, Sponsor Admin, TMF Lead, CRA, CTA, QA, Trial Manager,
-// Regulatory, Site Team, Auditor) since site staff hold different roles.
-const SITE_ROLES = ['Site Coordinator', 'PI', 'Sub-Investigator', 'CRC', 'Pharmacist', 'Regulatory Coordinator', 'Read Only'];
+// Account roles (user_roles) come from SITE_ROLES in lib/permissions — the only
+// roles the database accepts for site staff. A study team member's role on a
+// study (study_members) can be more specific, so it uses STUDY_ROLES.
+const STUDY_ROLES = ['Site Coordinator', 'PI', 'Sub-Investigator', 'CRC', 'Pharmacist', 'Regulatory Coordinator', 'Read Only'];
 const ROLE_COLORS: Record<string, [string, string]> = {
   'Site Coordinator': ['#3B82F6', '#EFF6FF'],
+  'Investigator': ['#8B5CF6', '#F5F3FF'],
+  'Regulatory': ['#EF4444', '#FEF2F2'],
+  'Auditor': ['#6B7280', '#F3F4F6'],
   'PI': ['#8B5CF6', '#F5F3FF'],
   'Sub-Investigator': ['#10B981', '#ECFDF5'],
   'CRC': ['#F97316', '#FFEDD5'],
@@ -290,23 +295,29 @@ export default function Site360Page() {
     if (data) setStudyMembers(data);
   }
 
-  // Creates the user_roles record only (metadata + permissions). This does NOT
-  // create a Supabase Auth login — that needs a service-role invite call from
-  // a server route, same as however TMF360's admin signup-link flow issues
-  // credentials today. Until that route exists here, new rows are flagged
-  // 'Invited' so it's clear the person can't sign in yet.
+  // Sends an invitation (POST /api/v1/invitations). The person sets their own
+  // password from the emailed single-use link; the account appears here once accepted.
   async function addUser() {
     if (!newUser.full_name || !newUser.email || !userRole) return;
     setAddingUser(true);
-    await supabase.from('user_roles').insert([{ org_id: userRole.org_id, full_name: newUser.full_name, email: newUser.email, role: newUser.role, status: 'Invited', can_upload: false, can_download: false, notifications_enabled: false, can_delete: false }]);
-    setShowAddUser(false);
-    setNewUser({ full_name: '', email: '', role: 'Site Coordinator' });
+    try {
+      const r = await apiFetch<{ emailed: boolean; inviteUrl: string }>('/invitations', {
+        method: 'POST', body: JSON.stringify({ email: newUser.email, full_name: newUser.full_name, role: newUser.role }),
+      });
+      setShowAddUser(false);
+      setNewUser({ full_name: '', email: '', role: 'Site Coordinator' });
+      if (r.emailed) alert(`Invitation sent to ${newUser.email}.`);
+      else prompt('The invitation email could not be sent. Pass this single-use link to the person:', r.inviteUrl);
+    } catch (e) {
+      alert('Could not invite: ' + (e as Error).message);
+    }
     setAddingUser(false);
     loadUsers();
   }
 
   async function updateUser(id: string, fields: Record<string, any>) {
-    await supabase.from('user_roles').update(fields).eq('id', id);
+    const { error } = await supabase.from('user_roles').update(fields).eq('id', id);
+    if (error) alert('Could not update user: ' + error.message);
     loadUsers();
   }
 
@@ -1185,7 +1196,7 @@ export default function Site360Page() {
         <>
           {field('Full Name *', input(newUser.full_name, v => setNewUser(p => ({ ...p, full_name: v })), 'Jane Smith'))}
           {field('Email *', input(newUser.email, v => setNewUser(p => ({ ...p, email: v })), 'jane@site.com', 'email'))}
-          {field('Role', sel(newUser.role, v => setNewUser(p => ({ ...p, role: v })), SITE_ROLES))}
+          {field('Role', sel(newUser.role, v => setNewUser(p => ({ ...p, role: v })), [...SITE_ROLES]))}
           <div style={{ fontSize: '11px', color: C.textMuted, padding: '8px 10px', background: C.bg, borderRadius: '8px' }}>This creates the user's record and role. Sign-in credentials are issued separately.</div>
         </>
       ), addUser, addingUser)}
@@ -1194,7 +1205,7 @@ export default function Site360Page() {
         <>
           {field('Name *', input(newMember.name, v => setNewMember(p => ({ ...p, name: v })), 'Jane Smith'))}
           {field('Email *', input(newMember.email, v => setNewMember(p => ({ ...p, email: v })), 'jane@site.com', 'email'))}
-          {field('Role', sel(newMember.role, v => setNewMember(p => ({ ...p, role: v })), SITE_ROLES))}
+          {field('Role', sel(newMember.role, v => setNewMember(p => ({ ...p, role: v })), STUDY_ROLES))}
         </>
       ), addStudyMember, addingMember)}
 

@@ -5,7 +5,7 @@ import { conflict, forbidden, handle, parseBody } from "@/lib/api/http";
 import { INVITE_TTL_DAYS, ilikeExact, newInviteToken } from "@/lib/api/invitations";
 import { serviceClient } from "@/lib/api/service";
 import { emailLayout, escapeHtml, sendEmail } from "@/lib/email";
-import { ROLES, hasPermission } from "@/lib/permissions";
+import { ROLES, SITE_MANAGER_ROLES, SITE_ROLES, hasPermission } from "@/lib/permissions";
 
 const ADMIN_ROLES = ["System Administrator", "Sponsor Admin"];
 
@@ -19,14 +19,25 @@ const schema = z.object({
 // password through a single-use link; no password is ever chosen by the inviter.
 export const POST = handle(async (req: Request) => {
   const ctx = await requireUser(req);
-  requirePermission(ctx, "invite_users");
+  // The service client is needed to read the organisation type and to see accounts outside the caller's org.
+  const svc = serviceClient();
+  const { data: org } = await svc.from("organizations").select("name, type").eq("id", ctx.orgId).maybeSingle();
+  const isSiteOrg = org?.type === "Site";
+
+  if (isSiteOrg) {
+    // Site360: site managers invite site staff into their own site organisation.
+    if (!SITE_MANAGER_ROLES.includes(ctx.role)) throw forbidden("Only site managers can invite users");
+  } else {
+    requirePermission(ctx, "invite_users");
+  }
   const body = await parseBody(req, schema);
-  if (ADMIN_ROLES.includes(body.role) && !hasPermission(ctx.role, "manage_roles")) {
+  if (isSiteOrg && !(SITE_ROLES as readonly string[]).includes(body.role)) {
+    throw forbidden(`Site users can be invited as: ${SITE_ROLES.join(", ")}`);
+  }
+  if (!isSiteOrg && ADMIN_ROLES.includes(body.role) && !hasPermission(ctx.role, "manage_roles")) {
     throw forbidden("Only administrators can invite administrators");
   }
 
-  // Authorised above; the service client is needed to see accounts outside the caller's org.
-  const svc = serviceClient();
   const { data: existing } = await svc.from("user_roles").select("org_id").ilike("email", ilikeExact(body.email)).maybeSingle();
   if (existing) {
     throw conflict(existing.org_id === ctx.orgId
@@ -46,12 +57,12 @@ export const POST = handle(async (req: Request) => {
   }]).select("id, email, role, expires_at").single();
   if (error) throw error;
 
-  const { data: org } = await svc.from("organizations").select("name").eq("id", ctx.orgId).maybeSingle();
+  const product = isSiteOrg ? "Site360" : "TMF360";
   const inviteUrl = `${new URL(req.url).origin}/platform/invite?token=${token}`;
   const emailed = await sendEmail(
     body.email,
-    `You've been invited to ${org?.name ?? "TMF360"}`,
-    emailLayout(`You've been invited to TMF360`, `
+    `You've been invited to ${org?.name ?? product}`,
+    emailLayout(`You've been invited to ${product}`, `
       <p style="color:#374151;font-size:14px;line-height:1.6">${escapeHtml(ctx.user.email)} invited you to join
       <strong>${escapeHtml(org?.name ?? "their organisation")}</strong> as <strong>${escapeHtml(body.role)}</strong>.</p>
       <p><a href="${escapeHtml(inviteUrl)}" style="background:#F97316;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:700;display:inline-block">Set up your account</a></p>

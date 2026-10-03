@@ -16,6 +16,12 @@ export const ROLES = [
 
 export type Role = typeof ROLES[number];
 
+// Site organisations (Site360) are run by their Site Coordinators, who may invite
+// site staff only — never sponsor-side or administrator roles. A PI or
+// Sub-Investigator is stored as 'Investigator'.
+export const SITE_ROLES = ['Site Coordinator', 'Investigator', 'Regulatory', 'Auditor'] as const satisfies readonly Role[];
+export const SITE_MANAGER_ROLES: readonly Role[] = ['System Administrator', 'Site Coordinator'];
+
 export const PERMISSIONS = {
   // Document permissions
   upload_document:     ['System Administrator','Sponsor Admin','TMF Lead','Clinical Trial Manager','Clinical Trial Associate','CRA','Regulatory','Quality Assurance','Site Coordinator','Investigator'],

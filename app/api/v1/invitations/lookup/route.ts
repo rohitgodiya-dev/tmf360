@@ -10,12 +10,14 @@ const schema = z.object({ token: z.string().min(20).max(200) });
 export const POST = handle(async (req: Request) => {
   const { token } = await parseBody(req, schema);
   const invitation = await findUsableInvitation(token);
-  const { data: org } = await serviceClient().from("organizations").select("name").eq("id", invitation.org_id).maybeSingle();
+  const { data: org } = await serviceClient().from("organizations").select("name, type").eq("id", invitation.org_id).maybeSingle();
   return Response.json({
     email: invitation.email,
     full_name: invitation.full_name,
     role: invitation.role,
     organisation: org?.name ?? null,
     expires_at: invitation.expires_at,
+    // Which product the invitee signs in to afterwards.
+    product: org?.type === "Site" ? "site360" : "tmf360",
   });
 });

@@ -48,10 +48,11 @@ export class Fixtures {
     this.files.push({ bucket, path });
   }
 
-  async org(label: string): Promise<string> {
+  /** Creates an organisation; pass type "Site" for a Site360 site organisation. */
+  async org(label: string, type?: string): Promise<string> {
     const { data, error } = await admin()
       .from("organizations")
-      .insert([{ name: `test-${this.runId}-${label}` }])
+      .insert([{ name: `test-${this.runId}-${label}`, ...(type ? { type } : {}) }])
       .select("id")
       .single();
     if (error) throw error;
