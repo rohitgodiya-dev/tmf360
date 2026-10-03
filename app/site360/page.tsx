@@ -72,7 +72,9 @@ const NAV_GROUPS = [
 ];
 
 export default function Site360Page() {
-  const [panel, setPanel] = useState<Panel>('dashboard');
+  const [panel, setPanelRaw] = useState<Panel>('dashboard');
+  // Remember the open panel across reloads, as TMF360 does.
+  function setPanel(p: Panel) { setPanelRaw(p); try { localStorage.setItem('site360_panel', p); } catch {} }
   const [site, setSite] = useState<any>(null);
   const [studies, setStudies] = useState<any[]>([]);
   const [activeStudy, setActiveStudy] = useState<any>(null);
@@ -116,7 +118,13 @@ export default function Site360Page() {
   const [newMember, setNewMember] = useState({ name: '', email: '', role: 'Site Coordinator' });
   const [addingMember, setAddingMember] = useState(false);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('site360_panel');
+      if (saved && saved !== 'isf' && NAV_GROUPS.some(g => g.items.some(i => i.key === saved))) setPanelRaw(saved as Panel);
+    } catch {}
+    loadData();
+  }, []);
   useEffect(() => { if (activeStudy && site) loadStudyData(); }, [activeStudy]);
   useEffect(() => { if (userRole) loadUsers(); }, [userRole]);
   useEffect(() => { if (activeStudy) loadStudyMembers(); }, [activeStudy]);
@@ -331,9 +339,6 @@ export default function Site360Page() {
   async function addStudy() {
     if (!newStudy.study_id || !site || !userRole) return;
     setCreatingStudy(true);
-    console.log('DEBUG addStudy — userRole.org_id:', userRole?.org_id, 'user.id:', user?.id);
-    const { data: { session } } = await supabase.auth.getSession();
-    console.log('DEBUG session user:', session?.user?.id, 'session exists:', !!session);
     try {
       const { data: study, error } = await supabase.from('studies').insert([{
         org_id: userRole.org_id,
