@@ -43,3 +43,10 @@ export const POST = handle(async (req: Request) => {
   credentials in git-ignored `.env.dev`; the setup refuses any other project).
 - Every new endpoint gets integration tests for: no token (401), another org (404/empty), and the happy path.
 - Security tests must use real data. An empty table or bucket makes "cannot see it" pass vacuously.
+
+## Taxonomy (TMF Reference Model)
+
+- `lib/taxonomy/tmf-rm-<version>.json` is the single source of the model in code; the `taxonomy_*` tables hold the same data (read-only for users). A test fails if they differ.
+- Key on the artifact's permanent **unique ID** (`taxonomy_artifacts.unique_id` / `taxonomy_artifact_id`), not the artifact number — numbers can change between model versions.
+- Changing the model = new JSON + migration generated with `node scripts/generate-taxonomy-migration.mjs` (change control). Never edit taxonomy rows by hand.
+- Per-study settings live in `tmf_config` (seeded by `seed_study_tmf_config`); disable rather than delete, with a reason — changes are audited.

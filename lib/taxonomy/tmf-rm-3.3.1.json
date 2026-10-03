@@ -1,0 +1,5434 @@
+{
+ "model": "TMF Reference Model",
+ "version": "3.3.1",
+ "released_on": "2023-08-11",
+ "source": "CDISC TMF Reference Model v3.3.1 (public domain), transcribed from the published model. Not yet loaded: trial/country level flags and milestones, ICH codes, process names (need the CDISC Excel to load reliably).",
+ "zones": [
+  [
+   "01",
+   "Trial Management"
+  ],
+  [
+   "02",
+   "Central Trial Documents"
+  ],
+  [
+   "03",
+   "Regulatory"
+  ],
+  [
+   "04",
+   "IRB or IEC and other Approvals"
+  ],
+  [
+   "05",
+   "Site Management"
+  ],
+  [
+   "06",
+   "IP and Trial Supplies"
+  ],
+  [
+   "07",
+   "Safety Reporting"
+  ],
+  [
+   "08",
+   "Central and Local Testing"
+  ],
+  [
+   "09",
+   "Third parties"
+  ],
+  [
+   "10",
+   "Data Management"
+  ],
+  [
+   "11",
+   "Statistics"
+  ]
+ ],
+ "sections": [
+  [
+   "01.01",
+   "Trial Oversight"
+  ],
+  [
+   "01.02",
+   "Trial Team"
+  ],
+  [
+   "01.03",
+   "Trial Committee"
+  ],
+  [
+   "01.04",
+   "Meetings"
+  ],
+  [
+   "01.05",
+   "General"
+  ],
+  [
+   "02.01",
+   "Product and Trial Documentation"
+  ],
+  [
+   "02.02",
+   "Subject Documentation"
+  ],
+  [
+   "02.03",
+   "Reports"
+  ],
+  [
+   "02.04",
+   "General"
+  ],
+  [
+   "03.01",
+   "Trial Approval"
+  ],
+  [
+   "03.02",
+   "Investigational Medicinal Product"
+  ],
+  [
+   "03.03",
+   "Trial Status Reporting"
+  ],
+  [
+   "03.04",
+   "General"
+  ],
+  [
+   "04.01",
+   "IRB or IEC Trial Approval"
+  ],
+  [
+   "04.02",
+   "Other Committees"
+  ],
+  [
+   "04.03",
+   "Trial Status Reporting"
+  ],
+  [
+   "04.04",
+   "General"
+  ],
+  [
+   "05.01",
+   "Site Selection"
+  ],
+  [
+   "05.02",
+   "Site Set-up"
+  ],
+  [
+   "05.03",
+   "Site Initiation"
+  ],
+  [
+   "05.04",
+   "Site Management"
+  ],
+  [
+   "05.05",
+   "General"
+  ],
+  [
+   "06.01",
+   "IP Documentation"
+  ],
+  [
+   "06.02",
+   "IP Release Process Documentation"
+  ],
+  [
+   "06.03",
+   "IP Allocation Documentation"
+  ],
+  [
+   "06.04",
+   "Storage"
+  ],
+  [
+   "06.05",
+   "Non-IP Documentation"
+  ],
+  [
+   "06.06",
+   "Interactive Response Technology"
+  ],
+  [
+   "06.07",
+   "General"
+  ],
+  [
+   "07.01",
+   "Safety Documentation"
+  ],
+  [
+   "07.02",
+   "Trial Status Reporting"
+  ],
+  [
+   "07.03",
+   "General"
+  ],
+  [
+   "08.01",
+   "Facility Documentation"
+  ],
+  [
+   "08.02",
+   "Sample Documentation"
+  ],
+  [
+   "08.03",
+   "General"
+  ],
+  [
+   "09.01",
+   "Third Party Oversight"
+  ],
+  [
+   "09.02",
+   "Third Party Set-up"
+  ],
+  [
+   "09.03",
+   "General"
+  ],
+  [
+   "10.01",
+   "Data Management Oversight"
+  ],
+  [
+   "10.02",
+   "Data Capture"
+  ],
+  [
+   "10.03",
+   "Database"
+  ],
+  [
+   "10.04",
+   "EDC Management"
+  ],
+  [
+   "10.05",
+   "General"
+  ],
+  [
+   "11.01",
+   "Statistics Oversight"
+  ],
+  [
+   "11.02",
+   "Randomization"
+  ],
+  [
+   "11.03",
+   "Analysis"
+  ],
+  [
+   "11.04",
+   "Report"
+  ],
+  [
+   "11.05",
+   "General"
+  ]
+ ],
+ "milestone_events": [
+  [
+   "01",
+   "First Country RA Approval",
+   "Start Up"
+  ],
+  [
+   "02",
+   "Clinical Infrastructure Ready",
+   "Start Up"
+  ],
+  [
+   "03",
+   "Site Live / Ready / Open for Enrollment",
+   "Start Up"
+  ],
+  [
+   "04",
+   "First Monitoring Visit",
+   "Study Conduct"
+  ],
+  [
+   "05",
+   "Significant Study Event",
+   "Study Conduct"
+  ],
+  [
+   "06",
+   "Annual IRB / IEC Renewal",
+   "Study Conduct"
+  ],
+  [
+   "07",
+   "Last Subject Last Visit",
+   "Study Conduct"
+  ],
+  [
+   "08",
+   "Database Lock",
+   "Close Out"
+  ],
+  [
+   "09",
+   "Close Out Monitoring Visit / Site Closed",
+   "Close Out"
+  ],
+  [
+   "10",
+   "Final Report / Clinical Study Report Approved",
+   "Close Out"
+  ],
+  [
+   "11",
+   "Ongoing",
+   "Other"
+  ],
+  [
+   "12",
+   "TMF Closure / Lock",
+   "Other"
+  ]
+ ],
+ "artifacts": [
+  {
+   "n": "01.01.01",
+   "u": "001",
+   "name": "Trial Master File Plan",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "R",
+   "process": "12",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "To describe how records for the trial will be managed and stored during and after the trial, including study-specific processes and documentation for archiving and destruction. To include TMF filing structure to be used. May include TMF content list, filing structure and chain of custody records. Artifact can include any evidence of plan execution including, but not limited to: plan, reports, checklists, etc.",
+   "s": [
+    "Document Transfer Documentation",
+    "Evidence of Quality Review",
+    "Request to Lock TMF",
+    "Trial Master File Plan",
+    "Trial Master File Index",
+    "Trial Master File Report"
+   ]
+  },
+  {
+   "n": "01.01.02",
+   "u": "002",
+   "name": "Trial Management Plan",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "R",
+   "process": "12",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "To describe overall strategy for timelines, management and conduct of the trial and typically makes reference to other artifacts. Artifact can include details on contingency plan covering details for site start up planning.",
+   "s": [
+    "Clinical Development Plan",
+    "Project Management Plan",
+    "Trial Management Plan"
+   ]
+  },
+  {
+   "n": "01.01.03",
+   "u": "003",
+   "name": "Quality Plan",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "R",
+   "process": "12",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "7.11 9.1 a",
+   "d": "To describe the operational techniques and activities undertaken within the quality management system to verify that the requirements for quality of the trial-related activities have been fulfilled. Relevant parts may include, but not be limited to, a plan written for internal oversight of study quality management, an audit plan, data verification steps, serious breach assessments; also includes escalation in the event of a quality issue being identified and all corrective and preventative actions determined. Artifact can include any evidence of plan execution including, but not limited to: plan, reports, checklists, etc.",
+   "s": [
+    "Quality Documentation",
+    "Quality Plan",
+    "Quality Report"
+   ]
+  },
+  {
+   "n": "01.01.04",
+   "u": "004",
+   "name": "List of SOPs Current During Trial",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "M",
+   "process": "12",
+   "dating": "Document Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "To document which standard operating procedures (SOPs) and which versions were in effect for the duration of the trial and trial-specific procedures created for the trial. To include sponsor and third party SOPs. This artifact does not include the SOPs themselves. May include SOP waivers to document and describe study-specific deviation from a named SOP or working procedure and the rationale for the deviation, when applicable.",
+   "s": [
+    "List of SOPs Current During Trial",
+    "SOP Waivers",
+    "SOP Deviations"
+   ]
+  },
+  {
+   "n": "01.01.05",
+   "u": "005",
+   "name": "Operational Procedure Manual",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "R",
+   "process": "12",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "To describe trial-related processes not covered by formal standard operating procedures. Includes manuals given to sites for ISFs and vendor study-specific manuals as well as any study related tools provided to investigator sites not subject to IRB/IEC approval. Artifact can include any evidence of plan execution including, but not limited to: plan, reports, checklists.",
+   "s": [
+    "Operational Procedure Manual"
+   ]
+  },
+  {
+   "n": "01.01.06",
+   "u": "006",
+   "name": "Recruitment Plan",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "R",
+   "process": "12",
+   "dating": "Version Date",
+   "site_milestone": "03",
+   "iso": "",
+   "d": "To describe the planned subject enrolment/recruitment goals during the trial, including contingency plans. Artifact can include any evidence of plan execution including, but not limited to: plan, reports, checklists, etc.",
+   "s": [
+    "Recruitment Plan",
+    "Recruitment Progress"
+   ]
+  },
+  {
+   "n": "01.01.07",
+   "u": "007",
+   "name": "Communication Plan",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "R",
+   "process": "12",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "To describe communication strategy and plans between trial stakeholders, including communication escalation procedures/steps. Artifact can include any evidence of plan execution including, but not limited to: plan, reports, checklists, etc.",
+   "s": [
+    "Communication Plan"
+   ]
+  },
+  {
+   "n": "01.01.08",
+   "u": "008",
+   "name": "Monitoring Plan",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "M",
+   "process": "12",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "6.7 7.3 9.2.4.1",
+   "d": "To describe how monitoring will be implemented during the trial, including strategy for source data verification and risk based monitoring (if applicable). Artifact can include any trial level evidence of plan execution including, but not limited to: plan, reports, checklists, etc. Note: Individual Monitoring Visit Reports are filed in zone 5.",
+   "s": [
+    "Monitoring Plan",
+    "Risk Based Monitoring Plan",
+    "Risk Based Monitoring Evidence"
+   ]
+  },
+  {
+   "n": "01.01.09",
+   "u": "009",
+   "name": "Medical Monitoring Plan",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "M",
+   "process": "12",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "6.11",
+   "d": "To describe how medical surveillance of trial subjects will be assured during the trial. Artifact can include any evidence of plan execution including, but not limited to: plan, reports, checklists, etc.",
+   "s": [
+    "Medical Monitoring Plan",
+    "Medical Contact Report",
+    "Medical Monitoring Decisions"
+   ]
+  },
+  {
+   "n": "01.01.10",
+   "u": "010",
+   "name": "Publication Policy",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "R",
+   "process": "12",
+   "dating": "Document Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "To describe the policy for publishing the trial results if publication policy is not captured within the protocol.",
+   "s": [
+    "Publication Policy"
+   ]
+  },
+  {
+   "n": "01.01.11",
+   "u": "011",
+   "name": "Debarment Statement",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "R",
+   "process": "16",
+   "dating": "Document Date",
+   "site_milestone": "03",
+   "iso": "",
+   "d": "To verify whether the applicant or any of its principals is currently debarred, suspended, proposed for debarment, or declared ineligible to receive federal awards; whether within the past three years the applicant, or any of its principals, has been convicted of or had a civil judgment rendered against it for, or been indicted for, commission of fraud or certain criminal offenses; and whether the applicant has had any federal award terminated for cause or default in the past three years. Often part of the site qualification process, however, can account for situations which might arise during the course of the study, especially relevant for long-term trials.",
+   "s": [
+    "Debarment Statement",
+    "Restricted Party Lists"
+   ]
+  },
+  {
+   "n": "01.01.12",
+   "u": "012",
+   "name": "Trial Status Report",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "R",
+   "process": "21",
+   "dating": "Date Generated",
+   "site_milestone": null,
+   "iso": "",
+   "d": "Routine trial status progress report generated by the sponsor or 3rd Party and distributed to trial stakeholders.",
+   "s": [
+    "Trial Status Report"
+   ]
+  },
+  {
+   "n": "01.01.13",
+   "u": "013",
+   "name": "Investigator Newsletter",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "R",
+   "process": "21",
+   "dating": "Document Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "To inform investigative staff of common implementation issues and of the progress of the trial.",
+   "s": [
+    "Investigator Newsletter"
+   ]
+  },
+  {
+   "n": "01.01.14",
+   "u": "014",
+   "name": "Audit Certificate",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "27",
+   "dating": "Issue Date",
+   "site_milestone": "05",
+   "iso": "E3.4 7.11 e 9.1 D13 h",
+   "d": "Documentation to confirm that an audit was performed (does not contain the audit report).",
+   "s": [
+    "Audit Certificate",
+    "List of Audits"
+   ]
+  },
+  {
+   "n": "01.01.15",
+   "u": "015",
+   "name": "Filenote Master List",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "R",
+   "process": "21",
+   "dating": "Version Date",
+   "site_milestone": "11",
+   "iso": "",
+   "d": "To provide a consolidated list/index of file notes generated during the trial.",
+   "s": [
+    "Filenote Master List"
+   ]
+  },
+  {
+   "n": "01.01.16",
+   "u": "236",
+   "name": "Risk Management Plan",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "R",
+   "process": "12",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "6.2 5.6.2 c 5.6.2 d 7.8.1 9.2.3 h 9.2.6 c 7.5.1 7.10 Annex H",
+   "d": "To describe the potential hazards associated with the trial, including an assessment of the likelihood of those hazards occurring and resulting in harm. The Risk Management Plan is intended to include the risks to participant safety in relation to the IMP and all other risks related to the design and methods of the trial, including risks to participant safety and rights, as well as reliability of results. Artifact can include any evidence of plan execution including, but not limited to: plan, reports, checklists, etc.",
+   "s": [
+    "Risk Management Plan",
+    "Risk Assessment",
+    "Risk Log"
+   ]
+  },
+  {
+   "n": "01.01.17",
+   "u": "237",
+   "name": "Vendor Management Plan",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "R",
+   "process": "8",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "9.3",
+   "d": "To describe the overall management strategy for third party vendors used to conduct trial-related activities. May include assignment of responsibilities for third party vendor oversight, performance indicators, monitoring activities and schedules, issue escalation and resolution process, technology and documentation transfer and business continuity plan. Artifacts providing evidence of plan execution including, but not limited to: reports, checklists, etc. and other records demonstrating oversight of a specific third party vendor should be filed in the appropriate artifacts in Zone 09.",
+   "s": [
+    "Vendor Management Plan"
+   ]
+  },
+  {
+   "n": "01.01.18",
+   "u": "181",
+   "name": "Roles and Responsibility Matrix",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "8",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "6.1 9.2.1a",
+   "d": "To identify range and distribution of tasks and responsibilities; may define internal assignment and all external parties; covers GCP as well as business process; often part of the Contractual Agreement (09.02.03).",
+   "s": [
+    "Roles and Responsibility Matrix"
+   ]
+  },
+  {
+   "n": "01.01.19",
+   "u": "247",
+   "name": "Transfer of Regulatory Obligations",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "8",
+   "dating": "Signature Date",
+   "site_milestone": null,
+   "iso": "9.3",
+   "d": "To specify the transfer of regulatory obligations from sponsor to each Affiliate/CRO/Vendor and may include other agreements. A sponsor may transfer responsibility for any or all of the obligations set forth in this part to another entity. Any such transfer shall be described in writing. If not all obligations are transferred, the writing is required to describe each of the obligations being assumed by the alternate entity. If all obligations are transferred, a general statement that all obligations have been transferred is acceptable.",
+   "s": [
+    "Transfer of Regulatory Obligations"
+   ]
+  },
+  {
+   "n": "01.01.20",
+   "u": "248",
+   "name": "Operational Oversight",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "R",
+   "process": "8",
+   "dating": "Document Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "Documentation to show evidence of sponsor oversight of study, as well as any key decisions taken and the supporting rationale. Records demonstrating oversight of a specific third party should be filed in the appropriate artifacts in Zone 09.",
+   "s": [
+    "Operational Oversight Plan",
+    "Operational Oversight Evidence"
+   ]
+  },
+  {
+   "n": "01.02.01",
+   "u": "016",
+   "name": "Trial Team Details",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "M",
+   "process": "7",
+   "dating": "Document Date",
+   "site_milestone": null,
+   "iso": "E.1.28 E.2.26 6.1 9.2.1 a 9.2.1 g D.13e",
+   "d": "To define trial roles, contact details and structure of the trial team - both sponsor and third parties; optionally this may include full and initials-only signature of all team members, role-to-role transition documents, organogram and/or team joining/leaving dates.",
+   "s": [
+    "Trial Team Details",
+    "Transition Evidence"
+   ]
+  },
+  {
+   "n": "01.02.02",
+   "u": "017",
+   "name": "Trial Team Curriculum Vitae",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "M",
+   "process": "7",
+   "dating": "Signature Date",
+   "site_milestone": null,
+   "iso": "9.2.1g 6.1",
+   "d": "To document qualifications and eligibility of sponsor trial team members. Documentation for third party trial team members should be filed in Zone 09.",
+   "s": [
+    "Trial Team Curriculum Vitae"
+   ]
+  },
+  {
+   "n": "01.03.01",
+   "u": "018",
+   "name": "Committee Process",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "10",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "6.11",
+   "d": "To describe the purpose and mode of operation/manner of working of the Independent Trial Committee, which may be established by the sponsor to assess at intervals the progress of a clinical trial the safety data and the critical efficacy endpoints and to recommend to the sponsor whether to continue, modify or stop a trial. To describe in advance the decision-making process of the Committee that will evaluate key trial events (e.g. endpoints).",
+   "s": [
+    "Committee Charter",
+    "Committee Process"
+   ]
+  },
+  {
+   "n": "01.03.02",
+   "u": "019",
+   "name": "Committee Member List",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "10",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "To document the current composition of a trial committee. Can be part of the Charter.",
+   "s": [
+    "Committee Member List"
+   ]
+  },
+  {
+   "n": "01.03.03",
+   "u": "020",
+   "name": "Committee Output",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "31",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "6.11",
+   "d": "To document any agreements or significant decisions regarding trial conduct, protocol violations, adverse event reporting, to include minutes, reports, notifications, recommendations from a trial committee. Can be applicable to interim and final analyses.",
+   "s": [
+    "Committee Correspondence",
+    "Committee Data Package",
+    "Committee Minutes",
+    "Committee Report"
+   ]
+  },
+  {
+   "n": "01.03.04",
+   "u": "249",
+   "name": "Committee Member Curriculum Vitae",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "10",
+   "dating": "Signature Date",
+   "site_milestone": null,
+   "iso": "6.1 6.11",
+   "d": "To document qualifications and eligibility of the Committee Member to provide assessments, at set intervals, the progress of a clinical trial, of the safety data and the critical efficacy endpoints and to recommend to the sponsor whether to continue, modify or stop a trial. To include updates.",
+   "s": [
+    "Committee Member Curriculum Vitae",
+    "Committee Member Medical License",
+    "Committee Member Training Evidence"
+   ]
+  },
+  {
+   "n": "01.03.05",
+   "u": "250",
+   "name": "Committee Member Financial Disclosure Form",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "10",
+   "dating": "Signature Date",
+   "site_milestone": null,
+   "iso": "E.1.33 E.2.30 5.6.2 d 6.11 9.2.1 e 10.2 c",
+   "d": "To certify that no financial arrangements with a Committee Member have been made where study outcome could affect compensation; that the Committee Member has no proprietary interest in the tested product; that the Committee Member does not have a significant equity interest in the sponsor of the covered study, that the Committee Member has not received significant payments of other sorts; and/or disclosure of specified financial arrangements and any steps taken to minimize the potential for bias.",
+   "s": [
+    "Committee Member Financial Disclosure Form"
+   ]
+  },
+  {
+   "n": "01.03.06",
+   "u": "251",
+   "name": "Committee Member Contract",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "10",
+   "dating": "Signature Date",
+   "site_milestone": null,
+   "iso": "6.9",
+   "d": "To document agreement of trial requirements between sponsor or 3rd Party and Committee Member.",
+   "s": [
+    "Committee Member Contract"
+   ]
+  },
+  {
+   "n": "01.03.07",
+   "u": "252",
+   "name": "Committee Member Confidentiality Disclosure Agreement",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "10",
+   "dating": "Signature Date",
+   "site_milestone": null,
+   "iso": "E.1.13 E.1.33 6.9 9. 2.1.a 9.2.1 d 10.2.c",
+   "d": "A document between the sponsor and the Committee Member that defines the terms and basic criteria to assure that the party (or parties) receiving confidential information will maintain confidentiality and will not use that information for any purpose other than that described in the Agreement.",
+   "s": [
+    "Committee Member Confidentiality Disclosure Agreement"
+   ]
+  },
+  {
+   "n": "01.04.01",
+   "u": "024",
+   "name": "Kick-off Meeting Material",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "21",
+   "dating": "Meeting Start Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "Agenda, presentation materials and other documentation made available for attendees of the trial kick-off meeting, including attendance sheets. Does not include Investigator Meeting content.",
+   "s": [
+    "Kick-off Meeting Agenda",
+    "Kick-off Meeting Attendance Sheet",
+    "Kick-off Meeting Presentation Materials",
+    "Kick-off Meeting Minutes"
+   ]
+  },
+  {
+   "n": "01.04.02",
+   "u": "025",
+   "name": "Trial Team Training Material",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "M",
+   "process": "26",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "9.2.4.2 c 7.3 7.6",
+   "d": "Trial-relevant training materials, including use of specialized systems.",
+   "s": [
+    "Trial Team Training Material"
+   ]
+  },
+  {
+   "n": "01.04.03",
+   "u": "026",
+   "name": "Investigators Meeting Material",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "21",
+   "dating": "Meeting Start Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "Agenda, presentation materials and other documentation made available for attendees of the investigator meeting(s). Includes meeting minutes or questions and answers (Q&A), attendance sheets and any pre-meeting material.",
+   "s": [
+    "Investigators Meeting Agenda",
+    "Investigators Meeting Attendance Sheet",
+    "Investigators Meeting Minutes",
+    "Investigators Meeting Presentation Materials"
+   ]
+  },
+  {
+   "n": "01.04.04",
+   "u": "253",
+   "name": "Trial Team Evidence of Training",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "M",
+   "process": "10",
+   "dating": "Training Date",
+   "site_milestone": null,
+   "iso": "9.2.1",
+   "d": "To document completion of study-specific trial team training, including certification or evidence of training (attendance sheets). Includes EDC training. Does not include each individual's education, training and experience to perform his/her role. This should be documented in the company learning management system.",
+   "s": [
+    "Trial Team Training Attendance Sheet",
+    "Trial Team Training Certificate"
+   ]
+  },
+  {
+   "n": "01.05.01",
+   "u": "027",
+   "name": "Relevant Communications",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "M",
+   "process": "21 / Per content",
+   "dating": "Correspondence Date",
+   "site_milestone": null,
+   "iso": "E.2.11 9.2.3 b 9.2.4.5 o 10.6 h",
+   "d": "Zone-specific agreements, significant discussions or relevant information, but not specifically listed in this Reference Model. Types of correspondence may include, but are not limited to: letters, memo, electronic communications and faxes. Correspondence referring to general topics and/or topics across multiple zones may be filed with this zone.",
+   "s": [
+    "Relevant Communications"
+   ]
+  },
+  {
+   "n": "01.05.02",
+   "u": "028",
+   "name": "Tracking Information",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "R",
+   "process": "Per content",
+   "dating": "Last Entry Date",
+   "site_milestone": "11",
+   "iso": "",
+   "d": "Zone-specific documents developed for the purpose of tracking activities during the course of the trial.",
+   "s": [
+    "Tracking Information"
+   ]
+  },
+  {
+   "n": "01.05.03",
+   "u": "029",
+   "name": "Other Meeting Material",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "Per content",
+   "dating": "Meeting Start Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "Agenda, presentation materials and other documentation generated during any other internal or external zone-related meeting which documents any agreements or significant discussions. Includes meeting minutes or Q&A, attendance sheets and any pre-meeting material.",
+   "s": [
+    "Other Meeting Agenda",
+    "Other Meeting Attendance Sheet",
+    "Other Meeting Minutes",
+    "Other Meeting Presentation Materials"
+   ]
+  },
+  {
+   "n": "01.05.04",
+   "u": "030",
+   "name": "Filenote",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "Per content",
+   "dating": "Filenote Date",
+   "site_milestone": "11",
+   "iso": "",
+   "d": "To document any decision or to clarify any information relating to this zone. Filenotes referencing general topics and/or topics across multiple zones may be filed within this zone.",
+   "s": [
+    "Filenote"
+   ]
+  },
+  {
+   "n": "02.01.01",
+   "u": "031",
+   "name": "Investigator's Brochure",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "2",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "E.1.1 E.2.1 6.5 7.5.1 Annex B 6.3",
+   "d": "To provide relevant and current clinical and non-clinical data on the investigational product(s) that is related to the study of the product(s) in human subjects. The Investigational Medicinal Product Brochure (IMPD) can additionally be filed here if held in the TMF.",
+   "s": [
+    "Investigator's Brochure",
+    "Investigator's Brochure Addendum",
+    "Investigator's Brochure Extension",
+    "Investigator's Brochure Review and Approval",
+    "Investigator's Brochure Summary of Changes",
+    "Investigational Medicinal Product Documentation"
+   ]
+  },
+  {
+   "n": "02.01.02",
+   "u": "032",
+   "name": "Protocol",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "2",
+   "dating": "Version Date",
+   "site_milestone": "01",
+   "iso": "E.1.2 4 5.6.2.a 5.6.4 6.3 6.4 7.1 7.5.1 10.6 b 10.6 f Annex A 7.1 7.8.2 Annex 1",
+   "d": "To describe the objective(s), design, methodology, statistical considerations and organization of a trial. Usually also gives the background and rationale for the trial, but these could also be provided in other protocol referenced documents. Includes Special Protocols.",
+   "s": [
+    "Protocol",
+    "Protocol Review and Approval",
+    "Clinical Investigation Plan (Devices)"
+   ]
+  },
+  {
+   "n": "02.01.03",
+   "u": "033",
+   "name": "Protocol Synopsis",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "M",
+   "process": "4",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "A summary of the pertinent points of the protocol. A local language version may be translated from core (English) or produced in the country if required by local Regulatory Authorities or IRB/IEC.",
+   "s": [
+    "Protocol Summary",
+    "Protocol Synopsis"
+   ]
+  },
+  {
+   "n": "02.01.04",
+   "u": "034",
+   "name": "Protocol Amendment",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "4",
+   "dating": "Version Date",
+   "site_milestone": "05",
+   "iso": "E2.2 7.51",
+   "d": "Subsequent versions of the original protocol as well as supporting documentation that may include description of change(s) to or formal clarification of a protocol. Includes justification for a non-substantial amendment, such as administrative changes.",
+   "s": [
+    "Protocol Amendment",
+    "Protocol Amendment Summary of Changes",
+    "Protocol Amendment Review and Approval",
+    "Protocol Amendment Synopsis",
+    "Protocol Amendment Administrative Changes",
+    "Justification For a Non-Substantial Amendment"
+   ]
+  },
+  {
+   "n": "02.01.05",
+   "u": "035",
+   "name": "Financial Disclosure Summary",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "7",
+   "dating": "Version Date",
+   "site_milestone": "10",
+   "iso": "",
+   "d": "Summary documentation of compliance with financial disclosure reporting requirements, per company and/or local government policies. May include summaries, lists, other reports.",
+   "s": [
+    "Financial Disclosure Summary"
+   ]
+  },
+  {
+   "n": "02.01.06",
+   "u": "036",
+   "name": "Insurance",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "16",
+   "dating": "Effective Date",
+   "site_milestone": null,
+   "iso": "E.1.25 5.3 5.6.2 j 9.2.2 e",
+   "d": "To document that compensation to subject(s) for trial-related injury will be available. May include policy and certificates, terms and conditions. Certificate is core, policy is recommended.",
+   "s": [
+    "Insurance Policy",
+    "Insurance Certificate"
+   ]
+  },
+  {
+   "n": "02.01.07",
+   "u": "037",
+   "name": "Sample Case Report Form",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "4",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "E.1.25 E.1.26 E.1.27 6.6 7.4.2 7.4.3 Annex C",
+   "d": "Blank forms / templates in paper form or e-Format to capture the data points of the protocol.",
+   "s": [
+    "Sample Case Report Form",
+    "CRF Summary of Changes",
+    "CRF Review and Approval"
+   ]
+  },
+  {
+   "n": "02.01.10",
+   "u": "239",
+   "name": "Report of Prior Investigations",
+   "cl": "Core",
+   "sponsor": false,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "2",
+   "dating": "Document Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "To include reports of all prior clinical, animal and laboratory testing of the device and shall be comprehensive and adequate to justify the proposed investigation. Can be in addition or instead of an Investigator Brochure for device trials.",
+   "s": [
+    "Report of Prior Investigations",
+    "RPI Addendum",
+    "RPI Summary of Changes",
+    "RPI Review and Approval"
+   ]
+  },
+  {
+   "n": "02.01.11",
+   "u": "254",
+   "name": "Marketed Product Material",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "2",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "Materials available in the legal pharmacologic description of a drug or device, subject to detailed regulatory specifications, including approved chemical and proprietary names, description and classification, clinical pharmacology, approved indications and usage, contraindications, warnings, precautions, adverse reactions, drug abuse and dependence information, over dosage discussion, dosage and administration, formulations and appropriate references.",
+   "s": [
+    "Package Insert",
+    "Summary of Product Characteristics"
+   ]
+  },
+  {
+   "n": "02.02.01",
+   "u": "038",
+   "name": "Subject Diary",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "4",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "Annex C.2.4.L",
+   "d": "To document subject data captured by the subject and external to the CRF (blank forms / templates).",
+   "s": [
+    "Subject Diary",
+    "Subject Diary Review and Approval",
+    "Subject Diary Summary of Changes"
+   ]
+  },
+  {
+   "n": "02.02.02",
+   "u": "039",
+   "name": "Subject Questionnaire",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "3",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "To capture specific subject related information through a series of questions (blank forms / templates).",
+   "s": [
+    "Subject Questionnaire",
+    "Subject Questionnaire Review and Approval",
+    "Subject Questionnaire Summary of Changes"
+   ]
+  },
+  {
+   "n": "02.02.03",
+   "u": "040",
+   "name": "Informed Consent Form",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "17",
+   "dating": "Version Date",
+   "site_milestone": "03",
+   "iso": "E.1.18 E.2.3 E.2.13 5.2 5.3 5.6.2 c 5.6.2.d 5.8.1 5.8.4 7.8.1 7.5.1 8.6 9.2.2.b 9.2.4.5.f 10.5 10.7.a 10.7.c 10.7.d 10.7.e",
+   "d": "To document that the appropriate written information (content and wording) has been given to subjects regarding the trial to support their ability to give fully informed consent and to document their consent to trial participation in writing. If applicable, must also include the child assent form (blank model / template). Please note that core template is trial level, the country template is country level and the site template is at the site level.",
+   "s": [
+    "Consent to Release Information or HIPAA / Privacy",
+    "Informed Consent Form",
+    "ICF Addendum",
+    "ICF QC Checklist",
+    "ICF Summary of Changes",
+    "ICF Review and Approval"
+   ]
+  },
+  {
+   "n": "02.02.04",
+   "u": "041",
+   "name": "Subject Information Sheet",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "4",
+   "dating": "Version Date",
+   "site_milestone": "03",
+   "iso": "E.1.18 5.6.2.c 5.6.2.d 5.8.4 7.8.1 9.2.2.b",
+   "d": "To document information provided to subjects to support their decision about whether or not to participate in the trial.",
+   "s": [
+    "Subject Information Sheet",
+    "Subject Information Sheet Addendum",
+    "Subject Information Sheet Summary of Changes",
+    "Subject Information Sheet Review and Approval"
+   ]
+  },
+  {
+   "n": "02.02.05",
+   "u": "042",
+   "name": "Subject Participation Card",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "4",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "To be provided to the subject to carry to document trial participation (blank template).",
+   "s": [
+    "Subject Participation Card",
+    "Subject Participation Card Summary of Changes",
+    "Subject Participation Card Review and Approval"
+   ]
+  },
+  {
+   "n": "02.02.06",
+   "u": "043",
+   "name": "Advertisements for Subject Recruitment",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "4",
+   "dating": "Version Date",
+   "site_milestone": "03",
+   "iso": "E.1.18 5.6.2.c 5.6.2.d 5.8.4 7.8.1 9.2.2.b",
+   "d": "Materials used in clinical trial recruitment campaigns; approved by the IRB/IEC to ensure recruitment measures are appropriate and not coercive.",
+   "s": [
+    "Advertisements for Subject Recruitment",
+    "Advertisements for Subject Recruitment Review and Approval"
+   ]
+  },
+  {
+   "n": "02.02.07",
+   "u": "044",
+   "name": "Other Information Given to Subjects",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "17",
+   "dating": "Version Date",
+   "site_milestone": "03",
+   "iso": "E.1.18 5.6.2.c 5.6.2.d 5.8.4 7.8.1 9.2.2.b",
+   "d": "Materials provided to the subject to further assist with understanding the trial requirements or concepts; may include memory aids or retention materials.",
+   "s": [
+    "Other Information Given to Subjects"
+   ]
+  },
+  {
+   "n": "02.03.01",
+   "u": "045",
+   "name": "Clinical Study Report",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "40",
+   "dating": "Report Date",
+   "site_milestone": null,
+   "iso": "E.3.8 8.4 9.2.6 Annex D",
+   "d": "To describe final or interim results and interpretation of trial of any therapeutic, prophylactic, or diagnostic agent conducted in human subjects, in which all Clinical Study Report components are included, such as the clinical and statistical description, analyses, data listings, CRFs and summaries.",
+   "s": [
+    "Clinical Investigation Report",
+    "Clinical Study Report",
+    "Clinical Study Report Synopsis",
+    "Integrated Clinical and Statistical Report",
+    "Interim Clinical Study Report",
+    "Interim Clinical Study Report Synopsis",
+    "Form FDA 3654 (devices)"
+   ]
+  },
+  {
+   "n": "02.03.02",
+   "u": "047",
+   "name": "Bioanalytical Report",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "R",
+   "process": "37",
+   "dating": "Report Date",
+   "site_milestone": null,
+   "iso": "8.6 9.2.2.b",
+   "d": "To present & summarize the relevant top line findings of the bioanalytical aspects of the interim or final analysis and may include PK analysis or reports.",
+   "s": [
+    "Bioanalytical Report",
+    "Pharmacokinetic Report"
+   ]
+  },
+  {
+   "n": "02.04.01",
+   "u": "048",
+   "name": "Relevant Communications",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "Per content",
+   "dating": "Correspondence Date",
+   "site_milestone": "11",
+   "iso": "E 2.11 9.2.3.c 9.2.4.5.o 10.6.h",
+   "d": "Zone-specific agreements, significant discussions or relevant information, but not specifically listed in this Reference Model. Types of correspondence may include, but not limited to: letters, memo, electronic communications and faxes.",
+   "s": [
+    "Relevant Communications"
+   ]
+  },
+  {
+   "n": "02.04.02",
+   "u": "049",
+   "name": "Tracking Information",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "R",
+   "process": "Per content",
+   "dating": "Last Entry Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "Zone-specific documents developed for the purpose of tracking activities during the course of the trial.",
+   "s": [
+    "Tracking Information"
+   ]
+  },
+  {
+   "n": "02.04.03",
+   "u": "050",
+   "name": "Meeting Material",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "21",
+   "dating": "Meeting Start Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "Agenda, presentation materials and other documentation generated during an internal or external zone-related meeting which documents any agreements or significant discussions. Includes meeting minutes or Q&A, attendance sheets and any pre-meeting material.",
+   "s": [
+    "Agenda",
+    "Attendance Sheet",
+    "Minutes",
+    "Presentation Materials"
+   ]
+  },
+  {
+   "n": "02.04.04",
+   "u": "051",
+   "name": "Filenote",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "Per content",
+   "dating": "Filenote Date",
+   "site_milestone": "11",
+   "iso": "",
+   "d": "To document any decision or to clarify any information relating to this zone.",
+   "s": [
+    "Filenote"
+   ]
+  },
+  {
+   "n": "03.01.01",
+   "u": "052",
+   "name": "Regulatory Submission",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "R",
+   "process": "13",
+   "dating": "Submission Date",
+   "site_milestone": null,
+   "iso": "E 2.11 8.2.2 9.2.2 g, 9.2.2.I 9.4 a,b",
+   "d": "A set of documents, along with required associated regulatory forms and correspondence, submitted to one or more regulatory agencies requesting approval to conduct the trial or for the purpose of notification, or requesting approval of changes to the trial documents or of any trial events that could adversely affect the safety of subjects, impact the conduct of the trial or alter the regulatory authority's approval/favorable opinion to continue the trial. Example Investigational New Drug Application (IND), Clinical Trial Application (CTA), Investigational Device Exemption (IDE). The submitted documents such as Investigator Brochure, Informed Consent Forms, etc. may or may not be filed as a complete Dossier within this Artifact, this is dependent on SOPs within your Organization.",
+   "s": [
+    "Cover Letter",
+    "List of Content Submitted",
+    "Receipt of Acknowledgement",
+    "Regulatory Submission",
+    "Review and Approval of Regulatory Submission"
+   ]
+  },
+  {
+   "n": "03.01.02",
+   "u": "053",
+   "name": "Regulatory Authority Decision",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "14",
+   "dating": "Approval Date",
+   "site_milestone": null,
+   "iso": "E.1.11 E.2.5 7.1 9.2.2G 9.2.2.H",
+   "d": "A documented notification received from a regulatory authority stating that the Submission has been received and approved.",
+   "s": [
+    "Condition Approval",
+    "List of Content Approved",
+    "Regulatory Authority Decision"
+   ]
+  },
+  {
+   "n": "03.01.03",
+   "u": "054",
+   "name": "Notification of Regulatory Identification Number",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "14",
+   "dating": "Notification Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "Document identifying unique Identification (ID) number used to uniquely identify the trial or the trial level in that region, assigned by a regulatory agency - e.g. EU = EudraCT Number, FDA = IND Number, US Device = IDE Number.",
+   "s": [
+    "Notification of Regulatory Identification Number"
+   ]
+  },
+  {
+   "n": "03.01.04",
+   "u": "055",
+   "name": "Public Registration",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "11",
+   "dating": "Registration Date",
+   "site_milestone": null,
+   "iso": "Annex G 6 h 5.4 9.2.2j Annex J F.2",
+   "d": "Documentation related to registration of clinical trials in public registries such as ClinicalTrials.gov and to submission of results periodically during the study and at study completion.",
+   "s": [
+    "Public Registration",
+    "Receipt of Acknowledgement"
+   ]
+  },
+  {
+   "n": "03.02.01",
+   "u": "056",
+   "name": "Import or Export License Application",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "13",
+   "dating": "Application Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "An application made to one or more regulatory agencies requesting a license to import or export the investigational product and clinical supplies.",
+   "s": [
+    "Import License Application",
+    "Export License Application"
+   ]
+  },
+  {
+   "n": "03.02.02",
+   "u": "057",
+   "name": "Import or Export Documentation",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "6",
+   "dating": "Effective Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "A document issued by a national government authorizing the importation or exportation of certain goods into its territory.",
+   "s": [
+    "Import License",
+    "Export License",
+    "Device Material Transfer Agreement",
+    "Device Material Transfer Application",
+    "Device Material Transfer Justification"
+   ]
+  },
+  {
+   "n": "03.03.01",
+   "u": "058",
+   "name": "Notification of Safety or Trial Information",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "M",
+   "process": "28",
+   "dating": "Notification Date",
+   "site_milestone": null,
+   "iso": "E.2.19 7.4 9.2.5.L 9.2.4.5.d 9.4 10.8 7.4.2",
+   "d": "Notification to Regulatory Authorities of any trial events that could alter the regulatory authority's approval/favorable opinion to continue the trial. Notifications may include, but are not limited to: Quarterly line listings, suspected unexpected serious adverse reactions (SUSARs), Unexpected Serious Adverse Device Events (USADE), Council for International Organizations of Medical Sciences (CIOMS), MedWatch, Analysis of Similar Events, Serious Breaches, cover letters and/or country-specific reporting forms.",
+   "s": [
+    "Evidence of Distribution of Safety Information",
+    "Evidence of Distribution of Trial Information",
+    "Notification of Safety Information",
+    "Notification of Trial Information"
+   ]
+  },
+  {
+   "n": "03.03.02",
+   "u": "059",
+   "name": "Regulatory Progress Report",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "M",
+   "process": "39",
+   "dating": "Submission Date",
+   "site_milestone": null,
+   "iso": "9.2.3 h 9.2.6 d 9.4 c",
+   "d": "Reports concerning trial conduct, progress and status that are required to be periodically submitted to relevant regulatory authorities. This artifact is not intended to include safety reports required by regulatory authorities (these are covered under artifact 03.03.01).",
+   "s": [
+    "Regulatory Progress Report"
+   ]
+  },
+  {
+   "n": "03.03.03",
+   "u": "060",
+   "name": "Regulatory Notification of Trial Termination",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "M",
+   "process": "32",
+   "dating": "Notification Date",
+   "site_milestone": null,
+   "iso": "E.3.7 8.3. 9.2.6.",
+   "d": "Document detailing the termination of a trial - whether upon completion or premature termination.",
+   "s": [
+    "Regulatory Notification of Trial Termination"
+   ]
+  },
+  {
+   "n": "03.04.01",
+   "u": "061",
+   "name": "Relevant Communications",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "Per content",
+   "dating": "Correspondence Date",
+   "site_milestone": null,
+   "iso": "E 2.11 9.2.3 b 9.2.4.5.o 9.4 10.6.",
+   "d": "Zone-specific agreements, significant discussions or relevant information, but not specifically listed in this Reference Model. Types of correspondence may include, but not limited to: letters, memo, electronic communications and faxes.",
+   "s": [
+    "Relevant Communications"
+   ]
+  },
+  {
+   "n": "03.04.02",
+   "u": "062",
+   "name": "Tracking Information",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "Per content",
+   "dating": "Last Entry Date",
+   "site_milestone": "11",
+   "iso": "",
+   "d": "Zone-specific documents developed for the purpose of tracking activities during the course of the trial.",
+   "s": [
+    "Tracking Information"
+   ]
+  },
+  {
+   "n": "03.04.03",
+   "u": "063",
+   "name": "Meeting Material",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "14",
+   "dating": "Meeting Start Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "Agenda, presentation materials and other documentation generated during an internal or external zone-related meeting which documents any agreements or significant discussions. Includes meeting minutes or Q&A, attendance sheets and any pre-meeting material.",
+   "s": [
+    "Agenda",
+    "Attendance Sheet",
+    "Minutes",
+    "Presentation Materials"
+   ]
+  },
+  {
+   "n": "03.04.04",
+   "u": "064",
+   "name": "Filenote",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "13",
+   "dating": "Filenote Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "To document any decision or to clarify any information relating to this zone.",
+   "s": [
+    "Filenote"
+   ]
+  },
+  {
+   "n": "04.01.01",
+   "u": "065",
+   "name": "IRB or IEC Submission",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "13",
+   "dating": "Submission Date",
+   "site_milestone": "03",
+   "iso": "E.1.9 5.6.3 7.1 9.2.2.h 10.4.C",
+   "d": "Documents describing the trial or changes/updates to the trial submitted to an IRB/IEC for approval, including recruitment and education materials and responses to questions from IRB/IEC to support a submission. Intended to include a list of attachments or table of contents of submission dossier/package. The submitted study documents such as Investigator Brochure, Informed Consent Forms, etc. may or may not be filed as a complete Dossier within this Artifact.",
+   "s": [
+    "Acknowledgement of Submission Receipt",
+    "IRB or IEC Submission",
+    "Request for Additional Information",
+    "Responses"
+   ]
+  },
+  {
+   "n": "04.01.02",
+   "u": "066",
+   "name": "IRB or IEC Decision",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "13",
+   "dating": "Approval Date",
+   "site_milestone": "03",
+   "iso": "E.1.9 E 1.11 E.2.4 5.6.3 5.6.4.e 5.6.4.a 7.1 7.5.1. 9.2.2 h 9.2.3 b 9.2.4.5.o 10.4 c 9.2.4.5 o",
+   "d": "Documentation received from IRB/IEC in response to submission indicating decision of the trial and any specifications or modifications. Records referenced by the approval (such as a Protocol that has been approved) should be filed elsewhere in the TMF, as appropriate, as long as there is identification of the approved record within the IRB/IEC letter.",
+   "s": [
+    "IRB or IEC Approval",
+    "IRB or IEC Conditional Approval",
+    "IRB or IEC Decision",
+    "IRB or IEC Rejection"
+   ]
+  },
+  {
+   "n": "04.01.03",
+   "u": "067",
+   "name": "IRB or IEC Composition",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "13",
+   "dating": "Effective Date",
+   "site_milestone": "03",
+   "iso": "E.1.10 5.6.3",
+   "d": "Documentation that the IRB/IEC consists of a reasonable number of members who collectively have the qualifications and experience to review and evaluate the science, medical aspects and ethics of the proposed trial.",
+   "s": [
+    "IRB or IEC Composition"
+   ]
+  },
+  {
+   "n": "04.01.04",
+   "u": "068",
+   "name": "IRB or IEC Documentation of Non-Voting Status",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "13",
+   "dating": "Document Date",
+   "site_milestone": "03",
+   "iso": "E.1.10 5.6.3",
+   "d": "Documentation verifying non-voting members of the IRB/IEC if the investigator or sub-investigator is on the IRB/IEC.",
+   "s": [
+    "IRB or IEC Documentation of Non-Voting Status"
+   ]
+  },
+  {
+   "n": "04.01.05",
+   "u": "069",
+   "name": "IRB or IEC Compliance Documentation",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "15",
+   "dating": "Document Date",
+   "site_milestone": "03",
+   "iso": "",
+   "d": "Documentation that the IRB/IEC is performing its function according to written operating procedures and is in compliance with GCP and applicable regulatory requirements.",
+   "s": [
+    "IRB or IEC Compliance Documentation"
+   ]
+  },
+  {
+   "n": "04.02.01",
+   "u": "070",
+   "name": "Other Submissions",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "R",
+   "process": "15",
+   "dating": "Submission Date",
+   "site_milestone": "03",
+   "iso": "",
+   "d": "A set of documents describing the trial or changes/updates to the trial submitted to a committee other than the IRB/IEC for approval. To include: Submissions and Correspondence. The submitted study documents such as Investigator Brochure, Informed Consent Forms, etc. may or may not be filed as a complete dossier within this artifact.",
+   "s": [
+    "Other Approval Committee Submissions"
+   ]
+  },
+  {
+   "n": "04.02.02",
+   "u": "071",
+   "name": "Other Approvals",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "15",
+   "dating": "Approval Date",
+   "site_milestone": "03",
+   "iso": "10.4 e",
+   "d": "Approval documentation received from a committee other than the IRB/IEC in response to submission indicating approval/acknowledgement of trial specifications or modifications. To include: Submissions and Correspondence.",
+   "s": [
+    "Other Approval Committee Decisions"
+   ]
+  },
+  {
+   "n": "04.03.01",
+   "u": "072",
+   "name": "Notification to IRB or IEC of Safety Information",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "28",
+   "dating": "Notification Date",
+   "site_milestone": "05",
+   "iso": "E.2.20 5.6.4 9.2.5c 10.4 d 10.8 c 7.4.2",
+   "d": "To assure the IRB/IEC are promptly notified of all findings (new, important information on serious adverse events and or safety concerns) that could adversely affect the safety of subjects, impact the conduct of the trial or alter the IRB/IEC's approval/favorable opinion to continue the trial. Notifications/Communication may include but are not limited to - periodic safety line listings, USADEs, SUSARs, CIOMS, MedWatch, Analysis of Similar Events, cover letters and/or IRB/IEC-specific reporting forms. The records referenced in these notifications may be filed as appropriate in Zone 07. May include IRB/IEC Acknowledgement of Receipt.",
+   "s": [
+    "Acknowledgement of Receipt of Safety Information",
+    "Evidence of Distribution of Safety Information",
+    "Notification to IRB or IEC of Safety Information"
+   ]
+  },
+  {
+   "n": "04.03.02",
+   "u": "073",
+   "name": "IRB or IEC Progress Report",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "39",
+   "dating": "Submission Date",
+   "site_milestone": "06",
+   "iso": "E.2.22 5.6.4 9.2.3 h 9.2.4.5.O 10.4 10.8",
+   "d": "Regular reports concerning trial conduct, other than safety reports, issued to the IRB/IEC by the sponsor/3rd Party and/or investigator.",
+   "s": [
+    "Evidence of Distribution of Progress Report",
+    "IRB or IEC Progress Report"
+   ]
+  },
+  {
+   "n": "04.03.03",
+   "u": "074",
+   "name": "IRB or IEC Notification of Trial Termination",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "32",
+   "dating": "Submission Date",
+   "site_milestone": "09",
+   "iso": "E.3.6 5.6.4 8.3 b 9.2.6 d 10.4 f",
+   "d": "Document detailing the termination of a trial - whether upon completion or premature termination.",
+   "s": [
+    "IRB or IEC Notification of Site Closure",
+    "IRB or IEC Notification of Trial Termination"
+   ]
+  },
+  {
+   "n": "04.04.01",
+   "u": "075",
+   "name": "Relevant Communications",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "Per content",
+   "dating": "Correspondence Date",
+   "site_milestone": "11",
+   "iso": "E.2.11 9.2.3 b 10.4 a",
+   "d": "Zone-specific agreements, significant discussions or relevant information, but not specifically listed in this Reference Model. Types of correspondence may include, but not limited to: letters, memo, electronic communications and faxes.",
+   "s": [
+    "Relevant Communications"
+   ]
+  },
+  {
+   "n": "04.04.02",
+   "u": "076",
+   "name": "Tracking Information",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "R",
+   "process": "21",
+   "dating": "Last Entry Date",
+   "site_milestone": "11",
+   "iso": "",
+   "d": "Zone-specific documents developed for the purpose of tracking activities during the course of the trial.",
+   "s": [
+    "Tracking Information"
+   ]
+  },
+  {
+   "n": "04.04.03",
+   "u": "077",
+   "name": "Meeting Material",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "13",
+   "dating": "Meeting Start Date",
+   "site_milestone": "11",
+   "iso": "",
+   "d": "Agenda, presentation materials and other documentation generated during an internal or external zone-related meeting which documents any agreements or significant discussions. Includes meeting minutes or Q&A, attendance sheets and any pre-meeting material.",
+   "s": [
+    "Agenda",
+    "Attendance Sheet",
+    "Minutes",
+    "Presentation Materials"
+   ]
+  },
+  {
+   "n": "04.04.04",
+   "u": "078",
+   "name": "Filenote",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "Per content",
+   "dating": "Filenote Date",
+   "site_milestone": "11",
+   "iso": "",
+   "d": "To document any decision or to clarify any information relating to this zone.",
+   "s": [
+    "Filenote"
+   ]
+  },
+  {
+   "n": "05.01.01",
+   "u": "079",
+   "name": "Site Contact Details",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "R",
+   "process": "7",
+   "dating": "Document Date",
+   "site_milestone": "03",
+   "iso": "E.1.8 A.1.4",
+   "d": "To document contact information for primary points of contact at the site (e.g. Principal Investigator, Institution Name, Trial Coordinator, Contracts Person, etc.).",
+   "s": [
+    "Site Contact Details"
+   ]
+  },
+  {
+   "n": "05.01.02",
+   "u": "080",
+   "name": "Confidentiality Agreement",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "7",
+   "dating": "Signature Date",
+   "site_milestone": "03",
+   "iso": "6.9",
+   "d": "A document between the sponsor and an outside party (Investigator or Institution) that defines the terms and basic criteria to assure that the party (or parties) receiving confidential information will maintain confidentiality and will not use that information for any purpose other than that described in the Agreement. May also be present in the Clinical Trial Agreement.",
+   "s": [
+    "Confidentiality Agreement"
+   ]
+  },
+  {
+   "n": "05.01.03",
+   "u": "081",
+   "name": "Feasibility Documentation",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "5",
+   "dating": "Document Date",
+   "site_milestone": "03",
+   "iso": "6.8 9.2.1 9.2.4",
+   "d": "To document site feasibility for the given protocol.",
+   "s": [
+    "Feasibility Documentation",
+    "Feasibility Questionnaire",
+    "Site Selection Documentation",
+    "Technical Capabilities Questionnaire"
+   ]
+  },
+  {
+   "n": "05.01.04",
+   "u": "082",
+   "name": "Pre Trial Monitoring Report",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "16",
+   "dating": "Visit Start Date",
+   "site_milestone": "03",
+   "iso": "E.1.21 6.8 9.2.1 b, 9.2.1 e 9.2.4.3 9.2.4.7 10.3.a 10.6 m 10.6 n",
+   "d": "To document onsite visit to determine qualification of site to participate in the trial. For example may include the following documentation: EDC qualification, Confirmation Letters / Emails, site profile form.",
+   "s": [
+    "Pre Trial Monitoring Report",
+    "Pre Trial Visit Confirmation Letter",
+    "Pre Trial Visit Follow Up Letter",
+    "Pre Trial Visit Waiver",
+    "Site Selection Letter"
+   ]
+  },
+  {
+   "n": "05.01.05",
+   "u": "083",
+   "name": "Sites Evaluated but not Selected",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "7",
+   "dating": "Document Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "Documentation related to sites evaluated but not selected for the trial.",
+   "s": [
+    "Sites Evaluated but not Selected"
+   ]
+  },
+  {
+   "n": "05.02.01",
+   "u": "084",
+   "name": "Acceptance of Investigator Brochure",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "R",
+   "process": "16",
+   "dating": "Signature Date",
+   "site_milestone": "03",
+   "iso": "",
+   "d": "To document that relevant and current scientific information about the investigational product has been provided to the investigator.",
+   "s": [
+    "Acceptance of Investigator Brochure",
+    "Evidence of Investigator Brochure Distribution",
+    "Evidence of Reference Safety Information Distribution"
+   ]
+  },
+  {
+   "n": "05.02.02",
+   "u": "085",
+   "name": "Protocol Signature Page",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "16",
+   "dating": "Signature Date",
+   "site_milestone": "03",
+   "iso": "7.5.1 10.6 a Annex A",
+   "d": "To document investigator and sponsor agreement to the protocol.",
+   "s": [
+    "Protocol Signature Page"
+   ]
+  },
+  {
+   "n": "05.02.03",
+   "u": "086",
+   "name": "Protocol Amendment Signature Page",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "16",
+   "dating": "Signature Date",
+   "site_milestone": "05",
+   "iso": "7.5.1 10.6.a Annex A",
+   "d": "To document investigator and sponsor agreement to the protocol amendment.",
+   "s": [
+    "Protocol Amendment Signature Page"
+   ]
+  },
+  {
+   "n": "05.02.04",
+   "u": "087",
+   "name": "Principal Investigator Curriculum Vitae",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "16",
+   "dating": "Signature Date",
+   "site_milestone": "03",
+   "iso": "E.1.4 E.2.6 5.6.2.e 9.2.1 10.2.a 10.2.b D.13.c",
+   "d": "To document qualifications and eligibility of the Principal Investigator to conduct trial and/or provide medical supervision of subjects. To include updates, one-page CVs and biographical sketches.",
+   "s": [
+    "Principal Investigator Affiliation Form",
+    "Principal Investigator Biographical Sketch",
+    "Principal Investigator Curriculum Vitae"
+   ]
+  },
+  {
+   "n": "05.02.05",
+   "u": "088",
+   "name": "Sub-Investigator Curriculum Vitae",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "16",
+   "dating": "Signature Date",
+   "site_milestone": "03",
+   "iso": "E.1.5 E.2.7 6.1 10.2.a",
+   "d": "To document qualifications and eligibility of any sub-Investigators to conduct trial and/or provide medical supervision of subjects. Sub-Investigators include any individual member of the clinical trial team designated and supervised by the investigator at a trial site to perform critical study trial-related procedures and/or to make important trial-related decisions (e.g., associates, residents, research fellows). To include updates, one-page CVs and biographical sketches.",
+   "s": [
+    "Sub-Investigator Affiliation Form",
+    "Sub-Investigator Biographical Sketch",
+    "Sub-Investigator Curriculum Vitae"
+   ]
+  },
+  {
+   "n": "05.02.06",
+   "u": "089",
+   "name": "Other Curriculum Vitae",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "16",
+   "dating": "Signature Date",
+   "site_milestone": "03",
+   "iso": "E.1.6 E.2.7 6.1 9.2.1 9.2.4.3 10.2.a",
+   "d": "To document qualifications and eligibility of site personnel other than the Principal Investigator or Sub-Investigators to conduct trial and/or provide medical supervision of subjects.",
+   "s": [
+    "Other Affiliation Form",
+    "Other Biographical Sketch",
+    "Other Curriculum Vitae"
+   ]
+  },
+  {
+   "n": "05.02.07",
+   "u": "090",
+   "name": "Site Staff Qualification Supporting Information",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "R",
+   "process": "16",
+   "dating": "Effective Date",
+   "site_milestone": "03",
+   "iso": "9.2.1 g 6.8",
+   "d": "To document site staff qualifications not previously outlined on CVs. May include list of studies, publications, training certificates for specific examinations, ICH-GCP training, site GCP or trial licensure, medical licenses, Human Subjects Protection Training, etc.",
+   "s": [
+    "DEA License",
+    "Evidence of Registration",
+    "ICH-GCP Evidence of Training",
+    "IATA Certification",
+    "Medical License",
+    "Medical Qualification",
+    "Professional License",
+    "Site Staff Qualification Supporting Information"
+   ]
+  },
+  {
+   "n": "05.02.08",
+   "u": "091",
+   "name": "Form FDA 1572",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "16",
+   "dating": "Signature Date",
+   "site_milestone": "03",
+   "iso": "E.1.12 10.3 b",
+   "d": "For IND trial, 1572 must be completed globally for FDA submission.",
+   "s": [
+    "Form FDA 1572"
+   ]
+  },
+  {
+   "n": "05.02.09",
+   "u": "092",
+   "name": "Investigator Regulatory Agreement",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "16",
+   "dating": "Signature Date",
+   "site_milestone": "03",
+   "iso": "E.1.12 6.9 9.2.1.a",
+   "d": "A regulatory statement from the investigator required by certain health authorities e.g. includes but is not limited to 'Qualified Investigator Undertaking' form and 'Clinical Trial Site Information' form required by Health Canada.",
+   "s": [
+    "Clinical Trial Site Information Form",
+    "Investigator Regulatory Agreement",
+    "Qualified Investigator Undertaking Form"
+   ]
+  },
+  {
+   "n": "05.02.10",
+   "u": "093",
+   "name": "Financial Disclosure Form",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "16",
+   "dating": "Signature Date",
+   "site_milestone": "03",
+   "iso": "E.1.14 E.1.33 E.2.30 9.2.1 D 9.2.2 F 10.2 c",
+   "d": "To document financial disclosures, certification documentation and conflicts of interest, which include but are not limited to: completed disclosure forms of financial interests and arrangements of clinical investigators.",
+   "s": [
+    "Financial Disclosure Form"
+   ]
+  },
+  {
+   "n": "05.02.11",
+   "u": "094",
+   "name": "Data Privacy Agreement",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "R",
+   "process": "16",
+   "dating": "Signature Date",
+   "site_milestone": "03",
+   "iso": "",
+   "d": "To document agreement between sponsor and Site Staff (e.g., national or regional data privacy requirements); often contained in Clinical Trial Agreement.",
+   "s": [
+    "Data Privacy Agreement"
+   ]
+  },
+  {
+   "n": "05.02.12",
+   "u": "095",
+   "name": "Clinical Trial Agreement",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "16",
+   "dating": "Signature Date",
+   "site_milestone": "03",
+   "iso": "E.1.12 E.1.14 6.9 9.2.1a 9.2.2.F 10.3 a",
+   "d": "To document agreement of trial requirements between sponsor or 3rd Party and site/ PI. Includes indemnity unless separate document created.",
+   "s": [
+    "Clinical Trial Agreement",
+    "Clinical Trial Agreement with Investigator",
+    "Clinical Trial Agreement with Investigator and Site",
+    "Clinical Trial Agreement with Site",
+    "Termination Agreement"
+   ]
+  },
+  {
+   "n": "05.02.13",
+   "u": "096",
+   "name": "Indemnity",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "16",
+   "dating": "Effective Date",
+   "site_milestone": "03",
+   "iso": "E 1.15 5.6.2 j 9.2.2 e",
+   "d": "To provide legal protection \"as required by country regulations\" in the event of an unforeseen adverse circumstance arising during the course of a clinical trial. May be in Clinical Trial Agreement.",
+   "s": [
+    "Indemnity"
+   ]
+  },
+  {
+   "n": "05.02.14",
+   "u": "097",
+   "name": "Other Financial Agreement",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "6",
+   "dating": "Signature Date",
+   "site_milestone": "03",
+   "iso": "E.1.34 6.9 10.1",
+   "d": "To document agreement of trial requirements between other parties involved in the conduct of the trial. Includes indemnity unless separate document created.",
+   "s": [
+    "Laboratory Agreement",
+    "Other Financial Agreement",
+    "Pharmacy Agreement"
+   ]
+  },
+  {
+   "n": "05.02.17",
+   "u": "100",
+   "name": "IP Site Release Documentation",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "16",
+   "dating": "Signature Date",
+   "site_milestone": "03",
+   "iso": "",
+   "d": "To document approval for sites to receive drug supply / investigational product.",
+   "s": [
+    "IP Site Release Checklist",
+    "IP Site Release Documentation",
+    "IP Site Release Notification"
+   ]
+  },
+  {
+   "n": "05.02.18",
+   "u": "101",
+   "name": "Site Signature Sheet",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "16",
+   "dating": "Signature Date",
+   "site_milestone": "03",
+   "iso": "E.1.7 E.2.12 7.2 9.2.1 e 9.2.2.d 9.2.4.4 b 9.2.4.5.b",
+   "d": "To document delegation by the Principal Investigator of trial specific tasks to site personnel conducting the trial.",
+   "s": [
+    "Delegation of Authority Log",
+    "Site Signature Sheet"
+   ]
+  },
+  {
+   "n": "05.02.19",
+   "u": "240",
+   "name": "Investigators Agreement (Device)",
+   "cl": "Core",
+   "sponsor": false,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "16",
+   "dating": "Signature Date",
+   "site_milestone": "03",
+   "iso": "E1.12 6.9 9.2.1 a",
+   "d": "Non-financial agreement between the sponsor and the investigator documenting the various responsibilities, as outlined in CFR Title 21 part 812 as well as ICH-E6 (if applicable), in which the investigator will comply.",
+   "s": [
+    "Investigators Agreement (Device)"
+   ]
+  },
+  {
+   "n": "05.02.20",
+   "u": "255",
+   "name": "Coordinating Investigator Documentation",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "R",
+   "process": "10",
+   "dating": "Document Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "Documentation to show the approval of a coordinating investigator for a specific region or group of investigators that is not already captured as another artifact for that investigator. Documentation related to a Country's National Coordinator when they are not participating as an Investigator in the trial.",
+   "s": [
+    "Coordinating Investigator Clinical Trial Agreement",
+    "Coordinating Investigator Confidentiality Agreement",
+    "Coordinating Investigator Curriculum Vitae",
+    "Coordinating Investigator Documentation",
+    "Coordinating Investigator Financial Disclosure Form",
+    "Coordinating Investigator GCP Training",
+    "Coordinating Investigator Indemnity",
+    "Coordinating Investigator Medical License",
+    "Coordinating Investigator Personal Data Consent"
+   ]
+  },
+  {
+   "n": "05.03.01",
+   "u": "102",
+   "name": "Trial Initiation Monitoring Report",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "19",
+   "dating": "Visit Start Date",
+   "site_milestone": "03",
+   "iso": "E.1.22 E.1.24 7.2 9.2.4.4 9.2.4.7",
+   "d": "To document that trial procedures were reviewed with the investigator and the trial personnel and confirm the site meets requirements to begin trial participation. Trial initiation can be conducted via an Investigator Meeting, visit at the site and/or other contact. May include confirmation letters/emails.",
+   "s": [
+    "Trial Initiation Monitoring Report",
+    "Trial Initiation Visit Confirmation Letter",
+    "Trial Initiation Visit Follow Up Letter",
+    "Trial Initiation Visit Waiver"
+   ]
+  },
+  {
+   "n": "05.03.02",
+   "u": "103",
+   "name": "Site Training Material",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "16",
+   "dating": "Version Date",
+   "site_milestone": "03",
+   "iso": "10.2 b",
+   "d": "Training materials used to train the sites. Materials may be related to, but not limited to, Electronic Data Capture (EDC), Interactive Response Technology (IRT), Rater training. (Also includes training done after site initiation.)",
+   "s": [
+    "Site Training Material",
+    "Quick Reference Guide",
+    "Device Maintenance Documents",
+    "Device Training Protocol"
+   ]
+  },
+  {
+   "n": "05.03.03",
+   "u": "104",
+   "name": "Site Evidence of Training",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "16",
+   "dating": "Training Date",
+   "site_milestone": "03",
+   "iso": "E.1.29 9.2.1 h",
+   "d": "To document completion of site training by relevant site personnel. Documentation includes attendance and certification for training delivered which may include Electronic Data Capture (EDC), Interactive Response Technology (IRT), Rater training, etc.",
+   "s": [
+    "Site Evidence of Training",
+    "Site Training Attendance Sheet",
+    "Site Training Certificate"
+   ]
+  },
+  {
+   "n": "05.04.01",
+   "u": "105",
+   "name": "Subject Log",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "17",
+   "dating": "Signature Date",
+   "site_milestone": "11",
+   "iso": "E.2.23 7.5.2 7.10",
+   "d": "To anonymously list all subjects including screened, screen failures and enrolled for the sponsor.",
+   "s": [
+    "Subject Consenting Tracker",
+    "Subject Enrollment Log",
+    "Subject Log",
+    "Subject Screening Log",
+    "Subject Visit Log"
+   ]
+  },
+  {
+   "n": "05.04.02",
+   "u": "106",
+   "name": "Source Data Verification",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "20",
+   "dating": "Signature Date",
+   "site_milestone": "11",
+   "iso": "E.1.23 E.2.15 7.5.3 9.2.4.5.g 10.6 c",
+   "d": "To document source data and associated verification activity.",
+   "s": [
+    "Source Data Specification and Agreement",
+    "Source Data Verification",
+    "Device Extracts",
+    "Source Document Maps"
+   ]
+  },
+  {
+   "n": "05.04.03",
+   "u": "107",
+   "name": "Monitoring Visit Report",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "19",
+   "dating": "Visit Start Date",
+   "site_milestone": "04",
+   "iso": "E.2.10 9.2.3 c 9.2.3 e 9.2.4.7",
+   "d": "To document site visits, monitoring trial conduct and compliance of the site, may include confirmation letters/emails.",
+   "s": [
+    "Monitoring Visit Confirmation Letter",
+    "Monitoring Visit Follow Up Letter",
+    "Monitoring Visit Report",
+    "Monitoring Visit Waiver"
+   ]
+  },
+  {
+   "n": "05.04.04",
+   "u": "108",
+   "name": "Visit Log",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "19",
+   "dating": "Last Visit Date",
+   "site_milestone": "09",
+   "iso": "",
+   "d": "To document monitoring visit dates and attendees.",
+   "s": [
+    "Site Visit Log"
+   ]
+  },
+  {
+   "n": "05.04.05",
+   "u": "109",
+   "name": "Additional Monitoring Activity",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "19",
+   "dating": "Document Date",
+   "site_milestone": "11",
+   "iso": "",
+   "d": "To document additional sponsor and/or study-specific monitoring activities.",
+   "s": [
+    "Additional Monitoring Activity",
+    "Non-Routine Visit Report",
+    "Non-Routine Visit Report Confirmation Letter",
+    "Non-Routine Visit Report Follow Up Letter",
+    "Oversight Monitoring Visit Report",
+    "Oversight Monitoring Visit Report Confirmation Letter",
+    "Oversight Monitoring Visit Report Follow Up Letter",
+    "Site Improvement Plan",
+    "Co-Monitoring Visit Report"
+   ]
+  },
+  {
+   "n": "05.04.06",
+   "u": "110",
+   "name": "Protocol Deviations",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "19",
+   "dating": "Signature Date",
+   "site_milestone": "11",
+   "iso": "10.4 e 10.6 g 10.6 o",
+   "d": "To document non-compliance/ deviations to the protocol. This may also be a consolidated list for a country filed at the country level or a consolidated list for the study filed at the study level.",
+   "s": [
+    "Protocol Deviations",
+    "Protocol Deviation Logs",
+    "Protocol Deviation Report"
+   ]
+  },
+  {
+   "n": "05.04.07",
+   "u": "111",
+   "name": "Financial Documentation",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "R",
+   "process": "24",
+   "dating": "Document Date",
+   "site_milestone": "03",
+   "iso": "",
+   "d": "Includes all invoices, receipts, payment summaries relating to the trial.",
+   "s": [
+    "Financial Documentation",
+    "Financial Summary Tracker",
+    "Invoices",
+    "Payments",
+    "Receipts"
+   ]
+  },
+  {
+   "n": "05.04.08",
+   "u": "112",
+   "name": "Final Trial Close Out Monitoring Report",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "34",
+   "dating": "Visit Start Date",
+   "site_milestone": "09",
+   "iso": "E.3.5 9.2.4.6 9.2.4.7",
+   "d": "To document trial activities are completed for site closure prior to trial completion. May include confirmation letters/emails.",
+   "s": [
+    "Close Out Visit Confirmation Letter",
+    "Close Out Visit Follow-Up Letter",
+    "Close Out Visit Waiver",
+    "Final Trial Close Out Monitoring Report"
+   ]
+  },
+  {
+   "n": "05.04.09",
+   "u": "113",
+   "name": "Notification to Investigators of Safety Information",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "28",
+   "dating": "Notification Date",
+   "site_milestone": "05",
+   "iso": "E.2.21 9.2.5",
+   "d": "To assure investigators are promptly notified of all findings (new, important information on serious adverse events and or safety concerns) that could adversely affect the safety of subjects, impact the conduct of the trial or alter their IRB/IEC's approval/favorable opinion to continue the trial. Notifications may include but are not limited to Safety line listings, SUSARs, CIOMS, MedWatch, Analysis of Similar Events, cover letters and/or country-specific reporting forms.",
+   "s": [
+    "Evidence of Safety Information Distribution",
+    "Notification to Investigators of Safety Information"
+   ]
+  },
+  {
+   "n": "05.04.10",
+   "u": "234",
+   "name": "Subject Identification Log",
+   "cl": "Core",
+   "sponsor": false,
+   "investigator": true,
+   "device_sponsor": false,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "17",
+   "dating": "Signature Date",
+   "site_milestone": "11",
+   "iso": "E.2.24 E.3.3 7.5.2",
+   "d": "To fully identify all subjects screened, screen failed and enrolled in the trial, with unique institution identifiers where relevant.",
+   "s": [
+    "Subject Identification Log"
+   ]
+  },
+  {
+   "n": "05.04.11",
+   "u": "235",
+   "name": "Source Data",
+   "cl": "Core",
+   "sponsor": false,
+   "investigator": true,
+   "device_sponsor": false,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "18",
+   "dating": "Document Date",
+   "site_milestone": "11",
+   "iso": "E 2.13 E.2.14 7.5.3 7.8.2 10.6 c 10.6 q 10.7 f 7.8.1",
+   "d": "To document and confirm source data information at the Investigator site (i.e. medical records containing history of subjects).",
+   "s": [
+    "Source Data",
+    "Site Level Source Data Worksheets"
+   ]
+  },
+  {
+   "n": "05.04.12",
+   "u": "241",
+   "name": "Monitoring Visit Follow-up Documentation",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "19",
+   "dating": "Visit Start Date",
+   "site_milestone": "11",
+   "iso": "E.1.24 E 2.10 9.2.3.c 9.2.3.e 9.2.4.7",
+   "d": "To document site visit follow-up. Could be grouped with monitoring visit reports.",
+   "s": [
+    "Monitoring Visit Follow-up Documentation"
+   ]
+  },
+  {
+   "n": "05.04.13",
+   "u": "256",
+   "name": "Subject Eligibility Verification Forms and Worksheets",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "R",
+   "process": "17",
+   "dating": "Document Date",
+   "site_milestone": "11",
+   "iso": "",
+   "d": "Eligibility forms for qualification of trial subjects, may include inclusion/exclusion criteria, lab reports, doctor notes and other qualifying data usually used by (site) staff to ensure subjects are eligible, per protocol, for the study.",
+   "s": [
+    "Subject Eligibility Verification Forms and Worksheets"
+   ]
+  },
+  {
+   "n": "05.05.01",
+   "u": "114",
+   "name": "Relevant Communications",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "Per content",
+   "dating": "Correspondence Date",
+   "site_milestone": "11",
+   "iso": "E.2.11 9.2.3 b 9.2.3.c 9.2.4.5.D 10.6 e 10.6 h",
+   "d": "Zone-specific agreements, significant discussions or relevant information, but not specifically listed in this Reference Model. Types of correspondence may include, but not limited to: letters, memo, electronic communications and faxes. Should not include monitoring visit follow-up letter.",
+   "s": [
+    "Relevant Communications"
+   ]
+  },
+  {
+   "n": "05.05.02",
+   "u": "115",
+   "name": "Tracking Information",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "R",
+   "process": "Per content",
+   "dating": "Last Entry Date",
+   "site_milestone": "11",
+   "iso": "",
+   "d": "Zone-specific documents developed for the purpose of tracking activities during the course of the trial.",
+   "s": [
+    "Tracking Information"
+   ]
+  },
+  {
+   "n": "05.05.03",
+   "u": "116",
+   "name": "Meeting Material",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "25",
+   "dating": "Meeting Start Date",
+   "site_milestone": "11",
+   "iso": "",
+   "d": "Agenda, presentation materials and other documentation generated during an internal or external zone-related meeting which documents any agreements or significant discussions. Includes meeting minutes or Q&A, attendance sheets and any pre-meeting material.",
+   "s": [
+    "Agenda",
+    "Attendance Sheet",
+    "Minutes",
+    "Presentation Materials"
+   ]
+  },
+  {
+   "n": "05.05.04",
+   "u": "117",
+   "name": "Filenote",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "19",
+   "dating": "Filenote Date",
+   "site_milestone": "11",
+   "iso": "",
+   "d": "To document any decision or to clarify any information relating to this zone.",
+   "s": [
+    "Filenote"
+   ]
+  },
+  {
+   "n": "06.01.01",
+   "u": "118",
+   "name": "IP Supply Plan",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "22",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "7.4.3 7.9",
+   "d": "To describe the following as they pertain to the IP: 1) quantity and packaging of active, placebo and/or if applicable, comparator or rescue supplies needed to fulfill the requirements of the trial protocol over the life of the trial, as well as blinding plan (if applicable) and 2) acceptable storage temperatures and conditions, storage times, reconstitution fluids and procedures and devices for product infusion. Artifact can include any evidence of plan execution including, but not limited to: plan, reports, checklists, etc.",
+   "s": [
+    "IP Supply Plan",
+    "Placebo Justification Statement"
+   ]
+  },
+  {
+   "n": "06.01.02",
+   "u": "119",
+   "name": "IP Instructions for Handling",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "22",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "10.2 b Annex B.2.F Annex I.7.C.3",
+   "d": "To instruct on how the IP should be handled during transit and stored upon arrival at the distribution center, depot and/or trial site. Should address expectations for adequate and safe receipt, handling, storage, dispensing, retrieval of unused product from subjects and return of unused IP to the sponsor (or their delegate). If appropriate to the trial, includes preparation of the IP leading to administration and administration instructions.",
+   "s": [
+    "Device User Manual",
+    "IP Directions for Use",
+    "IP Instructions for Handling",
+    "IP Manual",
+    "Pharmacy Manual",
+    "Device Packing Insert",
+    "Instruction For Use"
+   ]
+  },
+  {
+   "n": "06.01.03",
+   "u": "120",
+   "name": "IP Sample Label",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "22",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "E.1.3 6.10. Annex I.7 Annex B (B.2.g)",
+   "d": "A sample of each IP label type (for every pack and every language) to be used in the trial; approval status must be clear. All stages of label text development are included within this artifact.",
+   "s": [
+    "IP Master Label",
+    "IP Sample Label"
+   ]
+  },
+  {
+   "n": "06.01.04",
+   "u": "121",
+   "name": "IP Shipment Documentation",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "22",
+   "dating": "Shipment Date",
+   "site_milestone": "03",
+   "iso": "E. 1.16 E. 2. 8 7.9 9.2.2 C 9.2.3 a 9.2.4.5 n 10.6 K",
+   "d": "To record details of the shipment process including approval, requests, dispatch, tracking and receipts to/from a distribution center, depot and/or trial site.",
+   "s": [
+    "Acknowledgement of Receipt",
+    "Approval to Ship",
+    "Invoice",
+    "IP Shipment Documentation",
+    "Packaging Order",
+    "Shipment Request Form",
+    "Temperature (TempTale) Monitoring"
+   ]
+  },
+  {
+   "n": "06.01.05",
+   "u": "122",
+   "name": "IP Accountability Documentation",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "22",
+   "dating": "Last Entry Date",
+   "site_milestone": "09",
+   "iso": "E.1.16 E.2.8 E2.25 E.3.1 7.9 8.3 a 9.2.2 C 9.2.3 a 9.2.4.5.n 10.6 k 10.6 q Annex I.7.C.1",
+   "d": "To document records of the allocation of IP to/from a distribution center, depot, trial site and/or site to subject and the reconciliation of IP prior to return to the sponsor.",
+   "s": [
+    "Drug Accountability Log",
+    "IP Accountability Documentation"
+   ]
+  },
+  {
+   "n": "06.01.06",
+   "u": "123",
+   "name": "IP Transfer Documentation",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "22",
+   "dating": "Transfer Date",
+   "site_milestone": "05",
+   "iso": "",
+   "d": "To document the process and approval for the transfer of IP from one depot to another depot and/or from one site to another site (within or across protocols). Examples include sponsor approval for transfer and evidence of consultation with Qualified Person (QP).",
+   "s": [
+    "Evidence of IP Transfer",
+    "IP Transfer Documentation",
+    "IP Transfer Plan",
+    "Notification of IP Transfer"
+   ]
+  },
+  {
+   "n": "06.01.07",
+   "u": "124",
+   "name": "IP Re-labeling Documentation",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "22",
+   "dating": "Document Date",
+   "site_milestone": "05",
+   "iso": "6.10 Annex I.7 C 2",
+   "d": "To document the plan for the re-labeling process to occur at the distribution center, depot and/or site and confirmation records that the re-labeling occurred.",
+   "s": [
+    "Evidence of IP Relabeling",
+    "IP Relabeling Documentation",
+    "IP Relabeling Plan",
+    "Notification of IP Relabeling"
+   ]
+  },
+  {
+   "n": "06.01.08",
+   "u": "125",
+   "name": "IP Recall Documentation",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "22",
+   "dating": "Recall Date",
+   "site_milestone": "05",
+   "iso": "9.2.2.D",
+   "d": "To document the plan for the recall process for the IP to occur at a distribution center, depot and/or site; will include confirmation records that the recall occurred.",
+   "s": [
+    "Evidence of Recall",
+    "IP Recall Documentation",
+    "IP Recall Plan",
+    "Notification of IP Recall"
+   ]
+  },
+  {
+   "n": "06.01.09",
+   "u": "126",
+   "name": "IP Quality Complaint Form",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "22",
+   "dating": "Complaint Date",
+   "site_milestone": "05",
+   "iso": "7.4.3 9.1.a",
+   "d": "To document or record an IP quality complaint.",
+   "s": [
+    "IP Quality Complaint Form",
+    "Device Deficiency Report"
+   ]
+  },
+  {
+   "n": "06.01.10",
+   "u": "127",
+   "name": "IP Return Documentation",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "33",
+   "dating": "Return Date",
+   "site_milestone": "09",
+   "iso": "E.1.16 E.3.2 7.9 8.3 a 9.2.2.C 9.2.3 a 9.2.45.n 10.6 k 7.4.3",
+   "d": "To record details of returns to/from a distribution center, depot and/or trial site. Examples include courier documentation and packing/ inventory listing.",
+   "s": [
+    "Acknowledgement of Return",
+    "IP Return Documentation",
+    "IP Return Form"
+   ]
+  },
+  {
+   "n": "06.01.11",
+   "u": "128",
+   "name": "IP Certificate of Destruction",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "33",
+   "dating": "Destruction Date",
+   "site_milestone": "09",
+   "iso": "A.11, D.7 c, E.1.17 , 10.6.k, 10.6.l",
+   "d": "To document the confirmation of destruction of IP at the end of a trial at a distribution center, depot and/or site.",
+   "s": [
+    "IP Certificate of Destruction",
+    "IP Destruction Documentation"
+   ]
+  },
+  {
+   "n": "06.01.12",
+   "u": "242",
+   "name": "IP Retest and Expiry Documentation",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "22",
+   "dating": "Document Date",
+   "site_milestone": "11",
+   "iso": "",
+   "d": "To document the batch retesting/analyses of IP for a variety of reasons such as stability confirmation and expiry extension.",
+   "s": [
+    "Expiry Extension",
+    "IP Retest and Expiry Documentation",
+    "Stability Confirmation",
+    "Device Expiration Certificate"
+   ]
+  },
+  {
+   "n": "06.02.01",
+   "u": "129",
+   "name": "QP (Qualified Person) Certification",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "22",
+   "dating": "Effective Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "To confirm that any IP from another country has been manufactured and checked in accordance with standards of Good Manufacturing Practices (GMP) at least equivalent to those laid down in Directive 91/356/EEC. Documents the technical release documentation including GMP certification and the name / address of the manufacturer.",
+   "s": [
+    "QP (Qualified Person) Certification"
+   ]
+  },
+  {
+   "n": "06.02.02",
+   "u": "130",
+   "name": "IP Regulatory Release Documentation",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "22",
+   "dating": "Release Date",
+   "site_milestone": null,
+   "iso": "B.2.D",
+   "d": "To document the regulatory IP release process.",
+   "s": [
+    "IP Regulatory Release Documentation"
+   ]
+  },
+  {
+   "n": "06.02.03",
+   "u": "131",
+   "name": "IP Verification Statements",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "22",
+   "dating": "Document Date",
+   "site_milestone": "10",
+   "iso": "B.2.D",
+   "d": "Any certificate, license or other documentation that is required by a specific regulation to verify the quality, source, manufacture, ingredients or other aspect of investigational and/or control product. Examples include TSE certificate, Controlled IP storage, DEA 223 and GMP Manufacturer's License.",
+   "s": [
+    "Controlled IP Storage",
+    "DEA 223",
+    "GMP Certificate",
+    "GMP Manufacturer's License",
+    "GMP Statement",
+    "IP Verification Statements",
+    "Manufacturing Authorization",
+    "Manufacturer's Certificate of Compliance",
+    "TSE Certificate"
+   ]
+  },
+  {
+   "n": "06.02.04",
+   "u": "132",
+   "name": "Certificate of Analysis",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "22",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "To document identity, purity and strength of the IP(s) to be used trial, in accordance with the specifications of the IP, including the acceptance limits and the actual results of the tests.",
+   "s": [
+    "Batch Records",
+    "Certificate of Analysis",
+    "Certificate of Conformance",
+    "Device Quality Certification"
+   ]
+  },
+  {
+   "n": "06.03.01",
+   "u": "133",
+   "name": "IP Treatment Allocation Documentation",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "22",
+   "dating": "Document Date",
+   "site_milestone": "03",
+   "iso": "10.6 k A.6.1.B",
+   "d": "To document the treatment allocation or device serial numbers for each subject; used if urgent unblinding or code break is needed or when interim or final unblinding occurs.",
+   "s": [
+    "IP Treatment Allocation Documentation",
+    "Kit List",
+    "Randomization Envelopes",
+    "Randomization List"
+   ]
+  },
+  {
+   "n": "06.03.02",
+   "u": "134",
+   "name": "IP Unblinding Plan",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "12",
+   "dating": "Version Date",
+   "site_milestone": "03",
+   "iso": "E.1.20 7.8.1 A 16 b 10.7.e",
+   "d": "To describe the plan and procedures to be taken should the action of breaking the blind for an individual subject be urgently needed, or when interim or final unblinding occurs.",
+   "s": [
+    "IP Unblinding Plan",
+    "Unblinding Procedure"
+   ]
+  },
+  {
+   "n": "06.03.03",
+   "u": "135",
+   "name": "IP Treatment Decoding Documentation",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "30",
+   "dating": "Document Date",
+   "site_milestone": "05",
+   "iso": "",
+   "d": "To document the action of breaking the blind for an individual subject, urgently if needed, or when interim or final unblinding occurs. Treatment unblinding may be controlled by interactive response technology (IRT) and or manually using code break envelopes.",
+   "s": [
+    "Emergency Decoding Authorization Document",
+    "IP Treatment Decoding Documentation",
+    "Treatment Decoding Form"
+   ]
+  },
+  {
+   "n": "06.04.01",
+   "u": "136",
+   "name": "IP Storage Condition Documentation",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "22",
+   "dating": "Document Date",
+   "site_milestone": "09",
+   "iso": "D.6.1.5",
+   "d": "To document the unique storage conditions of the IP at the sponsor (if sponsor is distributing), distribution center, depot, trial site and in transit, if required by the available stability requirements of the IP.",
+   "s": [
+    "IP Storage Condition Documentation",
+    "Temperature Logs"
+   ]
+  },
+  {
+   "n": "06.04.02",
+   "u": "137",
+   "name": "IP Storage Condition Excursion Documentation",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "22",
+   "dating": "Document Date",
+   "site_milestone": "05",
+   "iso": "",
+   "d": "To record excursions for IP, from the acceptable pre-defined condition range either during transit or storage at a distribution center, depot and/or trial site.",
+   "s": [
+    "Approval For Use (following temp excursion)",
+    "IP Storage Condition Excursion Documentation",
+    "TempTale Documentation",
+    "Temperature Excursion Form"
+   ]
+  },
+  {
+   "n": "06.04.03",
+   "u": "243",
+   "name": "Maintenance Logs",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "22",
+   "dating": "Last Entry Date",
+   "site_milestone": "09",
+   "iso": "E.1.31 E.2.28 9.2.4.5.p, 10.6 i",
+   "d": "To record activities and times when quality of condition of IP, Non-IP, device and other trial supplies is assessed over period of use and any maintenance performed, including software logs and certificates of calibration.",
+   "s": [
+    "Calibration Certificate",
+    "Calibration Log",
+    "Maintenance Logs"
+   ]
+  },
+  {
+   "n": "06.05.01",
+   "u": "138",
+   "name": "Non-IP Supply Plan",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "23",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "To describe the details and quantity of non-IP supplies needed to fulfill the trial protocol requirements over the life of the trial. May include but is not limited to, supplementary medication, pre-treatment, other prophylactic therapies, drug delivery supplies (IV tubing, syringes, etc.) and measurement tools such as thermometers, respirometers, etc. Artifact can include any evidence of plan execution including, but not limited to: plan, reports, checklists, etc.",
+   "s": [
+    "Non-IP Supply Plan"
+   ]
+  },
+  {
+   "n": "06.05.02",
+   "u": "139",
+   "name": "Non-IP Shipment Documentation",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "23",
+   "dating": "Shipment Date",
+   "site_milestone": "11",
+   "iso": "E.1.17 E.2.9 9.2.2.a 9.2.2.d 9.2.4.4.a 9.2.4.4.d",
+   "d": "To record details of the shipment of non-IP supplies needed to fulfill the trial protocol requirements to a distribution center, depot and/or site.",
+   "s": [
+    "Acknowledgement of Receipt",
+    "Approval to Ship",
+    "Invoice",
+    "Non-IP Shipment Documentation",
+    "Packaging Order",
+    "Shipment Request Form"
+   ]
+  },
+  {
+   "n": "06.05.03",
+   "u": "140",
+   "name": "Non-IP Return Documentation",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "23",
+   "dating": "Return Date",
+   "site_milestone": "10",
+   "iso": "E.1.17 E.2.9 9.2.2.a 9.2.2.d 9.2.4.4.a 9.2.4.4.d",
+   "d": "To inventory the returns of certain non-IP supplies needed to fulfill the trial protocol requirements to a distribution center, depot and/or site. Examples include courier documentation and packing/ inventory listing.",
+   "s": [
+    "Acknowledgement of Return",
+    "Non-IP Return Documentation",
+    "Non-IP Return Form"
+   ]
+  },
+  {
+   "n": "06.05.04",
+   "u": "259",
+   "name": "Non-IP Storage Documentation",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "23",
+   "dating": "Document Date",
+   "site_milestone": "10",
+   "iso": "",
+   "d": "To document the unique storage conditions of the Non-IP supplies at the sponsor (if sponsor is distributing), distribution center, depot, trial site and in transit, if required by the available stability requirements of the non-IP supplies. To record excursions for non-IP supplies, from the acceptable pre-defined condition range either during transit or storage at a distribution center, depot and/or trial site.",
+   "s": [
+    "Non-IP Storage Documentation",
+    "Non-IP Storage Condition Excursion Documentation"
+   ]
+  },
+  {
+   "n": "06.06.01",
+   "u": "141",
+   "name": "IRT User Requirement Specification",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "22",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "A.8.B 7.8.3",
+   "d": "To document end user requirements from design and capabilities of an interactive response technology (IRT) such as Interactive Voice Response System (IVRS) or Interactive Web Response System (IWRS), included but not limited to screening, randomization or drug allocation. May also include technical aspects of the system development.",
+   "s": [
+    "IRT User Requirement Specification"
+   ]
+  },
+  {
+   "n": "06.06.02",
+   "u": "142",
+   "name": "IRT Validation Certification",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "22",
+   "dating": "Certification Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "To confirm the validation status of the interactive response technology (IRT).",
+   "s": [
+    "IRT Validation Certification"
+   ]
+  },
+  {
+   "n": "06.06.03",
+   "u": "143",
+   "name": "IRT User Acceptance Testing (UAT) Certification",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "22",
+   "dating": "Certification Date",
+   "site_milestone": null,
+   "iso": "B.3.E",
+   "d": "To document the acceptability of the series of assessments of the IRT performed by key users of the system that are designed to show that the IRT has been correctly programmed and meets the requirements of the User Requirements Specification (URS). Minimally, the signature page and may include validation or other documentation.",
+   "s": [
+    "IRT UAT Certification",
+    "IRT UAT Executed Scripts",
+    "IRT UAT Sign Off",
+    "IRT User Acceptance Testing (UAT) Certification"
+   ]
+  },
+  {
+   "n": "06.06.04",
+   "u": "144",
+   "name": "IRT User Manual",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "22",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "To provide instructions and define the operational instructions for the IRT for the user.",
+   "s": [
+    "IRT Quick Reference Card",
+    "IRT User Manual"
+   ]
+  },
+  {
+   "n": "06.06.05",
+   "u": "145",
+   "name": "IRT User Account Management",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "22",
+   "dating": "Document Date",
+   "site_milestone": "11",
+   "iso": "",
+   "d": "To capture account management details for all users who received access to the system; should include security role, data account granted, date account disabled.",
+   "s": [
+    "IRT User Account Management",
+    "Summary of IRT Access Report"
+   ]
+  },
+  {
+   "n": "06.07.01",
+   "u": "146",
+   "name": "Relevant Communications",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "Per content",
+   "dating": "Correspondence Date",
+   "site_milestone": "11",
+   "iso": "E 2.11 9.2.3 c 9.2.4.5 o 10.6 h",
+   "d": "Zone-specific agreements, significant discussions or relevant information, but not specifically listed in this Reference Model. Types of correspondence may include, but not limited to: letters, memo, electronic communications and faxes.",
+   "s": [
+    "Relevant Communications"
+   ]
+  },
+  {
+   "n": "06.07.02",
+   "u": "147",
+   "name": "Tracking Information",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "Per content",
+   "dating": "Last Entry Date",
+   "site_milestone": "11",
+   "iso": "",
+   "d": "Zone-specific documents developed for the purpose of tracking activities during the course of the trial.",
+   "s": [
+    "Tracking Information"
+   ]
+  },
+  {
+   "n": "06.07.03",
+   "u": "148",
+   "name": "Meeting Material",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "Per content",
+   "dating": "Meeting Start Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "Agenda, presentation materials and other documentation generated during an internal or external zone-related meeting which documents any agreements or significant discussions. Includes meeting minutes or Q&A, attendance sheets and any pre-meeting material.",
+   "s": [
+    "Agenda",
+    "Attendance Sheet",
+    "Minutes",
+    "Presentation Materials"
+   ]
+  },
+  {
+   "n": "06.07.04",
+   "u": "149",
+   "name": "Filenote",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "Per content",
+   "dating": "Filenote Date",
+   "site_milestone": "11",
+   "iso": "",
+   "d": "To document any decision or to clarify any information relating to this zone.",
+   "s": [
+    "Filenote"
+   ]
+  },
+  {
+   "n": "07.01.01",
+   "u": "150",
+   "name": "Safety Management Plan",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "M",
+   "process": "12",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "10.8 a 7.4.1",
+   "d": "To describe the end-to-end process for the ongoing safety evaluation for the investigational product; includes data to be collected, reporting objectives and processes for a clinical trial. Plan may include but is not limited to: associated documents for quality management, safety database entry specifications and templates and/or coding guidelines. This artifact may not be trial specific, thus may include a reference to appropriate SOP(s) or program/IP level plans. One example of where this artifact would be expected to be trial-specific is when a CRO performs this function for a single trial.",
+   "s": [
+    "Reference Safety Information Approval Form",
+    "Safety Management Plan",
+    "Safety Reporting Plan",
+    "Safety Reporting Templates"
+   ]
+  },
+  {
+   "n": "07.01.02",
+   "u": "151",
+   "name": "Pharmacovigilance Database Line Listing",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "28",
+   "dating": "Report Date",
+   "site_milestone": null,
+   "iso": "7.4.2",
+   "d": "Listing of trial data for a single study trial used for a variety of safety evaluation of the investigational product purposes (e.g. Serious Adverse Events (SAE) case listings, database line listings, etc.). This artifact may not be trial specific, thus may include a reference to program/IP level records. One example of where this artifact would be expected to be trial-specific is when a CRO performs this function for a single trial.",
+   "s": [
+    "Annual Safety Report (ASR)",
+    "Development Safety Update Report (DSUR)",
+    "Pharmacovigilance Database Line Listing"
+   ]
+  },
+  {
+   "n": "07.02.01",
+   "u": "152",
+   "name": "Expedited Safety Report",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "28",
+   "dating": "Report Date",
+   "site_milestone": "05",
+   "iso": "10.8 b 7.4",
+   "d": "To document unexpected serious adverse drug reactions and other safety information; submitted to regulatory authorities and IRBs/IECs. Submission artifact is located in 03.03.01.",
+   "s": [
+    "Expedited Safety Report"
+   ]
+  },
+  {
+   "n": "07.02.02",
+   "u": "153",
+   "name": "SAE Report",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "28",
+   "dating": "Report Date",
+   "site_milestone": "05",
+   "iso": "E.2.17 7.4 9.2.4.5.k 9.2.4.5.L 9.2.5 10.8 D 13 g",
+   "d": "To organize critical data around a serious adverse event, adverse event and/or a laboratory abnormality as identified in the protocol. Reports may include, but are not limited to: specific investigator SAE report forms and supporting data, reporter correspondence, associated note-to-files, source documentation, case logs, narratives, case unblinding forms and/or safety database case printouts.",
+   "s": [
+    "SAE Report"
+   ]
+  },
+  {
+   "n": "07.02.03",
+   "u": "154",
+   "name": "Pregnancy Report",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "28",
+   "dating": "Report Date",
+   "site_milestone": "05",
+   "iso": "",
+   "d": "To organize critical data around a pregnancy that occurred whilst either the male or the female subject was participating in a clinical trial. Reporting forms and supporting data collected for pregnancy cases and their outcome. Reports may include but are not limited to specific regulatory forms and supporting data, reporter correspondence, associated note-to-files, source documentation, case logs, case unblinding form, narratives and/or safety database case printouts.",
+   "s": [
+    "Pregnancy Report"
+   ]
+  },
+  {
+   "n": "07.02.04",
+   "u": "155",
+   "name": "Special Events of Interest",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "29",
+   "dating": "Report Date",
+   "site_milestone": "05",
+   "iso": "",
+   "d": "To organize critical data around a special event of interest, one that is of scientific and medical concern specific to the product or program. Usually requested by or submitted to Regulatory Agencies. Reports may include but are not limited to specific regulatory forms and supporting data, reporter correspondence, associated note-to-files, source documentation, case logs, narratives, case unblinding forms and/or safety database case printouts.",
+   "s": [
+    "Special Events of Interest"
+   ]
+  },
+  {
+   "n": "07.03.01",
+   "u": "156",
+   "name": "Relevant Communications",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "28",
+   "dating": "Correspondence Date",
+   "site_milestone": "11",
+   "iso": "E 2.11 9.2.3 c 9.2.4.5 O 10.6 h",
+   "d": "Zone-specific, trial specific agreements, significant discussions or relevant information, but not specifically listed in this Reference Model. Types of correspondence may include, but not limited to: letters, memo, electronic communications and faxes. (Does not include program level communications.)",
+   "s": [
+    "Relevant Communications"
+   ]
+  },
+  {
+   "n": "07.03.02",
+   "u": "157",
+   "name": "Tracking Information",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "21",
+   "dating": "Last Entry Date",
+   "site_milestone": "11",
+   "iso": "",
+   "d": "Zone-specific, trial specific documents developed for the purpose of tracking activities during the course of the trial. (Does not include program level tracking information.)",
+   "s": [
+    "Tracking Information"
+   ]
+  },
+  {
+   "n": "07.03.03",
+   "u": "158",
+   "name": "Meeting Material",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "21 / 28",
+   "dating": "Meeting Start Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "Agenda, presentation materials and other documentation generated during an internal or external zone-related, trial specific meeting which documents any agreements or significant discussions. Includes meeting minutes or Q&A, attendance sheets and any pre-meeting material. (Does not include program level meeting material.)",
+   "s": [
+    "Agenda",
+    "Attendance Sheet",
+    "Minutes",
+    "Presentation Materials"
+   ]
+  },
+  {
+   "n": "07.03.04",
+   "u": "159",
+   "name": "Filenote",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "Per content",
+   "dating": "Filenote Date",
+   "site_milestone": "11",
+   "iso": "10.8 e",
+   "d": "To document any decision or to clarify any information relating to this zone.",
+   "s": [
+    "Filenote"
+   ]
+  },
+  {
+   "n": "08.01.01",
+   "u": "160",
+   "name": "Certification or Accreditation",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "8",
+   "dating": "Effective Date",
+   "site_milestone": "03",
+   "iso": "E.1.32 E.2.29 6.1 7.11 9.1 9.2.1 9.2.4.5.o 9.2.4.5.t",
+   "d": "To document recognition and approval by an authorized accrediting body applying known acceptable standards, that the central or local facility is competent to perform required test(s) and support reliability of results; if applicable.",
+   "s": [
+    "Certification or Accreditation",
+    "CAP Certificate",
+    "CLIA Certificate",
+    "ISO Certification",
+    "Other Certification or Accreditation"
+   ]
+  },
+  {
+   "n": "08.01.02",
+   "u": "161",
+   "name": "Laboratory Validation Documentation",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "8",
+   "dating": "Document Date",
+   "site_milestone": "03",
+   "iso": "E.1.32 E.2.29 6.1 7.11 9.1 9.2.1 9.2.4.5.o 9.2.4.5.t",
+   "d": "To document through use of control data that a central or local laboratory can consistently and reproducibly report results that are reliable; may include but is not limited to reporting of calibration and control results for a research test parameter, antibody or pharmacokinetic testing that may be performed by an internal or external central or local laboratory; required if certification or accreditation is not available for the study test method.",
+   "s": [
+    "Laboratory Validation Documentation",
+    "Laboratory System Specifications",
+    "Laboratory Kit Assembly Specifications"
+   ]
+  },
+  {
+   "n": "08.01.03",
+   "u": "162",
+   "name": "Laboratory Results Documentation",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "18",
+   "dating": "Document Date",
+   "site_milestone": "11",
+   "iso": "E.2.29",
+   "d": "Summary listings or individual subject reports provided by the central or local laboratory or other testing facility, e.g. results of biochemical testing, histological examination.",
+   "s": [
+    "Biochemical Testing",
+    "Imaging Uploads",
+    "Independent Rater Data",
+    "Laboratory Results Documentation"
+   ]
+  },
+  {
+   "n": "08.01.04",
+   "u": "163",
+   "name": "Normal Ranges",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "5",
+   "dating": "Effective Date",
+   "site_milestone": "03",
+   "iso": "E.1.30 E.2.27 9.2.4.5.q",
+   "d": "To define acceptable limits (where 95% of the population that a central or local facility serves will fall) for comparative interpretation that allow for medical decisions to be made; may be included in User Manual.",
+   "s": [
+    "Normal Ranges"
+   ]
+  },
+  {
+   "n": "08.01.05",
+   "u": "164",
+   "name": "Manual",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "4",
+   "dating": "Version Date",
+   "site_milestone": "03",
+   "iso": "",
+   "d": "To outline the procedures to be followed in the collection, handling and shipping of samples; may not be available for local facilities.",
+   "s": [
+    "Imaging Manual",
+    "Laboratory Manual",
+    "Manual",
+    "Other Manual"
+   ]
+  },
+  {
+   "n": "08.01.06",
+   "u": "165",
+   "name": "Supply Import Documentation",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "22",
+   "dating": "Document Date",
+   "site_milestone": "03",
+   "iso": "",
+   "d": "To provide the necessary documentation required per country to allow for importation of supplies (non-drug / IP), may also include biological samples and related test material (kits, etc.).",
+   "s": [
+    "Biologic Supply Import",
+    "Biosafety Statements",
+    "Customs Statements",
+    "Proforma Invoices",
+    "Secure Handling of Material and Data",
+    "Supply Import Documentation",
+    "Supply Import Licenses"
+   ]
+  },
+  {
+   "n": "08.01.07",
+   "u": "166",
+   "name": "Head of Facility Curriculum Vitae",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "25",
+   "dating": "Signature Date",
+   "site_milestone": "03",
+   "iso": "E.1.32 E.2.29 6.1 7.11 9.1 9.2.1 9.2.4.5.o 9.2.4.5.t",
+   "d": "To verify that the Head of Facility is suitably qualified to lead and oversee the management and reporting of results; may be included with Certification / Accreditation; may be found in the User Manual.",
+   "s": [
+    "Head of Facility Curriculum Vitae"
+   ]
+  },
+  {
+   "n": "08.01.08",
+   "u": "167",
+   "name": "Standardization Methods",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "8",
+   "dating": "Document Date",
+   "site_milestone": "03",
+   "iso": "",
+   "d": "To confirm that two or more central or local facilities can perform the same test / procedure and obtain consistent results; includes but may not be limited to cross-calibration of test methods between assays or facilities or phantom data or bioanalytical assay.",
+   "s": [
+    "Analytical Method Report",
+    "Interlaboratory Comparison Testing",
+    "Standardization Methods"
+   ]
+  },
+  {
+   "n": "08.02.01",
+   "u": "168",
+   "name": "Specimen Label",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "4",
+   "dating": "Version Date",
+   "site_milestone": "03",
+   "iso": "",
+   "d": "To capture critical information about the collection of a sample; may include but is not limited to subject ID, date and time of collection, etc.; may be included in User Manual.",
+   "s": [
+    "Specimen Label"
+   ]
+  },
+  {
+   "n": "08.02.02",
+   "u": "169",
+   "name": "Shipment Records",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "22",
+   "dating": "Shipment Date",
+   "site_milestone": "11",
+   "iso": "",
+   "d": "To provide relevant details for samples sent in any one shipment.",
+   "s": [
+    "Specimen Shipment Records"
+   ]
+  },
+  {
+   "n": "08.02.03",
+   "u": "170",
+   "name": "Sample Storage Condition Log",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "22",
+   "dating": "Document Date",
+   "site_milestone": "11",
+   "iso": "",
+   "d": "To monitor and track sample storage under the appropriate conditions.",
+   "s": [
+    "Sample Storage Condition Log"
+   ]
+  },
+  {
+   "n": "08.02.04",
+   "u": "171",
+   "name": "Sample Import or Export Documentation",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "6",
+   "dating": "Document Date",
+   "site_milestone": "03",
+   "iso": "",
+   "d": "To provide the necessary documentation required per country to allow for importation/exportation of samples.",
+   "s": [
+    "Sample Import or Export Documentation",
+    "Specimen Export Documentation",
+    "Specimen Import Documentation"
+   ]
+  },
+  {
+   "n": "08.02.05",
+   "u": "172",
+   "name": "Record of Retained Samples",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "20",
+   "dating": "Document Date",
+   "site_milestone": "03",
+   "iso": "",
+   "d": "To document location and identification of body fluid, tissue samples or genetic samples being held for possible future (re)testing; to include destruction records, when and if this occurs.",
+   "s": [
+    "Biorepository",
+    "Destruction Records",
+    "Dispatch Form",
+    "Inventory From Lab",
+    "Record of Retained Samples"
+   ]
+  },
+  {
+   "n": "08.03.01",
+   "u": "173",
+   "name": "Relevant Communications",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "Per content",
+   "dating": "Correspondence Date",
+   "site_milestone": "11",
+   "iso": "E 2.11 9.2.3 c 9.2.4.5 o 10.6 h",
+   "d": "Zone-specific agreements, significant discussions or relevant information, but not specifically listed in this Reference Model. Types of correspondence may include, but not limited to: letters, memo, electronic communications and faxes.",
+   "s": [
+    "Relevant Communications"
+   ]
+  },
+  {
+   "n": "08.03.02",
+   "u": "174",
+   "name": "Tracking Information",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "Per content",
+   "dating": "Last Entry Date",
+   "site_milestone": "11",
+   "iso": "",
+   "d": "Zone-specific documents developed for the purpose of tracking activities during the course of the trial.",
+   "s": [
+    "Tracking Information"
+   ]
+  },
+  {
+   "n": "08.03.03",
+   "u": "175",
+   "name": "Meeting Material",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "6",
+   "dating": "Meeting Start Date",
+   "site_milestone": "11",
+   "iso": "",
+   "d": "Agenda, presentation materials and other documentation generated during an internal or external zone-related meeting which documents any agreements or significant discussions. Includes meeting minutes or Q&A, attendance sheets and any pre-meeting material.",
+   "s": [
+    "Agenda",
+    "Attendance Sheet",
+    "Minutes",
+    "Presentation Materials"
+   ]
+  },
+  {
+   "n": "08.03.04",
+   "u": "176",
+   "name": "Filenote",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "20",
+   "dating": "Filenote Date",
+   "site_milestone": "11",
+   "iso": "",
+   "d": "To document any decision or to clarify any information relating to this zone.",
+   "s": [
+    "Filenote"
+   ]
+  },
+  {
+   "n": "09.01.01",
+   "u": "177",
+   "name": "Qualification and Compliance",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "8",
+   "dating": "Document Date",
+   "site_milestone": null,
+   "iso": "E.1.32 E.2.29 6.1 7.11 9.1 9.2.1 9.2.4.5.o 9.2.4.5.t",
+   "d": "To confirm that a third party meets all relevant criteria to fulfill a contractual obligation; may include a quality questionnaire, a visit report to qualify their capabilities, other documents that support capabilities.",
+   "s": [
+    "Evidence of Third Party Qualification",
+    "Third Party Audit Certificate"
+   ]
+  },
+  {
+   "n": "09.01.02",
+   "u": "257",
+   "name": "Third Party Curriculum Vitae",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "8",
+   "dating": "Signature Date",
+   "site_milestone": null,
+   "iso": "E.1.32 E.2.29 6.1 7.11 9.1 9.2.1 9.2.4.5.o 9.2.4.5.t",
+   "d": "To document qualifications and eligibility of Individual Third Party Trial Team Members; CVs, Questionnaires etc. including translators, for the project. Not intended to duplicate records filed in Zones 1 and 5 (sponsor & investigator).",
+   "s": [
+    "Third Party Curriculum Vitae"
+   ]
+  },
+  {
+   "n": "09.01.03",
+   "u": "258",
+   "name": "Ongoing Third Party Oversight",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "8",
+   "dating": "Document Date",
+   "site_milestone": null,
+   "iso": "J.2.f.15",
+   "d": "To confirm throughout the duration of a study that a third party continues to meet all relevant criteria to fulfill a contractual obligation.",
+   "s": [
+    "Ongoing Third Party Oversight"
+   ]
+  },
+  {
+   "n": "09.02.01",
+   "u": "178",
+   "name": "Confidentiality Agreement",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "8",
+   "dating": "Signature Date",
+   "site_milestone": null,
+   "iso": "E.1.13 6.9 9.2.1.a",
+   "d": "To confirm by written legal agreement that key information between parties will be prevented from being inappropriately disclosed. May be included in another contractual agreement.",
+   "s": [
+    "Third Party Confidentiality Agreement"
+   ]
+  },
+  {
+   "n": "09.02.02",
+   "u": "179",
+   "name": "Vendor Selection",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "8",
+   "dating": "Document Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "To identify how a third party was selected. May include details of other third parties short-listed, master vendor list and any assessments carried out prior to selection.",
+   "s": [
+    "Vendor Evaluation",
+    "Vendor Decision"
+   ]
+  },
+  {
+   "n": "09.02.03",
+   "u": "180",
+   "name": "Contractual Agreement",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "7",
+   "dating": "Signature Date",
+   "site_milestone": null,
+   "iso": "E.1.13 6.9 9.2.1.a",
+   "d": "To document by a written dated signed agreement between two or more parties that defines any arrangements on delegation and distribution of tasks and obligations (including financial obligations); critical components include service description and budget.",
+   "s": [
+    "Authorization To Proceed",
+    "Budget",
+    "Contract",
+    "Change Order",
+    "Data Privacy Agreements",
+    "Indemnification"
+   ]
+  },
+  {
+   "n": "09.03.01",
+   "u": "182",
+   "name": "Relevant Communications",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "25",
+   "dating": "Correspondence Date",
+   "site_milestone": null,
+   "iso": "E 2.11 9.2.3 c 9.2.4.5 o 10.6.h",
+   "d": "Zone-specific agreements, significant discussions or relevant information, but not specifically listed in this Reference Model. Types of correspondence may include, but not limited to: letters, memo, electronic communications and faxes.",
+   "s": [
+    "Relevant Communications"
+   ]
+  },
+  {
+   "n": "09.03.02",
+   "u": "183",
+   "name": "Tracking Information",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "Per content",
+   "dating": "Last Entry Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "Zone-specific documents developed for the purpose of tracking activities during the course of the trial.",
+   "s": [
+    "Tracking Information"
+   ]
+  },
+  {
+   "n": "09.03.03",
+   "u": "184",
+   "name": "Meeting Material",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "25",
+   "dating": "Meeting Start Date",
+   "site_milestone": null,
+   "iso": "9.2.4.2.c",
+   "d": "Agenda, presentation materials and other documentation generated during an internal or external zone-related meeting which documents any agreements or significant discussions. Includes meeting minutes or Q&A, attendance sheets and any pre-meeting material.",
+   "s": [
+    "Agenda",
+    "Attendance Sheet",
+    "Minutes",
+    "Presentation Materials"
+   ]
+  },
+  {
+   "n": "09.03.04",
+   "u": "185",
+   "name": "Filenote",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "Per content",
+   "dating": "Filenote Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "To document any decision or to clarify any information relating to this zone.",
+   "s": [
+    "Filenote"
+   ]
+  },
+  {
+   "n": "10.01.01",
+   "u": "186",
+   "name": "Data Management Plan",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "20",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "6.6 7.8.3.a",
+   "d": "To identify the overall strategy for data management process for the trial; a compilation of documents that may include amendments/appendices but are not limited to: Completion Guidelines, Data Quality Plan, CRF Design Document, Database (build) Specification, Entry Guidelines, Database Testing.",
+   "s": [
+    "Data Management Plan"
+   ]
+  },
+  {
+   "n": "10.02.01",
+   "u": "187",
+   "name": "CRF Completion Requirements",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "M",
+   "process": "3",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "7.8.2",
+   "d": "To provide detailed instructions on how data points on each CRF are to be completed; how to enter on paper and if EDC, how to enter data into the system.",
+   "s": [
+    "CRF Completion Requirements"
+   ]
+  },
+  {
+   "n": "10.02.02",
+   "u": "188",
+   "name": "Annotated CRF",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "18",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "7.8.1 7.8.2 10.6 j",
+   "d": "To assign variable names and attributes to the fields on the CRF and to link the variables to the tables within the database; may also be used as an aid for database programming on how to structure the database; use for data extraction; may be generated at the time of regulatory submission.",
+   "s": [
+    "Annotated CRF",
+    "Annotated CRF Electronic Data Capture",
+    "Annotated CRF Study Data Tabulation Model (SDTM)"
+   ]
+  },
+  {
+   "n": "10.02.04",
+   "u": "190",
+   "name": "Documentation of Corrections to Entered Data",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "20",
+   "dating": "Signature Date",
+   "site_milestone": "11",
+   "iso": "E.2.18 7.8.2 a 9.2.4.5 j 10.6 j",
+   "d": "Any documentation used to query database discrepancies and to record approved corrections to the clinical trial database; may include self-evident corrections, global queries, SAE queries, laboratory queries and any other database queries generated. Additionally, include any agreements per trial and site that trial personnel are permitted to perform without the need to issue a query to the investigator along with acknowledge acceptance/signing of these changes by Investigator.",
+   "s": [
+    "Data Clarification Forms",
+    "Data Query Forms",
+    "Documentation of Corrections to Entered Data"
+   ]
+  },
+  {
+   "n": "10.02.05",
+   "u": "191",
+   "name": "Final Subject Data",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "20",
+   "dating": "Document Date",
+   "site_milestone": "09",
+   "iso": "E.2.16 7.3 7.8.1 7.8.2 9.2.4.5.j) 10.6 j",
+   "d": "Final Subject data (EDC/ePRO/Paper) for the protocol and a copy of each site's data by-subject. Associated documents may include but are not limited to documentation of subject data corrections, subject diaries, questionnaires, laboratory reports and other third-party specialty data. Does not include the final study datasets.",
+   "s": [
+    "Final Subject Data",
+    "Site Receipt of Final Subject Data"
+   ]
+  },
+  {
+   "n": "10.03.01",
+   "u": "192",
+   "name": "Database Requirements",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "3",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "7.8.3",
+   "d": "To provide a detailed design framework for the system(s) used to manage and store subject/patient data captured via a paper CRF or eCRF for the specified trial. Not to be confused with specifications for the Electronic Data Capture (EDC) system (see 10.04.02).",
+   "s": [
+    "Database Requirements"
+   ]
+  },
+  {
+   "n": "10.03.02",
+   "u": "193",
+   "name": "Edit Check Plan",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "12",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "7.8.3d",
+   "d": "Specifications which will detect data that is illogical, unexpected, missing, redundant, or is outside of defined study parameters; usually implemented via programming logic.",
+   "s": [
+    "Edit Check Plan",
+    "Edit Check Specifications"
+   ]
+  },
+  {
+   "n": "10.03.03",
+   "u": "194",
+   "name": "Edit Check Programming",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "3",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "7.8.3 a",
+   "d": "The computer code which satisfies the edit check plan/specification details; may include a reference to where the code resides.",
+   "s": [
+    "Edit Check Programming"
+   ]
+  },
+  {
+   "n": "10.03.04",
+   "u": "195",
+   "name": "Edit Check Testing",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "12",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "7.8.3 f",
+   "d": "To provide evidence that the data edit checks have been implemented correctly; can include the data used to test the programming logic.",
+   "s": [
+    "Edit Check Testing"
+   ]
+  },
+  {
+   "n": "10.03.05",
+   "u": "196",
+   "name": "Approval for Database Activation",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "12",
+   "dating": "Approval Date",
+   "site_milestone": null,
+   "iso": "A.8 B 7.8.3",
+   "d": "Documentation that all database specification requirements have been satisfied and system can go live; will also include confirmation that UAT (user acceptance testing) has been successfully completed. May include a modified version to activate implementation of change control.",
+   "s": [
+    "Approval for Database Activation"
+   ]
+  },
+  {
+   "n": "10.03.06",
+   "u": "197",
+   "name": "External Data Transfer Specifications",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "20",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "A.8 B 3.13",
+   "d": "To document import and export data specifications; includes but is not limited to diary, lab, IVRS, imaging; integration from external systems to database and may include transfer from one group to another.",
+   "s": [
+    "External Data Transfer Authorization",
+    "External Data Transfer Specifications",
+    "External Data Transfer Testing Documentation"
+   ]
+  },
+  {
+   "n": "10.03.07",
+   "u": "198",
+   "name": "Data Entry Guidelines (Paper)",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "3",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "7.8.2",
+   "d": "To provide detailed instructions on how CRF data is to be entered into a database; specific to a paper CRF trial (therefore, would not be required with an EDC trial).",
+   "s": [
+    "Data Entry Guidelines (Paper)"
+   ]
+  },
+  {
+   "n": "10.03.08",
+   "u": "199",
+   "name": "SAE Reconciliation",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "20",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "9.2.5 7.8.3",
+   "d": "To document reconciliation and resolution of discrepancies between the SAEs in the safety and the clinical databases has been successfully completed.",
+   "s": [
+    "SAE Reconciliation",
+    "SAE Reconciliation Approval",
+    "SAE Reconciliation Report"
+   ]
+  },
+  {
+   "n": "10.03.09",
+   "u": "200",
+   "name": "Dictionary Coding",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "12",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "To document the tools used in medical coding and the final coded terms; includes medical sign off of coding; may include resolution discrepancies.",
+   "s": [
+    "Dictionary Coding",
+    "Medical Coding Approval",
+    "Medical Coding Consistency Report",
+    "Medical Coding Guidelines"
+   ]
+  },
+  {
+   "n": "10.03.10",
+   "u": "201",
+   "name": "Data Review Documentation",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "20",
+   "dating": "Document Date",
+   "site_milestone": null,
+   "iso": "7.8.3.d",
+   "d": "To describe the procedures for creating and implementing a Quality Control (QC) Plan or Data Review Plan to ensure that quality data is captured into a clinical database on an ongoing basis. Artifact can include any evidence of the results from the plan.",
+   "s": [
+    "Data Review Documentation",
+    "Data Review Plan",
+    "Data Validation Plan",
+    "DB Audit Specification",
+    "Third Party Vendor Reconciliation Report"
+   ]
+  },
+  {
+   "n": "10.03.11",
+   "u": "202",
+   "name": "Database Lock and Unlock Approval",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "20",
+   "dating": "Approval Date",
+   "site_milestone": null,
+   "iso": "7.8.3.a",
+   "d": "Confirmation that all of the requirements for database release have been met; may include all unlock and re-lock documentation as well as a report on data quality issues and summary of essential activities prior to database lock.",
+   "s": [
+    "Database Interim Lock Approval",
+    "Database Lock and Approval",
+    "Database Lock and Unlock Approval",
+    "Database Unlock Approval"
+   ]
+  },
+  {
+   "n": "10.03.12",
+   "u": "244",
+   "name": "Database Change Control",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "20",
+   "dating": "Change Control Date",
+   "site_milestone": null,
+   "iso": "7.8.3.a",
+   "d": "Summary of requested change, reason for change, relevant approvals, impact / risk analysis, associated requirements, specifications and other documentation describing the validation and implementation of this change.",
+   "s": [
+    "Database Change Control",
+    "Data Model Difference Report",
+    "Database Modification Approval"
+   ]
+  },
+  {
+   "n": "10.04.01",
+   "u": "204",
+   "name": "System Account Management",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "16",
+   "dating": "Document Date",
+   "site_milestone": "09",
+   "iso": "7.8.3. h",
+   "d": "To capture account management details for all users who received access to the system (e.g.: ePRO, eCRF); intended to include users' security role, date account granted, date account disabled.",
+   "s": [
+    "EDC User Authorization Documentation",
+    "EDC User Report",
+    "Electronic Signature Authorization Form",
+    "System Account Management"
+   ]
+  },
+  {
+   "n": "10.04.02",
+   "u": "245",
+   "name": "Technical Design Document",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "16",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "7.8.3.b",
+   "d": "A technical planning and tracking document containing all the elements required to build and test the EDC application including the variables to be collected, their logical arrangement, navigation between the different forms, and the checks for logical consistency. May take the form of a spreadsheet created manually by a programmer and uploaded to the EDC application (e.g. to generate the eCRF or ePRO system), or exported from the application after building as a record of its technical design. May include some code for 10.03.03, Edit Check Programming.",
+   "s": [
+    "Technical Design Document"
+   ]
+  },
+  {
+   "n": "10.04.03",
+   "u": "246",
+   "name": "Validation Documentation",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "16",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "7.8.3.c",
+   "d": "Documents establishing the project context and documentation requirements for EDC (e.g.: eCRF or ePRO); can include the plan for and results of, the user acceptance testing (UAT). Includes the validation report to provide wrap up and post go-live summary if required.",
+   "s": [
+    "Validation Certificate",
+    "Validation Executed Scripts",
+    "Validation Plan",
+    "Validation Report",
+    "Other Validation Documents"
+   ]
+  },
+  {
+   "n": "10.05.01",
+   "u": "205",
+   "name": "Relevant Communications",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "20",
+   "dating": "Correspondence Date",
+   "site_milestone": "11",
+   "iso": "E 2.11 9.2.3 c 9.2.4.5 o 10.6.h",
+   "d": "Zone-specific agreements, significant discussions or relevant information, but not specifically listed in this Reference Model. Types of correspondence may include, but not limited to: letters, memo, electronic communications and faxes.",
+   "s": [
+    "Relevant Communications"
+   ]
+  },
+  {
+   "n": "10.05.02",
+   "u": "206",
+   "name": "Tracking Information",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "Per content",
+   "dating": "Last Entry Date",
+   "site_milestone": "11",
+   "iso": "",
+   "d": "Zone-specific documents developed for the purpose of tracking activities during the course of the trial.",
+   "s": [
+    "Tracking Information"
+   ]
+  },
+  {
+   "n": "10.05.03",
+   "u": "207",
+   "name": "Meeting Material",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "20",
+   "dating": "Meeting Start Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "Agenda, presentation materials and other documentation generated during an internal or external zone-related meeting which documents any agreements or significant discussions. Includes meeting minutes or Q&A, attendance sheets and any pre-meeting material.",
+   "s": [
+    "Agenda",
+    "Attendance Sheet",
+    "Minutes",
+    "Presentation Materials"
+   ]
+  },
+  {
+   "n": "10.05.04",
+   "u": "208",
+   "name": "Filenote",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "20",
+   "dating": "Filenote Date",
+   "site_milestone": "11",
+   "iso": "",
+   "d": "To document any decision or to clarify any information relating to this zone.",
+   "s": [
+    "Filenote"
+   ]
+  },
+  {
+   "n": "11.01.01",
+   "u": "209",
+   "name": "Statistical Analysis Plan",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "M",
+   "process": "12",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "6.6",
+   "d": "To describe the statistical aspects of the trial design, the process of data selection for all analyses, the data items to be analyzed and all the procedures and methods to be employed in the analysis of those data items as well as the planned presentation of those results (Tables, Listings and Figures (TLFs), all versions of the SAP and approval forms). Includes interim and final.",
+   "s": [
+    "Analysis Convention Document",
+    "Interim Analysis SAP",
+    "SAP Approval",
+    "SPP Approval",
+    "Statistical Analysis Plan (SAP)",
+    "Statistical Programming Plan (SPP)"
+   ]
+  },
+  {
+   "n": "11.01.02",
+   "u": "210",
+   "name": "Sample Size Calculation",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "12",
+   "dating": "Document Date",
+   "site_milestone": null,
+   "iso": "3.25 A7e A7e6 6.2.2 E.2",
+   "d": "To document the technique, assumptions and output used to calculate the sample size; can include QC and sign off.",
+   "s": [
+    "Sample Size Calculation",
+    "Sample Size Validation"
+   ]
+  },
+  {
+   "n": "11.02.01",
+   "u": "211",
+   "name": "Randomization Plan",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "M",
+   "process": "12",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "To describe the randomization scheme (e.g. number and name of treatments, strata, block size) and how the randomization will be carried out; this plan is then used to initiate programming.",
+   "s": [
+    "Randomization Plan"
+   ]
+  },
+  {
+   "n": "11.02.02",
+   "u": "212",
+   "name": "Randomization Procedure",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "M",
+   "process": "4",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "To define the actual steps for how subjects are randomized in a trial. This could be by interactive response technology (IRT)/IVRS, or a manual process (i.e. work instruction). May be part of the randomization plan.",
+   "s": [
+    "Randomization Procedure",
+    "Randomization Specification"
+   ]
+  },
+  {
+   "n": "11.02.03",
+   "u": "213",
+   "name": "Master Randomization List",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "M",
+   "process": "20",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "E.1.19 7.8.1",
+   "d": "The single source on the assignment of subjects to protocol specified groups. In blinded studies, this list remains blinded until its release following the final data lock.",
+   "s": [
+    "Master Randomization List"
+   ]
+  },
+  {
+   "n": "11.02.04",
+   "u": "214",
+   "name": "Randomization Programming",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "12",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "A.7.E 7.8.3",
+   "d": "Computer code to generate randomization number for treatment assignment.",
+   "s": [
+    "Randomization Programming"
+   ]
+  },
+  {
+   "n": "11.02.05",
+   "u": "215",
+   "name": "Randomization Sign Off",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "12",
+   "dating": "Signature Date",
+   "site_milestone": null,
+   "iso": "A.7.E 7.8.3.",
+   "d": "To verify that the randomization program generates the randomization number and treatment assignment correctly according to the randomization schema specified for the trial.",
+   "s": [
+    "Randomization Sign Off"
+   ]
+  },
+  {
+   "n": "11.02.06",
+   "u": "216",
+   "name": "End of Trial or Interim Unblinding",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": true,
+   "device_sponsor": true,
+   "device_investigator": true,
+   "iis": "D",
+   "process": "30",
+   "dating": "Signature Date",
+   "site_milestone": null,
+   "iso": "7.8.1 10.7.e",
+   "d": "To document and authorize the release of the randomization code and allow the trial data to be unblinded. Includes evidence of release of end of trial unblinding. May include a request for partial unblinding, or to open the randomization list for maintenance by randomization management personnel.",
+   "s": [
+    "Administrative Interim Unblinding Request Form",
+    "End of Trial or Interim Unblinding",
+    "Results Release Authorization Memorandum"
+   ]
+  },
+  {
+   "n": "11.03.01",
+   "u": "217",
+   "name": "Data Definitions for Analysis Datasets",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "20",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "To define the programming logic required to transform the raw dataset to the analysis dataset; includes populations, etc.; as outlined in the SAP.",
+   "s": [
+    "Data Definitions for Analysis Datasets"
+   ]
+  },
+  {
+   "n": "11.03.02",
+   "u": "218",
+   "name": "Analysis QC Documentation",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "12",
+   "dating": "Document Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "To confirm the QC procedures for analysis programs and validation of analysis QC programs, as well as the actual output of the QC steps.",
+   "s": [
+    "Analysis QC Documentation",
+    "Validation Documentation Approval",
+    "Validation Plan",
+    "Validation Report"
+   ]
+  },
+  {
+   "n": "11.03.03",
+   "u": "219",
+   "name": "Interim Analysis Raw Datasets",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "36",
+   "dating": "File Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "The export of raw data for interim analysis purposes. This may include CDISC datasets such as Operational Data Model (ODM) or SDTM.",
+   "s": [
+    "Interim Analysis Raw Datasets"
+   ]
+  },
+  {
+   "n": "11.03.04",
+   "u": "220",
+   "name": "Interim Analysis Programs",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "4",
+   "dating": "File Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "The suite of programs designed to generate the interim analysis outputs as referenced in the SAP.",
+   "s": [
+    "Interim Analysis Programs",
+    "Interim Analysis Datasets Programs",
+    "Interim Analysis Macros"
+   ]
+  },
+  {
+   "n": "11.03.05",
+   "u": "221",
+   "name": "Interim Analysis Datasets",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "36",
+   "dating": "File Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "The datasets used for the interim analyses.",
+   "s": [
+    "Interim Analysis Datasets"
+   ]
+  },
+  {
+   "n": "11.03.06",
+   "u": "222",
+   "name": "Interim Analysis Output",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "36",
+   "dating": "Document Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "The Tables Listings and Figures produced from the interim analysis datasets; includes Statistics approval.",
+   "s": [
+    "Interim Analysis Graphs",
+    "Interim Analysis Figures",
+    "Interim Analysis Listings",
+    "Interim Analysis Statistics Approval",
+    "Interim Analysis Tables"
+   ]
+  },
+  {
+   "n": "11.03.07",
+   "u": "223",
+   "name": "Final Analysis Raw Datasets",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "37",
+   "dating": "File Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "The export of raw data for final analysis purposes. This may include CDISC datasets such as Operational Data Model (ODM), SDTM or case report tabulation (CRT) package.",
+   "s": [
+    "Final Analysis Raw Datasets"
+   ]
+  },
+  {
+   "n": "11.03.08",
+   "u": "224",
+   "name": "Final Analysis Programs",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "4",
+   "dating": "File Date",
+   "site_milestone": null,
+   "iso": "D.6.I.",
+   "d": "The suite of programs designed to generate the final analysis outputs as referenced in the SAP.",
+   "s": [
+    "Final Analysis Datasets Programs",
+    "Final Analysis Macros",
+    "Final Analysis Programs"
+   ]
+  },
+  {
+   "n": "11.03.09",
+   "u": "225",
+   "name": "Final Analysis Datasets",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "37",
+   "dating": "File Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "The datasets used for the final analysis/case report tabulation (CRT) package. If required, study-level submission datasets can be filed here.",
+   "s": [
+    "Final Analysis Datasets"
+   ]
+  },
+  {
+   "n": "11.03.10",
+   "u": "226",
+   "name": "Final Analysis Output",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "M",
+   "process": "37",
+   "dating": "Document Date",
+   "site_milestone": null,
+   "iso": "8.4",
+   "d": "The Tables, Listings and Figures produced from the final analysis datasets; includes Statistics approval. May be appended to the CSR.",
+   "s": [
+    "Final Analysis Graphs",
+    "Final Analysis Figures",
+    "Final Analysis Listings",
+    "Final Analysis Statistics Approval",
+    "Final Analysis Tables"
+   ]
+  },
+  {
+   "n": "11.03.11",
+   "u": "227",
+   "name": "Subject Evaluability Criteria and Subject Classification",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "M",
+   "process": "36",
+   "dating": "Version Date",
+   "site_milestone": null,
+   "iso": "A.6.3",
+   "d": "To document the decisions which define the criteria applied to evaluate each subject in the trial, in order to unambiguously assign the subject to the populations established in the SAP.",
+   "s": [
+    "Final Protocol Deviation Report",
+    "Population Definition Criteria",
+    "Protocol Deviation Listing",
+    "Subject Evaluability Criteria and Subject Classification"
+   ]
+  },
+  {
+   "n": "11.04.01",
+   "u": "228",
+   "name": "Interim Statistical Report(s)",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "40",
+   "dating": "Report Date",
+   "site_milestone": null,
+   "iso": "E.3.8 8.3 9.2.6 b Annex D",
+   "d": "To summarize the relevant statistical aspects of the interim analysis. May be appended to the CSR.",
+   "s": [
+    "Interim Statistical Report(s)"
+   ]
+  },
+  {
+   "n": "11.04.02",
+   "u": "229",
+   "name": "Statistical Report",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "37",
+   "dating": "Report Date",
+   "site_milestone": null,
+   "iso": "E.3.8 8.3 9.2.6 b Annex D",
+   "d": "To summarize the relevant statistical aspects of the final analysis. May be appended to the CSR.",
+   "s": [
+    "Statistical Report"
+   ]
+  },
+  {
+   "n": "11.05.01",
+   "u": "230",
+   "name": "Relevant Communications",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "Per content",
+   "dating": "Correspondence Date",
+   "site_milestone": null,
+   "iso": "E2.11 9.2.3 c 9.2.4.5 o 10.6.h",
+   "d": "Zone-specific agreements, significant discussions or relevant information, but not specifically listed in this Reference Model. Types of correspondence may include, but not limited to: letters, memo, electronic communications and faxes.",
+   "s": [
+    "Relevant Communications"
+   ]
+  },
+  {
+   "n": "11.05.02",
+   "u": "231",
+   "name": "Tracking Information",
+   "cl": "Recommended",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "21",
+   "dating": "Last Entry Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "Zone-specific documents developed for the purpose of tracking activities during the course of the trial.",
+   "s": [
+    "Tracking Information"
+   ]
+  },
+  {
+   "n": "11.05.03",
+   "u": "232",
+   "name": "Meeting Material",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "37",
+   "dating": "Meeting Start Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "Agenda, presentation materials and other documentation generated during an internal or external zone-related meeting which documents any agreements or significant discussions. Includes meeting minutes or Q&A, attendance sheets and any pre-meeting material.",
+   "s": [
+    "Agenda",
+    "Attendance Sheet",
+    "Minutes",
+    "Presentation Materials"
+   ]
+  },
+  {
+   "n": "11.05.04",
+   "u": "233",
+   "name": "Filenote",
+   "cl": "Core",
+   "sponsor": true,
+   "investigator": false,
+   "device_sponsor": true,
+   "device_investigator": false,
+   "iis": "D",
+   "process": "20",
+   "dating": "Filenote Date",
+   "site_milestone": null,
+   "iso": "",
+   "d": "To document any decision or to clarify any information relating to this zone.",
+   "s": [
+    "Filenote"
+   ]
+  }
+ ]
+}
