@@ -45,3 +45,6 @@ next-env.d.ts
 
 # supabase cli local state
 supabase/.temp
+
+# browser check screenshots
+test-screenshots/
