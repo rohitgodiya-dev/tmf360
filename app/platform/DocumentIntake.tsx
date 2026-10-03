@@ -1,0 +1,234 @@
+"use client";
+// Document Intake (Part 5): files arrive here first, are checked and indexed, then filed into the TMF.
+import { useCallback, useEffect, useRef, useState } from "react";
+import { supabase } from "../../lib/supabase";
+import { apiFetch, authHeaders } from "../../lib/api/client";
+
+type Artifact = { z: string; zn: string; a: string; an: string; cl: string };
+type Suggestion = { artifact_num?: string; artifact_name?: string; confidence?: number; reasoning?: string; issues?: string[] };
+type Item = {
+  id: string; row_version: number; status: string; verification_status: string;
+  file_name: string; file_type: string | null; file_size_bytes: number | null; created_at: string;
+  artifact_num: string | null; title: string | null; version_label: string | null; effective_date: string | null;
+  owner: string | null; notes: string | null; suggestion: Suggestion | null;
+};
+type Draft = Pick<Item, "artifact_num" | "title" | "version_label" | "effective_date" | "owner" | "notes">;
+
+const C = {
+  primary: "#F97316", primaryLight: "#FFEDD5", text: "#111827", textSec: "#374151", textTert: "#6B7280",
+  border: "#E5E7EB", bg: "#FFFFFF", bgSec: "#F9FAFB", success: "#065F46", successBg: "#ECFDF5",
+  danger: "#991B1B", dangerBg: "#FEF2F2", warn: "#92400E", warnBg: "#FFFBEB",
+};
+const input: React.CSSProperties = { width: "100%", fontSize: "12px", padding: "6px 8px", border: `0.5px solid ${C.border}`, borderRadius: "6px", boxSizing: "border-box" };
+const btn = (bg: string, color: string): React.CSSProperties => ({ fontSize: "11px", fontWeight: 600, padding: "6px 12px", background: bg, color, border: "none", borderRadius: "6px", cursor: "pointer" });
+
+async function sha256Hex(file: File) {
+  const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+const alreadyStored = (e: { message?: string; statusCode?: unknown }) =>
+  String(e.statusCode) === "409" || /already exists|duplicate/i.test(e.message || "");
+
+function readBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result).split(",")[1] ?? "");
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(file);
+  });
+}
+
+export default function DocumentIntake({ study, orgId, artifacts, zones, canUpload, onFiled }: {
+  study: { id: string; study_id: string }; orgId: string; artifacts: Artifact[]; zones: { z: string; zn: string }[];
+  canUpload: boolean; onFiled: () => void;
+}) {
+  const [items, setItems] = useState<Item[]>([]);
+  const [drafts, setDrafts] = useState<Record<string, Draft>>({});
+  const [busy, setBusy] = useState<string>("");
+  const [message, setMessage] = useState<string>("");
+  const [dragging, setDragging] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const base = `/studies/${study.id}/intake`;
+
+  const load = useCallback(async () => {
+    try {
+      const r = await apiFetch<{ data: Item[] }>(base);
+      setItems(r.data);
+      setDrafts(Object.fromEntries(r.data.map((i) => [i.id, {
+        artifact_num: i.artifact_num, title: i.title, version_label: i.version_label,
+        effective_date: i.effective_date, owner: i.owner, notes: i.notes,
+      }])));
+    } catch (e) { setMessage((e as Error).message); }
+  }, [base]);
+  useEffect(() => { load(); }, [load]);
+
+  async function suggest(item: Item, file: File) {
+    if (!/pdf$/i.test(file.name)) return;
+    try {
+      const res = await fetch("/api/classify", {
+        method: "POST", headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+        body: JSON.stringify({ pdfBase64: await readBase64(file), fileName: file.name, activeZONES: zones, activeTMF: artifacts }),
+      });
+      const s = await res.json();
+      if (!res.ok || s.error) return;
+      await apiFetch(`${base}/${item.id}`, { method: "PATCH", body: JSON.stringify({ row_version: item.row_version, suggestion: s }) });
+    } catch { /* a suggestion is optional */ }
+  }
+
+  async function receive(files: FileList | File[]) {
+    setMessage("");
+    for (const file of Array.from(files)) {
+      setBusy(`Receiving ${file.name}…`);
+      try {
+        const hash = await sha256Hex(file);
+        const ext = (file.name.split(".").pop() || "bin").toLowerCase();
+        const path = `${orgId}/${study.study_id}/${hash}.${ext}`;
+        const { error } = await supabase.storage.from("Documents").upload(path, file);
+        if (error && !alreadyStored(error)) throw new Error(error.message);
+        const item = await apiFetch<Item>(base, {
+          method: "POST",
+          body: JSON.stringify({ file_path: path, file_name: file.name, file_type: file.type || null, file_size_bytes: file.size, file_hash: hash }),
+        });
+        if (item.verification_status !== "verified") setMessage(`${file.name}: integrity check ${item.verification_status}. Reject it and add the file again.`);
+        else { setBusy(`Suggesting an artifact for ${file.name}…`); await suggest(item, file); }
+      } catch (e) {
+        setMessage(`${file.name}: ${(e as Error).message}`);
+      }
+    }
+    setBusy("");
+    load();
+  }
+
+  const setDraft = (id: string, patch: Partial<Draft>) => setDrafts((d) => ({ ...d, [id]: { ...d[id], ...patch } }));
+
+  async function save(item: Item) {
+    const d = drafts[item.id];
+    const updated = await apiFetch<Item>(`${base}/${item.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        row_version: item.row_version, artifact_num: d.artifact_num || null, title: d.title || null,
+        version_label: d.version_label || null, effective_date: d.effective_date || null, owner: d.owner || null, notes: d.notes || null,
+      }),
+    });
+    setItems((list) => list.map((i) => (i.id === item.id ? updated : i)));
+    return updated;
+  }
+
+  async function run(label: string, fn: () => Promise<void>) {
+    setBusy(label); setMessage("");
+    try { await fn(); } catch (e) { setMessage((e as Error).message); }
+    setBusy("");
+  }
+
+  const fileIt = (item: Item) => run(`Filing ${item.file_name}…`, async () => {
+    await save(item);
+    await apiFetch(`${base}/${item.id}/file`, { method: "POST" });
+    await load();
+    onFiled();
+    setMessage(`${item.file_name} was filed to the TMF as a Draft.`);
+  });
+
+  const reject = (item: Item) => {
+    const reason = prompt(`Why is "${item.file_name}" being rejected?`);
+    if (!reason?.trim()) return;
+    run(`Rejecting ${item.file_name}…`, async () => {
+      await apiFetch(`${base}/${item.id}`, { method: "PATCH", body: JSON.stringify({ row_version: item.row_version, reject: reason.trim() }) });
+      await load();
+    });
+  };
+
+  const sortedArtifacts = artifacts.slice().sort((a, b) => a.a.localeCompare(b.a, undefined, { numeric: true }));
+  const verification = (s: string) => s === "verified"
+    ? <span style={{ fontSize: "10px", fontWeight: 600, padding: "2px 8px", borderRadius: "20px", background: C.successBg, color: C.success }}>Integrity verified</span>
+    : <span style={{ fontSize: "10px", fontWeight: 600, padding: "2px 8px", borderRadius: "20px", background: C.dangerBg, color: C.danger }}>Integrity {s}</span>;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+      <div>
+        <h1 style={{ fontSize: "20px", fontWeight: 700, color: C.text }}>Document Intake — {study.study_id}</h1>
+        <p style={{ fontSize: "12px", color: C.textTert, marginTop: "2px" }}>
+          New files land here first. Each is checked on the server, indexed to a TMF artifact, then filed as a Draft document.
+        </p>
+      </div>
+
+      {canUpload && (
+        <div
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => { e.preventDefault(); setDragging(false); if (e.dataTransfer.files.length) receive(e.dataTransfer.files); }}
+          onClick={() => fileInput.current?.click()}
+          style={{ border: `1.5px dashed ${dragging ? C.primary : C.border}`, background: dragging ? C.primaryLight : C.bg, borderRadius: "12px", padding: "1.5rem", textAlign: "center", cursor: "pointer" }}
+        >
+          <i className="ti ti-inbox" style={{ fontSize: "26px", color: C.primary }} />
+          <div style={{ fontSize: "13px", fontWeight: 600, color: C.text, marginTop: "4px" }}>Drop files here or click to choose</div>
+          <div style={{ fontSize: "11px", color: C.textTert }}>PDFs get an AI artifact suggestion; you always choose the artifact.</div>
+          <input ref={fileInput} type="file" multiple style={{ display: "none" }} onChange={(e) => { if (e.target.files?.length) receive(e.target.files); e.target.value = ""; }} />
+        </div>
+      )}
+
+      {busy && <div style={{ fontSize: "12px", color: C.textSec }}>{busy}</div>}
+      {message && <div style={{ fontSize: "12px", padding: "8px 10px", borderRadius: "8px", background: C.warnBg, color: C.warn }}>{message}</div>}
+
+      {items.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "2.5rem", color: C.textTert, background: C.bg, border: `0.5px solid ${C.border}`, borderRadius: "12px", fontSize: "12px" }}>
+          Nothing waiting in intake.
+        </div>
+      ) : items.map((item) => {
+        const d = drafts[item.id] ?? ({} as Draft);
+        const s = item.suggestion;
+        const disabled = !canUpload || !!busy;
+        return (
+          <div key={item.id} style={{ background: C.bg, border: `0.5px solid ${C.border}`, borderRadius: "12px", padding: "14px 16px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+              <i className="ti ti-file-text" style={{ fontSize: "16px", color: C.textTert }} />
+              <span style={{ fontSize: "13px", fontWeight: 600, color: C.text }}>{item.file_name}</span>
+              {verification(item.verification_status)}
+              <span style={{ fontSize: "11px", color: C.textTert, marginLeft: "auto" }}>Received {new Date(item.created_at).toLocaleString()}</span>
+            </div>
+
+            {s?.artifact_num && (
+              <div style={{ marginTop: "10px", fontSize: "11px", color: C.textSec, background: C.bgSec, borderRadius: "8px", padding: "8px 10px" }}>
+                <strong>Suggested:</strong> {s.artifact_num} — {s.artifact_name} ({s.confidence ?? "?"}%)
+                {s.reasoning && <div style={{ color: C.textTert, marginTop: "2px" }}>{s.reasoning}</div>}
+                {!!s.issues?.length && <div style={{ color: C.warn, marginTop: "2px" }}>Issues: {s.issues.join("; ")}</div>}
+                {d.artifact_num !== s.artifact_num && artifacts.some((a) => a.a === s.artifact_num) && (
+                  <button disabled={disabled} onClick={() => setDraft(item.id, { artifact_num: s.artifact_num! })} style={{ ...btn(C.primaryLight, C.primary), marginTop: "6px" }}>Use suggestion</button>
+                )}
+              </div>
+            )}
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "8px", marginTop: "10px" }}>
+              <label style={{ gridColumn: "1 / -1", fontSize: "11px", color: C.textSec }}>TMF artifact
+                <select disabled={disabled} value={d.artifact_num ?? ""} onChange={(e) => setDraft(item.id, { artifact_num: e.target.value || null })} style={input}>
+                  <option value="">Choose an artifact…</option>
+                  {sortedArtifacts.map((a) => <option key={a.a} value={a.a}>{a.a} — {a.an} (Zone {a.z})</option>)}
+                </select>
+              </label>
+              <label style={{ fontSize: "11px", color: C.textSec }}>Title
+                <input disabled={disabled} value={d.title ?? ""} placeholder={item.file_name} onChange={(e) => setDraft(item.id, { title: e.target.value })} style={input} />
+              </label>
+              <label style={{ fontSize: "11px", color: C.textSec }}>Version
+                <input disabled={disabled} value={d.version_label ?? ""} onChange={(e) => setDraft(item.id, { version_label: e.target.value })} style={input} />
+              </label>
+              <label style={{ fontSize: "11px", color: C.textSec }}>Effective date
+                <input disabled={disabled} type="date" value={d.effective_date ?? ""} onChange={(e) => setDraft(item.id, { effective_date: e.target.value || null })} style={input} />
+              </label>
+              <label style={{ fontSize: "11px", color: C.textSec }}>Owner
+                <input disabled={disabled} value={d.owner ?? ""} onChange={(e) => setDraft(item.id, { owner: e.target.value })} style={input} />
+              </label>
+            </div>
+
+            {canUpload && (
+              <div style={{ display: "flex", gap: "8px", marginTop: "12px", justifyContent: "flex-end" }}>
+                <button disabled={disabled} onClick={() => reject(item)} style={btn(C.dangerBg, C.danger)}>Reject</button>
+                <button disabled={disabled} onClick={() => run("Saving…", async () => { await save(item); setMessage("Saved."); })} style={btn(C.bgSec, C.textSec)}>Save</button>
+                <button disabled={disabled || item.verification_status !== "verified" || !d.artifact_num} onClick={() => fileIt(item)}
+                  style={{ ...btn(C.primary, "#fff"), opacity: item.verification_status !== "verified" || !d.artifact_num ? 0.5 : 1 }}>File to TMF</button>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}

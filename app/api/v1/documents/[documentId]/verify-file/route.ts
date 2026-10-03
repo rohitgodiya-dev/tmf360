@@ -1,7 +1,7 @@
-import { createHash } from "node:crypto";
 import { writeAudit } from "@/lib/api/audit";
 import { requireUser } from "@/lib/api/auth";
 import { dbError } from "@/lib/api/db";
+import { hashInPath, hashStoredFile } from "@/lib/api/files";
 import { handle, notFound } from "@/lib/api/http";
 import { serviceClient } from "@/lib/api/service";
 
@@ -31,14 +31,12 @@ export const POST = handle(async (req: Request, { params }: { params: Promise<{ 
   if (!version) throw notFound("This document has no file");
 
   let status: Status;
-  let hash: string | null = null;
-  const { data: blob } = await svc.storage.from("Documents").download(version.file_path);
-  if (!blob) {
+  const hash = await hashStoredFile(version.file_path);
+  if (!hash) {
     status = "missing";
   } else {
-    hash = createHash("sha256").update(Buffer.from(await blob.arrayBuffer())).digest("hex");
     // New uploads are named <sha256>.<ext>; the name is a second statement of the hash.
-    const named = /(?:^|\/)([0-9a-f]{64})\.[^/]*$/i.exec(version.file_path)?.[1]?.toLowerCase() ?? null;
+    const named = hashInPath(version.file_path);
     const expected = version.file_hash?.toLowerCase() ?? named;
     if (!expected) status = "baselined";
     else status = hash === expected && (!named || named === expected) ? "verified" : "mismatch";

@@ -6,6 +6,7 @@ import{signedFileUrl,previewFileUrl,openFile,downloadFile}from"../../lib/files";
 import{apiFetch,authHeaders}from"../../lib/api/client";
 import{LEGACY_TMF,LEGACY_ZONES}from"../../lib/taxonomy";
 import JSZip from"jszip";
+import DocumentIntake from"./DocumentIntake";
 
 
 
@@ -663,6 +664,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {navItem("studies","Studies","ti-flask")}
           {activeStudy?.id&&<a href={`/platform/studies/${activeStudy.id}/structure`} style={{display:"flex",alignItems:"center",gap:"8px",padding:"7px 10px",borderRadius:"8px",fontSize:"12px",color:"#374151",textDecoration:"none",fontWeight:"400"}}><i className="ti ti-sitemap" style={{fontSize:"15px"}}/>Study structure</a>}
           <p style={{fontSize:"9px",fontWeight:"500",color:P.textTert,padding:"10px 10px 4px",textTransform:"uppercase",letterSpacing:".06em"}}>TMF</p>
+          {navItem("intake","Document Intake","ti-inbox")}
           {navItem("documents","Documents","ti-files")}
           {navItem("artifacts","Artifact browser","ti-layout-grid")}
           {navItem("gap","Gap analysis","ti-clipboard-check")}
@@ -1671,6 +1673,12 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
             <ArchivedPanel user={user} P={P} supabase={supabase} orgId={orgId} activeStudy={activeStudy} currentUserRole={currentUserRole} logAudit={logAudit} setDocs={setDocs}/>
           )}
 
+          {/* DOCUMENT INTAKE (Part 5) */}
+          {panel==="intake"&&(activeStudy?.id&&orgId?(
+            <DocumentIntake study={{id:activeStudy.id,study_id:activeStudy.study_id}} orgId={orgId} artifacts={activeTMF} zones={activeZONES}
+              canUpload={canUploadDownload&&hasPermission(currentUserRole as Role,"upload_document")}
+              onFiled={()=>loadDocsWithOrg(activeStudy.study_id,orgId)}/>
+          ):<div style={{padding:"2rem",color:P.textTert,fontSize:"12px"}}>Select a study to use Document Intake.</div>)}
           {/* RECYCLE BIN */}
           {panel==="recyclebin"&&(
             <div style={{display:"flex",flexDirection:"column",gap:"14px"}}>
