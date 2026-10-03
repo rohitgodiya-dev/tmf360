@@ -1,22 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { escapeHtml as esc, sendEmail } from "@/lib/email";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-async function sendEmail(to: string, subject: string, html: string) {
-  return fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.RESEND_API_KEY}` },
-    body: JSON.stringify({ from: "TMF360 <onboarding@resend.dev>", to, subject, html })
-  });
-}
+
 
 export async function GET(req: NextRequest) {
+  // Fails closed if CRON_SECRET is not configured ("Bearer undefined" must never match).
+  const cronSecret = process.env.CRON_SECRET;
   const authHeader = req.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -61,11 +58,17 @@ export async function GET(req: NextRequest) {
           .eq("is_active", true)
           .in("role", ["System Administrator", "Sponsor Admin", "TMF Lead"]);
 
-        // Also notify document owner by email if they have an account
-        const ownerEmail = doc.owner?.includes("@") ? doc.owner : null;
+        // Also notify the document owner, but only if "owner" is the email of an active
+        // user in the same organisation. It is free text, so anything else is ignored
+        // (otherwise document details could be emailed to any outside address).
+        const ownerText = typeof doc.owner === "string" ? doc.owner.trim() : "";
         const allRecipients = [...(recipients||[])];
-        if (ownerEmail && !allRecipients.find(r => r.email === ownerEmail)) {
-          allRecipients.push({ email: ownerEmail, full_name: doc.owner, role: "Owner" });
+        if (ownerText.includes("@") && !allRecipients.find(r => r.email?.toLowerCase() === ownerText.toLowerCase())) {
+          const { data: ownerRole } = await supabaseAdmin
+            .from("user_roles").select("email, full_name, role")
+            .eq("org_id", doc.org_id).eq("is_active", true).ilike("email", ownerText.replace(/[\\%_]/g, (c: string) => "\\" + c))
+            .maybeSingle();
+          if (ownerRole) allRecipients.push(ownerRole);
         }
 
         const color = daysLeft <= 15 ? "#EF4444" : daysLeft <= 30 ? "#F59E0B" : "#6366F1";
@@ -81,12 +84,12 @@ export async function GET(req: NextRequest) {
     <div style="background:${color}22;border:1px solid ${color}44;border-radius:8px;padding:10px 14px;margin-bottom:16px;display:inline-block">
       <span style="color:${color};font-weight:700;font-size:13px">⚠️ ${urgency} — ${daysLeft} days until expiry</span>
     </div>
-    <h2 style="font-size:16px;color:#111;margin:0 0 16px">${doc.artifact_name}</h2>
+    <h2 style="font-size:16px;color:#111;margin:0 0 16px">${esc(doc.artifact_name)}</h2>
     <table style="width:100%;border-collapse:collapse;background:#F9FAFB;border-radius:8px;overflow:hidden;margin-bottom:20px;">
-      <tr><td style="padding:8px 14px;font-size:12px;color:#6B7280;border-bottom:1px solid #E5E7EB"><strong>Document:</strong> ${doc.custom_file_name||doc.file_name||doc.artifact_name}</td></tr>
-      <tr><td style="padding:8px 14px;font-size:12px;color:#6B7280;border-bottom:1px solid #E5E7EB"><strong>Zone:</strong> ${doc.zone}</td></tr>
-      <tr><td style="padding:8px 14px;font-size:12px;color:#6B7280;border-bottom:1px solid #E5E7EB"><strong>Artifact:</strong> ${doc.artifact_num}</td></tr>
-      <tr><td style="padding:8px 14px;font-size:12px;color:#6B7280;border-bottom:1px solid #E5E7EB"><strong>Expiry Date:</strong> ${doc.expiry_date}</td></tr>
+      <tr><td style="padding:8px 14px;font-size:12px;color:#6B7280;border-bottom:1px solid #E5E7EB"><strong>Document:</strong> ${esc(doc.custom_file_name||doc.file_name||doc.artifact_name)}</td></tr>
+      <tr><td style="padding:8px 14px;font-size:12px;color:#6B7280;border-bottom:1px solid #E5E7EB"><strong>Zone:</strong> ${esc(doc.zone)}</td></tr>
+      <tr><td style="padding:8px 14px;font-size:12px;color:#6B7280;border-bottom:1px solid #E5E7EB"><strong>Artifact:</strong> ${esc(doc.artifact_num)}</td></tr>
+      <tr><td style="padding:8px 14px;font-size:12px;color:#6B7280;border-bottom:1px solid #E5E7EB"><strong>Expiry Date:</strong> ${esc(doc.expiry_date)}</td></tr>
       <tr><td style="padding:8px 14px;font-size:12px;color:${color}"><strong>Days Remaining:</strong> ${daysLeft} days</td></tr>
     </table>
     <p style="font-size:13px;color:#374151;">Please renew or replace this document before it expires to maintain TMF compliance.</p>

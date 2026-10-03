@@ -1,9 +1,8 @@
 // Server-side email via Resend. All user-supplied text must go through escapeHtml
 // before it is placed in an email body.
 
-// onboarding@resend.dev only delivers to the Resend account owner; set EMAIL_FROM
-// to an address on a domain verified in Resend for real delivery.
-const FROM = process.env.EMAIL_FROM || "TMF360 <onboarding@resend.dev>";
+// trial360os.com is verified in Resend; EMAIL_FROM (set in Vercel) overrides the default.
+const FROM = process.env.EMAIL_FROM || "TMF360 <noreply@trial360os.com>";
 
 export function escapeHtml(value: unknown): string {
   return String(value ?? "")

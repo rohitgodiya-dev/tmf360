@@ -1,6 +1,7 @@
 "use client";
 import{useState,useEffect}from"react";
 import{supabase}from"../../../lib/supabase";
+import{authHeaders}from"../../../lib/api/client";
 import{useRouter}from"next/navigation";
 
 const P={
@@ -131,13 +132,13 @@ export default function Site360AdminPortal(){
   async function generateToken(){
     if(!genSiteName.trim()){alert("Please enter a site name.");return;}
     setGenLoading(true);
-    const res=await fetch("/api/generate-site360-token",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({site_name:genSiteName,email:genEmail,secret:process.env.NEXT_PUBLIC_SITE360_TOKEN_SECRET||"site360-admin-2026",created_by:adminUser?.email})});
+    const res=await fetch("/api/generate-site360-token",{method:"POST",headers:{"Content-Type":"application/json",...(await authHeaders())},body:JSON.stringify({site_name:genSiteName,email:genEmail})});
     const data=await res.json();
     if(data.signup_url){
       setGeneratedLink(data.signup_url);
       loadAllData();
     }else{
-      alert("Error: "+data.error);
+      alert("Error: "+(data.error?.message??data.error));
     }
     setGenLoading(false);
   }
@@ -630,7 +631,7 @@ export default function Site360AdminPortal(){
                   <div style={{borderTop:"0.5px solid #E5E7EB",paddingTop:"12px"}}>
                     <div style={{fontSize:"11px",fontWeight:"600",color:"#374151",marginBottom:"8px"}}>Convert to Client</div>
                     <button onClick={async()=>{
-                      const res=await fetch("/api/generate-site360-token",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({site_name:selectedDemo.site_name,email:selectedDemo.email,secret:process.env.NEXT_PUBLIC_SITE360_TOKEN_SECRET||"site360-admin-2026",created_by:adminUser?.email})});
+                      const res=await fetch("/api/generate-site360-token",{method:"POST",headers:{"Content-Type":"application/json",...(await authHeaders())},body:JSON.stringify({site_name:selectedDemo.site_name,email:selectedDemo.email})});
                       const data=await res.json();
                       if(data.signup_url){navigator.clipboard.writeText(data.signup_url);alert("Signup link copied!");}
                     }} style={{fontSize:"11px",padding:"8px 16px",background:"#ECFDF5",color:"#065F46",border:"0.5px solid #A7F3D0",borderRadius:"8px",cursor:"pointer",fontWeight:"500"}}>Generate & Copy Signup Link</button>

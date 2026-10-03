@@ -28,7 +28,8 @@ export function bearerToken(req: Request): string | null {
   return match ? match[1].trim() : null;
 }
 
-export async function requireUser(req: Request): Promise<RequestContext> {
+/** Validates the bearer token and returns the user plus a client acting as them. */
+async function authenticate(req: Request): Promise<{ user: User; db: SupabaseClient }> {
   const token = bearerToken(req);
   if (!token) throw unauthenticated();
 
@@ -40,17 +41,30 @@ export async function requireUser(req: Request): Promise<RequestContext> {
   // Validates the token with Supabase Auth (signature, expiry, revoked sessions).
   const { data, error } = await db.auth.getUser(token);
   if (error || !data.user) throw unauthenticated("Session is invalid or expired");
+  return { user: data.user, db };
+}
+
+/** Platform operators listed in admin_users (the /admin and /site360/admin portals). */
+export async function requirePlatformAdmin(req: Request): Promise<{ user: User; db: SupabaseClient }> {
+  const auth = await authenticate(req);
+  const { data: isAdmin, error } = await auth.db.rpc("is_platform_admin");
+  if (error || !isAdmin) throw forbidden();
+  return auth;
+}
+
+export async function requireUser(req: Request): Promise<RequestContext> {
+  const { user, db } = await authenticate(req);
 
   const { data: roleRow } = await db
     .from("user_roles")
     .select("org_id, role")
-    .eq("user_id", data.user.id)
+    .eq("user_id", user.id)
     .eq("is_active", true)
     .limit(1)
     .maybeSingle();
   if (!roleRow?.org_id) throw forbidden("No active role in any organisation");
 
-  return { user: data.user, orgId: roleRow.org_id, role: roleRow.role as Role, db };
+  return { user, orgId: roleRow.org_id, role: roleRow.role as Role, db };
 }
 
 export function requirePermission(ctx: RequestContext, permission: Permission) {

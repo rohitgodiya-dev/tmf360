@@ -34,10 +34,12 @@ function SignupContent(){
   },[token]);
 
   async function validateToken(){
-    const{data,error}=await supabase.from("signup_tokens").select("*").eq("token",token).single();
+    // Checks only this token; the token table itself is not readable by visitors.
+    const{data:rows,error}=await supabase.rpc("check_signup_token",{p_token:token});
+    const data=rows?.[0];
     if(error||!data){setStep("invalid");return;}
-    if(data.used_at){setStep("used");return;}
-    if(new Date(data.expires_at)<new Date()){setStep("expired");return;}
+    if(data.status==="used"){setStep("used");return;}
+    if(data.status==="expired"){setStep("expired");return;}
     setTokenData(data);
     if(data.email)setEmail(data.email);
     setStep("form");
@@ -62,7 +64,7 @@ function SignupContent(){
       if(!authData.user){setError("Account creation failed. Please try again.");setLoading(false);return;}
 
       // Mark token as used
-      await supabase.from("signup_tokens").update({used_at:new Date().toISOString()}).eq("token",token);
+      await supabase.rpc("use_signup_token",{p_token:token});
 
       setStep("success");
       // Sign in and redirect to setup

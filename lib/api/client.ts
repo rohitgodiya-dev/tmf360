@@ -8,6 +8,13 @@ export class ApiClientError extends Error {
   }
 }
 
+/** Authorization header for the current session, for calls that don't go through apiFetch. */
+export async function authHeaders(): Promise<Record<string, string>> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;

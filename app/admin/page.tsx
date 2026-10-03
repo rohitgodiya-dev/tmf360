@@ -1,6 +1,7 @@
 "use client";
 import{useState,useEffect}from"react";
 import{supabase}from"../../lib/supabase";
+import{authHeaders}from"../../lib/api/client";
 import{useRouter}from"next/navigation";
 
 const P={
@@ -117,13 +118,13 @@ export default function AdminPortal(){
   async function generateToken(){
     if(!genOrgName.trim()){alert("Please enter an organisation name.");return;}
     setGenLoading(true);
-    const res=await fetch("/api/generate-token",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({org_name:genOrgName,email:genEmail,secret:process.env.NEXT_PUBLIC_TOKEN_SECRET||"tmf360-admin-2026",created_by:adminUser?.email})});
+    const res=await fetch("/api/generate-token",{method:"POST",headers:{"Content-Type":"application/json",...(await authHeaders())},body:JSON.stringify({org_name:genOrgName,email:genEmail})});
     const data=await res.json();
     if(data.signup_url){
       setGeneratedLink(data.signup_url);
       loadAllData();
     }else{
-      alert("Error: "+data.error);
+      alert("Error: "+(data.error?.message??data.error));
     }
     setGenLoading(false);
   }
@@ -615,7 +616,7 @@ export default function AdminPortal(){
                   <div style={{borderTop:"0.5px solid #E5E7EB",paddingTop:"12px"}}>
                     <div style={{fontSize:"11px",fontWeight:"600",color:"#374151",marginBottom:"8px"}}>Convert to Client</div>
                     <button onClick={async()=>{
-                      const res=await fetch("/api/generate-token",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({org_name:selectedDemo.organisation,email:selectedDemo.email,secret:"tmf360-admin-2026",created_by:adminUser?.email})});
+                      const res=await fetch("/api/generate-token",{method:"POST",headers:{"Content-Type":"application/json",...(await authHeaders())},body:JSON.stringify({org_name:selectedDemo.organisation,email:selectedDemo.email})});
                       const data=await res.json();
                       if(data.signup_url){navigator.clipboard.writeText(data.signup_url);alert("Signup link copied!");}
                     }} style={{fontSize:"11px",padding:"8px 16px",background:"#ECFDF5",color:"#065F46",border:"0.5px solid #A7F3D0",borderRadius:"8px",cursor:"pointer",fontWeight:"500"}}>Generate & Copy Signup Link</button>

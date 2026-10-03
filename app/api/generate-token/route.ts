@@ -1,46 +1,27 @@
-import{NextRequest,NextResponse}from"next/server";
-import{createClient}from"@supabase/supabase-js";
+import { randomBytes } from "node:crypto";
+import { z } from "zod";
+import { requirePlatformAdmin } from "@/lib/api/auth";
+import { handle, parseBody } from "@/lib/api/http";
+import { serviceClient } from "@/lib/api/service";
 
-const supabase=createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Creates a TMF360 sign-up link. Platform admins only, identified by their session
+// (previously guarded by a "secret" sent from the browser, i.e. public).
+const schema = z.object({
+  org_name: z.string().trim().max(300).default(""),
+  email: z.string().trim().email().or(z.literal("")).default(""),
+});
 
-export async function POST(req:NextRequest){
-  try{
-    const{org_name,email,created_by,secret}=await req.json();
+export const POST = handle(async (req: Request) => {
+  const { user } = await requirePlatformAdmin(req);
+  const body = await parseBody(req, schema);
 
-    // Simple secret key check — change this to your own secret
-    if(secret!==process.env.TOKEN_GENERATOR_SECRET){
-      return NextResponse.json({error:"Unauthorized"},{ status:401});
-    }
+  const token = randomBytes(32).toString("hex");
+  const expires_at = new Date(Date.now() + 7 * 86_400_000).toISOString();
+  const { error } = await serviceClient().from("signup_tokens").insert([{
+    token, org_name: body.org_name, email: body.email, expires_at, created_by: user.email,
+  }]);
+  if (error) throw error;
 
-    // Generate a random token
-    const token=crypto.randomUUID().replace(/-/g,"")+crypto.randomUUID().replace(/-/g,"");
-
-    // Set expiry to 7 days from now
-    const expires_at=new Date(Date.now()+7*24*60*60*1000).toISOString();
-
-    const{data,error}=await supabase.from("signup_tokens").insert([{
-      token,
-      org_name:org_name||"",
-      email:email||"",
-      expires_at,
-      created_by:created_by||"admin",
-    }]).select().single();
-
-    if(error)return NextResponse.json({error:error.message},{status:500});
-
-    const signupUrl=`${process.env.NEXT_PUBLIC_APP_URL}/signup?token=${token}`;
-
-    return NextResponse.json({
-      token,
-      signup_url:signupUrl,
-      expires_at,
-      org_name,
-      email,
-    });
-  }catch(e:any){
-    return NextResponse.json({error:e.message},{status:500});
-  }
-}
+  const origin = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
+  return Response.json({ token, signup_url: `${origin}/signup?token=${token}`, expires_at, ...body });
+});

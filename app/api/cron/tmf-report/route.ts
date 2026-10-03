@@ -1,18 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { escapeHtml as esc, sendEmail } from "@/lib/email";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-async function sendEmail(to: string, subject: string, html: string) {
-  return fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.RESEND_API_KEY}` },
-    body: JSON.stringify({ from: "TMF360 <onboarding@resend.dev>", to, subject, html })
-  });
-}
+
 
 function shouldSendReport(freq: string, lastSent: string | null): boolean {
   if (freq === "Off") return false;
@@ -27,8 +22,10 @@ function shouldSendReport(freq: string, lastSent: string | null): boolean {
 }
 
 export async function GET(req: NextRequest) {
+  // Fails closed if CRON_SECRET is not configured ("Bearer undefined" must never match).
+  const cronSecret = process.env.CRON_SECRET;
   const authHeader = req.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -49,19 +46,23 @@ export async function GET(req: NextRequest) {
       // Get user email
       const { data: userRole } = await supabaseAdmin
         .from("user_roles")
-        .select("email, full_name, role")
+        .select("email, full_name, role, org_id")
         .eq("user_id", pref.user_id)
         .eq("is_active", true)
         .single();
 
       if (!userRole) continue;
       if (!["System Administrator","Sponsor Admin","TMF Lead"].includes(userRole.role)) continue;
+      // The report covers the user's actual organisation, never the org_id stored with
+      // their preferences (that value used to be settable by anyone).
+      const orgId = userRole.org_id;
+      if (!orgId) continue;
 
       // Get studies for this org
       const { data: studies } = await supabaseAdmin
         .from("studies")
         .select("*")
-        .eq("org_id", pref.org_id);
+        .eq("org_id", orgId);
 
       if (!studies || studies.length === 0) continue;
 
@@ -69,7 +70,7 @@ export async function GET(req: NextRequest) {
       const { data: docs } = await supabaseAdmin
         .from("documents")
         .select("*")
-        .eq("org_id", pref.org_id)
+        .eq("org_id", orgId)
         .is("deleted_at", null);
 
       const allDocs = docs || [];
@@ -88,7 +89,7 @@ export async function GET(req: NextRequest) {
       const { data: tmfConfig } = await supabaseAdmin
         .from("tmf_config")
         .select("*")
-        .eq("org_id", pref.org_id)
+        .eq("org_id", orgId)
         .eq("is_enabled", true)
         .eq("type", "artifact");
 
@@ -104,12 +105,12 @@ export async function GET(req: NextRequest) {
       });
 
       const missingZoneRows = Object.entries(missingByZone).slice(0, 5).map(([z, arts]: [string, any[]]) =>
-        `<tr><td style="padding:6px 10px;border-bottom:1px solid #E5E7EB;font-size:12px;">Zone ${z}</td><td style="padding:6px 10px;border-bottom:1px solid #E5E7EB;font-size:12px;color:#EF4444;">${arts.length} missing</td></tr>`
+        `<tr><td style="padding:6px 10px;border-bottom:1px solid #E5E7EB;font-size:12px;">Zone ${esc(z)}</td><td style="padding:6px 10px;border-bottom:1px solid #E5E7EB;font-size:12px;color:#EF4444;">${arts.length} missing</td></tr>`
       ).join("");
 
       const expiringRows = expiring.slice(0, 5).map((d: any) => {
         const daysLeft = Math.ceil((new Date(d.expiry_date).getTime() - now.getTime()) / 86400000);
-        return `<tr><td style="padding:6px 10px;border-bottom:1px solid #E5E7EB;font-size:12px;">${d.artifact_name}</td><td style="padding:6px 10px;border-bottom:1px solid #E5E7EB;font-size:12px;color:#F59E0B;">${daysLeft} days</td></tr>`;
+        return `<tr><td style="padding:6px 10px;border-bottom:1px solid #E5E7EB;font-size:12px;">${esc(d.artifact_name)}</td><td style="padding:6px 10px;border-bottom:1px solid #E5E7EB;font-size:12px;color:#F59E0B;">${daysLeft} days</td></tr>`;
       }).join("");
 
       const html = `
@@ -119,8 +120,8 @@ export async function GET(req: NextRequest) {
     <p style="color:#A5B4FC;font-size:11px;margin:4px 0 0">${pref.report_frequency} TMF Report</p>
   </div>
   <div style="padding:28px 32px">
-    <p style="font-size:13px;color:#374151;">Hi ${userRole.full_name||userRole.email},</p>
-    <p style="font-size:13px;color:#374151;">Here is your ${pref.report_frequency.toLowerCase()} TMF summary for <strong>${studies.map((s:any)=>s.study_id).join(", ")}</strong>.</p>
+    <p style="font-size:13px;color:#374151;">Hi ${esc(userRole.full_name||userRole.email)},</p>
+    <p style="font-size:13px;color:#374151;">Here is your ${pref.report_frequency.toLowerCase()} TMF summary for <strong>${esc(studies.map((s:any)=>s.study_id).join(", "))}</strong>.</p>
     
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:20px 0;">
       <div style="background:#EFF6FF;border-radius:8px;padding:12px;text-align:center;">

@@ -3029,10 +3029,10 @@ function UserManagementPanel({user, P, supabase, activeStudy, orgId}: {user: any
   }
 
   async function changeUserPassword() {
-    if(!newPwd.trim()||newPwd.length<6){setPwdMsg("Password must be at least 6 characters.");return;}
-    const res=await fetch("/api/change-password",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({user_id:pwdTargetUser.user_id,new_password:newPwd})});
-    const data=await res.json();
-    if(data.error){setPwdMsg("Error: "+data.error);}else{setPwdMsg("Password changed successfully.");setTimeout(()=>{setShowPwdModal(false);setPwdTargetUser(null);setNewPwd("");setPwdMsg("");},1500);}
+    if(!newPwd.trim()||newPwd.length<8){setPwdMsg("Password must be at least 8 characters.");return;}
+    try{await apiFetch(`/users/${pwdTargetUser.user_id}/password`,{method:"PUT",body:JSON.stringify({new_password:newPwd})});}
+    catch(e:any){setPwdMsg("Error: "+e.message);return;}
+    {setPwdMsg("Password changed successfully.");setTimeout(()=>{setShowPwdModal(false);setPwdTargetUser(null);setNewPwd("");setPwdMsg("");},1500);}
   }
 
   return (
@@ -3491,8 +3491,7 @@ function TrackerPanel({user, P, supabase, orgId, currentUserRole}: {user: any, P
 
   useEffect(() => {
     if (!user) return;
-    fetch(`/api/notification-preferences?user_id=${user.id}`)
-      .then(r => r.json())
+    apiFetch<{report_frequency:string;expiry_window:number}>("/notification-preferences")
       .then(data => {
         if (data.report_frequency) setFreq(data.report_frequency);
         if (data.expiry_window) setExpiryWindow(data.expiry_window);
@@ -3502,14 +3501,10 @@ function TrackerPanel({user, P, supabase, orgId, currentUserRole}: {user: any, P
 
   async function savePrefs() {
     setSaving(true);
-    const res = await fetch("/api/notification-preferences", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ user_id: user.id, org_id: orgId, report_frequency: freq, expiry_window: expiryWindow })
-    });
-    const data = await res.json();
-    if (data.error) setMsg("Error: " + data.error);
-    else setMsg("Preferences saved successfully.");
+    try {
+      await apiFetch("/notification-preferences", { method: "PUT", body: JSON.stringify({ report_frequency: freq, expiry_window: Number(expiryWindow) }) });
+      setMsg("Preferences saved successfully.");
+    } catch (e: any) { setMsg("Error: " + e.message); }
     setSaving(false);
     setTimeout(() => setMsg(""), 3000);
   }
