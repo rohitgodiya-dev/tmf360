@@ -131,6 +131,73 @@ describe("receiving files", () => {
   });
 });
 
+describe("duplicate checks (Part 5b)", () => {
+  const extraDocs: string[] = [];
+  const addDoc = async (fields: Record<string, unknown>) => {
+    const { data, error } = await admin().from("documents").insert([{
+      org_id: orgA, user_id: uploader.id, study_id: study.code, artifact_num: artifact.artifact_num,
+      artifact_name: artifact.artifact_name, ...fields,
+    }]).select("id").single();
+    if (error) throw error;
+    extraDocs.push(data.id);
+    return data.id as string;
+  };
+  afterAll(async () => {
+    await admin().from("intake_items").update({ duplicate_of: null }).in("duplicate_of", extraDocs);
+    await admin().from("document_file_versions").delete().in("document_id", extraDocs);
+    await admin().from("documents").delete().in("id", extraDocs);
+  });
+
+  it("blocks a file that is already Final in the study", async () => {
+    const finalId = await addDoc({ status: "Approved", file_name: "Signed plan.pdf", custom_file_name: "Signed plan", file_hash: sha("signed plan") });
+    const r = await register(uploader, await store("signed plan"), sha("signed plan"));
+    expect(r.body).toMatchObject({ duplicate_status: "blocked", duplicate_of: finalId });
+    expect(r.body.duplicate_reason).toMatch(/already Final.*Signed plan/);
+    const idx = await patch(uploader, r.body.id, { row_version: r.body.row_version, artifact_num: artifact.artifact_num });
+    const f = await file(uploader, r.body.id);
+    expect(f.status).toBe(400);
+    expect(f.body.error.message).toMatch(/cannot be filed/);
+    const { count } = await admin().from("documents").select("id", { count: "exact", head: true })
+      .eq("org_id", orgA).eq("file_hash", sha("signed plan"));
+    expect(count).toBe(1);
+    await patch(uploader, r.body.id, { row_version: idx.body.row_version, reject: "Duplicate of a Final document" });
+  });
+
+  it("warns on the same file name and still allows filing", async () => {
+    await addDoc({ status: "Draft", file_name: "Monitoring report.pdf", file_hash: sha("old report") });
+    const path = await store("new report");
+    const r = await call(intake.POST, {
+      token: uploader.token, method: "POST", params: p(),
+      body: { file_path: path, file_name: "monitoring REPORT.pdf", file_type: "application/pdf", file_size_bytes: 10, file_hash: sha("new report") },
+    });
+    expect(r.body).toMatchObject({ duplicate_status: "warning" });
+    expect(r.body.duplicate_reason).toMatch(/same file name/);
+    const idx = await patch(uploader, r.body.id, { row_version: r.body.row_version, artifact_num: artifact.artifact_num });
+    expect((await file(uploader, idx.body.id)).status).toBe(201);
+  });
+
+  it("warns when the same file is in the TMF but not Final", async () => {
+    await addDoc({ status: "Under Review", file_name: "Lab manual.pdf", file_hash: sha("lab manual") });
+    const r = await register(uploader, await store("lab manual"), sha("lab manual"));
+    expect(r.body.duplicate_status).toBe("warning");
+    expect(r.body.duplicate_reason).toMatch(/exact file.*Under Review/);
+  });
+
+  it("re-checks at filing: a match approved after receipt blocks filing", async () => {
+    const r = await register(uploader, await store("late approval"), sha("late approval"));
+    expect(r.body.duplicate_status).not.toBe("blocked");   // "Protocol v2.pdf" name match only
+    await addDoc({ status: "Approved", file_name: "Late.pdf", file_hash: sha("late approval") });
+    const idx = await patch(uploader, r.body.id, { row_version: r.body.row_version, artifact_num: artifact.artifact_num });
+    expect((await file(uploader, idx.body.id)).status).toBe(400);
+  });
+
+  it("users can't clear a duplicate flag themselves", async () => {
+    const { error } = await uploader.db.from("intake_items").update({ duplicate_status: "none" })
+      .eq("org_id", orgA).eq("duplicate_status", "warning").eq("status", "received");
+    expect(error?.message).toMatch(/Only the server/);
+  });
+});
+
 describe("rejecting", () => {
   it("needs a reason and closes the item", async () => {
     const r = await register(uploader, await store("wrong study's file"), sha("wrong study's file"));

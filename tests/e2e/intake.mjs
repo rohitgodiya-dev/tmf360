@@ -55,6 +55,41 @@ try {
   await page.waitForTimeout(2500);
   await page.screenshot({ path: shot("4-documents") });
   console.log("documents panel shows filed doc:", await page.getByText("Protocol (E2E)").count() > 0);
+
+  // Part 5b: "+ Add document" sends the file to Document Intake (indexed), not straight into the TMF.
+  const rejectOpen = async (reason) => {
+    await page.getByRole("button", { name: "Reject", exact: true }).click();
+    await page.getByLabel("Reason for rejecting (required)").fill(reason);
+    await page.getByRole("button", { name: "Confirm reject" }).click();
+    await page.getByText("Nothing waiting in intake.").waitFor({ timeout: 30000 });
+  };
+  const pdf2 = Buffer.from(`%PDF-1.4\n% e2e second ${run}\n%%EOF\n`);
+  await page.getByRole("button", { name: "+ Add document" }).click();
+  await page.setInputFiles('input[type="file"]:not([multiple])', { name: "Monitoring E2E.pdf", mimeType: "application/pdf", buffer: pdf2 });
+  await page.getByText("Monitoring E2E.pdf ready").first().waitFor({ timeout: 30000 });
+  await page.screenshot({ path: shot("5-add-modal") });
+  await page.getByRole("button", { name: "Send to Document Intake" }).click();
+  await page.getByText("Drop files here").waitFor({ timeout: 30000 });
+  await page.getByText("Monitoring E2E.pdf").first().waitFor({ timeout: 30000 });
+  const { count: directDocs } = await svc.from("documents").select("id", { count: "exact", head: true }).eq("org_id", orgId);
+  const { data: modalItem } = await svc.from("intake_items").select("status, artifact_num").eq("org_id", orgId).eq("file_name", "Monitoring E2E.pdf").single();
+  console.log("add-document went to intake:", JSON.stringify(modalItem), "documents still:", directDocs);
+  await page.screenshot({ path: shot("6-modal-in-intake") });
+  await rejectOpen("E2E: not needed");
+
+  // The same file again (already a Draft in the TMF) → warning.
+  await page.setInputFiles('input[type="file"][multiple]', { name: "Protocol E2E.pdf", mimeType: "application/pdf", buffer: pdf });
+  await page.getByText("Possible duplicate").waitFor({ timeout: 60000 });
+  await page.screenshot({ path: shot("7-duplicate-warning") });
+  await rejectOpen("E2E: duplicate");
+
+  // Once that document is Final, the same file is blocked.
+  await svc.from("documents").update({ status: "Approved" }).eq("id", docs[0].id);
+  await page.setInputFiles('input[type="file"][multiple]', { name: "Protocol E2E.pdf", mimeType: "application/pdf", buffer: pdf });
+  await page.getByText("Duplicate — blocked").waitFor({ timeout: 60000 });
+  await page.locator("select").filter({ hasText: "Choose an artifact" }).selectOption({ index: 1 });
+  console.log("file button disabled when blocked:", await page.getByRole("button", { name: "File to TMF" }).isDisabled());
+  await page.screenshot({ path: shot("8-duplicate-blocked") });
   console.log("page errors:", JSON.stringify(errors));
   await browser.close();
 } finally {

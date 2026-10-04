@@ -8,6 +8,7 @@ type Artifact = { z: string; zn: string; a: string; an: string; cl: string };
 type Suggestion = { artifact_num?: string; artifact_name?: string; confidence?: number; reasoning?: string; issues?: string[] };
 type Item = {
   id: string; row_version: number; status: string; verification_status: string;
+  duplicate_status: "none" | "warning" | "blocked"; duplicate_reason: string | null;
   file_name: string; file_type: string | null; file_size_bytes: number | null; created_at: string;
   artifact_num: string | null; title: string | null; version_label: string | null; effective_date: string | null;
   owner: string | null; notes: string | null; suggestion: Suggestion | null;
@@ -47,6 +48,7 @@ export default function DocumentIntake({ study, orgId, artifacts, zones, canUplo
   const [busy, setBusy] = useState<string>("");
   const [message, setMessage] = useState<string>("");
   const [dragging, setDragging] = useState(false);
+  const [rejecting, setRejecting] = useState<{ id: string; reason: string } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const base = `/studies/${study.id}/intake`;
 
@@ -90,6 +92,7 @@ export default function DocumentIntake({ study, orgId, artifacts, zones, canUplo
           body: JSON.stringify({ file_path: path, file_name: file.name, file_type: file.type || null, file_size_bytes: file.size, file_hash: hash }),
         });
         if (item.verification_status !== "verified") setMessage(`${file.name}: integrity check ${item.verification_status}. Reject it and add the file again.`);
+        else if (item.duplicate_status === "blocked") setMessage(`${file.name}: ${item.duplicate_reason}. It can't be filed — reject it.`);
         else { setBusy(`Suggesting an artifact for ${file.name}…`); await suggest(item, file); }
       } catch (e) {
         setMessage(`${file.name}: ${(e as Error).message}`);
@@ -128,19 +131,21 @@ export default function DocumentIntake({ study, orgId, artifacts, zones, canUplo
     setMessage(`${item.file_name} was filed to the TMF as a Draft.`);
   });
 
-  const reject = (item: Item) => {
-    const reason = prompt(`Why is "${item.file_name}" being rejected?`);
-    if (!reason?.trim()) return;
-    run(`Rejecting ${item.file_name}…`, async () => {
-      await apiFetch(`${base}/${item.id}`, { method: "PATCH", body: JSON.stringify({ row_version: item.row_version, reject: reason.trim() }) });
-      await load();
-    });
-  };
+  const reject = (item: Item, reason: string) => run(`Rejecting ${item.file_name}…`, async () => {
+    await apiFetch(`${base}/${item.id}`, { method: "PATCH", body: JSON.stringify({ row_version: item.row_version, reject: reason.trim() }) });
+    setRejecting(null);
+    await load();
+  });
 
   const sortedArtifacts = artifacts.slice().sort((a, b) => a.a.localeCompare(b.a, undefined, { numeric: true }));
   const verification = (s: string) => s === "verified"
     ? <span style={{ fontSize: "10px", fontWeight: 600, padding: "2px 8px", borderRadius: "20px", background: C.successBg, color: C.success }}>Integrity verified</span>
     : <span style={{ fontSize: "10px", fontWeight: 600, padding: "2px 8px", borderRadius: "20px", background: C.dangerBg, color: C.danger }}>Integrity {s}</span>;
+  const duplicate = (s: Item["duplicate_status"]) => s === "blocked"
+    ? <span style={{ fontSize: "10px", fontWeight: 600, padding: "2px 8px", borderRadius: "20px", background: C.dangerBg, color: C.danger }}>Duplicate — blocked</span>
+    : s === "warning"
+      ? <span style={{ fontSize: "10px", fontWeight: 600, padding: "2px 8px", borderRadius: "20px", background: C.warnBg, color: C.warn }}>Possible duplicate</span>
+      : null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
@@ -183,8 +188,17 @@ export default function DocumentIntake({ study, orgId, artifacts, zones, canUplo
               <i className="ti ti-file-text" style={{ fontSize: "16px", color: C.textTert }} />
               <span style={{ fontSize: "13px", fontWeight: 600, color: C.text }}>{item.file_name}</span>
               {verification(item.verification_status)}
+              {duplicate(item.duplicate_status)}
               <span style={{ fontSize: "11px", color: C.textTert, marginLeft: "auto" }}>Received {new Date(item.created_at).toLocaleString()}</span>
             </div>
+
+            {item.duplicate_reason && (
+              <div style={{ marginTop: "10px", fontSize: "11px", borderRadius: "8px", padding: "8px 10px",
+                background: item.duplicate_status === "blocked" ? C.dangerBg : C.warnBg, color: item.duplicate_status === "blocked" ? C.danger : C.warn }}>
+                {item.duplicate_reason}.{" "}
+                {item.duplicate_status === "blocked" ? "A Final document can't be filed twice — reject this item." : "Check it isn't the same document before filing."}
+              </div>
+            )}
 
             {s?.artifact_num && (
               <div style={{ marginTop: "10px", fontSize: "11px", color: C.textSec, background: C.bgSec, borderRadius: "8px", padding: "8px 10px" }}>
@@ -218,14 +232,50 @@ export default function DocumentIntake({ study, orgId, artifacts, zones, canUplo
               </label>
             </div>
 
-            {canUpload && (
-              <div style={{ display: "flex", gap: "8px", marginTop: "12px", justifyContent: "flex-end" }}>
-                <button disabled={disabled} onClick={() => reject(item)} style={btn(C.dangerBg, C.danger)}>Reject</button>
-                <button disabled={disabled} onClick={() => run("Saving…", async () => { await save(item); setMessage("Saved."); })} style={btn(C.bgSec, C.textSec)}>Save</button>
-                <button disabled={disabled || item.verification_status !== "verified" || !d.artifact_num} onClick={() => fileIt(item)}
-                  style={{ ...btn(C.primary, "#fff"), opacity: item.verification_status !== "verified" || !d.artifact_num ? 0.5 : 1 }}>File to TMF</button>
-              </div>
-            )}
+            {canUpload && (() => {
+              const blocked = item.duplicate_status === "blocked";
+              const canFile = item.verification_status === "verified" && !!d.artifact_num && !blocked;
+              const art = artifacts.find((a) => a.a === d.artifact_num);
+              const isRejecting = rejecting?.id === item.id;
+              return (
+                <>
+                  {canFile && art && !isRejecting && (
+                    <div style={{ marginTop: "12px", fontSize: "11px", color: C.textSec, background: C.bgSec, borderRadius: "8px", padding: "8px 10px" }}>
+                      <strong>What happens next:</strong> filing creates a Draft document in Zone {art.z} under {art.a} — {art.an}, with this file and metadata.
+                      This intake item then closes and can no longer be edited here.
+                    </div>
+                  )}
+                  {isRejecting && (
+                    <div style={{ marginTop: "12px" }}>
+                      <label style={{ fontSize: "11px", color: C.textSec }}>Reason for rejecting (required)
+                        <input autoFocus value={rejecting.reason} onChange={(e) => setRejecting({ id: item.id, reason: e.target.value })} style={input} />
+                      </label>
+                      {!rejecting.reason.trim() && <div style={{ fontSize: "10px", color: C.danger, marginTop: "2px" }}>Enter a reason to reject this item.</div>}
+                      <div style={{ fontSize: "11px", color: C.textTert, marginTop: "4px" }}>
+                        What happens next: the item leaves intake and your reason is kept in the audit trail. Nothing is filed.
+                      </div>
+                    </div>
+                  )}
+                  <div style={{ display: "flex", gap: "8px", marginTop: "12px", justifyContent: "flex-end" }}>
+                    {isRejecting ? (
+                      <>
+                        <button disabled={disabled} onClick={() => setRejecting(null)} style={btn(C.bgSec, C.textSec)}>Cancel</button>
+                        <button disabled={disabled || !rejecting.reason.trim()} onClick={() => reject(item, rejecting.reason)}
+                          style={{ ...btn(C.danger, "#fff"), opacity: rejecting.reason.trim() ? 1 : 0.5 }}>Confirm reject</button>
+                      </>
+                    ) : (
+                      <>
+                        <button disabled={disabled} onClick={() => setRejecting({ id: item.id, reason: blocked ? "Duplicate of a Final document" : "" })}
+                          style={btn(C.dangerBg, C.danger)}>Reject</button>
+                        <button disabled={disabled} onClick={() => run("Saving…", async () => { await save(item); setMessage("Saved."); })} style={btn(C.bgSec, C.textSec)}>Save</button>
+                        <button disabled={disabled || !canFile} onClick={() => fileIt(item)}
+                          style={{ ...btn(C.primary, "#fff"), opacity: canFile ? 1 : 0.5 }}>File to TMF</button>
+                      </>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
           </div>
         );
       })}

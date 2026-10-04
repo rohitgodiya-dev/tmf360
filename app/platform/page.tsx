@@ -88,10 +88,9 @@ export default function Platform(){
   const[fZone,setFZone]=useState("1");
   const[fArtifact,setFArtifact]=useState("");
   const[fVersion,setFVersion]=useState("");
-  const[fDocStatus,setFDocStatus]=useState("Draft");
+  const[docModalError,setDocModalError]=useState("");
   const[fOwner,setFOwner]=useState("");
   const[fEff,setFEff]=useState("");
-  const[fExp,setFExp]=useState("");
   const[fComments,setFComments]=useState("");
   const[fCustomName,setFCustomName]=useState("");
   const[uploading,setUploading]=useState(false);
@@ -312,28 +311,29 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
     setUploading(false);
   }
 
+  // New files never go straight into the TMF (M05): they become an indexed Document Intake item, where the
+  // server verifies the stored bytes and checks for duplicates, and the user files them from there.
+  function closeDocModal(){
+    setShowDocModal(false);setDocModalError("");setFArtifact("");setFVersion("");setFOwner("");setFEff("");setFComments("");setFCustomName("");setPendingFilePath("");setPendingFileName("");setPendingFileType("");setPendingFileSize(0);setPendingFileHash("");setSelectedFile(null);setUploadProgress("");
+  }
   async function addDocument(){
-    if(!user||!activeStudy||!orgId)return;
-    const[artNum,an,zone]=fArtifact.split("|");
-    const d:Doc={
-      study_id:activeStudy!.study_id,user_id:user.id,org_id:orgId,
-      artifact_num:artNum,artifact_name:an,zone,
-      version:fVersion,status:fDocStatus,owner:fOwner,
-      effective_date:fEff,expiry_date:fExp,comments:fComments,
-      file_path:pendingFilePath,file_name:pendingFileName,
-      custom_file_name:fCustomName,file_type:pendingFileType,file_size:pendingFileSize,file_hash:pendingFileHash,file_size_bytes:pendingFileSize,
-    };
-    const{data,error}=await supabase.from("documents").insert([d]).select();
-    if(!error&&data){
-      setDocs(prev=>[data[0],...prev]);
-      await logAudit("Document uploaded",data[0].id,activeStudy.study_id,"status","",fDocStatus,"",fCustomName||pendingFileName||an);
-      apiFetch("/notifications",{method:"POST",body:JSON.stringify({type:"document_uploaded",document_id:data[0].id})}).catch(e=>console.error("Notification failed:",e));
-      // The server re-hashes the stored file; a mismatch means storage doesn't hold what was uploaded.
-      if(pendingFilePath)apiFetch<{status:string}>(`/documents/${data[0].id}/verify-file`,{method:"POST"})
-        .then(r=>{if(r.status==="mismatch"||r.status==="missing")alert(`File integrity check failed (${r.status}) for "${fCustomName||pendingFileName}". Please upload the file again.`);})
-        .catch(e=>console.error("File integrity check failed:",e));
-    }else if(error){alert("Upload failed: "+error.message);}
-    setShowDocModal(false);setFArtifact("");setFVersion("");setFOwner("");setFEff("");setFExp("");setFComments("");setFCustomName("");setPendingFilePath("");setPendingFileName("");setPendingFileType("");setPendingFileSize(0);setPendingFileHash("");setSelectedFile(null);setUploadProgress("");
+    if(!user||!activeStudy?.id||!orgId)return;
+    if(!pendingFilePath||!pendingFileHash){setDocModalError("Choose a file to add.");return;}
+    const[artNum]=fArtifact.split("|");
+    const base=`/studies/${activeStudy.id}/intake`;
+    setDocModalError("");setUploading(true);setUploadProgress("Sending to Document Intake…");
+    try{
+      const item=await apiFetch<{id:string;row_version:number}>(base,{method:"POST",body:JSON.stringify({
+        file_path:pendingFilePath,file_name:pendingFileName,file_type:pendingFileType||null,file_size_bytes:pendingFileSize,file_hash:pendingFileHash,
+      })});
+      await apiFetch(`${base}/${item.id}`,{method:"PATCH",body:JSON.stringify({
+        row_version:item.row_version,artifact_num:artNum||null,title:fCustomName.trim()||null,version_label:fVersion.trim()||null,
+        effective_date:fEff||null,owner:fOwner.trim()||null,notes:fComments.trim()||null,
+      })});
+    }catch(e:any){setDocModalError(e.message||"Could not send the file to Document Intake.");setUploading(false);return;}
+    setUploading(false);
+    closeDocModal();
+    setPanel("intake");
   }
 
   async function handleApprove(){
@@ -1333,38 +1333,32 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                               setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,classStage:"done_artifact"} as any:msg));
                               setChatLoading(true);
                               try{
-                                // Upload file to Supabase storage
+                                // Trinity's classification goes to Document Intake as an indexed item, never straight into the TMF.
+                                if(!activeStudy?.id||!orgId)throw new Error("Select a study first.");
                                 const byteString=atob(cl.base64);
-                                const ab=new ArrayBuffer(byteString.length);
-                                const ia=new Uint8Array(ab);
+                                const ia=new Uint8Array(byteString.length);
                                 for(let j=0;j<byteString.length;j++)ia[j]=byteString.charCodeAt(j);
-                                const blob=new Blob([ab],{type:"application/pdf"});
-                                const filePath=`${user.id}/${activeStudy!.study_id}/${Date.now()}_${cl.fileName}`;
+                                const blob=new Blob([ia],{type:"application/pdf"});
+                                const digest=await crypto.subtle.digest("SHA-256",ia);
+                                const fileHash=Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,"0")).join("");
+                                const filePath=`${orgId}/${activeStudy.study_id}/${fileHash}.pdf`;
                                 const{error:upErr}=await supabase.storage.from("Documents").upload(filePath,blob);
-                                if(upErr)throw new Error(upErr.message);
-                                // Create document record
-                                const hasIssues=(cl.issues?.length>0||cl.missing_fields?.length>0);
-                                const docStatus=hasIssues?"Draft":"Under Review";
-                                const rejectionReason=hasIssues?[...(cl.issues||[]),...(cl.missing_fields?.map((f:string)=>"Missing: "+f)||[])].join("; "):undefined;
-                                const{data:docData,error:docErr}=await supabase.from("documents").insert([{
-                                  study_id:activeStudy!.study_id,user_id:user.id,org_id:orgId,
-                                  artifact_num:cl.artifact_num,artifact_name:cl.artifact_name,zone:cl.zone_num,
-                                  version:"",status:docStatus,owner:userFullName||user.email,
-                                  file_path:filePath,file_name:cl.fileName,custom_file_name:cl.fileName,
-                                  file_type:"application/pdf",file_size:0,
-                                  comments:"Auto-classified by Trinity AI. Confidence: "+cl.confidence+"%",
-                                  rejection_reason:rejectionReason||null,
-                                }]).select();
-                                if(docErr)throw new Error(docErr.message);
-                                setDocs(prev=>[docData[0],...prev]);
-                                await logAudit("Document auto-classified by Trinity",docData[0].id,activeStudy!.study_id,"status","",docStatus,"Trinity AI classification");
-                                const statusMsg=hasIssues
-                                  ? `⚠️ Document filed to **Not Approved** due to issues detected:\n${rejectionReason}\n\nIt has been saved and can be reviewed in the Documents panel.`
-                                  : `✅ Document successfully filed to **Zone ${cl.zone_num} - ${cl.zone_name}** under artifact **${cl.artifact_num} - ${cl.artifact_name}**.\n\nStatus: Under Review. A TMF Lead or System Administrator can now approve it.`;
-                                setChatMessages(prev=>[...prev,{role:"ai",text:statusMsg}]);
+                                if(upErr&&!isAlreadyStored(upErr))throw new Error(upErr.message);
+                                const base=`/studies/${activeStudy.id}/intake`;
+                                const item=await apiFetch<{id:string;row_version:number;duplicate_status:string;duplicate_reason:string|null}>(base,{method:"POST",body:JSON.stringify({
+                                  file_path:filePath,file_name:cl.fileName,file_type:"application/pdf",file_size_bytes:ia.length,file_hash:fileHash,
+                                })});
+                                // The AI output is kept with its confidence and the user's acceptance.
+                                await apiFetch(`${base}/${item.id}`,{method:"PATCH",body:JSON.stringify({
+                                  row_version:item.row_version,artifact_num:cl.artifact_num,
+                                  suggestion:{artifact_num:cl.artifact_num,artifact_name:cl.artifact_name,confidence:cl.confidence,issues:[...(cl.issues||[]),...(cl.missing_fields?.map((f:string)=>"Missing: "+f)||[])],source:"Trinity chat",accepted_by:user.email},
+                                })});
+                                const dup=item.duplicate_status==="blocked"?`\n\n⛔ ${item.duplicate_reason}. It can't be filed — reject it in Document Intake.`
+                                  :item.duplicate_status==="warning"?`\n\n⚠️ ${item.duplicate_reason}. Check it before filing.`:"";
+                                setChatMessages(prev=>[...prev,{role:"ai",text:`📥 Sent to **Document Intake**, indexed to **Zone ${cl.zone_num} - ${cl.zone_name}**, artifact **${cl.artifact_num} - ${cl.artifact_name}**.${dup}\n\nWhat happens next: open Document Intake to review the metadata and file it to the TMF as a Draft.`}]);
                               }catch(err:any){setChatMessages(prev=>[...prev,{role:"ai",text:"Filing error: "+err.message}]);}
                               setChatLoading(false);
-                            }} style={{fontSize:"12px",fontWeight:"600",padding:"6px 15px",background:P.success,color:"#fff",border:"none",borderRadius:"7px",cursor:"pointer"}}>✓ Approve & File</button>
+                            }} style={{fontSize:"12px",fontWeight:"600",padding:"6px 15px",background:P.success,color:"#fff",border:"none",borderRadius:"7px",cursor:"pointer"}}>✓ Approve & send to intake</button>
                             <button onClick={()=>{
                               setChatMessages(prev=>prev.map((msg,mi)=>mi===i?{...msg,classStage:"done_artifact"} as any:msg));
                               setChatMessages(prev=>[...prev,{role:"ai",text:"Artifact rejected. Please tell me which artifact this document should be filed under."}]);
@@ -1904,15 +1898,17 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
             {[{l:"Version",v:fVersion,s:setFVersion,p:"e.g. v1.0"},{l:"Owner",v:fOwner,s:setFOwner,p:"e.g. Jane Smith"}].map(f=>(
               <div key={f.l} style={{marginBottom:"10px"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>{f.l}</label><input value={f.v} onChange={e=>f.s(e.target.value)} placeholder={f.p} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/></div>
             ))}
-            <div style={{marginBottom:"10px"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Status</label><select value={fDocStatus} onChange={e=>setFDocStatus(e.target.value)} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}>{["Draft","Under Review","Approved","Archived"].map(s=><option key={s}>{s}</option>)}</select></div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"10px"}}>
-              <div><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Effective date</label><input type="date" value={fEff} onChange={e=>setFEff(e.target.value)} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/></div>
-              <div><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Expiry date</label><input type="date" value={fExp} onChange={e=>setFExp(e.target.value)} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/></div>
+            <div style={{marginBottom:"10px"}}>
+              <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Effective date</label><input type="date" value={fEff} onChange={e=>setFEff(e.target.value)} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/>
             </div>
             <div style={{marginBottom:"1rem"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Comments</label><textarea value={fComments} onChange={e=>setFComments(e.target.value)} placeholder="Optional comments..." style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px",resize:"vertical" as const,minHeight:"60px"}}/></div>
+            <div style={{fontSize:"11px",color:P.textSec,background:P.bgSec,borderRadius:"8px",padding:"8px 10px",marginBottom:"10px"}}>
+              <strong>What happens next:</strong> the file goes to Document Intake, indexed to this artifact. The server checks its integrity and looks for duplicates; you then file it to the TMF as a Draft from Document Intake.
+            </div>
+            {docModalError&&<div style={{fontSize:"11px",color:P.danger,marginBottom:"10px"}}>{docModalError}</div>}
             <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
-              <button onClick={()=>{setShowDocModal(false);setSelectedFile(null);setPendingFilePath("");setUploadProgress("");}} style={{fontSize:"11px",padding:"6px 14px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>Cancel</button>
-              <button onClick={addDocument} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Add document</button>
+              <button onClick={closeDocModal} style={{fontSize:"11px",padding:"6px 14px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>Cancel</button>
+              <button onClick={addDocument} disabled={uploading||!pendingFilePath} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",opacity:uploading||!pendingFilePath?0.5:1}}>Send to Document Intake</button>
             </div>
           </div>
         </div>
