@@ -12,6 +12,9 @@ const patchSchema = z.object({
   effective_date: isoDate.nullish(),
   owner: z.string().trim().max(200).nullish(),
   notes: z.string().trim().max(4000).nullish(),
+  // TMF level: a site (its country follows), a country, or neither for study level.
+  study_country_id: z.string().uuid().nullish(),
+  study_site_id: z.string().uuid().nullish(),
   suggestion: z.record(z.string(), z.unknown()).nullish(),
   reject: reason.optional(),
 }).strict();

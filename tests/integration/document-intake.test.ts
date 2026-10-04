@@ -24,7 +24,7 @@ async function store(content: string, name = sha(content)) {
   return path;
 }
 
-const p = (extra: Record<string, string> = {}) => ({ studyId: study.id, ...extra });
+const p = <T extends Record<string, string>>(extra: T = {} as T) => ({ studyId: study.id, ...extra });
 const register = (u: TestUser, path: string, hash: string) => call(intake.POST, {
   token: u.token, method: "POST", params: p(),
   body: { file_path: path, file_name: "Protocol v2.pdf", file_type: "application/pdf", file_size_bytes: 12, file_hash: hash },

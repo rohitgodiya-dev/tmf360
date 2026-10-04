@@ -7,6 +7,8 @@ import{apiFetch,authHeaders}from"../../lib/api/client";
 import{LEGACY_TMF,LEGACY_ZONES}from"../../lib/taxonomy";
 import JSZip from"jszip";
 import DocumentIntake from"./DocumentIntake";
+import Navigator from"./Navigator";
+import DocumentViewer from"./DocumentViewer";
 
 
 
@@ -112,9 +114,7 @@ export default function Platform(){
   const[approveReason,setApproveReason]=useState("");
   const[approveError,setApproveError]=useState("");
   const[commentText,setCommentText]=useState("");
-  const[previewUrl,setPreviewUrl]=useState<string|null>(null);
-  const[previewDoc,setPreviewDoc]=useState<any>(null);
-  const[previewName,setPreviewName]=useState("");
+  const[viewerDocId,setViewerDocId]=useState<string|null>(null);
   const[chatMessages,setChatMessages]=useState<{role:string;text:string;isHealthCard?:boolean;docId?:string;sourceTags?:string[];classification?:{zoneLine:string;confidence:number;warning?:{detail:string;action:string}}}[]>([{role:"ai",text:"Hi, I'm Trinity - your TMF AI specialist for this study. I can classify uploaded documents against the tracker, and answer questions about this study's trial master file."}]);
   const[chatInput,setChatInput]=useState("");
   const[chatLoading,setChatLoading]=useState(false);
@@ -419,7 +419,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
     if(error){alert("Delete failed: "+error.message);return;}
     await logAudit("Document deleted",deleteTarget.id,deleteTarget.study_id,"status",deleteTarget.status,"Deleted",deletionReason,deleteTarget.custom_file_name||deleteTarget.artifact_name);
     setDocs(prev=>prev.filter(d=>d.id!==deleteTarget.id));
-    if(previewDoc?.id===deleteTarget.id){setPreviewUrl(null);setPreviewDoc(null);}
+    if(viewerDocId===deleteTarget.id)setViewerDocId(null);
     setShowDeleteModal(false);
     setDeleteTarget(null);
     setDeletionReason("");
@@ -443,11 +443,9 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
 
   useEffect(()=>{if(panel==="recyclebin")loadDeletedDocs();},[panel,activeStudy,orgId]);
 
-  async function openPreview(d:Doc){
-    if(!d.file_path)return;
-    let url:string;
-    try{url=await previewFileUrl(d.file_path);}catch(e:any){alert("Could not open preview: "+e.message);return;}
-    setPreviewUrl(url);setPreviewName(d.custom_file_name||d.file_name||"Document");setPreviewDoc(d);
+  // Opens the in-page viewer (Part 6c), which loads the file through a short-lived link.
+  function openPreview(d:Doc){
+    if(d.file_path&&d.id)setViewerDocId(d.id);
   }
 
   function detectFlagReason(doc:Doc){
@@ -664,6 +662,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {navItem("studies","Studies","ti-flask")}
           {activeStudy?.id&&<a href={`/platform/studies/${activeStudy.id}/structure`} style={{display:"flex",alignItems:"center",gap:"8px",padding:"7px 10px",borderRadius:"8px",fontSize:"12px",color:"#374151",textDecoration:"none",fontWeight:"400"}}><i className="ti ti-sitemap" style={{fontSize:"15px"}}/>Study structure</a>}
           <p style={{fontSize:"9px",fontWeight:"500",color:P.textTert,padding:"10px 10px 4px",textTransform:"uppercase",letterSpacing:".06em"}}>TMF</p>
+          {navItem("navigator","TMF Navigator","ti-binary-tree")}
           {navItem("intake","Document Intake","ti-inbox")}
           {navItem("documents","Documents","ti-files")}
           {navItem("artifacts","Artifact browser","ti-layout-grid")}
@@ -1667,6 +1666,13 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
             <ArchivedPanel user={user} P={P} supabase={supabase} orgId={orgId} activeStudy={activeStudy} currentUserRole={currentUserRole} logAudit={logAudit} setDocs={setDocs}/>
           )}
 
+          {/* TMF NAVIGATOR (Part 6) */}
+          {panel==="navigator"&&(activeStudy?.id?(
+            <Navigator key={activeStudy.id} study={{id:activeStudy.id,study_id:activeStudy.study_id}}
+              canDelete={canDelete} canDownload={canDownload}
+              onAddToIntake={()=>setPanel("intake")} onView={(id)=>setViewerDocId(id)}/>
+          ):<div style={{padding:"2rem",color:P.textTert,fontSize:"12px"}}>Select a study to open the TMF Navigator.</div>)}
+
           {/* DOCUMENT INTAKE (Part 5) */}
           {panel==="intake"&&(activeStudy?.id&&orgId?(
             <DocumentIntake study={{id:activeStudy.id,study_id:activeStudy.study_id}} orgId={orgId} artifacts={activeTMF} zones={activeZONES}
@@ -2038,24 +2044,8 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
         </div>
       )}
 
-      {/* Preview Modal */}
-      {previewUrl&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
-          <div style={{background:P.bg,borderRadius:"16px",overflow:"hidden",maxWidth:"90vw",width:"800px",maxHeight:"90vh",display:"flex",flexDirection:"column"}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:`0.5px solid ${P.border}`}}>
-              <span style={{fontSize:"13px",fontWeight:"500"}}>{previewName}</span>
-              <div style={{display:"flex",gap:"8px"}}>
-                <a href={previewUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:"11px",padding:"5px 12px",background:P.bgTert,color:P.textSec,borderRadius:"6px",textDecoration:"none"}}>Open</a>
-                <a href={previewUrl} download style={{fontSize:"11px",padding:"5px 12px",background:P.bgTert,color:P.textSec,borderRadius:"6px",textDecoration:"none"}}>Download</a>
-                {previewDoc&&<button onClick={()=>{setQueryDoc(previewDoc);setShowQueryModal(true);}} style={{fontSize:"11px",padding:"5px 12px",background:"#EFF6FF",color:"#1D4ED8",border:"none",borderRadius:"6px",cursor:"pointer"}}>Query</button>}{previewDoc&&canUploadDownload&&<button onClick={async()=>{const reason=prompt("Reason for archiving:");if(!reason)return;const now=new Date().toISOString();const{error}=await supabase.from("documents").update({status:"Archived",archived_by:user.email,archived_at:now,archive_reason:reason,pre_archive_status:previewDoc.status}).eq("id",previewDoc.id);if(!error){await logAudit("Document archived",previewDoc.id,previewDoc.study_id,"status",previewDoc.status,"Archived - Reason: "+reason,reason,previewDoc.custom_file_name||previewDoc.artifact_name);setDocs((prev:any)=>prev.map((x:any)=>x.id===previewDoc.id?{...x,status:"Archived"}:x));setPreviewUrl(null);setPreviewDoc(null);}}} style={{fontSize:"11px",padding:"5px 12px",background:"#FFFBEB",color:"#92400E",border:"none",borderRadius:"6px",cursor:"pointer"}}>Archive</button>}{previewDoc&&canDelete&&<button onClick={()=>{setDeleteTarget(previewDoc);setDeletionReason("");setShowDeleteModal(true);}} style={{fontSize:"11px",padding:"5px 12px",background:"#FEF2F2",color:"#991B1B",border:"0.5px solid #FECACA",borderRadius:"6px",cursor:"pointer"}}>Delete</button>}<button onClick={()=>{setPreviewUrl(null);setPreviewDoc(null);}} style={{fontSize:"11px",padding:"5px 12px",background:"#FEF2F2",color:"#991B1B",border:"none",borderRadius:"6px",cursor:"pointer"}}>Close</button>
-              </div>
-            </div>
-            <div style={{flex:1,overflow:"auto"}}>
-              {previewName.match(/\.(png|jpg|jpeg|gif|webp)$/i)?<img src={previewUrl} alt={previewName} style={{maxWidth:"100%",height:"auto"}}/>:previewName.match(/\.(pdf)$/i)?<iframe src={previewUrl} style={{width:"100%",height:"70vh",border:"none"}}/>:<iframe src={"https://docs.google.com/viewer?url="+encodeURIComponent(previewUrl)+"&embedded=true"} style={{width:"100%",height:"70vh",border:"none"}}/>}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Document viewer (Part 6c) */}
+      {viewerDocId&&<DocumentViewer documentId={viewerDocId} canDownload={canDownload} onClose={()=>setViewerDocId(null)}/>}
     </div>
   );
 }

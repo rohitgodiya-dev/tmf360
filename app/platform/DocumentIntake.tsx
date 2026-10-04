@@ -12,8 +12,12 @@ type Item = {
   file_name: string; file_type: string | null; file_size_bytes: number | null; created_at: string;
   artifact_num: string | null; title: string | null; version_label: string | null; effective_date: string | null;
   owner: string | null; notes: string | null; suggestion: Suggestion | null;
+  study_country_id: string | null; study_site_id: string | null;
 };
-type Draft = Pick<Item, "artifact_num" | "title" | "version_label" | "effective_date" | "owner" | "notes">;
+type Draft = Pick<Item, "artifact_num" | "title" | "version_label" | "effective_date" | "owner" | "notes" | "study_country_id" | "study_site_id">;
+// TMF level choices from the study structure: study level, a country, or a site (its country follows).
+type Scope = { label: string; country: string | null; site: string | null };
+type TreeNode = { id: string; label: string; field: string | null; value: string | null; children: TreeNode[] };
 
 const C = {
   primary: "#F97316", primaryLight: "#FFEDD5", text: "#111827", textSec: "#374151", textTert: "#6B7280",
@@ -59,10 +63,23 @@ export default function DocumentIntake({ study, orgId, artifacts, zones, canUplo
       setDrafts(Object.fromEntries(r.data.map((i) => [i.id, {
         artifact_num: i.artifact_num, title: i.title, version_label: i.version_label,
         effective_date: i.effective_date, owner: i.owner, notes: i.notes,
+        study_country_id: i.study_country_id, study_site_id: i.study_site_id,
       }])));
     } catch (e) { setMessage((e as Error).message); }
   }, [base]);
   useEffect(() => { load(); }, [load]);
+
+  const [scopes, setScopes] = useState<Scope[]>([{ label: "Study level", country: null, site: null }]);
+  useEffect(() => {
+    apiFetch<{ my_trial: TreeNode }>(`/studies/${study.id}/navigator/tree`).then((t) => setScopes([
+      { label: "Study level", country: null, site: null },
+      ...t.my_trial.children.flatMap((c) => [
+        { label: `Country — ${c.label}`, country: c.value, site: null },
+        ...c.children.map((s) => ({ label: `Site — ${s.label} (${c.label})`, country: c.value, site: s.value })),
+      ]),
+    ])).catch(() => { /* study level only */ });
+  }, [study.id]);
+  const scopeKey = (country: string | null, site: string | null) => `${country ?? ""}|${site ?? ""}`;
 
   async function suggest(item: Item, file: File) {
     if (!/pdf$/i.test(file.name)) return;
@@ -111,6 +128,7 @@ export default function DocumentIntake({ study, orgId, artifacts, zones, canUplo
       body: JSON.stringify({
         row_version: item.row_version, artifact_num: d.artifact_num || null, title: d.title || null,
         version_label: d.version_label || null, effective_date: d.effective_date || null, owner: d.owner || null, notes: d.notes || null,
+        study_country_id: d.study_country_id || null, study_site_id: d.study_site_id || null,
       }),
     });
     setItems((list) => list.map((i) => (i.id === item.id ? updated : i)));
@@ -218,6 +236,14 @@ export default function DocumentIntake({ study, orgId, artifacts, zones, canUplo
                   {sortedArtifacts.map((a) => <option key={a.a} value={a.a}>{a.a} — {a.an} (Zone {a.z})</option>)}
                 </select>
               </label>
+              {scopes.length > 1 && (
+                <label style={{ gridColumn: "1 / -1", fontSize: "11px", color: C.textSec }}>TMF level
+                  <select disabled={disabled} aria-label="TMF level" value={scopeKey(d.study_country_id, d.study_site_id)}
+                    onChange={(e) => { const s = scopes.find((x) => scopeKey(x.country, x.site) === e.target.value); if (s) setDraft(item.id, { study_country_id: s.country, study_site_id: s.site }); }} style={input}>
+                    {scopes.map((s) => <option key={scopeKey(s.country, s.site)} value={scopeKey(s.country, s.site)}>{s.label}</option>)}
+                  </select>
+                </label>
+              )}
               <label style={{ fontSize: "11px", color: C.textSec }}>Title
                 <input disabled={disabled} value={d.title ?? ""} placeholder={item.file_name} onChange={(e) => setDraft(item.id, { title: e.target.value })} style={input} />
               </label>
@@ -241,7 +267,8 @@ export default function DocumentIntake({ study, orgId, artifacts, zones, canUplo
                 <>
                   {canFile && art && !isRejecting && (
                     <div style={{ marginTop: "12px", fontSize: "11px", color: C.textSec, background: C.bgSec, borderRadius: "8px", padding: "8px 10px" }}>
-                      <strong>What happens next:</strong> filing creates a Draft document in Zone {art.z} under {art.a} — {art.an}, with this file and metadata.
+                      <strong>What happens next:</strong> filing creates a Draft document in Zone {art.z} under {art.a} — {art.an}
+                      {" "}(TMF level: {(scopes.find((x) => scopeKey(x.country, x.site) === scopeKey(d.study_country_id, d.study_site_id))?.label ?? "Study level")}), with this file and metadata.
                       This intake item then closes and can no longer be edited here.
                     </div>
                   )}

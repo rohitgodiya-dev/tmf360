@@ -37,7 +37,8 @@ async function checkPage(url) {
   const isBlank = r.body.length < 500;
   // Match Next.js error pages, not any "500" digits inside chunk hashes.
   const hasError = r.body.includes('Application error') || /<title>\s*500\b/.test(r.body);
-  const redirected = r.finalUrl !== url ? ` → ${new URL(r.finalUrl).pathname}` : '';
+  const finalPath = new URL(r.finalUrl).pathname;
+  const redirected = finalPath !== new URL(url).pathname ? ` → ${finalPath}` : '';
   return {
     url,
     status: r.status,
