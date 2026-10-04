@@ -130,7 +130,7 @@ try {
     { kind: "attestation", meaning: "Reviewed and rejected", signer_name: "Quinn QA" },
     { kind: "attestation", meaning: "Reviewed and accepted", signer_name: "Quinn QA" },
   ]), "signatures: one attestation per decision, named reviewer");
-  check(await qa.getByText("No QC tasks waiting for you.", { exact: false }).isVisible(), "my tasks empty after deciding");
+  check(await qa.getByText("No QC tasks waiting for you.", { exact: false }).waitFor({ timeout: 15000 }).then(() => true, () => false), "my tasks empty after deciding");
 
   // QC settings are visible to QA in TMF Configuration.
   await qa.getByRole("button", { name: "TMF Configuration" }).click();

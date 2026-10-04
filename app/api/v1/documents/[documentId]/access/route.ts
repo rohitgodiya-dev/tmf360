@@ -8,7 +8,7 @@ import { handle, notFound, parseBody } from "@/lib/api/http";
 // that a copied link is useless (AZB-06: no long-lived file URLs).
 const LINK_SECONDS = 60;
 
-const schema = z.object({ purpose: z.enum(["view", "download", "print"]) }).strict();
+const schema = z.object({ purpose: z.enum(["view", "download", "print"]), version_no: z.number().int().positive().optional() }).strict();
 
 // Issues a short-lived link to a document's current file (M07). The caller must be able to
 // read the document; storage then checks its own policies when the link is signed (as the
@@ -17,13 +17,21 @@ export const POST = handle(async (req: Request, { params }: { params: Promise<{ 
   const ctx = await requireUser(req);
   requirePermission(ctx, "view_document");
   const id = idParam((await params).documentId);
-  const { purpose } = await parseBody(req, schema);
+  const { purpose, version_no } = await parseBody(req, schema);
 
   const { data: doc, error } = await ctx.db.from("documents")
     .select("id, study_id, file_path, file_name, file_type, custom_file_name, artifact_name")
     .eq("id", id).is("deleted_at", null).maybeSingle();
   if (error) throw dbError(error);
   if (!doc) throw notFound();
+  // An earlier file version (OPS-06): same document, same checks, its own stored file.
+  if (version_no) {
+    const { data: v, error: vErr } = await ctx.db.from("document_file_versions")
+      .select("file_path, file_name, file_type").eq("document_id", id).eq("version_no", version_no).maybeSingle();
+    if (vErr) throw dbError(vErr);
+    if (!v) throw notFound("That version does not exist");
+    Object.assign(doc, { file_path: v.file_path, file_name: v.file_name, file_type: v.file_type });
+  }
   if (!doc.file_path) throw notFound("This document has no file in the TMF");
 
   const name = (doc.custom_file_name || doc.file_name || "document").trim();
@@ -37,7 +45,7 @@ export const POST = handle(async (req: Request, { params }: { params: Promise<{ 
   if (purpose !== "view") {
     await writeAudit(ctx, {
       action: purpose === "download" ? "Document downloaded" : "Document printed",
-      studyId: doc.study_id, documentId: doc.id, documentName: name, field: "file", newValue: doc.file_name,
+      studyId: doc.study_id, documentId: doc.id, documentName: name, field: "file", newValue: version_no ? `${doc.file_name} (version ${version_no})` : doc.file_name,
     });
   }
   return Response.json({ url: signed.signedUrl, expires_in: LINK_SECONDS, file_name: downloadName, file_type: doc.file_type });

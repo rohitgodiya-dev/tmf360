@@ -147,9 +147,11 @@ try {
 
   // Delete with a reason → Recycle Bin.
   await page.locator("tbody tr", { hasText: "Monitoring Plan.pdf" }).click();
-  await page.getByRole("button", { name: "Delete" }).click();
-  await page.getByLabel("Reason for deleting (required)").fill("E2E cleanup");
-  await page.getByRole("button", { name: "Confirm delete" }).click();
+  // Part 8b: coded reason + comment.
+  await page.getByRole("button", { name: /Delete$/ }).click();
+  await page.getByLabel("Reason (required)").selectOption("other");
+  await page.getByLabel("Comment (required)").fill("E2E cleanup");
+  await page.getByRole("button", { name: "Move to Recycle Bin" }).click();
   await page.getByText("File history").waitFor({ state: "detached", timeout: 30000 });
   await page.waitForTimeout(1500);
   const { data: gone } = await svc.from("documents").select("status, deleted_at, deletion_reason").eq("id", filed.id).single();

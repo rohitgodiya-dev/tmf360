@@ -81,12 +81,20 @@ describe("changing documents", () => {
     expect(r.error?.message).toMatch(/upload_document/);
   });
 
-  it("a CRA cannot delete; an administrator can", async () => {
-    const del = { deleted_at: new Date().toISOString(), deletion_reason: "test", status: "Deleted" };
-    expect((await cra.db.from("documents").update(del).eq("id", docId)).error?.message).toMatch(/delete_document/);
+  // Since Part 8b, deleting and restoring go through delete_document()/restore_document().
+  it("a CRA cannot delete; an administrator can, and can restore", async () => {
+    const del = { p_document: docId, p_code: "other", p_comment: "test deletion" };
+    expect((await cra.db.rpc("delete_document", del)).error?.message).toMatch(/does not allow/);
     expect((await status()).deleted_at).toBeNull();
-    expect((await sysAdmin.db.from("documents").update(del).eq("id", docId)).error).toBeNull();
-    expect((await sysAdmin.db.from("documents").update({ deleted_at: null, status: "Draft" }).eq("id", docId)).error).toBeNull();
+    // Writing the row directly is refused even for an administrator.
+    const direct = await sysAdmin.db.from("documents").update({ deleted_at: new Date().toISOString(), deletion_reason: "x", status: "Deleted" }).eq("id", docId);
+    expect(direct.error?.message).toMatch(/Recycle Bin/);
+    // An Approved document needs a deletion request instead.
+    expect((await sysAdmin.db.rpc("delete_document", del)).error?.message).toMatch(/deletion request/);
+    const { data: draft } = await admin().from("documents").insert([{ org_id: orgA, user_id: cra.id, study_id: study.code, artifact_name: "Draft one", status: "Draft" }]).select("id").single();
+    expect((await sysAdmin.db.rpc("delete_document", { ...del, p_document: draft!.id })).error).toBeNull();
+    expect((await sysAdmin.db.rpc("restore_document", { p_document: draft!.id, p_reason: "Deleted by mistake" })).data).toBe("Draft");
+    await admin().from("documents").delete().eq("id", draft!.id);
   });
 
   it("documents cannot be moved to another study", async () => {

@@ -50,7 +50,8 @@ intake_items (Part 5 — **Document Intake**, the plan's "Staging Area"),
 parties, persons, study_parties, study_countries, study_sites, contact_roles (Part 2b),
 milestone_types, milestones (Part 2c), taxonomy tables (Part 3),
 navigator_items view (Part 6), qc_reasons, file_plan_steps, workflow_settings, document_tasks,
-qc_decisions, signature_events, reauth_proofs (Part 7), plan_template_items, placeholders (Part 8a).
+qc_decisions, signature_events, reauth_proofs (Part 7), plan_template_items, placeholders (Part 8a),
+deletion_requests, revision_requests (Part 8b).
 expected_documents is legacy and closed to users — use placeholders.
 
 Naming rule: the plan's "Staging Area" is called **Document Intake** in TMF360.
@@ -93,8 +94,12 @@ suppliers, study_qms_links
 Done: Parts 1–7 (Part 6 Navigator + pdf.js viewer; Part 7 QC workflow live 2026-10-04 — see docs/part7-plan.md).
 Part 8a live 2026-10-04: eTMF plan (plan_template_items), placeholders (expected artifacts) with
 auto-fulfilment, completeness = Final ÷ all five statuses; Incomplete = record with no file.
-Next: Part 8b (post-filing ops: delete rules + Final deletion approval, reclassify, revision
-request, version history).
+Part 8b live 2026-10-04: post-filing ops. Deletes/restores only via delete_document /
+restore_document (coded reason; 180-day restore); Final docs need a deletion_requests row approved
+by someone else with an e-signature; reclassify_document; request_revision (file as Final with
+attestation, or collaboration → Draft → POST /documents/:id/file → QC); metadata snapshots taken by
+the database (documents_snapshot_metadata). Final metadata can't be edited by writing the row.
+Next: Part 9 (Consistency engine + continuous readiness).
 
 Part 7 rules: a document reaches Under Review only via submit_for_qc() and Approved only via
 complete_qc_task() (trigger documents_workflow_guard). QC decisions need a password re-check in the

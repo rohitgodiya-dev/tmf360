@@ -12,6 +12,7 @@ import DocumentViewer from"./DocumentViewer";
 import QcTasks from"./QcTasks";
 import QcSettings from"./QcSettings";
 import PlanSettings from"./PlanSettings";
+import{DeleteForm,DeletionRequests,isFinal}from"./DocumentActions";
 
 
 
@@ -85,6 +86,9 @@ export default function Platform(){
   const[qcTaskId,setQcTaskId]=useState<string|null>(null);
   const[submitError,setSubmitError]=useState("");
   const[tasksNonce,setTasksNonce]=useState(0);
+  const[restoreFor,setRestoreFor]=useState<string|null>(null);
+  const[restoreReason,setRestoreReason]=useState("");
+  const[restoreError,setRestoreError]=useState("");
   const[showCommentModal,setShowCommentModal]=useState(false);
   const[selectedDoc,setSelectedDoc]=useState<Doc|null>(null);
   const[fId,setFId]=useState("");
@@ -403,40 +407,15 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
     if(data)setDeletedDocs(data);
   }
 
-  async function handleDelete(){
-    if(!deleteTarget||!deletionReason.trim()||!user)return;
-    const now=new Date().toISOString();
-    const{error}=await supabase.from("documents").update({
-      deleted_at:now,
-      deleted_by:user.email,
-      deleted_by_id:user.id,
-      deletion_reason:deletionReason,
-      pre_deletion_status:deleteTarget.status,
-      status:"Deleted",
-    }).eq("id",deleteTarget.id);
-    if(error){alert("Delete failed: "+error.message);return;}
-    await logAudit("Document deleted",deleteTarget.id,deleteTarget.study_id,"status",deleteTarget.status,"Deleted",deletionReason,deleteTarget.custom_file_name||deleteTarget.artifact_name);
-    setDocs(prev=>prev.filter(d=>d.id!==deleteTarget.id));
-    if(viewerDocId===deleteTarget.id)setViewerDocId(null);
-    setShowDeleteModal(false);
-    setDeleteTarget(null);
-    setDeletionReason("");
-  }
-
-  async function handleRestore(doc:any){
-    const restoredStatus=doc.pre_deletion_status||"Draft";
-    const{error}=await supabase.from("documents").update({
-      deleted_at:null,
-      deleted_by:null,
-      deleted_by_id:null,
-      deletion_reason:null,
-      pre_deletion_status:null,
-      status:restoredStatus,
-    }).eq("id",doc.id);
-    if(error){alert("Restore failed: "+error.message);return;}
-    await logAudit("Document restored",doc.id,doc.study_id,"status","Deleted",restoredStatus,"",doc.custom_file_name||doc.artifact_name);
-    loadDeletedDocs();
-    if(activeStudy&&orgId)loadDocsWithOrg(activeStudy.study_id,orgId);
+  // Part 8b: restore through the server (within 180 days, with a reason; audited there).
+  async function handleRestore(doc:any,reason:string){
+    setRestoreError("");
+    try{
+      await apiFetch(`/documents/${doc.id}/restore`,{method:"POST",body:JSON.stringify({reason:reason.trim()})});
+      setRestoreFor(null);setRestoreReason("");
+      loadDeletedDocs();
+      if(activeStudy&&orgId)loadDocsWithOrg(activeStudy.study_id,orgId);
+    }catch(e){setRestoreError((e as Error).message);}
   }
 
   useEffect(()=>{if(panel==="recyclebin")loadDeletedDocs();},[panel,activeStudy,orgId]);
@@ -1656,7 +1635,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
 
           {/* TMF NAVIGATOR (Part 6) */}
           {panel==="navigator"&&(activeStudy?.id?(
-            <Navigator key={activeStudy.id} study={{id:activeStudy.id,study_id:activeStudy.study_id}}
+            <Navigator key={activeStudy.id} study={{id:activeStudy.id,study_id:activeStudy.study_id}} orgId={orgId}
               canDelete={canDelete} canDownload={canDownload} canSubmit={hasPermission(currentUserRole as Role,"submit_document")} canEditStudy={hasPermission(currentUserRole as Role,"edit_study")}
               onAddToIntake={()=>setPanel("intake")} onView={(id)=>setViewerDocId(id)} onOpenQc={(id)=>openQcTask({id})}/>
           ):<div style={{padding:"2rem",color:P.textTert,fontSize:"12px"}}>Select a study to open the TMF Navigator.</div>)}
@@ -1680,6 +1659,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                 <div style={{fontSize:"18px",fontWeight:"700",color:P.text}}>Recycle Bin</div>
                 <div style={{fontSize:"12px",color:P.textTert,marginTop:"2px"}}>Deleted documents can be restored within 180 days</div>
               </div>
+              {activeStudy?.id&&<DeletionRequests studyId={activeStudy.id} onChanged={()=>{loadDeletedDocs();if(orgId)loadDocsWithOrg(activeStudy.study_id,orgId);}}/>}
               <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:0,overflow:"hidden"}}>
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px"}}>
                   <thead><tr style={{borderBottom:`0.5px solid ${P.border}`,background:P.bgSec}}>
@@ -1701,7 +1681,18 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                           <td style={{padding:"10px 14px",color:P.textTert,fontSize:"11px"}}>{d.deleted_at?new Date(d.deleted_at).toLocaleDateString():"—"}</td>
                           <td style={{padding:"10px 14px"}}><span style={{fontSize:"10px",fontWeight:"600",padding:"3px 8px",borderRadius:"20px",background:daysLeft>30?"#ECFDF5":daysLeft>7?"#FFFBEB":"#FEF2F2",color:daysLeft>30?"#065F46":daysLeft>7?"#92400E":"#991B1B"}}>{isExpired?"Expired":`${daysLeft}d`}</span></td>
                           <td style={{padding:"10px 14px"}}>
-                            {!isExpired&&canDelete&&<button onClick={()=>handleRestore(d)} style={{fontSize:"10px",padding:"3px 10px",background:"#ECFDF5",color:"#065F46",border:"0.5px solid #A7F3D0",borderRadius:"4px",cursor:"pointer"}}>Restore</button>}
+                            {!isExpired&&canDelete&&(restoreFor===d.id?(
+                              <div style={{display:"flex",flexDirection:"column",gap:"4px",minWidth:"200px"}}>
+                                <input autoFocus value={restoreReason} onChange={e=>setRestoreReason(e.target.value)} placeholder="Reason for restoring" aria-label="Reason for restoring" style={{fontSize:"11px",padding:"4px 6px",border:`0.5px solid ${P.border}`,borderRadius:"4px"}}/>
+                                <div style={{display:"flex",gap:"4px"}}>
+                                  <button onClick={()=>{setRestoreFor(null);setRestoreError("");}} style={{fontSize:"10px",padding:"3px 8px",background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"4px",cursor:"pointer"}}>Cancel</button>
+                                  <button disabled={restoreReason.trim().length<3} onClick={()=>handleRestore(d,restoreReason)} style={{fontSize:"10px",padding:"3px 8px",background:"#ECFDF5",color:"#065F46",border:"0.5px solid #A7F3D0",borderRadius:"4px",cursor:"pointer",opacity:restoreReason.trim().length>=3?1:0.5}}>Restore</button>
+                                </div>
+                                {restoreError&&<div style={{fontSize:"10px",color:"#991B1B"}}>{restoreError}</div>}
+                              </div>
+                            ):(
+                              <button onClick={()=>{setRestoreFor(d.id);setRestoreReason("");setRestoreError("");}} style={{fontSize:"10px",padding:"3px 10px",background:"#ECFDF5",color:"#065F46",border:"0.5px solid #A7F3D0",borderRadius:"4px",cursor:"pointer"}}>Restore</button>
+                            ))}
                           </td>
                         </tr>
                       );
@@ -1847,25 +1838,14 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
               <div style={{fontSize:"12px",fontWeight:"500",color:P.text,marginBottom:"4px"}}>{deleteTarget.custom_file_name||deleteTarget.file_name||deleteTarget.artifact_name}</div>
               <div style={{fontSize:"11px",color:P.textTert}}>Zone {deleteTarget.zone} · {deleteTarget.artifact_name} · {deleteTarget.status}</div>
             </div>
-            <div style={{background:"#FFFBEB",border:"0.5px solid #FDE68A",borderRadius:"8px",padding:"10px 12px",marginBottom:"1rem",fontSize:"11px",color:"#92400E"}}>
-              This document will be moved to the Recycle Bin. It can be restored within 180 days.
-            </div>
-            <div style={{marginBottom:"1rem"}}>
-              <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"4px"}}>Reason for deletion <span style={{color:"#EF4444"}}>*</span></label>
-              <select value={deletionReason} onChange={e=>setDeletionReason(e.target.value)} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px"}}>
-                <option value="">Select a reason...</option>
-                <option value="Incorrectly indexed">Incorrectly indexed</option>
-                <option value="Not TMF relevant">Not TMF relevant</option>
-                <option value="Duplicate document">Duplicate document</option>
-                <option value="Superseded by new version">Superseded by new version</option>
-                <option value="Uploaded in error">Uploaded in error</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-            <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
-              <button onClick={()=>setShowDeleteModal(false)} style={{fontSize:"12px",padding:"8px 16px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:P.bg,cursor:"pointer"}}>Cancel</button>
-              <button onClick={handleDelete} disabled={!deletionReason} style={{fontSize:"12px",padding:"8px 16px",background:deletionReason?"#EF4444":P.bgTert,color:deletionReason?"#fff":P.textMuted,border:"none",borderRadius:"8px",cursor:deletionReason?"pointer":"not-allowed",fontWeight:"600"}}>Move to Recycle Bin</button>
-            </div>
+            {/* Part 8b: coded reason + comment through the server; Final documents get a deletion request. */}
+            <DeleteForm doc={{id:deleteTarget.id,status:deleteTarget.status,artifact_num:deleteTarget.artifact_num}}
+              onCancel={()=>setShowDeleteModal(false)}
+              onDone={(msg)=>{
+                if(!isFinal(deleteTarget.status)){setDocs(prev=>prev.filter(d=>d.id!==deleteTarget.id));if(viewerDocId===deleteTarget.id)setViewerDocId(null);}
+                setChatMessages(prev=>[...prev,{role:"ai",text:msg}]);
+                setShowDeleteModal(false);setDeleteTarget(null);setDeletionReason("");
+              }}/>
           </div>
         </div>
       )}
@@ -2049,17 +2029,11 @@ function ArchivedPanel({user,P,supabase,orgId,activeStudy,currentUserRole,logAud
     }
   }
 
-  // No physical deletes within retention (DI-06): archived documents go to the Recycle Bin like any other.
-  async function permanentDelete(d:any){
-    const reason=prompt("Reason for deletion (the document moves to the Recycle Bin and can be restored within 180 days):");
-    if(!reason?.trim())return;
-    const now=new Date().toISOString();
-    const{error}=await supabase.from("documents").update({deleted_at:now,deleted_by:user.email,deleted_by_id:user.id,deletion_reason:reason.trim(),pre_deletion_status:d.status,status:"Deleted"}).eq("id",d.id);
-    if(error){alert("Delete failed: "+error.message);return;}
-    await logAudit("Document deleted",d.id,d.study_id,"status",d.status,"Deleted",reason.trim(),d.custom_file_name||d.artifact_name);
-    setLocalDocs(prev=>prev.filter((x:any)=>x.id!==d.id));
-    setDocs((prev:any)=>prev.filter((x:any)=>x.id!==d.id));
-  }
+  // No physical deletes within retention (DI-06). Archived documents are Final, so deleting one is
+  // a deletion request that another administrator approves with an electronic signature (Part 8b).
+  const[delDoc,setDelDoc]=useState<any>(null);
+  const[delMsg,setDelMsg]=useState("");
+  function permanentDelete(d:any){setDelMsg("");setDelDoc(d);}
 
   function exportCSV(){
     const headers=["Document Name","Artifact","Zone","Archive Reason","Archived By","Archived At","Original Owner","Pre-Archive Status"];
@@ -2083,10 +2057,19 @@ function ArchivedPanel({user,P,supabase,orgId,activeStudy,currentUserRole,logAud
 
   return(
     <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+      {delDoc&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:"20px"}}>
+          <div style={{background:P.bg,borderRadius:"14px",padding:"20px",width:"100%",maxWidth:"440px"}}>
+            <div style={{fontSize:"12px",color:P.textSec,marginBottom:"8px"}}>{delDoc.custom_file_name||delDoc.file_name||delDoc.artifact_name}</div>
+            <DeleteForm doc={{id:delDoc.id,status:delDoc.status,artifact_num:delDoc.artifact_num}} onCancel={()=>setDelDoc(null)} onDone={(msg)=>{setDelMsg(msg);setDelDoc(null);}}/>
+          </div>
+        </div>
+      )}
+      {delMsg&&<div role="status" style={{fontSize:"12px",padding:"8px 12px",borderRadius:"8px",background:"#ECFDF5",color:"#065F46"}}>{delMsg}</div>}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
         <div>
           <h1 style={{fontSize:"14px",fontWeight:"500"}}>Archived Documents{activeStudy?" - "+activeStudy.study_id:""}</h1>
-          <p style={{fontSize:"11px",color:P.textTert,marginTop:"2px"}}>Documents archived from the TMF. Restore or permanently delete.</p>
+          <p style={{fontSize:"11px",color:P.textTert,marginTop:"2px"}}>Documents archived from the TMF. Restore them, or request deletion (another administrator approves it).</p>
         </div>
         <button onClick={exportCSV} style={{fontSize:"11px",padding:"6px 14px",background:P.success,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",display:"flex",alignItems:"center",gap:"6px"}}>
           <i className="ti ti-download" style={{fontSize:"13px"}}/>Export CSV

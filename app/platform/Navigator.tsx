@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { apiFetch, authHeaders } from "../../lib/api/client";
 import { History } from "./QcTasks";
 import { AddExpected, ExpectedArtifacts, PlaceholderPanel, pct } from "./Placeholders";
+import { DeleteForm, NewFileForm, ReclassifyForm, RevisionForm, VersionHistory, isFinal, type ActionDoc } from "./DocumentActions";
 
 type TreeNode = { id: string; label: string; field: string | null; value: string | null; children: TreeNode[] };
 type Tree = { my_trial: TreeNode; taxonomy: { label: string; nodes: TreeNode[] } };
@@ -78,8 +79,8 @@ function loadColumns(): string[] {
 
 const fmtDate = (s: string | null) => (s ? new Date(s).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "—");
 
-export default function Navigator({ study, canDelete, canDownload, canSubmit, canEditStudy, onAddToIntake, onView, onOpenQc }: {
-  study: { id: string; study_id: string }; canDelete: boolean; canDownload: boolean; canSubmit: boolean; canEditStudy: boolean;
+export default function Navigator({ study, orgId, canDelete, canDownload, canSubmit, canEditStudy, onAddToIntake, onView, onOpenQc }: {
+  study: { id: string; study_id: string }; orgId: string; canDelete: boolean; canDownload: boolean; canSubmit: boolean; canEditStudy: boolean;
   onAddToIntake: () => void; onView: (documentId: string) => void; onOpenQc: (documentId: string) => void;
 }) {
   const [tree, setTree] = useState<Tree | null>(null);
@@ -104,7 +105,7 @@ export default function Navigator({ study, canDelete, canDownload, canSubmit, ca
   const [view, setView] = useState<"grid" | "expected">("grid");
   const [adding, setAdding] = useState(false);
   const [notice, setNotice] = useState("");
-  const [deleting, setDeleting] = useState<string | null>(null);
+  const [action, setAction] = useState<null | "delete" | "reclassify" | "revision" | "file">(null);
   const [busy, setBusy] = useState("");
 
   useEffect(() => { try { localStorage.setItem(COLUMNS_KEY, JSON.stringify(columns)); } catch { /* ignore */ } }, [columns]);
@@ -154,7 +155,7 @@ export default function Navigator({ study, canDelete, canDownload, canSubmit, ca
   };
 
   async function openDetail(row: Row) {
-    setDeleting(null);
+    setAction(null);
     setSubmitNote(null);
     setDetail({ row, doc: null });
     if (row.kind !== "document" || !row.document_id) return;
@@ -197,15 +198,6 @@ export default function Navigator({ study, canDelete, canDownload, canSubmit, ca
     setBusy("");
   }
 
-  async function remove(id: string, reason: string) {
-    setBusy("Moving to the Recycle Bin…");
-    try {
-      await apiFetch(`/documents/${id}/delete`, { method: "POST", body: JSON.stringify({ reason: reason.trim() }) });
-      setDetail(null); setDeleting(null);
-      setReloads((n) => n + 1);
-    } catch (e) { setError((e as Error).message); }
-    setBusy("");
-  }
 
   async function exportCsv() {
     setBusy("Exporting…"); setError("");
@@ -502,7 +494,8 @@ export default function Navigator({ study, canDelete, canDownload, canSubmit, ca
 
         {/* Metadata panel (NAV-08 View Metadata) */}
         {detail && (
-          <aside style={{ flex: "0 0 300px", maxWidth: "100%", background: C.bg, border: `0.5px solid ${C.border}`, borderRadius: "12px", padding: "14px", display: "flex", flexDirection: "column", gap: "10px" }}>
+          <aside style={{ flex: "0 0 300px", maxWidth: "100%", background: C.bg, border: `0.5px solid ${C.border}`, borderRadius: "12px", padding: "14px", display: "flex", flexDirection: "column", gap: "10px",
+            position: "sticky", top: "0", alignSelf: "flex-start", maxHeight: "calc(100vh - 110px)", overflowY: "auto" }}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: "13px", fontWeight: 700, color: C.text, wordBreak: "break-word" }}>{detail.row.title}</div>
@@ -540,17 +533,10 @@ export default function Navigator({ study, canDelete, canDownload, canSubmit, ca
                     </div>
                   ))}
                 </dl>
-                {detail.doc.file_versions.length > 0 && (
-                  <div>
-                    <div style={{ fontSize: "11px", fontWeight: 600, color: C.textSec, marginBottom: "4px" }}>File history</div>
-                    {detail.doc.file_versions.map((v) => (
-                      <div key={v.version_no} style={{ fontSize: "10px", color: C.textSec, padding: "4px 0", borderTop: `0.5px solid ${C.bgTert}` }}>
-                        v{v.version_no} · {v.file_name} · {v.verification_status}
-                        <div style={{ fontFamily: "monospace", color: C.textTert }} title={v.file_hash}>{v.file_hash.slice(0, 16)}…</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <div>
+                  <div style={{ fontSize: "11px", fontWeight: 600, color: C.textSec, marginBottom: "4px" }}>File history</div>
+                  <VersionHistory key={`${detail.doc.id}-${reloads}`} documentId={detail.doc.id} canDownload={canDownload} />
+                </div>
                 <div>
                   <div style={{ fontSize: "11px", fontWeight: 600, color: C.textSec, marginBottom: "6px" }}>QC history</div>
                   {detail.steps ? <History steps={detail.steps} /> : <div style={{ fontSize: "10px", color: C.textTert }}>Loading…</div>}
@@ -577,21 +563,30 @@ export default function Navigator({ study, canDelete, canDownload, canSubmit, ca
                 <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
                   {detail.doc.has_file && <button onClick={() => onView(detail.doc!.id)} style={btn(C.primary, "#fff")}><i className="ti ti-eye" /> View</button>}
                   {detail.doc.has_file && canDownload && <button disabled={!!busy} onClick={() => download(detail.doc!.id)} style={btn(C.bg, C.textSec)}><i className="ti ti-download" /> Download</button>}
-                  {canDelete && deleting === null && <button onClick={() => setDeleting("")} style={btn(C.dangerBg, C.danger)}><i className="ti ti-trash" /> Delete</button>}
                 </div>
                 {!detail.doc.has_file && <div style={{ fontSize: "11px", color: C.textTert }}>This record has no file attached.</div>}
-                {deleting !== null && (
-                  <div>
-                    <label style={{ fontSize: "11px", color: C.textSec }}>Reason for deleting (required)
-                      <input autoFocus value={deleting} onChange={(e) => setDeleting(e.target.value)} style={{ ...field, width: "100%" }} />
-                    </label>
-                    <div style={{ fontSize: "11px", color: C.textTert, marginTop: "4px" }}>
-                      What happens next: the document moves to the Recycle Bin with your reason in the audit trail. It can be restored from there.
-                    </div>
-                    <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end", marginTop: "6px" }}>
-                      <button onClick={() => setDeleting(null)} style={btn(C.bgSec, C.textSec)}>Cancel</button>
-                      <button disabled={deleting.trim().length < 3 || !!busy} onClick={() => remove(detail.doc!.id, deleting)} style={{ ...btn("#991B1B", "#fff"), opacity: deleting.trim().length >= 3 ? 1 : 0.5 }}>Confirm delete</button>
-                    </div>
+                {/* Post-filing operations (Part 8b) */}
+                {action === null ? (
+                  <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", borderTop: `0.5px solid ${C.bgTert}`, paddingTop: "8px" }}>
+                    {canSubmit && detail.doc.status === "Draft" && <button onClick={() => setAction("file")} style={btn(C.bg, C.textSec)}><i className="ti ti-upload" /> New file</button>}
+                    {canSubmit && <button onClick={() => setAction("reclassify")} style={btn(C.bg, C.textSec)}><i className="ti ti-arrows-exchange" /> Reclassify</button>}
+                    {canSubmit && detail.doc.status === "Approved" && <button onClick={() => setAction("revision")} style={btn(C.bg, C.textSec)}><i className="ti ti-git-branch" /> Revision request</button>}
+                    {(isFinal(detail.doc.status) ? canSubmit : canDelete) && (
+                      <button onClick={() => setAction("delete")} style={btn(C.dangerBg, C.danger)}><i className="ti ti-trash" /> {isFinal(detail.doc.status) ? "Request deletion" : "Delete"}</button>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ borderTop: `0.5px solid ${C.bgTert}`, paddingTop: "8px" }}>
+                    {(() => {
+                      const d = detail.doc! as unknown as ActionDoc;
+                      const done = (msg: string) => { setAction(null); setError(""); setNotice(msg); setReloads((x) => x + 1); if (action === "delete" && !isFinal(d.status)) setDetail(null); else void openDetail(detail.row); };
+                      const cancel = () => setAction(null);
+                      if (action === "delete") return <DeleteForm doc={d} onDone={done} onCancel={cancel} />;
+                      if (action === "reclassify" && tree) return <ReclassifyForm doc={d} tree={tree} onDone={done} onCancel={cancel} />;
+                      if (action === "revision") return <RevisionForm doc={d} onDone={done} onCancel={cancel} />;
+                      if (action === "file") return <NewFileForm doc={d} orgId={orgId} studyCode={study.study_id} onDone={done} onCancel={cancel} />;
+                      return null;
+                    })()}
                   </div>
                 )}
               </>

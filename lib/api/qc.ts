@@ -13,7 +13,9 @@ import { serviceClient } from "./service";
  * single-use proof that the database requires before it records the decision.
  * Failed attempts are audited (11.300(d)).
  */
-export async function reauthenticate(ctx: RequestContext, password: string, purpose: "qc_decision", documentId: string | null): Promise<string> {
+export type ReauthPurpose = "qc_decision" | "deletion_approval" | "reclassify" | "revision";
+
+export async function reauthenticate(ctx: RequestContext, password: string, purpose: ReauthPurpose, documentId: string | null): Promise<string> {
   const email = ctx.user.email;
   if (!email) throw invalidRequest("Your account has no email address to confirm with");
 

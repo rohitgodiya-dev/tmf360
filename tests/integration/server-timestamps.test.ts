@@ -61,16 +61,20 @@ describe("documents", () => {
   });
 
   it("stamps deletion time and deleter, and still allows restore", async () => {
-    await userA.db.from("documents")
-      .update({ deleted_at: PAST, deleted_by: FORGED, deletion_reason: "test" }).eq("id", docId);
-    let d = await doc();
-    isRecent(d.deleted_at);
-    expect(d.deleted_by).toBe(userA.email);
-    expect(d.deleted_by_id).toBe(userA.id);
+    // A forged deletion time or deleter can't even be sent (Part 8b: deletes go through delete_document).
+    const forged = await userA.db.from("documents").update({ deleted_at: PAST, deleted_by: FORGED, deletion_reason: "test" }).eq("id", docId);
+    expect(forged.error).not.toBeNull();
+    const { data: draft } = await admin().from("documents").insert([{ org_id: orgA, user_id: userA.id, study_id: study.code, artifact_name: "TS draft", status: "Draft" }]).select("id").single();
+    expect((await userA.db.rpc("delete_document", { p_document: draft!.id, p_code: "other", p_comment: "timestamp test" })).error).toBeNull();
+    const { data: d } = await admin().from("documents").select("deleted_at, deleted_by, deleted_by_id").eq("id", draft!.id).single();
+    isRecent(d!.deleted_at);
+    expect(d!.deleted_by).toBe(userA.email);
+    expect(d!.deleted_by_id).toBe(userA.id);
 
-    await userA.db.from("documents").update({ deleted_at: null, deleted_by: null, deletion_reason: null }).eq("id", docId);
-    d = await doc();
-    expect(d.deleted_at).toBeNull();
+    expect((await userA.db.rpc("restore_document", { p_document: draft!.id, p_reason: "timestamp test" })).error).toBeNull();
+    const { data: back } = await admin().from("documents").select("deleted_at").eq("id", draft!.id).single();
+    expect(back!.deleted_at).toBeNull();
+    await admin().from("documents").delete().eq("id", draft!.id);
   });
 
   it("leaves service-role writes (imports) alone", async () => {

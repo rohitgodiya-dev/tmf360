@@ -244,12 +244,12 @@ describe("document metadata and file access", () => {
 describe("delete from the navigator", () => {
   it("needs delete_document and a reason, then drops the row from the grid", async () => {
     const dp = { documentId: docs.plan };
-    expect((await call(del.POST, { token: auditor.token, method: "POST", params: dp, body: { reason: "duplicate" } })).status).toBe(403);
-    expect((await call(del.POST, { token: lead.token, method: "POST", params: dp, body: {} })).status).toBe(400);
-    const r = await call(del.POST, { token: lead.token, method: "POST", params: dp, body: { reason: "Uploaded twice" } });
+    expect((await call(del.POST, { token: auditor.token, method: "POST", params: dp, body: { code: "other", comment: "duplicate" } })).status).toBe(403);
+    expect((await call(del.POST, { token: lead.token, method: "POST", params: dp, body: { comment: "no code given" } })).status).toBe(400);
+    const r = await call(del.POST, { token: lead.token, method: "POST", params: dp, body: { code: "incorrectly_indexed", comment: "Uploaded twice" } });
     expect(r.status).toBe(200);
-    const { data } = await admin().from("documents").select("status, deleted_by_id, deletion_reason").eq("id", docs.plan).single();
-    expect(data).toEqual({ status: "Deleted", deleted_by_id: lead.id, deletion_reason: "Uploaded twice" });
+    const { data } = await admin().from("documents").select("status, deleted_by_id, deletion_reason, deletion_code").eq("id", docs.plan).single();
+    expect(data).toEqual({ status: "Deleted", deleted_by_id: lead.id, deletion_reason: "Uploaded twice", deletion_code: "incorrectly_indexed" });
     const after = await query(lead, { chips: [{ field: "artifact", value: "01.01.01" }] });
     expect(after.body.data.map((x: { kind: string }) => x.kind)).toEqual(["missing"]);
   });

@@ -243,12 +243,12 @@ describe("closing tasks outside a decision", () => {
     const doc = await draft();
     await cra.db.rpc("submit_for_qc", { p_document: doc });
     const task = (await openTask(doc)).id;
-    const del = await lead.db.from("documents").update({ deleted_at: new Date().toISOString(), deletion_reason: "test", pre_deletion_status: "Under Review", status: "Deleted" }).eq("id", doc).select("id").single();
+    const del = await lead.db.rpc("delete_document", { p_document: doc, p_code: "incorrectly_indexed", p_comment: "Wrong artifact" });
     expect(del.error).toBeNull();
     const { data: t } = await admin().from("document_tasks").select("status").eq("id", task).single();
     expect(t!.status).toBe("cancelled");
-    const res = await lead.db.from("documents").update({ deleted_at: null, status: "Under Review" }).eq("id", doc).select("status").single();
+    const res = await lead.db.rpc("restore_document", { p_document: doc, p_reason: "Deleted by mistake" });
     expect(res.error).toBeNull();
-    expect(res.data!.status).toBe("Draft");
+    expect(res.data).toBe("Draft");
   });
 });
