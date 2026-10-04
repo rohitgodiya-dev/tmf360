@@ -11,6 +11,7 @@ import Navigator from"./Navigator";
 import DocumentViewer from"./DocumentViewer";
 import QcTasks from"./QcTasks";
 import QcSettings from"./QcSettings";
+import PlanSettings from"./PlanSettings";
 
 
 
@@ -1656,7 +1657,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {/* TMF NAVIGATOR (Part 6) */}
           {panel==="navigator"&&(activeStudy?.id?(
             <Navigator key={activeStudy.id} study={{id:activeStudy.id,study_id:activeStudy.study_id}}
-              canDelete={canDelete} canDownload={canDownload} canSubmit={hasPermission(currentUserRole as Role,"submit_document")}
+              canDelete={canDelete} canDownload={canDownload} canSubmit={hasPermission(currentUserRole as Role,"submit_document")} canEditStudy={hasPermission(currentUserRole as Role,"edit_study")}
               onAddToIntake={()=>setPanel("intake")} onView={(id)=>setViewerDocId(id)} onOpenQc={(id)=>openQcTask({id})}/>
           ):<div style={{padding:"2rem",color:P.textTert,fontSize:"12px"}}>Select a study to open the TMF Navigator.</div>)}
 
@@ -1733,6 +1734,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {panel==="tmfconfig"&&(
             <div style={{display:"flex",flexDirection:"column",gap:"24px"}}>
               <TmfConfigPanel user={user} P={P} supabase={supabase} activeStudy={activeStudy} orgId={orgId} currentUserRole={currentUserRole} logAudit={logAudit}/>
+              <PlanSettings/>
               <QcSettings/>
             </div>
           )}

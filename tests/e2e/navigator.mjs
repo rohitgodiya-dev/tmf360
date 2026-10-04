@@ -133,7 +133,7 @@ try {
   await page.getByRole("button", { name: "Clear all" }).click();
   await page.getByRole("button", { name: /Filters/ }).click();
   await page.getByLabel("Value").fill(`no-such-title-${run}`);
-  await page.getByRole("button", { name: "Apply" }).click();
+  await page.getByRole("button", { name: "Apply", exact: true }).click();
   await page.getByText("Nothing matches these filters.").waitFor({ timeout: 15000 });
   check(true, "filter builder: title rule filters the grid");
   await page.getByRole("button", { name: "Clear all" }).click();

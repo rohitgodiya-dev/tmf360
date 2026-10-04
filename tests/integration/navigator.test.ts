@@ -120,7 +120,9 @@ describe("navigator query", () => {
     const r = await query(auditor, { page_size: 200 });
     expect(r.status).toBe(200);
     const filedArtifacts = new Set(["02.01.02", "01.01.01", "05.02.07", "03.01.01"]);
-    expect(r.body.counts).toEqual({ Missing: enabledCount - filedArtifacts.size, Expected: 0, Incomplete: 0, "Under Revision": 2, Final: 2 });
+    // "plan" and "cv" have no file, so they are Incomplete (Part 8a).
+    expect(r.body.counts).toEqual({ Missing: enabledCount - filedArtifacts.size, Expected: 0, Incomplete: 2, "Under Revision": 0, Final: 2 });
+    expect(r.body.completeness).toBe(Math.round((2 / (enabledCount - filedArtifacts.size + 4)) * 1000) / 10);
     expect(r.body.total).toBe(enabledCount - filedArtifacts.size + 4);
     // The archived version is history, not current.
     expect(r.body.data.some((x: { row_id: string }) => x.row_id === docs.old)).toBe(false);
@@ -128,7 +130,7 @@ describe("navigator query", () => {
 
   it("tile counts equal the rows the tile returns", async () => {
     const all = await query(lead, { page_size: 1 });
-    for (const status of ["Missing", "Under Revision", "Final"]) {
+    for (const status of ["Missing", "Incomplete", "Final"]) {
       const r = await query(lead, { status, page_size: 1 });
       expect(r.body.total).toBe(all.body.counts[status]);
       expect(r.body.counts).toEqual(all.body.counts);

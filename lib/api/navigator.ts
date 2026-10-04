@@ -20,6 +20,7 @@ export const COLUMNS = {
   file_type: "file_type",
   revision: "revision",
   artifact: "artifact_num",
+  due: "due_date",
 } as const;
 export type ColumnKey = keyof typeof COLUMNS;
 const columnKey = z.enum(Object.keys(COLUMNS) as [ColumnKey, ...ColumnKey[]]);
@@ -40,14 +41,20 @@ export const TILES = ["Missing", "Expected", "Incomplete", "Under Revision", "Fi
 export const SELECT_COLUMNS =
   "row_id, kind, document_id, nav_status, current_activity, document_type, artifact_num, doc_ref, title, " +
   "study_country_id, country_code, study_site_id, site_number, site_name, owner, last_modified, tmf_level, " +
-  "file_type, revision, has_file, is_historical";
+  "file_type, revision, has_file, is_historical, placeholder_id, due_date";
+
+/** Completeness (PLC-06) = Final ÷ all rows under the same filters; null when there are none. */
+export function completeness(counts: Record<string, number>): number | null {
+  const total = TILES.reduce((n, t) => n + (counts[t] ?? 0), 0);
+  return total ? Math.round(((counts.Final ?? 0) / total) * 1000) / 10 : null;
+}
 
 const rule = z.object({
   column: columnKey,
   op: z.enum(["eq", "neq", "contains", "starts_with", "gt", "lt", "empty", "not_empty"]),
   value: z.string().max(200).optional(),
-}).refine((r) => !(r.column === "modified" && (r.op === "contains" || r.op === "starts_with")), {
-  message: "Last Modified can be compared with before/after, not text matching",
+}).refine((r) => !((r.column === "modified" || r.column === "due") && (r.op === "contains" || r.op === "starts_with")), {
+  message: "Dates can be compared with before/after, not text matching",
 }).refine((r) => r.op === "empty" || r.op === "not_empty" || (r.value ?? "") !== "", {
   message: "This rule needs a value",
 });
@@ -113,18 +120,20 @@ export async function runNavigatorQuery(db: SupabaseClient, study: { org_id: str
 
   // Tile counts use the same filters (minus the tile itself), so a tile's count always
   // equals the rows that clicking it returns (NAV-03 acceptance).
-  const counts = TILES.map((t) =>
+  const tileQueries = TILES.map((t) =>
     applyFilters(db.from("navigator_items").select("row_id", { count: "exact", head: true }), study, f).eq("nav_status", t));
 
-  const [page, ...tiles] = await Promise.all([rows, ...counts]);
+  const [page, ...tiles] = await Promise.all([rows, ...tileQueries]);
   if (page.error) throw dbError(page.error);
   for (const t of tiles) if (t.error) throw dbError(t.error);
+  const counts = Object.fromEntries(TILES.map((t, i) => [t, tiles[i].count ?? 0])) as Record<(typeof TILES)[number], number>;
   return {
     data: page.data ?? [],
     total: page.count ?? 0,
     page: f.page,
     page_size: f.page_size,
-    counts: Object.fromEntries(TILES.map((t, i) => [t, tiles[i].count ?? 0])) as Record<(typeof TILES)[number], number>,
+    counts,
+    completeness: completeness(counts),
   };
 }
 

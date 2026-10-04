@@ -4,18 +4,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch, authHeaders } from "../../lib/api/client";
 import { History } from "./QcTasks";
+import { AddExpected, ExpectedArtifacts, PlaceholderPanel, pct } from "./Placeholders";
 
 type TreeNode = { id: string; label: string; field: string | null; value: string | null; children: TreeNode[] };
 type Tree = { my_trial: TreeNode; taxonomy: { label: string; nodes: TreeNode[] } };
 type Chip = { field: string; value: string; label: string };
 type Rule = { column: string; op: string; value: string };
 type Row = {
-  row_id: string; kind: "document" | "missing"; document_id: string | null; nav_status: string; current_activity: string;
+  row_id: string; kind: "document" | "missing" | "placeholder"; document_id: string | null; nav_status: string; current_activity: string;
+  placeholder_id: string | null; due_date: string | null;
   document_type: string | null; artifact_num: string | null; doc_ref: string | null; title: string | null;
   country_code: string | null; site_number: string | null; site_name: string | null; owner: string | null;
   last_modified: string | null; tmf_level: string; file_type: string | null; revision: string | null; has_file: boolean;
 };
-type Result = { data: Row[]; total: number; page: number; page_size: number; counts: Record<string, number> };
+type Result = { data: Row[]; total: number; page: number; page_size: number; counts: Record<string, number>; completeness: number | null };
 type DocDetail = Record<string, unknown> & {
   id: string; status: string; artifact_num: string; artifact_name: string; has_file: boolean; tmf_level: string;
   file_versions: { version_no: number; file_name: string; file_hash: string; verification_status: string; created_at: string }[];
@@ -29,9 +31,9 @@ const btn = (bg: string, color: string): React.CSSProperties => ({ fontSize: "11
 const field: React.CSSProperties = { fontSize: "12px", padding: "6px 8px", border: `0.5px solid ${C.border}`, borderRadius: "6px", background: C.bg, boxSizing: "border-box" };
 
 const TILES: { key: string; color: string; bg: string; hint: string }[] = [
-  { key: "Missing", color: "#991B1B", bg: "#FEF2F2", hint: "Enabled artifacts with no document yet" },
-  { key: "Expected", color: "#374151", bg: "#F3F4F6", hint: "Placeholders not yet due (Part 8)" },
-  { key: "Incomplete", color: "#92400E", bg: "#FFFBEB", hint: "Placeholders past due (Part 8)" },
+  { key: "Missing", color: "#991B1B", bg: "#FEF2F2", hint: "Expected artifacts past their due date (before a plan exists: every enabled artifact with no document)" },
+  { key: "Expected", color: "#374151", bg: "#F3F4F6", hint: "Expected artifacts not yet due" },
+  { key: "Incomplete", color: "#92400E", bg: "#FFFBEB", hint: "Records with no file attached" },
   { key: "Under Revision", color: "#1D4ED8", bg: "#EFF6FF", hint: "Draft, in review or returned for rework" },
   { key: "Final", color: "#065F46", bg: "#ECFDF5", hint: "Approved documents" },
 ];
@@ -51,6 +53,7 @@ const COLUMNS: { key: keyof Row & string; api: string; label: string; on: boolea
   { key: "last_modified", api: "modified", label: "Last Modified", on: true },
   { key: "file_type", api: "file_type", label: "File Type", on: false },
   { key: "revision", api: "revision", label: "Revision", on: false },
+  { key: "due_date", api: "due", label: "Due", on: true },
 ];
 const OPS: { op: string; label: string; text: boolean; date: boolean; needsValue: boolean }[] = [
   { op: "eq", label: "is", text: true, date: false, needsValue: true },
@@ -75,8 +78,8 @@ function loadColumns(): string[] {
 
 const fmtDate = (s: string | null) => (s ? new Date(s).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "—");
 
-export default function Navigator({ study, canDelete, canDownload, canSubmit, onAddToIntake, onView, onOpenQc }: {
-  study: { id: string; study_id: string }; canDelete: boolean; canDownload: boolean; canSubmit: boolean;
+export default function Navigator({ study, canDelete, canDownload, canSubmit, canEditStudy, onAddToIntake, onView, onOpenQc }: {
+  study: { id: string; study_id: string }; canDelete: boolean; canDownload: boolean; canSubmit: boolean; canEditStudy: boolean;
   onAddToIntake: () => void; onView: (documentId: string) => void; onOpenQc: (documentId: string) => void;
 }) {
   const [tree, setTree] = useState<Tree | null>(null);
@@ -98,6 +101,9 @@ export default function Navigator({ study, canDelete, canDownload, canSubmit, on
   const [error, setError] = useState("");
   const [detail, setDetail] = useState<{ row: Row; doc: DocDetail | null; steps?: React.ComponentProps<typeof History>["steps"] } | null>(null);
   const [submitNote, setSubmitNote] = useState<string | null>(null);
+  const [view, setView] = useState<"grid" | "expected">("grid");
+  const [adding, setAdding] = useState(false);
+  const [notice, setNotice] = useState("");
   const [deleting, setDeleting] = useState<string | null>(null);
   const [busy, setBusy] = useState("");
 
@@ -181,6 +187,16 @@ export default function Navigator({ study, canDelete, canDownload, canSubmit, on
     setBusy("");
   }
 
+  async function applyPlan() {
+    setBusy("Applying the eTMF plan…"); setError(""); setNotice("");
+    try {
+      const r = await apiFetch<{ created: number }>(`/studies/${study.id}/apply-plan`, { method: "POST" });
+      setNotice(r.created ? `${r.created} expected artifact${r.created > 1 ? "s" : ""} added from the eTMF plan.` : "Nothing new: the study already has everything the plan expects so far. More appear as milestones are achieved.");
+      setReloads((n) => n + 1);
+    } catch (e) { setError((e as Error).message); }
+    setBusy("");
+  }
+
   async function remove(id: string, reason: string) {
     setBusy("Moving to the Recycle Bin…");
     try {
@@ -242,9 +258,12 @@ export default function Navigator({ study, canDelete, canDownload, canSubmit, on
   const cell = (r: Row, key: string) => {
     if (key === "nav_status") return statusPill(r.nav_status);
     if (key === "last_modified") return fmtDate(r.last_modified);
+    if (key === "due_date") return r.due_date
+      ? <span style={{ color: r.nav_status === "Missing" ? C.danger : C.textSec, fontWeight: r.nav_status === "Missing" ? 600 : 400 }}>{new Date(`${r.due_date}T00:00:00`).toLocaleDateString(undefined, { dateStyle: "medium" })}</span>
+      : <span style={{ color: C.textTert }}>—</span>;
     if (key === "artifact_num") return <span style={{ fontFamily: "monospace", fontSize: "10px", color: C.textTert }}>{r.artifact_num ?? "—"}</span>;
     if (key === "title") return (
-      <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", color: r.kind === "missing" ? C.textTert : C.text, fontStyle: r.kind === "missing" ? "italic" : "normal" }}>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", color: r.kind === "document" ? C.text : C.textTert, fontStyle: r.kind === "document" ? "normal" : "italic" }}>
         {r.kind === "document" && <i className={`ti ${r.has_file ? "ti-file-text" : "ti-file-off"}`} style={{ fontSize: "13px", color: C.textTert }} />}
         {r.title ?? "—"}
       </span>
@@ -260,11 +279,26 @@ export default function Navigator({ study, canDelete, canDownload, canSubmit, on
           <h1 style={{ fontSize: "20px", fontWeight: 700, color: C.text }}>TMF Navigator — {study.study_id}</h1>
           <p style={{ fontSize: "12px", color: C.textTert, marginTop: "2px" }}>Pick a country, site, zone or artifact on the left, then narrow with the tiles and filters.</p>
         </div>
-        <button onClick={onAddToIntake} style={btn(C.primary, "#fff")}>+ Add documents</button>
+        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+          {canEditStudy && <button onClick={applyPlan} disabled={!!busy} title="Create the placeholders your eTMF plan expects for this study" style={btn(C.bg, C.textSec)}><i className="ti ti-list-check" /> Apply eTMF plan</button>}
+          {canEditStudy && <button onClick={() => setAdding((a) => !a)} style={btn(C.bg, C.textSec)}>+ Expected artifact</button>}
+          <button onClick={onAddToIntake} style={btn(C.primary, "#fff")}>+ Add documents</button>
+        </div>
       </div>
+      {notice && <div role="status" style={{ fontSize: "12px", padding: "8px 10px", borderRadius: "8px", background: "#ECFDF5", color: "#065F46" }}>{notice}</div>}
+      {adding && tree && (
+        <AddExpected studyId={study.id} tree={tree} onCancel={() => setAdding(false)}
+          onDone={(msg) => { setAdding(false); setNotice(msg); setReloads((n) => n + 1); }} />
+      )}
 
       {/* Status tiles (NAV-03): each count equals the rows clicking it shows. */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "8px" }}>
+        {/* Completeness (PLC-06): Final ÷ all five, under the same filters as the tiles. */}
+        <div title="Final ÷ (Missing + Expected + Incomplete + Under Revision + Final), for the current filters"
+          style={{ padding: "10px 12px", borderRadius: "10px", background: C.primaryLight, border: `0.5px solid ${C.border}` }}>
+          <div style={{ fontSize: "20px", fontWeight: 700, color: C.primary }}>{result ? pct(result.completeness) : "–"}</div>
+          <div style={{ fontSize: "11px", color: C.textSec, fontWeight: 500 }}>Completeness</div>
+        </div>
         {TILES.map((t) => {
           const on = status === t.key;
           return (
@@ -306,6 +340,18 @@ export default function Navigator({ study, canDelete, canDownload, canSubmit, on
         </aside>
 
         <section style={{ flex: "1 1 520px", minWidth: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
+          <div style={{ display: "flex", border: `0.5px solid ${C.border}`, borderRadius: "6px", overflow: "hidden", alignSelf: "flex-start" }}>
+            {([["grid", "Documents"], ["expected", "Expected artifacts"]] as const).map(([k, l]) => (
+              <button key={k} onClick={() => setView(k)} style={{ fontSize: "11px", padding: "6px 12px", border: "none", cursor: "pointer",
+                background: view === k ? C.primaryLight : C.bg, color: view === k ? C.primary : C.textSec, fontWeight: view === k ? 600 : 400 }}>{l}</button>
+            ))}
+          </div>
+          {view === "expected" ? (
+            <ExpectedArtifacts key={reloads} studyId={study.id} onDrill={(field, value, label) => {
+              setChips((cs) => [...cs.filter((c) => !["zone", "section", "artifact"].includes(c.field)), { field, value, label }]);
+              setView("grid");
+            }} />
+          ) : (<>
           {/* Toolbar (NAV-04/06/07/08) */}
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search titles…" aria-label="Search titles" style={{ ...field, width: "200px" }} />
@@ -349,14 +395,14 @@ export default function Navigator({ study, canDelete, canDownload, canSubmit, on
             <div style={{ background: C.bgSec, border: `0.5px solid ${C.border}`, borderRadius: "10px", padding: "10px", display: "flex", flexDirection: "column", gap: "6px" }}>
               <div style={{ fontSize: "11px", fontWeight: 600, color: C.textSec }}>Show rows where all of these match</div>
               {draftRules.map((r, i) => {
-                const isDate = r.column === "modified";
+                const isDate = r.column === "modified" || r.column === "due";
                 const ops = OPS.filter((o) => (isDate ? o.date : o.text));
                 const op = OPS.find((o) => o.op === r.op);
                 const set = (patch: Partial<Rule>) => setDraftRules((rs) => rs!.map((x, j) => (j === i ? { ...x, ...patch } : x)));
                 return (
                   <div key={i} style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
                     <select value={r.column} aria-label="Column" style={field} onChange={(e) => {
-                      const date = e.target.value === "modified";
+                      const date = e.target.value === "modified" || e.target.value === "due";
                       set({ column: e.target.value, op: (OPS.find((o) => o.op === r.op && (date ? o.date : o.text)) ?? OPS.find((o) => (date ? o.date : o.text))!).op, value: "" });
                     }}>
                       {COLUMNS.map((c) => <option key={c.api} value={c.api}>{c.label}</option>)}
@@ -451,6 +497,7 @@ export default function Navigator({ study, canDelete, canDownload, canSubmit, on
               <button disabled={page >= pages} onClick={() => setPage(page + 1)} style={{ ...btn(C.bg, C.textSec), opacity: page >= pages ? 0.4 : 1 }}>Next</button>
             </div>
           )}
+          </>)}
         </section>
 
         {/* Metadata panel (NAV-08 View Metadata) */}
@@ -465,7 +512,10 @@ export default function Navigator({ study, canDelete, canDownload, canSubmit, on
             </div>
             <div>{statusPill(detail.row.nav_status)}</div>
 
-            {detail.row.kind === "missing" ? (
+            {detail.row.kind === "placeholder" && detail.row.placeholder_id ? (
+              <PlaceholderPanel key={detail.row.placeholder_id} id={detail.row.placeholder_id} canEdit={canEditStudy}
+                onAddToIntake={onAddToIntake} onChanged={() => setReloads((n) => n + 1)} />
+            ) : detail.row.kind === "missing" ? (
               <>
                 <div style={{ fontSize: "11px", color: C.textSec, background: C.bgSec, borderRadius: "8px", padding: "8px 10px" }}>
                   No document has been filed for this artifact yet. Add the file through Document Intake; once it is filed it appears here as Under Revision.
