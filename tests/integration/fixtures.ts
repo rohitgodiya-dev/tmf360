@@ -20,7 +20,7 @@ export function anonClient(): SupabaseClient {
   return createClient(url(), anonKey(), { auth: { persistSession: false, autoRefreshToken: false } });
 }
 
-export type TestUser = { id: string; email: string; token: string; orgId: string | null; db: SupabaseClient };
+export type TestUser = { id: string; email: string; password: string; token: string; orgId: string | null; db: SupabaseClient };
 
 export class Fixtures {
   readonly runId = randomUUID().slice(0, 8);
@@ -79,7 +79,7 @@ export class Fixtures {
     const db = anonClient();
     const { data: session, error: signInErr } = await db.auth.signInWithPassword({ email, password });
     if (signInErr || !session.session) throw signInErr ?? new Error("sign-in failed");
-    return { id: data.user.id, email, token: session.session.access_token, orgId: opts.orgId ?? null, db };
+    return { id: data.user.id, email, password, token: session.session.access_token, orgId: opts.orgId ?? null, db };
   }
 
   /** Creates a study and returns its row id (studies.id) and code (studies.study_id). */
@@ -116,7 +116,10 @@ export class Fixtures {
     for (const f of this.files) await a.storage.from(f.bucket).remove([f.path]);
     // Study structure and directory rows (children first).
     if (this.orgIds.length) {
-      for (const t of ["tmf_config", "milestones", "contact_roles", "study_sites", "study_countries", "study_parties", "persons", "parties"]) {
+      // QC tasks whose decisions were signed stay behind (signatures are append-only), and so
+      // then do their documents and organisation; everything else is removed.
+      for (const t of ["document_tasks", "qc_reasons", "file_plan_steps", "workflow_settings",
+        "tmf_config", "milestones", "contact_roles", "study_sites", "study_countries", "study_parties", "persons", "parties"]) {
         await a.from(t).delete().in("org_id", this.orgIds);
       }
     }

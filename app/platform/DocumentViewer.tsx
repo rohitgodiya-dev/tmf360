@@ -46,7 +46,8 @@ function PdfPage({ pdf, n, scale, rotation, onClick, active }: { pdf: PDFDocumen
     style={{ display: "block", background: "#fff", boxShadow: "0 1px 6px rgba(0,0,0,.25)", cursor: onClick ? "pointer" : "default", outline: active ? `2px solid ${C.primary}` : "none", outlineOffset: "2px" }} />;
 }
 
-export default function DocumentViewer({ documentId, canDownload, onClose }: { documentId: string; canDownload: boolean; onClose: () => void }) {
+/** `inline` renders inside its parent (the QC task screen) instead of as a full-screen dialog. */
+export default function DocumentViewer({ documentId, canDownload, onClose, inline = false }: { documentId: string; canDownload: boolean; onClose: () => void; inline?: boolean }) {
   const [meta, setMeta] = useState<Meta | null>(null);
   const [kind, setKind] = useState<Kind | null>(null);
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
@@ -92,14 +93,15 @@ export default function DocumentViewer({ documentId, canDownload, onClose }: { d
   // Keyboard: Esc closes, arrows change page.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-      if (!pdf || (e.target as HTMLElement)?.tagName === "INPUT") return;
+      if (e.key === "Escape" && !inline) onClose();
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (!pdf || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
       if (e.key === "ArrowRight" || e.key === "PageDown") setPage((p) => Math.min(pdf.numPages, p + 1));
       if (e.key === "ArrowLeft" || e.key === "PageUp") setPage((p) => Math.max(1, p - 1));
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [pdf, onClose]);
+  }, [pdf, onClose, inline]);
 
   async function download() {
     setBusy("Preparing download…"); setError("");
@@ -137,9 +139,11 @@ export default function DocumentViewer({ documentId, canDownload, onClose }: { d
   const viewable = kind === "pdf" || kind === "image";
 
   return (
-    <div role="dialog" aria-modal="true" aria-label={`Viewer: ${name}`}
-      style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(17,24,39,.6)", display: "flex", alignItems: "stretch", justifyContent: "center", padding: "16px" }}>
-      <div style={{ flex: 1, maxWidth: "1300px", background: C.bgSec, borderRadius: "12px", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <div role={inline ? "region" : "dialog"} aria-modal={inline ? undefined : true} aria-label={`Viewer: ${name}`}
+      style={inline
+        ? { height: "100%", display: "flex", minHeight: 0 }
+        : { position: "fixed", inset: 0, zIndex: 1000, background: "rgba(17,24,39,.6)", display: "flex", alignItems: "stretch", justifyContent: "center", padding: "16px" }}>
+      <div style={{ flex: 1, maxWidth: inline ? undefined : "1300px", minWidth: 0, background: C.bgSec, borderRadius: "12px", display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {/* Header + toolbar */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", padding: "10px 14px", background: C.bg, borderBottom: `0.5px solid ${C.border}` }}>
           <div style={{ flex: "1 1 240px", minWidth: 0 }}>
@@ -166,7 +170,7 @@ export default function DocumentViewer({ documentId, canDownload, onClose }: { d
           )}
           {meta?.has_file && canDownload && <button disabled={!!busy} onClick={download} style={tool}><i className="ti ti-download" /> Download</button>}
           {meta?.has_file && canDownload && viewable && <button disabled={!!busy || !bytes} onClick={print} style={tool}><i className="ti ti-printer" /> Print</button>}
-          <button aria-label="Close viewer" onClick={onClose} style={{ ...tool, background: C.dark, color: "#fff", border: "none" }}><i className="ti ti-x" /> Close</button>
+          {!inline && <button aria-label="Close viewer" onClick={onClose} style={{ ...tool, background: C.dark, color: "#fff", border: "none" }}><i className="ti ti-x" /> Close</button>}
         </div>
         {(error || busy) && <div style={{ fontSize: "12px", padding: "6px 14px", background: error ? "#FEF2F2" : C.bg, color: error ? C.danger : C.textSec }}>{error || busy}</div>}
 

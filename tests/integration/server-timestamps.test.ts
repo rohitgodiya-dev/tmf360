@@ -39,9 +39,16 @@ async function doc() {
 
 describe("documents", () => {
   it("stamps approval time and approver from the server", async () => {
+    // A forged approval time or approver is refused outright (Part 7: approval is a QC decision)…
     const { error } = await userA.db.from("documents")
       .update({ status: "Approved", approved_at: PAST, approved_by: FORGED }).eq("id", docId);
-    expect(error).toBeNull();
+    expect(error?.message).toMatch(/QC/);
+    // …and the QC decision records the server's time and the signed-in user.
+    await admin().from("documents").update({ file_path: `${orgA}/${study.code}/ts-${fx.runId}.pdf` }).eq("id", docId);
+    expect((await userA.db.rpc("submit_for_qc", { p_document: docId })).error).toBeNull();
+    const { data: task } = await admin().from("document_tasks").select("id").eq("document_id", docId).eq("status", "open").single();
+    const { data: proof } = await admin().from("reauth_proofs").insert([{ user_id: userA.id, purpose: "qc_decision" }]).select("id").single();
+    expect((await userA.db.rpc("complete_qc_task", { p_task: task!.id, p_outcome: "accept", p_reason_codes: [], p_comment: "", p_reauth: proof!.id })).error).toBeNull();
     const d = await doc();
     isRecent(d.approved_at);
     expect(d.approved_by).toBe(userA.email);

@@ -3,6 +3,7 @@
 // tiles, filters, a configurable grid and CSV export. All filtering runs on the server, as the user.
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch, authHeaders } from "../../lib/api/client";
+import { History } from "./QcTasks";
 
 type TreeNode = { id: string; label: string; field: string | null; value: string | null; children: TreeNode[] };
 type Tree = { my_trial: TreeNode; taxonomy: { label: string; nodes: TreeNode[] } };
@@ -74,9 +75,9 @@ function loadColumns(): string[] {
 
 const fmtDate = (s: string | null) => (s ? new Date(s).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "—");
 
-export default function Navigator({ study, canDelete, canDownload, onAddToIntake, onView }: {
-  study: { id: string; study_id: string }; canDelete: boolean; canDownload: boolean;
-  onAddToIntake: () => void; onView: (documentId: string) => void;
+export default function Navigator({ study, canDelete, canDownload, canSubmit, onAddToIntake, onView, onOpenQc }: {
+  study: { id: string; study_id: string }; canDelete: boolean; canDownload: boolean; canSubmit: boolean;
+  onAddToIntake: () => void; onView: (documentId: string) => void; onOpenQc: (documentId: string) => void;
 }) {
   const [tree, setTree] = useState<Tree | null>(null);
   const [treeTab, setTreeTab] = useState<"my_trial" | "taxonomy">("taxonomy");
@@ -95,7 +96,8 @@ export default function Navigator({ study, canDelete, canDownload, onAddToIntake
   const [response, setResponse] = useState<{ key: string; result: Result | null; error: string } | null>(null);
   const [reloads, setReloads] = useState(0);
   const [error, setError] = useState("");
-  const [detail, setDetail] = useState<{ row: Row; doc: DocDetail | null } | null>(null);
+  const [detail, setDetail] = useState<{ row: Row; doc: DocDetail | null; steps?: React.ComponentProps<typeof History>["steps"] } | null>(null);
+  const [submitNote, setSubmitNote] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [busy, setBusy] = useState("");
 
@@ -147,12 +149,27 @@ export default function Navigator({ study, canDelete, canDownload, onAddToIntake
 
   async function openDetail(row: Row) {
     setDeleting(null);
+    setSubmitNote(null);
     setDetail({ row, doc: null });
     if (row.kind !== "document" || !row.document_id) return;
     try {
-      const doc = await apiFetch<DocDetail>(`/documents/${row.document_id}`);
-      setDetail((d) => (d?.row.row_id === row.row_id ? { row, doc } : d));
+      const [doc, tl] = await Promise.all([
+        apiFetch<DocDetail>(`/documents/${row.document_id}`),
+        apiFetch<{ steps: React.ComponentProps<typeof History>["steps"] }>(`/documents/${row.document_id}/timeline`),
+      ]);
+      setDetail((d) => (d?.row.row_id === row.row_id ? { row, doc, steps: tl.steps } : d));
     } catch (e) { setError((e as Error).message); }
+  }
+
+  async function submitForQc(row: Row, note: string) {
+    setBusy("Submitting for QC…"); setError("");
+    try {
+      await apiFetch(`/documents/${row.document_id}/submit`, { method: "POST", body: JSON.stringify({ comment: note.trim() || undefined }) });
+      setSubmitNote(null);
+      setReloads((n) => n + 1);
+      await openDetail(row);
+    } catch (e) { setError((e as Error).message); }
+    setBusy("");
   }
 
   async function download(id: string) {
@@ -483,6 +500,29 @@ export default function Navigator({ study, canDelete, canDownload, onAddToIntake
                       </div>
                     ))}
                   </div>
+                )}
+                <div>
+                  <div style={{ fontSize: "11px", fontWeight: 600, color: C.textSec, marginBottom: "6px" }}>QC history</div>
+                  {detail.steps ? <History steps={detail.steps} /> : <div style={{ fontSize: "10px", color: C.textTert }}>Loading…</div>}
+                </div>
+                {detail.doc.status === "Draft" && detail.doc.has_file && canSubmit && (
+                  submitNote === null ? (
+                    <button onClick={() => setSubmitNote("")} style={btn(C.primaryLight, C.primary)}><i className="ti ti-send" /> Submit for QC</button>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                      <label style={{ fontSize: "11px", color: C.textSec }}>Note for the reviewer (optional)
+                        <input value={submitNote} onChange={(e) => setSubmitNote(e.target.value)} style={{ ...field, width: "100%", marginTop: "3px" }} />
+                      </label>
+                      <div style={{ fontSize: "10px", color: C.textTert }}>What happens next: the document becomes Under Review and a QC task is assigned from the File Plan.</div>
+                      <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
+                        <button onClick={() => setSubmitNote(null)} style={btn(C.bgSec, C.textSec)}>Cancel</button>
+                        <button disabled={!!busy} onClick={() => submitForQc(detail.row, submitNote)} style={btn(C.primary, "#fff")}>Submit for QC</button>
+                      </div>
+                    </div>
+                  )
+                )}
+                {detail.doc.status === "Under Review" && (
+                  <button onClick={() => onOpenQc(detail.doc!.id)} style={btn(C.primaryLight, C.primary)}><i className="ti ti-checklist" /> Open QC task</button>
                 )}
                 <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
                   {detail.doc.has_file && <button onClick={() => onView(detail.doc!.id)} style={btn(C.primary, "#fff")}><i className="ti ti-eye" /> View</button>}

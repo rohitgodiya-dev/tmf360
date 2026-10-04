@@ -82,7 +82,11 @@ describe("file versions", () => {
   });
 
   it("locks the file of an approved document", async () => {
-    await sysAdmin.db.from("documents").update({ status: "Approved", approved_at: new Date().toISOString() }).eq("id", docId);
+    // Approve through QC (Part 7): submit, then accept the task with a re-authentication proof.
+    expect((await sysAdmin.db.rpc("submit_for_qc", { p_document: docId })).error).toBeNull();
+    const { data: task } = await admin().from("document_tasks").select("id").eq("document_id", docId).eq("status", "open").single();
+    const { data: proof } = await admin().from("reauth_proofs").insert([{ user_id: sysAdmin.id, purpose: "qc_decision" }]).select("id").single();
+    expect((await sysAdmin.db.rpc("complete_qc_task", { p_task: task!.id, p_outcome: "accept", p_reason_codes: [], p_comment: "", p_reauth: proof!.id })).error).toBeNull();
     const path = await store("sneaky swap");
     const { error } = await sysAdmin.db.from("documents").update({ file_path: path }).eq("id", docId);
     expect(error?.message).toMatch(/approved document/);

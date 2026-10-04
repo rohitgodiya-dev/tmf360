@@ -55,16 +55,22 @@ describe("creating documents", () => {
 });
 
 describe("changing documents", () => {
-  it("a CRA can submit for review but not approve", async () => {
-    expect((await cra.db.from("documents").update({ status: "Under Review" }).eq("id", docId)).error).toBeNull();
+  // Since Part 7, submitting and approving go through the QC workflow (qc-workflow.test.ts).
+  it("a CRA can submit for QC but not approve", async () => {
+    await admin().from("documents").update({ file_path: `${orgA}/${study.code}/da-${fx.runId}.pdf` }).eq("id", docId);
+    expect((await cra.db.rpc("submit_for_qc", { p_document: docId })).error).toBeNull();
     const r = await cra.db.from("documents").update({ status: "Approved", approved_at: new Date().toISOString() }).eq("id", docId);
     expect(r.error?.message).toMatch(/approve_document/);
     expect((await status()).status).toBe("Under Review");
   });
 
-  it("an administrator can approve", async () => {
+  it("an administrator approves through the QC task, not by editing the document", async () => {
     const r = await sysAdmin.db.from("documents").update({ status: "Approved", approved_at: new Date().toISOString() }).eq("id", docId);
-    expect(r.error).toBeNull();
+    expect(r.error?.message).toMatch(/QC/);
+    const { data: task } = await admin().from("document_tasks").select("id").eq("document_id", docId).eq("status", "open").single();
+    const { data: proof } = await admin().from("reauth_proofs").insert([{ user_id: sysAdmin.id, purpose: "qc_decision" }]).select("id").single();
+    const done = await sysAdmin.db.rpc("complete_qc_task", { p_task: task!.id, p_outcome: "accept", p_reason_codes: [], p_comment: "", p_reauth: proof!.id });
+    expect(done.error).toBeNull();
     expect((await status()).status).toBe("Approved");
   });
 

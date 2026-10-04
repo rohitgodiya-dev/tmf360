@@ -9,6 +9,8 @@ import JSZip from"jszip";
 import DocumentIntake from"./DocumentIntake";
 import Navigator from"./Navigator";
 import DocumentViewer from"./DocumentViewer";
+import QcTasks from"./QcTasks";
+import QcSettings from"./QcSettings";
 
 
 
@@ -79,7 +81,9 @@ export default function Platform(){
   const[showStudyModal,setShowStudyModal]=useState(false);
   const[showDocModal,setShowDocModal]=useState(false);
   const[showSubmitModal,setShowSubmitModal]=useState(false);
-  const[showApproveModal,setShowApproveModal]=useState(false);
+  const[qcTaskId,setQcTaskId]=useState<string|null>(null);
+  const[submitError,setSubmitError]=useState("");
+  const[tasksNonce,setTasksNonce]=useState(0);
   const[showCommentModal,setShowCommentModal]=useState(false);
   const[selectedDoc,setSelectedDoc]=useState<Doc|null>(null);
   const[fId,setFId]=useState("");
@@ -110,9 +114,6 @@ export default function Platform(){
   const[pendingFileSize,setPendingFileSize]=useState(0);
   const[zoneArts,setZoneArts]=useState<any[]>([]);
   const[submissionReason,setSubmissionReason]=useState("");
-  const[approvePassword,setApprovePassword]=useState("");
-  const[approveReason,setApproveReason]=useState("");
-  const[approveError,setApproveError]=useState("");
   const[commentText,setCommentText]=useState("");
   const[viewerDocId,setViewerDocId]=useState<string|null>(null);
   const[chatMessages,setChatMessages]=useState<{role:string;text:string;isHealthCard?:boolean;docId?:string;sourceTags?:string[];classification?:{zoneLine:string;confidence:number;warning?:{detail:string;action:string}}}[]>([{role:"ai",text:"Hi, I'm Trinity - your TMF AI specialist for this study. I can classify uploaded documents against the tracker, and answer questions about this study's trial master file."}]);
@@ -336,22 +337,18 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
     setPanel("intake");
   }
 
-  async function handleApprove(){
-    if(!selectedDoc||!user)return;
-    setApproveError("");
-    if(!approvePassword){setApproveError("Please enter your password.");return;}
-    if(!approveReason){setApproveError("Please select a reason.");return;}
-    const{error:signInErr}=await supabase.auth.signInWithPassword({email:user.email,password:approvePassword});
-    if(signInErr){setApproveError("Incorrect password.");return;}
-    const now=new Date().toISOString();
-    await saveMetadataVersion(selectedDoc,approveReason||"Status changed to Approved");
-    const{error}=await supabase.from("documents").update({status:"Approved",approved_by:user.email,approved_at:now,signature_reason:approveReason}).eq("id",selectedDoc.id);
-    if(!error){
-      await logAudit("Document approved",selectedDoc.id,selectedDoc.study_id,"status","Under Review","Approved",approveReason,selectedDoc.custom_file_name||selectedDoc.artifact_name);
-      setDocs(prev=>prev.map(d=>d.id===selectedDoc.id?{...d,status:"Approved",approved_by:user.email,approved_at:now,signature_reason:approveReason}:d));
-      setChatMessages(prev=>[...prev,{role:"ai",text:`"${selectedDoc.custom_file_name||selectedDoc.artifact_name}" has been approved and filed. Audit trail entry recorded.`}]);
-      setShowApproveModal(false);setApprovePassword("");setApproveReason("");setSelectedDoc(null);
-    }
+  // Part 7: documents are approved or rejected only in their QC task (Study Tasks), never here.
+  async function openQcTask(doc:any){
+    const{data}=await supabase.from("document_tasks").select("id").eq("document_id",doc.id).eq("status","open").maybeSingle();
+    setQcTaskId(data?.id??null);setPanel("tasks");
+  }
+  // Submit for QC (Part 7): Draft → Under Review with the first File Plan task, on the server.
+  async function submitForQc(doc:any,comment:string){
+    try{
+      await apiFetch(`/documents/${doc.id}/submit`,{method:"POST",body:JSON.stringify({comment:comment.trim()||undefined})});
+      setDocs(prev=>prev.map(d=>d.id===doc.id?{...d,status:"Under Review",submission_reason:comment.trim()} as any:d));
+      return "";
+    }catch(e){return (e as Error).message;}
   }
 
   async function handleAddComment(){
@@ -598,7 +595,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
   };
 
   const navItem=(id:string,label:string,icon:string)=>(
-    <button key={id} onClick={()=>{setPanel(id);if(activeStudy&&user&&orgId)loadDocsWithOrg(activeStudy.study_id,orgId);}}
+    <button key={id} onClick={()=>{setPanel(id);if(id==="tasks"){setQcTaskId(null);setTasksNonce(n=>n+1);}if(activeStudy&&user&&orgId)loadDocsWithOrg(activeStudy.study_id,orgId);}}
       style={{display:"flex",alignItems:"center",gap:"8px",padding:"7px 10px",borderRadius:"8px",border:"none",cursor:"pointer",width:"100%",textAlign:"left",fontSize:"12px",background:panel===id?P.primaryLight:"transparent",color:panel===id?P.primary:P.textSec,fontWeight:panel===id?"500":"400"}}>
       <i className={`ti ${icon}`} style={{fontSize:"15px"}}/>
       {label}
@@ -663,6 +660,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {activeStudy?.id&&<a href={`/platform/studies/${activeStudy.id}/structure`} style={{display:"flex",alignItems:"center",gap:"8px",padding:"7px 10px",borderRadius:"8px",fontSize:"12px",color:"#374151",textDecoration:"none",fontWeight:"400"}}><i className="ti ti-sitemap" style={{fontSize:"15px"}}/>Study structure</a>}
           <p style={{fontSize:"9px",fontWeight:"500",color:P.textTert,padding:"10px 10px 4px",textTransform:"uppercase",letterSpacing:".06em"}}>TMF</p>
           {navItem("navigator","TMF Navigator","ti-binary-tree")}
+          {navItem("tasks","Study Tasks","ti-checklist")}
           {navItem("intake","Document Intake","ti-inbox")}
           {navItem("documents","Documents","ti-files")}
           {navItem("artifacts","Artifact browser","ti-layout-grid")}
@@ -918,15 +916,18 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                   ):(
                     <div style={{display:"flex",gap:"8px",alignItems:"flex-end"}}>
                       <div style={{flex:1}}>
-                        <label style={{fontSize:"10px",color:P.textSec,display:"block",marginBottom:"3px"}}>Appeal justification</label>
-                        <textarea id={`appeal-${d.id}`} placeholder="Provide justification for appeal..." style={{width:"100%",fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"6px",padding:"6px 8px",resize:"vertical" as const,minHeight:"60px"}}/>
+                        <label style={{fontSize:"10px",color:P.textSec,display:"block",marginBottom:"3px"}}>What did you change, or why should it pass? (sent with the resubmission)</label>
+                        <textarea id={`appeal-${d.id}`} placeholder="e.g. Signed page 3 added" style={{width:"100%",fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"6px",padding:"6px 8px",resize:"vertical" as const,minHeight:"60px"}}/>
+                        <div id={`appeal-err-${d.id}`} style={{fontSize:"10px",color:"#991B1B"}}/>
+                        <div style={{fontSize:"10px",color:P.textTert,marginTop:"2px"}}>What happens next: the document goes back to QC and review starts again at Inbound QC.</div>
                       </div>
                       <button onClick={async()=>{
                         const ta=document.getElementById(`appeal-${d.id}`) as HTMLTextAreaElement;
-                        if(!ta?.value.trim())return;
-                        const{error}=await supabase.from("documents").update({status:"Under Review",appeal_reason:ta.value.trim()}).eq("id",d.id);
-                        if(!error){await logAudit("Appeal submitted",d.id,d.study_id,"appeal_reason","",ta.value.trim(),"",d.custom_file_name||d.artifact_name);setDocs(prev=>prev.map(doc=>doc.id===d.id?{...doc,status:"Under Review",appeal_reason:ta.value.trim()} as any:doc));}
-                      }} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Submit Appeal</button>
+                        const err=document.getElementById(`appeal-err-${d.id}`);
+                        if(!ta?.value.trim()){if(err)err.textContent="Say what changed before resubmitting.";return;}
+                        const msg=await submitForQc(d,ta.value);
+                        if(err)err.textContent=msg;
+                      }} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Resubmit for QC</button>
                     </div>
                   )}
                 </div>
@@ -974,7 +975,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                 <button onClick={()=>setPanel("dashboard")} style={{fontSize:"11px",padding:"5px 10px",border:`0.5px solid ${P.border}`,borderRadius:"6px",background:P.bg,cursor:"pointer"}}>Back</button>
                 <h1 style={{fontSize:"14px",fontWeight:"500"}}>Pending review - {activeStudy?.study_id}</h1>
               </div>
-              <div style={{background:P.primaryLight,border:`0.5px solid #C7D2FE`,borderRadius:"10px",padding:"10px 14px",fontSize:"11px",color:"#3730A3"}}>Review submitted documents. Approve with electronic signature or reject with a reason.</div>
+              <div style={{background:P.primaryLight,border:`0.5px solid #C7D2FE`,borderRadius:"10px",padding:"10px 14px",fontSize:"11px",color:"#3730A3"}}>Documents waiting for QC. Open a document&apos;s QC task to accept it or reject it with coded reasons.</div>
               {studyDocs.filter(d=>d.status==="Under Review").length===0?(
                 <div style={{textAlign:"center",padding:"2rem",color:P.textTert,fontSize:"12px"}}>No documents pending review.</div>
               ):studyDocs.filter(d=>d.status==="Under Review").map((d,i)=>(
@@ -995,26 +996,9 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                   </div>
                   {(d as any).submission_reason&&<div style={{background:"#EFF6FF",borderRadius:"8px",padding:"10px 12px"}}><div style={{fontSize:"10px",fontWeight:"500",color:"#1E40AF",marginBottom:"3px"}}>Submission reason:</div><div style={{fontSize:"11px",color:"#1E3A5F"}}>{(d as any).submission_reason}</div></div>}
                   {(d as any).appeal_reason&&<div style={{background:P.primaryLight,borderRadius:"8px",padding:"10px 12px"}}><div style={{fontSize:"10px",fontWeight:"500",color:P.primary,marginBottom:"3px"}}>Appeal reason:</div><div style={{fontSize:"11px",color:"#3730A3"}}>{(d as any).appeal_reason}</div></div>}
-                  <div style={{display:"flex",gap:"8px",alignItems:"flex-end",borderTop:`0.5px solid ${P.border}`,paddingTop:"10px"}}>
-                    <div style={{flex:1}}>
-                      <label style={{fontSize:"10px",color:P.textSec,display:"block",marginBottom:"3px"}}>Review notes</label>
-                      <textarea id={`review-comment-${d.id}`} placeholder="Add review notes before approving or rejecting..." style={{width:"100%",fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"6px",padding:"6px 8px",resize:"vertical" as const,minHeight:"50px"}}/>
-                    </div>
-                    <div style={{display:"flex",flexDirection:"column" as const,gap:"6px",flexShrink:0}}>
-                      <button onClick={async()=>{
-                        const ta=document.getElementById(`review-comment-${d.id}`) as HTMLTextAreaElement;
-                        if(ta?.value.trim()){const existing=d.comments||"";const newComment=`${existing}${existing?"\n":""}[${new Date().toLocaleString()} - ${user.email}]: ${ta.value.trim()}`;await supabase.from("documents").update({comments:newComment}).eq("id",d.id);setDocs(prev=>prev.map(doc=>doc.id===d.id?{...doc,comments:newComment}:doc));ta.value="";}
-                        setSelectedDoc(d);setShowApproveModal(true);
-                      }} style={{fontSize:"11px",padding:"7px 14px",background:P.success,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Approve</button>
-                      <button onClick={async()=>{
-                        const ta=document.getElementById(`review-comment-${d.id}`) as HTMLTextAreaElement;
-                        const reason=ta?.value.trim();
-                        if(!reason){alert("Please add a rejection reason before rejecting.");return;}
-                        const now=new Date().toISOString();
-                        const{error}=await supabase.from("documents").update({status:"Draft",rejection_reason:reason,rejected_by:user.email,rejected_at:now}).eq("id",d.id);
-                        if(!error){await logAudit("Document rejected",d.id,d.study_id,"status","Under Review","Draft - Reason: "+reason,reason,d.custom_file_name||d.artifact_name);setDocs(prev=>prev.map(doc=>doc.id===d.id?{...doc,status:"Draft",rejection_reason:reason,rejected_by:user.email,rejected_at:now} as any:doc));}
-                      }} style={{fontSize:"11px",padding:"7px 14px",background:"#FEF2F2",color:"#991B1B",border:"0.5px solid #FECACA",borderRadius:"8px",cursor:"pointer"}}>Reject</button>
-                    </div>
+                  <div style={{display:"flex",gap:"8px",alignItems:"center",borderTop:`0.5px solid ${P.border}`,paddingTop:"10px"}}>
+                    <div style={{flex:1,fontSize:"11px",color:P.textSec}}>Decisions are recorded in the document&apos;s QC task, with your password as an attestation or signature.</div>
+                    <button onClick={()=>openQcTask(d)} style={{fontSize:"11px",padding:"7px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",flexShrink:0}}>Open QC task</button>
                   </div>
                 </div>
               ))}
@@ -1088,7 +1072,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                             {d.file_path&&<button onClick={()=>openPreview(d)} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,border:`0.5px solid ${P.border}`,borderRadius:"4px",cursor:"pointer"}}>Preview</button>}
                             {d.file_path&&canDownload&&<button onClick={()=>downloadFile(d.file_path,d.custom_file_name||d.file_name)} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,color:P.textSec,borderRadius:"4px",textDecoration:"none",border:"none",cursor:"pointer"}}>Download</button>}
                             {d.status==="Draft"&&<button onClick={()=>{setSelectedDoc(d);setShowSubmitModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:"#EFF6FF",color:"#1D4ED8",border:"0.5px solid #BFDBFE",borderRadius:"4px",cursor:"pointer"}}>Submit</button>}
-                            {d.status==="Under Review"&&<button onClick={()=>{setSelectedDoc(d);setShowApproveModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:"#ECFDF5",color:"#065F46",border:"0.5px solid #A7F3D0",borderRadius:"4px",cursor:"pointer"}}>Review</button>}
+                            {d.status==="Under Review"&&<button onClick={()=>openQcTask(d)} style={{fontSize:"9px",padding:"2px 6px",background:"#ECFDF5",color:"#065F46",border:"0.5px solid #A7F3D0",borderRadius:"4px",cursor:"pointer"}}>Review</button>}
                             <button onClick={()=>{setSelectedDoc(d);setCommentText("");setShowCommentModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:P.bgTert,border:`0.5px solid ${P.border}`,borderRadius:"4px",cursor:"pointer"}}>Comment</button>
                             {canUploadDownload&&<button onClick={async()=>{const reason=prompt("Reason for archiving:");if(!reason)return;const now=new Date().toISOString();const{error}=await supabase.from("documents").update({status:"Archived",archived_by:user.email,archived_at:now,archive_reason:reason,pre_archive_status:d.status}).eq("id",d.id);if(!error){await logAudit("Document archived",d.id,d.study_id,"status",d.status,"Archived - Reason: "+reason,reason,d.custom_file_name||d.artifact_name);setDocs(prev=>prev.map(x=>x.id===d.id?{...x,status:"Archived",archived_by:user.email,archived_at:now,archive_reason:reason}:x));}}} style={{fontSize:"9px",padding:"2px 6px",background:"#FFFBEB",color:"#92400E",border:"0.5px solid #FDE68A",borderRadius:"4px",cursor:"pointer"}}>Archive</button>}{canDelete&&<button onClick={()=>{setDeleteTarget(d);setDeletionReason("");setShowDeleteModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:"#FEF2F2",color:"#991B1B",border:"0.5px solid #FECACA",borderRadius:"4px",cursor:"pointer"}}>Delete</button>}<button onClick={()=>{setQueryDoc(d);setShowQueryModal(true);}} style={{fontSize:"9px",padding:"2px 6px",background:"#EFF6FF",color:"#1D4ED8",border:"0.5px solid #BFDBFE",borderRadius:"4px",cursor:"pointer"}}>Query</button>
                           </div>
@@ -1409,11 +1393,11 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                             <button onClick={()=>{
                               const doc=studyDocs.find(d=>d.id===approveDocId);
                               if(!doc)return;
-                              // Approval is a signed action: hand off to the standard approval modal,
-                              // which re-authenticates the user and records the reason (handleApprove).
-                              setSelectedDoc(doc);setApprovePassword("");setApproveReason("");setApproveError("");setShowApproveModal(true);
-                              setChatMessages(prev=>[...prev,{role:"ai",text:"Enter your password and a reason to sign this approval."}]);
+                              // Approval is a QC decision (Part 7): hand off to the document's QC task,
+                              // where the reviewer re-enters their password to attest or sign.
+                              setChatMessages(prev=>[...prev,{role:"ai",text:doc.status==="Under Review"?"Opening the QC task. Record your decision there with your password.":"This document isn't in QC yet. Submit it for QC first; a reviewer then accepts or rejects it in Study Tasks."}]);
                               setApproveStage(0);setApproveDocId(null);
+                              if(doc.status==="Under Review")openQcTask(doc);
                             }} style={{fontSize:"12px",fontWeight:"600",padding:"6px 15px",background:P.success,color:"#fff",border:"none",borderRadius:"7px",cursor:"pointer",alignSelf:"flex-start" as const}}>Approve</button>
                           </div>
                         )}
@@ -1444,14 +1428,17 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
                               if(!flagDocId)return;
                               const doc=studyDocs.find(d=>d.id===flagDocId);
                               if(!doc)return;
-                              const now=new Date().toISOString();
                               const comment=flagComment.trim();
-                              const{error}=await supabase.from("documents").update({status:"Draft",rejection_reason:flagReason,rejected_by:user.email,rejected_at:now}).eq("id",doc.id);
-                              if(!error){
-                                await logAudit("Document flagged via Trinity",doc.id,doc.study_id,"status",doc.status,"Draft",flagReason);
-                                setDocs(prev=>prev.map(d=>d.id===doc.id?{...d,status:"Draft",rejection_reason:flagReason,rejected_by:user.email,rejected_at:now} as any:d));
+                              // Part 7: the flag returns the document for rework on the server (audited, open QC task
+                              // cancelled). The AI's reason is a suggestion; the user's comment is what is recorded.
+                              const reason=`Flagged in Trinity: ${comment} (AI note: ${flagReason})`.slice(0,2000);
+                              try{
+                                await apiFetch(`/documents/${doc.id}/return`,{method:"POST",body:JSON.stringify({reason})});
+                                setDocs(prev=>prev.map(d=>d.id===doc.id?{...d,status:"Draft",rejection_reason:reason} as any:d));
+                                setChatMessages(prev=>[...prev,{role:"ai",text:`Returned to the owner for rework.\nYour comment is attached for them.\nComment: ${comment}`}]);
+                              }catch(e){
+                                setChatMessages(prev=>[...prev,{role:"ai",text:`Couldn't flag this document: ${(e as Error).message}${doc.status==="Approved"?"\nApproved documents are changed through post-filing operations, not flags.":""}`}]);
                               }
-                              setChatMessages(prev=>[...prev,{role:"ai",text:`Moved to Flagged on the dashboard.\nReason and your comment are attached for the reviewer.\nComment: ${comment}`}]);
                               setFlagStage("idle");setFlagMsgIdx(null);setFlagComment("");setFlagDocId(null);setFlagReason("");
                             }} style={{fontSize:"12px",fontWeight:"600",padding:"6px 15px",background:P.danger,color:"#fff",border:"none",borderRadius:"7px",cursor:flagComment.trim().length===0?"not-allowed":"pointer",alignSelf:"flex-start" as const,opacity:flagComment.trim().length===0?0.5:1}}>Submit flag</button>
                           </div>
@@ -1669,9 +1656,15 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {/* TMF NAVIGATOR (Part 6) */}
           {panel==="navigator"&&(activeStudy?.id?(
             <Navigator key={activeStudy.id} study={{id:activeStudy.id,study_id:activeStudy.study_id}}
-              canDelete={canDelete} canDownload={canDownload}
-              onAddToIntake={()=>setPanel("intake")} onView={(id)=>setViewerDocId(id)}/>
+              canDelete={canDelete} canDownload={canDownload} canSubmit={hasPermission(currentUserRole as Role,"submit_document")}
+              onAddToIntake={()=>setPanel("intake")} onView={(id)=>setViewerDocId(id)} onOpenQc={(id)=>openQcTask({id})}/>
           ):<div style={{padding:"2rem",color:P.textTert,fontSize:"12px"}}>Select a study to open the TMF Navigator.</div>)}
+
+          {/* STUDY TASKS + QC (Part 7) */}
+          {panel==="tasks"&&(activeStudy?.id&&orgId?(
+            <QcTasks key={`${activeStudy.id}-${tasksNonce}`} study={{id:activeStudy.id,study_id:activeStudy.study_id}} canDownload={canDownload}
+              initialTaskId={qcTaskId} onChanged={()=>{setQcTaskId(null);loadDocsWithOrg(activeStudy.study_id,orgId);}}/>
+          ):<div style={{padding:"2rem",color:P.textTert,fontSize:"12px"}}>Select a study to see its tasks.</div>)}
 
           {/* DOCUMENT INTAKE (Part 5) */}
           {panel==="intake"&&(activeStudy?.id&&orgId?(
@@ -1721,6 +1714,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {/* TMF AUDITOR */}
           {panel==="tmfauditor"&&(
             <TmfAuditorPanel
+              onOpenQc={openQcTask}
               user={user} P={P} supabase={supabase}
               activeStudy={activeStudy} orgId={orgId}
               currentUserRole={currentUserRole}
@@ -1737,7 +1731,10 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
 
           {/* TMF CONFIG */}
           {panel==="tmfconfig"&&(
-            <TmfConfigPanel user={user} P={P} supabase={supabase} activeStudy={activeStudy} orgId={orgId} currentUserRole={currentUserRole} logAudit={logAudit}/>
+            <div style={{display:"flex",flexDirection:"column",gap:"24px"}}>
+              <TmfConfigPanel user={user} P={P} supabase={supabase} activeStudy={activeStudy} orgId={orgId} currentUserRole={currentUserRole} logAudit={logAudit}/>
+              <QcSettings/>
+            </div>
           )}
 
           {/* TICKET */}
@@ -1924,51 +1921,21 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
       {showSubmitModal&&selectedDoc&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
           <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"420px",border:`0.5px solid ${P.border}`}}>
-            <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"4px"}}>Submit for review</h2>
-            <p style={{fontSize:"11px",color:P.textSec,marginBottom:"1rem"}}>{selectedDoc.artifact_name}</p>
-            <div style={{marginBottom:"1rem"}}>
-              <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Reason for submission</label>
-              <textarea value={submissionReason} onChange={e=>setSubmissionReason(e.target.value)} placeholder="Describe why this document is ready for review..." style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px",resize:"vertical" as const,minHeight:"80px"}}/>
+            <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"4px"}}>Submit for QC</h2>
+            <p style={{fontSize:"11px",color:P.textSec,marginBottom:"1rem"}}>{selectedDoc.custom_file_name||selectedDoc.artifact_name}</p>
+            <div style={{marginBottom:"10px"}}>
+              <label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Note for the reviewer (optional)</label>
+              <textarea value={submissionReason} onChange={e=>setSubmissionReason(e.target.value)} placeholder="Anything the reviewer should know" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px",resize:"vertical" as const,minHeight:"70px"}}/>
             </div>
+            <div style={{fontSize:"11px",color:P.textSec,background:P.bgSec,borderRadius:"8px",padding:"8px 10px",marginBottom:"10px"}}><b>What happens next:</b> the document becomes Under Review and a QC task is assigned from the File Plan. You can&apos;t pick the reviewer.</div>
+            {submitError&&<div style={{fontSize:"11px",color:"#991B1B",background:"#FEF2F2",padding:"8px 10px",borderRadius:"6px",marginBottom:"10px"}}>{submitError}</div>}
             <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
-              <button onClick={()=>{setShowSubmitModal(false);setSubmissionReason("");}} style={{fontSize:"11px",padding:"6px 14px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>Cancel</button>
+              <button onClick={()=>{setShowSubmitModal(false);setSubmissionReason("");setSubmitError("");}} style={{fontSize:"11px",padding:"6px 14px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>Cancel</button>
               <button onClick={async()=>{
-                if(!submissionReason.trim()){alert("Please add a reason for submission.");return;}
-                const{error}=await supabase.from("documents").update({status:"Under Review",submission_reason:submissionReason}).eq("id",selectedDoc.id);
-                if(!error){await logAudit("Document submitted for review",selectedDoc.id,selectedDoc.study_id,"status","Draft","Under Review - "+submissionReason,submissionReason,selectedDoc.custom_file_name||selectedDoc.artifact_name);setDocs(prev=>prev.map(d=>d.id===selectedDoc.id?{...d,status:"Under Review",submission_reason:submissionReason} as any:d));}
-                setShowSubmitModal(false);setSubmissionReason("");setSelectedDoc(null);
-              }} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Submit for review</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Approve Modal */}
-      {showApproveModal&&selectedDoc&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
-          <div style={{background:P.bg,borderRadius:"16px",padding:"1.5rem",width:"420px",border:`0.5px solid ${P.border}`}}>
-            <h2 style={{fontSize:"14px",fontWeight:"500",marginBottom:"4px"}}>Electronic signature - 21 CFR Part 11</h2>
-            <p style={{fontSize:"11px",color:P.textSec,marginBottom:"1rem"}}>21 CFR Part 11 requires identity verification before approval.</p>
-            <div style={{background:"#EFF6FF",border:"0.5px solid #BFDBFE",borderRadius:"8px",padding:"10px 12px",marginBottom:"1rem",fontSize:"11px",color:"#1E40AF"}}>
-              <strong>Approver:</strong> {user?.email}<br/>
-              <strong>Timestamp:</strong> {new Date().toLocaleString()}<br/>
-              <strong>Document:</strong> {selectedDoc.custom_file_name||selectedDoc.file_name||selectedDoc.artifact_name}<br/>
-              <strong>Meaning:</strong> I approve this document as accurate and complete
-            </div>
-            <div style={{marginBottom:"10px"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Enter your password to sign</label><input type="password" value={approvePassword} onChange={e=>setApprovePassword(e.target.value)} placeholder="--------" style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/></div>
-            <div style={{marginBottom:"1rem"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Reason for approval</label>
-              <select value={approveReason} onChange={e=>setApproveReason(e.target.value)} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}>
-                <option value="">Select reason...</option>
-                <option>Reviewed and approved - document is accurate and complete</option>
-                <option>QC review complete - no findings</option>
-                <option>Regulatory review complete</option>
-                <option>Final approval for TMF filing</option>
-              </select>
-            </div>
-            {approveError&&<div style={{fontSize:"11px",color:"#991B1B",background:"#FEF2F2",padding:"8px 10px",borderRadius:"6px",marginBottom:"10px"}}>{approveError}</div>}
-            <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
-              <button onClick={()=>{setShowApproveModal(false);setApprovePassword("");setApproveReason("");setApproveError("");}} style={{fontSize:"11px",padding:"6px 14px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>Cancel</button>
-              <button onClick={handleApprove} style={{fontSize:"11px",padding:"6px 14px",background:P.success,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Sign & Approve</button>
+                const msg=await submitForQc(selectedDoc,submissionReason);
+                if(msg){setSubmitError(msg);return;}
+                setShowSubmitModal(false);setSubmissionReason("");setSubmitError("");setSelectedDoc(null);
+              }} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Submit for QC</button>
             </div>
           </div>
         </div>
@@ -2925,7 +2892,7 @@ function UserManagementPanel({user, P, supabase, activeStudy, orgId}: {user: any
 
 
 
-function TmfAuditorPanel({user,P,supabase,activeStudy,orgId,currentUserRole,activeTMF,activeZONES,studyDocs,setDocs,logAudit,saveMetadataVersion}:{user:any,P:any,supabase:any,activeStudy:any,orgId:string,currentUserRole:string,activeTMF:any[],activeZONES:any[],studyDocs:any[],setDocs:any,logAudit:any,saveMetadataVersion:(doc:any,changeReason:string)=>Promise<void>}){
+function TmfAuditorPanel({onOpenQc,user,P,supabase,activeStudy,orgId,currentUserRole,activeTMF,activeZONES,studyDocs,setDocs,logAudit,saveMetadataVersion}:{onOpenQc:(doc:any)=>void,user:any,P:any,supabase:any,activeStudy:any,orgId:string,currentUserRole:string,activeTMF:any[],activeZONES:any[],studyDocs:any[],setDocs:any,logAudit:any,saveMetadataVersion:(doc:any,changeReason:string)=>Promise<void>}){
   const [selectedDoc, setSelectedDoc] = useState<any>(null);
   const [expandedZones, setExpandedZones] = useState<Set<string>>(new Set(["1"]));
   const [expandedArtifacts, setExpandedArtifacts] = useState<Set<string>>(new Set());
@@ -2974,36 +2941,20 @@ function TmfAuditorPanel({user,P,supabase,activeStudy,orgId,currentUserRole,acti
     return "empty";
   }
 
+  // Part 7: submit a Draft for QC on the server (the database audits it and assigns the reviewer).
   async function handleAction() {
-    if (!selectedDoc || !actionType || !actionComment.trim()) return;
+    if (!selectedDoc || selectedDoc.status !== "Draft") return;
     setSaving(true);
-    const newStatus = actionType === "approve" ? "Approved" : "Under Review";
-    const now = new Date().toISOString();
-    
-    const updateData: any = {
-      status: newStatus,
-      comments: (selectedDoc.comments||"") + (selectedDoc.comments?"\n":"") + "[" + new Date().toLocaleString() + " - " + user.email + "]: " + actionComment.trim()
-    };
-    
-    if (actionType === "approve") {
-      updateData.approved_by = user.email;
-      updateData.approved_at = now;
-      updateData.signature_reason = actionComment.trim();
-    }
-
-    await saveMetadataVersion(selectedDoc, "Metadata updated");
-    const { error } = await supabase.from("documents").update(updateData).eq("id", selectedDoc.id);
-    if (!error) {
-      await logAudit(
-        actionType === "approve" ? "Document approved via TMF Auditor" : "Document moved to pending review via TMF Auditor",
-        selectedDoc.id, selectedDoc.study_id, "status", selectedDoc.status, newStatus, actionComment.trim(), selectedDoc.custom_file_name||selectedDoc.artifact_name
-      );
-      setDocs((prev: any[]) => prev.map(d => d.id === selectedDoc.id ? {...d, ...updateData} : d));
-      setSelectedDoc((prev: any) => prev ? {...prev, ...updateData} : null);
-      setMsg(actionType === "approve" ? "Document marked complete. Audit trail updated." : "Document moved to Pending Review.");
+    try {
+      await apiFetch(`/documents/${selectedDoc.id}/submit`, { method: "POST", body: JSON.stringify({ comment: actionComment.trim() || undefined }) });
+      const patch = { status: "Under Review", submission_reason: actionComment.trim() };
+      setDocs((prev: any[]) => prev.map(d => d.id === selectedDoc.id ? {...d, ...patch} : d));
+      setSelectedDoc((prev: any) => prev ? {...prev, ...patch} : null);
+      setMsg("Submitted for QC. A reviewer has been assigned from the File Plan.");
       setActionComment("");
-      setActionType(null);
-      setTimeout(() => setMsg(""), 3000);
+      setTimeout(() => setMsg(""), 4000);
+    } catch (e) {
+      setMsg((e as Error).message);
     }
     setSaving(false);
   }
@@ -3193,27 +3144,26 @@ function TmfAuditorPanel({user,P,supabase,activeStudy,orgId,currentUserRole,acti
           {/* Bottom action bar */}
           <div style={{padding:"14px 20px",borderTop:`0.5px solid ${P.border}`,background:P.bg,display:"flex",flexDirection:"column" as const,gap:"10px"}}>
             {msg && <div style={{fontSize:"11px",padding:"8px 12px",borderRadius:"8px",background:msg.includes("Approved")||msg.includes("complete")?P.successLight:P.primaryLight,color:msg.includes("Approved")||msg.includes("complete")?P.success:P.primary}}>{msg}</div>}
-            <div style={{display:"flex",gap:"10px",alignItems:"flex-end"}}>
-              <div style={{flex:1}}>
-                <label style={{fontSize:"10px",color:P.textSec,display:"block",marginBottom:"4px",fontWeight:"500"}}>
-                  {actionType==="approve"?"Approval reason (required)":actionType==="review"?"Reason for returning to review (required)":"Add a comment to take action"}
-                </label>
-                <textarea value={actionComment} onChange={e=>setActionComment(e.target.value)} placeholder={actionType==="approve"?"e.g. Reviewed and approved — document is accurate and complete":actionType==="review"?"e.g. Version number missing — please update":"Select an action below..."} rows={2} style={{width:"100%",fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px",resize:"vertical" as const,background:P.bg}}/>
-              </div>
-              <div style={{display:"flex",flexDirection:"column" as const,gap:"6px",flexShrink:0}}>
-                <button onClick={()=>setActionType("approve")} disabled={!canAudit} style={{fontSize:"11px",fontWeight:"500",padding:"8px 16px",background:actionType==="approve"?P.success:"transparent",color:actionType==="approve"?"#fff":P.success,border:`1.5px solid ${P.success}`,borderRadius:"8px",cursor:canAudit?"pointer":"not-allowed",minWidth:"140px"}}>
-                  ✓ Mark Complete
+            {/* Part 7: approval happens only in the QC task; from here a Draft can be submitted for QC. */}
+            {selectedDoc.status==="Draft"?(
+              <div style={{display:"flex",gap:"10px",alignItems:"flex-end"}}>
+                <div style={{flex:1}}>
+                  <label style={{fontSize:"10px",color:P.textSec,display:"block",marginBottom:"4px",fontWeight:"500"}}>Note for the reviewer (optional)</label>
+                  <textarea value={actionComment} onChange={e=>setActionComment(e.target.value)} placeholder="Anything the reviewer should know" rows={2} style={{width:"100%",fontSize:"11px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"8px 10px",resize:"vertical" as const,background:P.bg}}/>
+                  <div style={{fontSize:"10px",color:P.textTert,marginTop:"3px"}}>What happens next: the document becomes Under Review and a QC task is assigned from the File Plan.</div>
+                </div>
+                <button onClick={handleAction} disabled={!canAudit||saving} style={{fontSize:"11px",fontWeight:"600",padding:"8px 16px",background:P.blue,color:"#fff",border:"none",borderRadius:"8px",cursor:canAudit&&!saving?"pointer":"not-allowed",opacity:canAudit&&!saving?1:0.5,flexShrink:0}}>
+                  {saving?"Submitting…":"Submit for QC"}
                 </button>
-                <button onClick={()=>setActionType("review")} disabled={!canAudit} style={{fontSize:"11px",fontWeight:"500",padding:"8px 16px",background:actionType==="review"?P.blue:"transparent",color:actionType==="review"?"#fff":P.blue,border:`1.5px solid ${P.blue}`,borderRadius:"8px",cursor:canAudit?"pointer":"not-allowed",minWidth:"140px"}}>
-                  ↩ Move to Review
-                </button>
-                {actionType && (
-                  <button onClick={handleAction} disabled={!actionComment.trim()||saving} style={{fontSize:"11px",fontWeight:"600",padding:"8px 16px",background:actionType==="approve"?P.success:P.blue,color:"#fff",border:"none",borderRadius:"8px",cursor:actionComment.trim()&&!saving?"pointer":"not-allowed",opacity:actionComment.trim()&&!saving?1:0.5}}>
-                    {saving?"Saving...":"Confirm"}
-                  </button>
-                )}
               </div>
-            </div>
+            ):selectedDoc.status==="Under Review"?(
+              <div style={{display:"flex",gap:"10px",alignItems:"center"}}>
+                <div style={{flex:1,fontSize:"11px",color:P.textSec}}>This document is in QC. The reviewer accepts or rejects it in its QC task.</div>
+                <button onClick={()=>onOpenQc(selectedDoc)} style={{fontSize:"11px",fontWeight:"600",padding:"8px 16px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",flexShrink:0}}>Open QC task</button>
+              </div>
+            ):(
+              <div style={{fontSize:"11px",color:P.textTert}}>This document is {selectedDoc.status}. No QC action is available.</div>
+            )}
           </div>
         </div>
       )}

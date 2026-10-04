@@ -48,7 +48,9 @@ document_metadata_versions, study_access_grants, study_members, role_permissions
 document_file_versions (Part 4b),
 intake_items (Part 5 — **Document Intake**, the plan's "Staging Area"),
 parties, persons, study_parties, study_countries, study_sites, contact_roles (Part 2b),
-milestone_types, milestones (Part 2c), taxonomy tables (Part 3)
+milestone_types, milestones (Part 2c), taxonomy tables (Part 3),
+navigator_items view (Part 6), qc_reasons, file_plan_steps, workflow_settings, document_tasks,
+qc_decisions, signature_events, reauth_proofs (Part 7)
 
 Naming rule: the plan's "Staging Area" is called **Document Intake** in TMF360.
 There is no `staged_documents` table — do not create one; extend `intake_items`.
@@ -87,7 +89,13 @@ suppliers, study_qms_links
 10 Sponsor–site link · 11 Inspection Mode, reports, archive/retention, risk ·
 12 AI recommendations + migration/import · 13 Validation pack + pilot
 
-Done: Parts 1–5. Current: Part 6 (Navigator + Document Viewer) — see claude-mem work_state list "part-6".
+Done: Parts 1–7 (Part 6 Navigator + pdf.js viewer; Part 7 QC workflow live 2026-10-04 — see docs/part7-plan.md).
+Next: Part 8 (Placeholders/completeness + post-filing ops).
+
+Part 7 rules: a document reaches Under Review only via submit_for_qc() and Approved only via
+complete_qc_task() (trigger documents_workflow_guard). QC decisions need a password re-check in the
+API (lib/api/qc.ts reauthenticate → single-use reauth_proofs row) and write append-only
+signature_events + qc_decisions. Never write documents.status/approved_*/rejected_* from the browser.
 
 ## Pending Work — In Priority Order
 
@@ -96,13 +104,13 @@ Done: Parts 1–5. Current: Part 6 (Navigator + Document Viewer) — see claude-
 
 ### TMF360 UPDATES (from Montrium teardown + dev plan) → mapped to roadmap parts
 2. ~~Staging Area~~ — built as Document Intake (Part 5). Gaps still open: file-name duplicate warning, Blocked/Warning badges in the queue.
-3. Embedded PDF viewer — replace opens-in-new-tab (Part 6c)
+3. ~~Embedded PDF viewer~~ — done in Part 6c (pdf.js, logged download/print)
 4. Explainable risk scoring — weighted factors (Part 11)
 5. Placeholder + completeness formula (PLC-06) (Part 8)
-6. Two-stage QC (Inbound + Post-Approval) (Part 7)
+6. ~~Two-stage QC (Inbound + Post-Approval)~~ — done in Part 7
 7. Process-zone permissions (None/Read-only/Contribute/Unblinded per zone 01-11)
 8. Inspector group + view (Final documents only) (Part 11)
-9. File Plan workflow engine (Part 7)
+9. ~~File Plan workflow engine~~ — done in Part 7 (QC steps; Collaboration step not built)
 10. ZIP export in Reference Model folder structure (Part 11)
 11. Signpost records
 12. Typed artifact linking (no 15-link cap)
