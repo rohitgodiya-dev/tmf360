@@ -51,7 +51,8 @@ parties, persons, study_parties, study_countries, study_sites, contact_roles (Pa
 milestone_types, milestones (Part 2c), taxonomy tables (Part 3),
 navigator_items view (Part 6), qc_reasons, file_plan_steps, workflow_settings, document_tasks,
 qc_decisions, signature_events, reauth_proofs (Part 7), plan_template_items, placeholders (Part 8a),
-deletion_requests, revision_requests (Part 8b).
+deletion_requests, revision_requests (Part 8b), rules, findings, study_health_state, health_thresholds,
+health_snapshots (Part 9).
 expected_documents is legacy and closed to users — use placeholders.
 
 Naming rule: the plan's "Staging Area" is called **Document Intake** in TMF360.
@@ -99,7 +100,10 @@ restore_document (coded reason; 180-day restore); Final docs need a deletion_req
 by someone else with an e-signature; reclassify_document; request_revision (file as Final with
 attestation, or collaboration → Draft → POST /documents/:id/file → QC); metadata snapshots taken by
 the database (documents_snapshot_metadata). Final metadata can't be edited by writing the row.
-Next: Part 9 (Consistency engine + continuous readiness).
+Part 9 live 2026-10-04: rules engine (rules, findings, evaluate_study) + TMF Health & Readiness panel
+(5 dimensions, thresholds, site drill-down, prioritized findings with factors, daily cron /api/cron/health
+for snapshots). Studies are marked dirty by triggers and re-evaluated when Health opens. Add a rule =
+new branch in evaluate_study + row in rules (bump version). Next: Part 10 (Sponsor–site link).
 
 Part 7 rules: a document reaches Under Review only via submit_for_qc() and Approved only via
 complete_qc_task() (trigger documents_workflow_guard). QC decisions need a password re-check in the

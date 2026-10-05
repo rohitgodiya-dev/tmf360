@@ -38,6 +38,7 @@ try {
   await page.getByRole("button", { name: "TMF Navigator" }).waitFor({ timeout: 60000 });
 
   const tile = async (name) => (await page.locator("button[title]").filter({ has: page.locator("div", { hasText: new RegExp(`^${name}$`) }) }).first().locator("div").first().textContent()).trim();
+  const until = async (fn, ms = 30000) => { const end = Date.now() + ms; while (Date.now() < end) { try { if (await fn()) return true; } catch {} await page.waitForTimeout(500); } return false; };
   const completeness = async () => (await page.getByText("Completeness", { exact: true }).locator("xpath=..").locator("div").first().textContent()).trim();
 
   // 1. eTMF plan in TMF Configuration: the protocol is expected twice at study level.
@@ -60,9 +61,8 @@ try {
   // 3. Apply the plan: 3 expected protocols, 2 already filled by the Final documents.
   await page.getByRole("button", { name: "Apply eTMF plan" }).click();
   await page.getByText("3 expected artifacts added from the eTMF plan.").waitFor({ timeout: 30000 });
-  await page.waitForTimeout(1500);
-  check(await tile("Missing") === "0" && await tile("Expected") === "1" && await tile("Final") === "2", "after plan: 2 Final, 1 Expected, 0 Missing");
-  check(await completeness() === "67%", `completeness 67% (got ${await completeness()})`);
+  check(await until(async () => await tile("Missing") === "0" && await tile("Expected") === "1" && await tile("Final") === "2"), "after plan: 2 Final, 1 Expected, 0 Missing");
+  check(await until(async () => await completeness() === "67%"), `completeness 67% (got ${await completeness()})`);
 
   // 4. Add an overdue expected artifact by hand.
   await page.getByRole("button", { name: "+ Expected artifact" }).click();
@@ -72,9 +72,8 @@ try {
   check(await page.getByText(/turning Missing after 2020-01-15/).isVisible(), "add: what-happens-next names the due date");
   await page.getByRole("button", { name: "Add expected artifact" }).click();
   await page.getByText("1 expected artifact added.").waitFor({ timeout: 30000 });
-  await page.waitForTimeout(1500);
-  check(await tile("Missing") === "1", "overdue placeholder is Missing");
-  check(await completeness() === "50%", `completeness 50% (got ${await completeness()})`);
+  check(await until(async () => await tile("Missing") === "1"), "overdue placeholder is Missing");
+  check(await until(async () => await completeness() === "50%"), `completeness 50% (got ${await completeness()})`);
   await page.screenshot({ path: shot("1-grid") });
 
   // 5. Expected Artifacts view, drill-down to the grid.
@@ -85,7 +84,7 @@ try {
   check(await zone1.isVisible(), "expected view: zone 01 listed");
   await zone1.getByRole("button", { name: /^01 / }).click();
   await page.getByRole("button", { name: /^Remove 01/ }).waitFor({ timeout: 15000 });
-  await page.waitForTimeout(1200);
+  await until(async () => await page.locator("tbody tr").count() === 1);
   check(await page.locator("tbody tr").count() === 1, "drill-down: zone chip shows the one placeholder");
 
   // 6. Placeholder panel: mark not needed with a reason.
@@ -96,8 +95,7 @@ try {
   await page.getByRole("button", { name: "Mark not needed" }).click();
   await page.getByText("Nothing matches these filters.").waitFor({ timeout: 15000 });
   await page.getByRole("button", { name: "Clear all" }).click();
-  await page.waitForTimeout(1500);
-  check(await completeness() === "67%", "cancelled placeholder no longer counts");
+  check(await until(async () => await completeness() === "67%"), "cancelled placeholder no longer counts");
   const { data: cancelled } = await svc.from("placeholders").select("status, cancel_reason").eq("org_id", orgId).eq("artifact_num", "01.01.01").single();
   check(cancelled.status === "cancelled" && cancelled.cancel_reason === "Plan held by the sponsor", "cancel recorded with reason");
 

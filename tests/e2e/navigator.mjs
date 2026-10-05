@@ -124,7 +124,8 @@ try {
   // Missing tile and placeholder rows.
   await page.getByRole("button", { name: "Clear all" }).click();
   await page.locator("button", { hasText: "Missing" }).first().click();
-  await page.waitForTimeout(1500);
+  // Wait for the filtered grid (first row Missing) rather than a fixed pause.
+  await page.locator("tbody tr").first().getByText("Missing", { exact: true }).waitFor({ timeout: 30000 });
   await page.locator("tbody tr").first().click();
   check(await page.getByRole("button", { name: "Go to Document Intake" }).isVisible(), "missing row offers Document Intake");
   await page.screenshot({ path: shot("4-missing") });

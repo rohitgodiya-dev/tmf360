@@ -13,6 +13,7 @@ import QcTasks from"./QcTasks";
 import QcSettings from"./QcSettings";
 import PlanSettings from"./PlanSettings";
 import{DeleteForm,DeletionRequests,isFinal}from"./DocumentActions";
+import TmfHealth from"./TmfHealth";
 
 
 
@@ -646,7 +647,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {navItem("artifacts","Artifact browser","ti-layout-grid")}
           {navItem("gap","Gap analysis","ti-clipboard-check")}
           <p style={{fontSize:"9px",fontWeight:"500",color:P.textTert,padding:"10px 10px 4px",textTransform:"uppercase",letterSpacing:".06em"}}>Intelligence</p>
-          {navItem("readiness","Inspection readiness","ti-shield-check")}
+          {navItem("readiness","TMF Health & Readiness","ti-heart-rate-monitor")}
           {navItem("report","Report","ti-file-analytics")}
           {navItem("tracker","Tracker","ti-bell-ringing")}
           <a href="/trinity" style={{display:"flex",alignItems:"center",gap:"8px",padding:"7px 10px",borderRadius:"8px",fontSize:"12px",color:"#374151",textDecoration:"none",fontWeight:"400"}}><i className="ti ti-message-circle" style={{fontSize:"15px"}}/>AI Specialist</a>
@@ -1161,43 +1162,14 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           )}
 
           {/* INSPECTION READINESS */}
-          {panel==="readiness"&&(
-            <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
-              <h1 style={{fontSize:"14px",fontWeight:"500"}}>Inspection readiness - {activeStudy?.study_id||"No study selected"}</h1>
-              {!activeStudy?<div style={{fontSize:"12px",color:P.textTert}}>Select a study first.</div>:(
-                <>
-                  <div style={{display:"grid",gridTemplateColumns:"160px 1fr",gap:"12px"}}>
-                    <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"16px",display:"flex",flexDirection:"column",alignItems:"center"}}>
-                      <span style={{fontSize:"52px",fontWeight:"500",color:scoreColor(ri)}}>{ri}</span>
-                      <span style={{fontSize:"11px",color:P.textTert,marginTop:"4px"}}>Readiness score</span>
-                      <div style={{width:"100%",height:"6px",background:P.bgTert,borderRadius:"6px",marginTop:"12px",overflow:"hidden"}}><div style={{width:`${ri}%`,height:"100%",background:scoreColor(ri),borderRadius:"6px"}}/></div>
-                    </div>
-                    <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"14px"}}>
-                      <h2 style={{fontSize:"11px",fontWeight:"500",marginBottom:"10px",color:P.textSec}}>Top findings</h2>
-                      <div style={{display:"flex",flexDirection:"column",gap:"5px"}}>
-                        {gaps.crit.slice(0,4).map((g:any,i:number)=><div key={i} style={{fontSize:"11px",background:"#FEF2F2",color:"#991B1B",borderRadius:"6px",padding:"6px 10px"}}>CRITICAL - {g.an}</div>)}
-                        {gaps.major.slice(0,3).map((g:any,i:number)=><div key={i} style={{fontSize:"11px",background:"#FFFBEB",color:"#92400E",borderRadius:"6px",padding:"6px 10px"}}>MAJOR - {g.an}</div>)}
-                        {gaps.crit.length===0&&gaps.major.length===0&&<div style={{fontSize:"11px",color:P.success}}>No critical or major findings</div>}
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"12px",padding:"14px"}}>
-                    <h2 style={{fontSize:"11px",fontWeight:"500",marginBottom:"12px",color:P.textSec}}>Zone readiness breakdown</h2>
-                    {activeZONES.map(({z,zn})=>{const p=zoneComp(z);return(
-                      <div key={z} style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"8px"}}>
-                        <span style={{fontSize:"9px",color:P.textTert,width:"14px"}}>{z}</span>
-                        <span style={{fontSize:"11px",color:P.textSec,width:"180px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{zn}</span>
-                        <div style={{flex:1,height:"5px",background:P.bgTert,borderRadius:"5px",overflow:"hidden"}}><div style={{width:`${p}%`,height:"100%",background:ZONE_COLORS[z]||P.primary,borderRadius:"5px"}}/></div>
-                        <span style={{fontSize:"11px",fontWeight:"500",width:"32px",textAlign:"right",color:scoreColor(p)}}>{p}%</span>
-                      </div>
-                    );})}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
+          {/* TMF HEALTH & READINESS (Part 9) — replaces the old single merged readiness score */}
+          {panel==="readiness"&&(activeStudy?.id?(
+            <TmfHealth key={activeStudy.id} study={{id:activeStudy.id,study_id:activeStudy.study_id}}
+              canAccept={hasPermission(currentUserRole as Role,"run_quality_checks")}
+              canAssign={hasPermission(currentUserRole as Role,"run_quality_checks")||hasPermission(currentUserRole as Role,"edit_study")}
+              onOpenDocument={(id)=>setViewerDocId(id)}/>
+          ):<div style={{padding:"2rem",color:P.textTert,fontSize:"12px"}}>Select a study to check its TMF health.</div>)}
 
-          {/* AI CHAT */}
           {panel==="chat"&&(
             <div style={{display:"flex",flexDirection:"column",height:"calc(100vh - 64px)",gap:"0px",margin:"-1.25rem"}}>
               <div style={{display:"flex",alignItems:"center",gap:"8px",height:"52px",padding:"0 1.25rem",borderBottom:`0.5px solid ${P.border}`,background:P.bg,flexShrink:0}}>
