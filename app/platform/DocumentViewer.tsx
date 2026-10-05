@@ -6,8 +6,19 @@ import { useEffect, useRef, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { apiFetch } from "../../lib/api/client";
 
-type Meta = { id: string; status: string; artifact_num: string; artifact_name: string; custom_file_name: string | null; file_name: string | null; file_type: string | null; version: string | null; has_file: boolean };
+export type Meta = { id: string; status: string; artifact_num: string; artifact_name: string; custom_file_name: string | null; file_name: string | null; file_type: string | null; version: string | null; has_file: boolean };
 type Kind = "pdf" | "image" | "other";
+
+/** Where the viewer gets its metadata and file links. Defaults to the signed-in user's /documents API;
+ *  Inspection Mode passes its own (session-checked) endpoints. */
+export type ViewerSource = {
+  meta: () => Promise<Meta>;
+  access: (purpose: "view" | "download" | "print") => Promise<{ url: string }>;
+};
+const defaultSource = (documentId: string): ViewerSource => ({
+  meta: () => apiFetch<Meta>(`/documents/${documentId}`),
+  access: (purpose) => apiFetch<{ url: string }>(`/documents/${documentId}/access`, { method: "POST", body: JSON.stringify({ purpose }) }),
+});
 
 const C = { primary: "#F97316", text: "#111827", textSec: "#374151", textTert: "#6B7280", border: "#E5E7EB", bg: "#FFFFFF", bgSec: "#F9FAFB", dark: "#374151", danger: "#991B1B" };
 const tool: React.CSSProperties = { fontSize: "12px", padding: "5px 9px", background: C.bg, color: C.textSec, border: `0.5px solid ${C.border}`, borderRadius: "6px", cursor: "pointer" };
@@ -47,7 +58,15 @@ function PdfPage({ pdf, n, scale, rotation, onClick, active }: { pdf: PDFDocumen
 }
 
 /** `inline` renders inside its parent (the QC task screen) instead of as a full-screen dialog. */
-export default function DocumentViewer({ documentId, canDownload, onClose, inline = false }: { documentId: string; canDownload: boolean; onClose: () => void; inline?: boolean }) {
+export default function DocumentViewer({ documentId, canDownload, onClose, inline = false, source, onPageTime }: {
+  documentId: string; canDownload: boolean; onClose: () => void; inline?: boolean;
+  source?: ViewerSource;
+  /** Called with how long (whole seconds) a page was on screen when the reader moves on (INS-08). */
+  onPageTime?: (page: number, seconds: number) => void;
+}) {
+  const src = useRef<ViewerSource>(source ?? defaultSource(documentId));
+  const pageTime = useRef(onPageTime);
+  useEffect(() => { pageTime.current = onPageTime; }, [onPageTime]);
   const [meta, setMeta] = useState<Meta | null>(null);
   const [kind, setKind] = useState<Kind | null>(null);
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
@@ -67,14 +86,14 @@ export default function DocumentViewer({ documentId, canDownload, onClose, inlin
     let objectUrl: string | null = null;
     (async () => {
       try {
-        const m = await apiFetch<Meta>(`/documents/${documentId}`);
+        const m = await src.current.meta();
         if (cancelled) return;
         setMeta(m);
         if (!m.has_file) return;
         const k = kindOf(m.file_name ?? "", m.file_type);
         setKind(k);
         if (k === "other") return;
-        const { url } = await apiFetch<{ url: string }>(`/documents/${documentId}/access`, { method: "POST", body: JSON.stringify({ purpose: "view" }) });
+        const { url } = await src.current.access("view");
         const res = await fetch(url);
         if (!res.ok) throw new Error("The file could not be loaded");
         const blob = await res.blob();
@@ -89,6 +108,16 @@ export default function DocumentViewer({ documentId, canDownload, onClose, inlin
     })();
     return () => { cancelled = true; doc?.destroy(); if (objectUrl) URL.revokeObjectURL(objectUrl); };
   }, [documentId]);
+
+  // Page view time: report the previous page when the page changes or the viewer closes.
+  useEffect(() => {
+    if (!pdf && !imageUrl) return;
+    const started = Date.now();
+    return () => {
+      const seconds = Math.round((Date.now() - started) / 1000);
+      if (seconds >= 1) pageTime.current?.(page, seconds);
+    };
+  }, [page, pdf, imageUrl]);
 
   // Keyboard: Esc closes, arrows change page.
   useEffect(() => {
@@ -106,7 +135,7 @@ export default function DocumentViewer({ documentId, canDownload, onClose, inlin
   async function download() {
     setBusy("Preparing download…"); setError("");
     try {
-      const r = await apiFetch<{ url: string }>(`/documents/${documentId}/access`, { method: "POST", body: JSON.stringify({ purpose: "download" }) });
+      const r = await src.current.access("download");
       window.location.href = r.url;
     } catch (e) { setError((e as Error).message); }
     setBusy("");
@@ -117,8 +146,10 @@ export default function DocumentViewer({ documentId, canDownload, onClose, inlin
     setBusy("Preparing to print…"); setError("");
     try {
       // Logs the print on the server first; the bytes already loaded are what gets printed.
-      await apiFetch(`/documents/${documentId}/access`, { method: "POST", body: JSON.stringify({ purpose: "print" }) });
-      const url = URL.createObjectURL(bytes);
+      // A source may hand back different bytes for printing (Inspection Mode: a watermarked copy).
+      const r = await src.current.access("print");
+      const printBytes = source ? await (await fetch(r.url)).blob() : bytes;
+      const url = URL.createObjectURL(printBytes);
       const frame = document.createElement("iframe");
       frame.style.position = "fixed"; frame.style.width = "0"; frame.style.height = "0"; frame.style.border = "0";
       frame.src = url;
