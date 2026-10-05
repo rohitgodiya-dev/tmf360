@@ -19,6 +19,7 @@ import ReportsExports from"./ReportsExports";
 import ArchiveRetention from"./ArchiveRetention";
 import RiskOversight from"./RiskOversight";
 import AiSettings from"./AiSettings";
+import MigrationImport from"./MigrationImport";
 
 
 
@@ -648,6 +649,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {navItem("navigator","TMF Navigator","ti-binary-tree")}
           {navItem("tasks","Study Tasks","ti-checklist")}
           {navItem("intake","Document Intake","ti-inbox")}
+          {hasPermission(currentUserRole as Role,"invite_users")&&navItem("migration","Migration & import","ti-database-import")}
           {navItem("documents","Documents","ti-files")}
           {navItem("artifacts","Artifact browser","ti-layout-grid")}
           {navItem("gap","Gap analysis","ti-clipboard-check")}
@@ -1179,6 +1181,11 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
               canAssign={hasPermission(currentUserRole as Role,"run_quality_checks")||hasPermission(currentUserRole as Role,"edit_study")}
               onOpenDocument={(id)=>setViewerDocId(id)}/>
           ):<div style={{padding:"2rem",color:P.textTert,fontSize:"12px"}}>Select a study to check its TMF health.</div>)}
+
+          {/* MIGRATION & IMPORT (Part 12b) */}
+          {panel==="migration"&&(activeStudy?.id?(
+            <MigrationImport key={activeStudy.id} study={{id:activeStudy.id,study_id:activeStudy.study_id}} artifacts={activeTMF}/>
+          ):<div style={{padding:"2rem",color:P.textTert,fontSize:"12px"}}>Select a study to import into.</div>)}
 
           {/* AI ASSISTANCE (Part 12a) */}
           {panel==="ai"&&(
