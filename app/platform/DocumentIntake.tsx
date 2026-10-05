@@ -2,7 +2,8 @@
 // Document Intake (Part 5): files arrive here first, are checked and indexed, then filed into the TMF.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../../lib/supabase";
-import { apiFetch, authHeaders } from "../../lib/api/client";
+import { apiFetch } from "../../lib/api/client";
+import AiAssist, { type AiFeature } from "./AiAssist";
 
 type Artifact = { z: string; zn: string; a: string; an: string; cl: string };
 type Suggestion = { artifact_num?: string; artifact_name?: string; confidence?: number; reasoning?: string; issues?: string[] };
@@ -34,16 +35,8 @@ async function sha256Hex(file: File) {
 const alreadyStored = (e: { message?: string; statusCode?: unknown }) =>
   String(e.statusCode) === "409" || /already exists|duplicate/i.test(e.message || "");
 
-function readBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result).split(",")[1] ?? "");
-    r.onerror = () => reject(r.error);
-    r.readAsDataURL(file);
-  });
-}
 
-export default function DocumentIntake({ study, orgId, artifacts, zones, canUpload, onFiled }: {
+export default function DocumentIntake({ study, orgId, artifacts, canUpload, onFiled }: {
   study: { id: string; study_id: string }; orgId: string; artifacts: Artifact[]; zones: { z: string; zn: string }[];
   canUpload: boolean; onFiled: () => void;
 }) {
@@ -55,6 +48,14 @@ export default function DocumentIntake({ study, orgId, artifacts, zones, canUplo
   const [rejecting, setRejecting] = useState<{ id: string; reason: string } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const base = `/studies/${study.id}/intake`;
+  // AI capabilities switched on for the organisation (Part 12a); none means fully manual.
+  const [aiFeatures, setAiFeatures] = useState<AiFeature[]>([]);
+  const [aiTick, setAiTick] = useState(0);
+  useEffect(() => {
+    apiFetch<{ features: { feature: string; enabled: boolean }[] }>("/ai-settings")
+      .then((r) => setAiFeatures(r.features.filter((f) => f.enabled && f.feature !== "summary").map((f) => f.feature as AiFeature)))
+      .catch(() => setAiFeatures([]));
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -81,17 +82,13 @@ export default function DocumentIntake({ study, orgId, artifacts, zones, canUplo
   }, [study.id]);
   const scopeKey = (country: string | null, site: string | null) => `${country ?? ""}|${site ?? ""}`;
 
+  // Classification runs on the server when it is switched on; the result is a stored recommendation.
   async function suggest(item: Item, file: File) {
-    if (!/pdf$/i.test(file.name)) return;
+    if (!/pdf$/i.test(file.name) || !aiFeatures.includes("classification")) return;
     try {
-      const res = await fetch("/api/classify", {
-        method: "POST", headers: { "Content-Type": "application/json", ...(await authHeaders()) },
-        body: JSON.stringify({ pdfBase64: await readBase64(file), fileName: file.name, activeZONES: zones, activeTMF: artifacts }),
-      });
-      const s = await res.json();
-      if (!res.ok || s.error) return;
-      await apiFetch(`${base}/${item.id}`, { method: "PATCH", body: JSON.stringify({ row_version: item.row_version, suggestion: s }) });
-    } catch { /* a suggestion is optional */ }
+      await apiFetch(`${base}/${item.id}/ai`, { method: "POST", body: JSON.stringify({ feature: "classification" }) });
+      setAiTick((t) => t + 1);
+    } catch { /* AI is never in the critical path */ }
   }
 
   async function receive(files: FileList | File[]) {
@@ -184,7 +181,7 @@ export default function DocumentIntake({ study, orgId, artifacts, zones, canUplo
         >
           <i className="ti ti-inbox" style={{ fontSize: "26px", color: C.primary }} />
           <div style={{ fontSize: "13px", fontWeight: 600, color: C.text, marginTop: "4px" }}>Drop files here or click to choose</div>
-          <div style={{ fontSize: "11px", color: C.textTert }}>PDFs get an AI artifact suggestion; you always choose the artifact.</div>
+          <div style={{ fontSize: "11px", color: C.textTert }}>AI suggestions (when switched on) are only suggestions; you always choose the artifact.</div>
           <input ref={fileInput} type="file" multiple style={{ display: "none" }} onChange={(e) => { if (e.target.files?.length) receive(e.target.files); e.target.value = ""; }} />
         </div>
       )}
@@ -198,7 +195,6 @@ export default function DocumentIntake({ study, orgId, artifacts, zones, canUplo
         </div>
       ) : items.map((item) => {
         const d = drafts[item.id] ?? ({} as Draft);
-        const s = item.suggestion;
         const disabled = !canUpload || !!busy;
         return (
           <div key={item.id} style={{ background: C.bg, border: `0.5px solid ${C.border}`, borderRadius: "12px", padding: "14px 16px" }}>
@@ -218,16 +214,16 @@ export default function DocumentIntake({ study, orgId, artifacts, zones, canUplo
               </div>
             )}
 
-            {s?.artifact_num && (
-              <div style={{ marginTop: "10px", fontSize: "11px", color: C.textSec, background: C.bgSec, borderRadius: "8px", padding: "8px 10px" }}>
-                <strong>Suggested:</strong> {s.artifact_num} — {s.artifact_name} ({s.confidence ?? "?"}%)
-                {s.reasoning && <div style={{ color: C.textTert, marginTop: "2px" }}>{s.reasoning}</div>}
-                {!!s.issues?.length && <div style={{ color: C.warn, marginTop: "2px" }}>Issues: {s.issues.join("; ")}</div>}
-                {d.artifact_num !== s.artifact_num && artifacts.some((a) => a.a === s.artifact_num) && (
-                  <button disabled={disabled} onClick={() => setDraft(item.id, { artifact_num: s.artifact_num! })} style={{ ...btn(C.primaryLight, C.primary), marginTop: "6px" }}>Use suggestion</button>
-                )}
-              </div>
-            )}
+            <AiAssist base={base} itemId={item.id} enabled={aiFeatures} disabled={disabled} refreshKey={aiTick}
+              isPdf={/pdf/i.test(item.file_type ?? "") || /.pdf$/i.test(item.file_name)}
+              onUseArtifact={(num) => { if (artifacts.some((x) => x.a === num)) setDraft(item.id, { artifact_num: num }); }}
+              onUseFields={(f) => {
+                const site = f.site_number ? scopes.find((x) => x.site && x.label.replace(/^Site — /, "").startsWith(f.site_number)) : undefined;
+                setDraft(item.id, {
+                  ...(f.title ? { title: f.title } : {}), ...(f.version_label ? { version_label: f.version_label } : {}),
+                  ...(f.effective_date ? { effective_date: f.effective_date } : {}), ...(site ? { study_country_id: site.country, study_site_id: site.site } : {}),
+                });
+              }} />
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "8px", marginTop: "10px" }}>
               <label style={{ gridColumn: "1 / -1", fontSize: "11px", color: C.textSec }}>TMF artifact

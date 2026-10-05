@@ -77,6 +77,22 @@ export default function DocumentViewer({ documentId, canDownload, onClose, inlin
   const [rotation, setRotation] = useState(0);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState("");
+  // AI summary (Part 12a, AI-05): only in the team's own viewer, never in Inspection Mode.
+  const [summaryOn, setSummaryOn] = useState(false);
+  const [summary, setSummary] = useState<{ summary: string; key_points: { point: string; page: number | null }[]; model: string } | null>(null);
+  useEffect(() => {
+    if (source) return;
+    apiFetch<{ features: { feature: string; enabled: boolean }[] }>("/ai-settings")
+      .then((r) => setSummaryOn(r.features.some((f) => f.feature === "summary" && f.enabled))).catch(() => { /* off */ });
+  }, [source]);
+  async function summarise() {
+    setBusy("Summarising…"); setError("");
+    try {
+      const r = await apiFetch<{ output: { summary: string; key_points: { point: string; page: number | null }[] }; model_version: string }>(`/documents/${documentId}/summary`, { method: "POST" });
+      setSummary({ ...r.output, model: r.model_version });
+    } catch (e) { setError((e as Error).message); }
+    setBusy("");
+  }
 
   const name = meta ? (meta.custom_file_name || meta.file_name || meta.artifact_name) : "";
 
@@ -201,8 +217,16 @@ export default function DocumentViewer({ documentId, canDownload, onClose, inlin
           )}
           {meta?.has_file && canDownload && <button disabled={!!busy} onClick={download} style={tool}><i className="ti ti-download" /> Download</button>}
           {meta?.has_file && canDownload && viewable && <button disabled={!!busy || !bytes} onClick={print} style={tool}><i className="ti ti-printer" /> Print</button>}
+          {summaryOn && meta?.has_file && kind === "pdf" && <button disabled={!!busy} onClick={() => (summary ? setSummary(null) : summarise())} style={tool}><i className="ti ti-sparkles" /> {summary ? "Hide summary" : "AI summary"}</button>}
           {!inline && <button aria-label="Close viewer" onClick={onClose} style={{ ...tool, background: C.dark, color: "#fff", border: "none" }}><i className="ti ti-x" /> Close</button>}
         </div>
+        {summary && (
+          <div style={{ fontSize: "12px", padding: "8px 14px", background: "#F5F3FF", color: C.text, borderBottom: `0.5px solid ${C.border}` }}>
+            <div>{summary.summary}</div>
+            <ul style={{ margin: "4px 0 0", paddingLeft: "18px" }}>{summary.key_points.map((k, i) => <li key={i}>{k.point}{k.page ? ` (p. ${k.page})` : ""}</li>)}</ul>
+            <div style={{ fontSize: "10px", color: C.textTert, marginTop: "4px" }}>AI-generated summary ({summary.model}); check it against the document.</div>
+          </div>
+        )}
         {(error || busy) && <div style={{ fontSize: "12px", padding: "6px 14px", background: error ? "#FEF2F2" : C.bg, color: error ? C.danger : C.textSec }}>{error || busy}</div>}
 
         <div style={{ flex: 1, display: "flex", minHeight: 0 }}>

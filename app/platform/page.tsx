@@ -18,6 +18,7 @@ import InspectionMode from"./InspectionMode";
 import ReportsExports from"./ReportsExports";
 import ArchiveRetention from"./ArchiveRetention";
 import RiskOversight from"./RiskOversight";
+import AiSettings from"./AiSettings";
 
 
 
@@ -671,6 +672,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {navItem("queries","Queries","ti-help-circle")}
           <p style={{fontSize:"9px",fontWeight:"500",color:P.textTert,padding:"10px 10px 4px",textTransform:"uppercase",letterSpacing:".06em"}}>Settings</p>
           {navItem("tmfconfig","TMF Configuration","ti-adjustments")}
+          {navItem("ai","AI assistance","ti-sparkles")}
           {navItem("ticket","Ticket","ti-ticket")}
         </aside>
 
@@ -1177,6 +1179,12 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
               canAssign={hasPermission(currentUserRole as Role,"run_quality_checks")||hasPermission(currentUserRole as Role,"edit_study")}
               onOpenDocument={(id)=>setViewerDocId(id)}/>
           ):<div style={{padding:"2rem",color:P.textTert,fontSize:"12px"}}>Select a study to check its TMF health.</div>)}
+
+          {/* AI ASSISTANCE (Part 12a) */}
+          {panel==="ai"&&(
+            <AiSettings study={activeStudy?.id?{id:activeStudy.id,study_id:activeStudy.study_id}:null}
+              canManage={hasPermission(currentUserRole as Role,"manage_roles")} canViewLog={hasPermission(currentUserRole as Role,"view_audit_trail")}/>
+          )}
 
           {/* RISK & OVERSIGHT (Part 11d) */}
           {panel==="risk"&&(activeStudy?.id?(
