@@ -1,6 +1,6 @@
 "use client";
-// Reports & exports (Part 11b): Excel reports for a date range (M13 RPT-03/04) and ZIP exports of the
-// study's documents in taxonomy folders, built in the background (M16 EXP-03/04).
+// Reports & exports (Part 11b): Excel reports for a date range (M13 RPT-02/03) and ZIP exports of the
+// study's documents in taxonomy folders, built in the background (M16 EXP-02/04).
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch, authHeaders } from "../../lib/api/client";
 

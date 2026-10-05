@@ -220,7 +220,7 @@ export function VersionHistory({ documentId, canDownload }: { documentId: string
   async function open(version_no: number, purpose: "view" | "download") {
     try {
       const r = await apiFetch<{ url: string }>(`/documents/${documentId}/access`, { method: "POST", body: JSON.stringify({ purpose, version_no }) });
-      if (purpose === "download") window.location.href = r.url; else window.open(r.url, "_blank", "noopener");
+      if (purpose === "download") window.location.assign(r.url); else window.open(r.url, "_blank", "noopener");
     } catch (e) { setError((e as Error).message); }
   }
   if (!v) return <div style={{ fontSize: "10px", color: error ? C.danger : C.textTert }}>{error || "Loading…"}</div>;
@@ -320,6 +320,71 @@ export function DeletionRequests({ studyId, onChanged }: { studyId: string; onCh
           {recent.map((r) => <div key={r.id} style={{ fontSize: "11px", color: C.textSec, padding: "3px 0" }}>{r.title}: {r.status}{r.decided_by_name ? ` by ${r.decided_by_name}` : ""}{r.decision_comment ? ` — “${r.decision_comment}”` : ""}</div>)}
         </details>
       )}
+    </div>
+  );
+}
+
+type Certification = { id: string; version_no: number | null; method: string; source_description: string; source_location: string | null; certified_by_name: string; certified_at: string; covers_current: boolean };
+const METHODS = [["paper_scan", "Scan of a paper original"], ["electronic_conversion", "Electronic conversion"], ["electronic_duplicate", "Electronic duplicate (same file)"]] as const;
+const CHECKS = [["page_count", "Page count matches the original"], ["legible", "Every page is legible"], ["complete", "Nothing is missing (incl. annexes, signatures)"], ["unaltered", "Content is unaltered"]] as const;
+
+/** CCP / REG-06: certify the current file as a true copy, with an electronic signature bound to its hash. */
+export function CertifyForm({ doc, onDone, onCancel }: { doc: ActionDoc; onDone: (msg: string) => void; onCancel: () => void }) {
+  const [list, setList] = useState<Certification[] | null>(null);
+  const [current, setCurrent] = useState<number | null>(null);
+  const [method, setMethod] = useState("");
+  const [source, setSource] = useState("");
+  const [location, setLocation] = useState("");
+  const [hash, setHash] = useState("");
+  const [checks, setChecks] = useState<Record<string, boolean>>({ page_count: false, legible: false, complete: false, unaltered: false });
+  const [pw, setPw] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    apiFetch<{ data: Certification[]; current_version: number | null }>(`/documents/${doc.id}/certify`)
+      .then((r) => { setList(r.data); setCurrent(r.current_version); }).catch((e) => setError((e as Error).message));
+  }, [doc.id]);
+  const ok = !!method && source.trim().length >= 3 && Object.values(checks).every(Boolean) && pw.length > 0 && (method !== "electronic_duplicate" || /^[0-9a-f]{64}$/i.test(hash.trim()));
+  async function go() {
+    setBusy(true); setError("");
+    try {
+      await apiFetch(`/documents/${doc.id}/certify`, { method: "POST", body: JSON.stringify({ method, source_description: source.trim(), source_location: location.trim() || undefined,
+        source_hash: hash.trim() || undefined, checks, password: pw }) });
+      onDone("Certified as a true copy of the original (electronic signature recorded).");
+    } catch (e) { setError((e as Error).message); }
+    setBusy(false); setPw("");
+  }
+  const certifiedNow = list?.some((c) => c.covers_current);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "7px" }}>
+      <div style={{ fontSize: "12px", fontWeight: 700, color: C.text }}>Certified copy</div>
+      {list?.map((c) => (
+        <div key={c.id} style={{ ...note, background: C.greenBg }}>
+          <i className="ti ti-certificate" /> File v{c.version_no} certified by {c.certified_by_name}, {new Date(c.certified_at).toLocaleString()} ({c.method.replace(/_/g, " ")}): {c.source_description}
+          {!c.covers_current && <div style={{ color: C.danger }}>A newer file version (v{current}) exists and is not certified.</div>}
+        </div>
+      ))}
+      {certifiedNow ? <div style={note}>The current file is already certified.</div> : (
+        <>
+          <label style={label}>How was the copy made? (required)
+            <select value={method} onChange={(e) => setMethod(e.target.value)} style={input}><option value="">Choose…</option>{METHODS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
+          </label>
+          <label style={label}>Original (source) document (required)<input value={source} onChange={(e) => setSource(e.target.value)} placeholder="e.g. Wet-ink signed protocol v3, 42 pages" style={input} /></label>
+          <label style={label}>Where the original is held<input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Site 101 binder, archive box 7" style={input} /></label>
+          {method === "electronic_duplicate" && <label style={label}>SHA-256 of the source file (required)<input value={hash} onChange={(e) => setHash(e.target.value)} style={{ ...input, fontFamily: "monospace" }} /></label>}
+          <div style={{ fontSize: "11px", color: C.textSec, fontWeight: 600 }}>Verification performed (all required)</div>
+          {CHECKS.map(([k, l]) => (
+            <label key={k} style={{ fontSize: "11px", color: C.textSec, display: "flex", gap: "6px", alignItems: "center" }}>
+              <input type="checkbox" checked={checks[k]} onChange={(e) => setChecks({ ...checks, [k]: e.target.checked })} /> {l}
+            </label>
+          ))}
+          <label style={label}>Your password (electronic signature)<input type="password" autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} style={input} /></label>
+          <div style={note}><b>What happens next:</b> your signature with the meaning &quot;Certified as a true copy of the original&quot; is bound to the current file&apos;s SHA-256. The record is marked as a certified copy, and the certification appears in version history, inspections and archive packages. It can&apos;t be undone.</div>
+        </>
+      )}
+      {error && <div role="alert" style={errBox}>{error}</div>}
+      {certifiedNow ? <div style={{ display: "flex", justifyContent: "flex-end" }}><button onClick={onCancel} style={btn(C.bgSec, C.textSec)}>Close</button></div>
+        : <Buttons busy={busy} ok={ok} label="Sign & certify" onCancel={onCancel} onGo={go} />}
     </div>
   );
 }

@@ -20,7 +20,7 @@ export const GET = handle(async (req: Request, { params }: { params: Promise<{ s
   return Response.json({ data: await jobView(ctx, (data ?? []) as ExportJob[]) });
 });
 
-// EXP-03: ZIP of the study's documents in taxonomy folders with a metadata spreadsheet, built as a
+// EXP-02: ZIP of the study's documents in taxonomy folders with a metadata spreadsheet, built as a
 // background job; the requester is emailed when it is ready (EXP-04).
 export const POST = handle(async (req: Request, { params }: { params: Promise<{ studyId: string }> }) => {
   const ctx = await requireUser(req);

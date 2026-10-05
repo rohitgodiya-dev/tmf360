@@ -1,4 +1,4 @@
-// Part 11b: reports (M13 RPT-02..05), navigator Excel export (EXP-02), ZIP export jobs (EXP-03/04),
+// Part 11b: reports (M13 RPT-01..03), navigator Excel export (EXP-01), ZIP export jobs (EXP-02/04),
 // and the database audit of user-management changes.
 import { createHash } from "node:crypto";
 import JSZip from "jszip";
@@ -74,7 +74,7 @@ afterAll(async () => {
   await fx.cleanup();
 });
 
-describe("user-management audit (RPT-02)", () => {
+describe("user-management audit (RPT-01)", () => {
   it("a role change is written to the audit trail by the database, with old and new values", async () => {
     const { error } = await admin1.db.from("user_roles").update({ role: "Clinical Trial Associate" }).eq("user_id", cra.id).eq("org_id", org);
     expect(error).toBeNull();
@@ -94,7 +94,7 @@ describe("user-management audit (RPT-02)", () => {
   });
 });
 
-describe("reports (RPT-03/04)", () => {
+describe("reports (RPT-02/03)", () => {
   it("lists the catalogue with what the caller may run", async () => {
     const r = await call(catalogue.GET, { token: cra.token, params: { studyId: study.id } });
     expect(r.status).toBe(200);
@@ -141,7 +141,7 @@ describe("reports (RPT-03/04)", () => {
     expect((await runReport(outsider, "timeliness")).status).toBe(404);
   });
 
-  it("the Navigator exports to Excel (EXP-02)", async () => {
+  it("the Navigator exports to Excel (EXP-01)", async () => {
     const res = await navExport.POST(apiRequest("/x", { token: lead.token, method: "POST", body: JSON.stringify({ format: "xlsx" }), headers: { "Content-Type": "application/json" } }),
       { params: Promise.resolve({ studyId: study.id }) });
     expect(res.status).toBe(200);
@@ -151,7 +151,7 @@ describe("reports (RPT-03/04)", () => {
   });
 });
 
-describe("ZIP export jobs (EXP-03/04)", () => {
+describe("ZIP export jobs (EXP-02/04)", () => {
   let jobId: string;
 
   it("builds a ZIP of Final documents in taxonomy folders with metadata and hashes", async () => {
@@ -203,7 +203,7 @@ describe("ZIP export jobs (EXP-03/04)", () => {
   });
 });
 
-describe("audit trail review (RPT-02)", () => {
+describe("audit trail review (RPT-01, REG-02)", () => {
   it("roles with view_audit_trail read the organisation's trail; others only their own; never another organisation", async () => {
     const { data: leadRows } = await lead.db.from("audit_trail").select("user_id, action").eq("org_id", org);
     expect(leadRows!.some((r) => r.user_id === admin1.id && r.action === "User role changed")).toBe(true);

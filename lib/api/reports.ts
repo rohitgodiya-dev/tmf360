@@ -1,4 +1,4 @@
-// Part 11b — Reports (M13 RPT-03/04). Each report is built as the signed-in user (RLS applies),
+// Part 11b — Reports (M13 RPT-02/03). Each report is built as the signed-in user (RLS applies),
 // for one study and a date range, and comes out as an Excel workbook. Grouping by taxonomy uses the
 // taxonomy version each record is classified under, never fixed zone or section codes.
 import type { RequestContext } from "./auth";
@@ -198,7 +198,7 @@ export async function buildReport(ctx: RequestContext, study: StudyRef, key: Rep
       { name: "Rejections", columns: ["Rejected (UTC)", "Document", "Artifact", "Zone", "Section", "Reasons", "Comment", "Reviewer", "Signature"], rows },
     ];
   }
-  // Timeliness (RPT-04): intake → filed (indexing), filed → Final (processing), expiry.
+  // Timeliness (RPT-03): intake → filed (indexing), filed → Final (processing), expiry.
   const docs = (await studyDocs(ctx, study)).filter((d) => d.status !== "Deleted");
   const ids = docs.map((d) => d.id);
   const [intake, place, thresholds] = await Promise.all([

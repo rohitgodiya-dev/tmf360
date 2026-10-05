@@ -1,6 +1,6 @@
 # Part 11: Inspection Mode, reports, archive/retention, risk
 
-Baseline: M19 Inspection Mode (INS-01..09), M13 Reporting (RPT-02..05), M16 Export (EXP-02..04),
+Baseline: M19 Inspection Mode (INS-01..09), M13 Reporting (RPT-01..03), M16 Export (EXP-01..04),
 Section 6 Retention (RET-01..06), M14 Risk/oversight (RSK-01..05, OVS-01..04).
 Shipped in four sub-parts, each with its own migration, tests and deploy.
 
@@ -55,7 +55,7 @@ The log is exportable as an Excel inspection log. The study team's live view (IN
 and shows recent activity and open requests.
 
 **D32: Excel output.** A small in-repo SpreadsheetML writer built on jszip (already a dependency).
-Cells that start with `= + - @` are prefixed so they stay text. Reports (RPT-03) are generated as the
+Cells that start with `= + - @` are prefixed so they stay text. Reports (RPT-02) are generated as the
 signed-in user, so RLS applies, and each one is audited.
 
 **D33: Exports as jobs (EXP-04).** Exports are stored in `export_jobs`. Each job is processed after the

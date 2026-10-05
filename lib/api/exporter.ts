@@ -1,4 +1,4 @@
-// Part 11b/11c — ZIP export and archive packages (M16 EXP-03/04, Section 6 RET-04/05).
+// Part 11b/11c — ZIP export and archive packages (M16 EXP-02..04, Section 6 RET-04/05).
 // A job is created as the user; this runs after the response (next/server `after`). Documents and
 // files are read AS THE USER (RLS and storage policies apply), so a package never holds more than
 // the requester may see. The finished ZIP goes to the private "exports" bucket via the service
@@ -38,7 +38,7 @@ export type PackageContents = { zip: JSZip; files: number; bytes: number; manife
 
 /**
  * Builds the package in memory. `allVersions` adds every earlier file version (archive);
- * otherwise each document's current file only (EXP-03). Returns the ZIP and its manifest.
+ * otherwise each document's current file only (EXP-02). Returns the ZIP and its manifest.
  */
 export async function buildPackage(ctx: RequestContext, job: ExportJob, opts: { allVersions: boolean }): Promise<PackageContents & { study: { study_id: string; protocol: string | null } }> {
   const { data: study, error: sErr } = await ctx.db.from("studies").select("study_id, protocol").eq("id", job.study_id).single();
@@ -136,7 +136,7 @@ async function notify(ctx: RequestContext, job: ExportJob, ok: boolean, detail: 
     `<p style="color:#374151;font-size:14px">${escapeHtml(detail)}</p><p style="color:#374151;font-size:14px">Open TMF360 &rarr; Reports &amp; exports to download it. The download link works for ${EXPORT_DAYS} days and every download is recorded.</p>`));
 }
 
-/** Runs a ZIP export job to completion (EXP-03/04). Never throws: failures are stored on the job. */
+/** Runs a ZIP export job to completion (EXP-02/04). Never throws: failures are stored on the job. */
 export async function runZipExport(ctx: RequestContext, job: ExportJob) {
   const svc = serviceClient();
   await svc.from("export_jobs").update({ status: "running", started_at: new Date().toISOString() }).eq("id", job.id);

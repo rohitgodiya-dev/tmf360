@@ -7,7 +7,7 @@ import { buildXlsx, xlsxResponse } from "@/lib/xlsx";
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-// One report as Excel (RPT-03): ?from=YYYY-MM-DD&to=YYYY-MM-DD (default: the last 90 days).
+// One report as Excel (RPT-02): ?from=YYYY-MM-DD&to=YYYY-MM-DD (default: the last 90 days).
 // Generated with the caller's own permissions at request time and audited.
 export const GET = handle(async (req: Request, { params }: { params: Promise<{ studyId: string; report: string }> }) => {
   const ctx = await requireUser(req);

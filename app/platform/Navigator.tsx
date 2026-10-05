@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { apiFetch, authHeaders } from "../../lib/api/client";
 import { History } from "./QcTasks";
 import { AddExpected, ExpectedArtifacts, PlaceholderPanel, pct } from "./Placeholders";
-import { DeleteForm, NewFileForm, ReclassifyForm, RevisionForm, VersionHistory, isFinal, type ActionDoc } from "./DocumentActions";
+import { CertifyForm, DeleteForm, NewFileForm, ReclassifyForm, RevisionForm, VersionHistory, isFinal, type ActionDoc } from "./DocumentActions";
 
 type TreeNode = { id: string; label: string; field: string | null; value: string | null; children: TreeNode[] };
 type Tree = { my_trial: TreeNode; taxonomy: { label: string; nodes: TreeNode[] } };
@@ -105,7 +105,7 @@ export default function Navigator({ study, orgId, canDelete, canDownload, canSub
   const [view, setView] = useState<"grid" | "expected">("grid");
   const [adding, setAdding] = useState(false);
   const [notice, setNotice] = useState("");
-  const [action, setAction] = useState<null | "delete" | "reclassify" | "revision" | "file">(null);
+  const [action, setAction] = useState<null | "delete" | "reclassify" | "revision" | "file" | "certify">(null);
   const [busy, setBusy] = useState("");
 
   useEffect(() => { try { localStorage.setItem(COLUMNS_KEY, JSON.stringify(columns)); } catch { /* ignore */ } }, [columns]);
@@ -573,6 +573,7 @@ export default function Navigator({ study, orgId, canDelete, canDownload, canSub
                   <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", borderTop: `0.5px solid ${C.bgTert}`, paddingTop: "8px" }}>
                     {canSubmit && detail.doc.status === "Draft" && <button onClick={() => setAction("file")} style={btn(C.bg, C.textSec)}><i className="ti ti-upload" /> New file</button>}
                     {canSubmit && <button onClick={() => setAction("reclassify")} style={btn(C.bg, C.textSec)}><i className="ti ti-arrows-exchange" /> Reclassify</button>}
+                    {canSubmit && <button onClick={() => setAction("certify")} style={btn(C.bg, C.textSec)}><i className="ti ti-certificate" /> Certified copy</button>}
                     {canSubmit && detail.doc.status === "Approved" && <button onClick={() => setAction("revision")} style={btn(C.bg, C.textSec)}><i className="ti ti-git-branch" /> Revision request</button>}
                     {(isFinal(detail.doc.status) ? canSubmit : canDelete) && (
                       <button onClick={() => setAction("delete")} style={btn(C.dangerBg, C.danger)}><i className="ti ti-trash" /> {isFinal(detail.doc.status) ? "Request deletion" : "Delete"}</button>
@@ -587,6 +588,7 @@ export default function Navigator({ study, orgId, canDelete, canDownload, canSub
                       if (action === "delete") return <DeleteForm doc={d} onDone={done} onCancel={cancel} />;
                       if (action === "reclassify" && tree) return <ReclassifyForm doc={d} tree={tree} onDone={done} onCancel={cancel} />;
                       if (action === "revision") return <RevisionForm doc={d} onDone={done} onCancel={cancel} />;
+                      if (action === "certify") return <CertifyForm doc={d} onDone={done} onCancel={cancel} />;
                       if (action === "file") return <NewFileForm doc={d} orgId={orgId} studyCode={study.study_id} onDone={done} onCancel={cancel} />;
                       return null;
                     })()}

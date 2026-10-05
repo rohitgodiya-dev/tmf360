@@ -36,7 +36,7 @@ export const POST = handle(async (req: Request, { params }: { params: Promise<{ 
 
   const rows = await exportRows(ctx.db, study, query, ids, MAX_ROWS);
   if (format === "xlsx") {
-    // EXP-02: the same rows as Excel.
+    // EXP-01: the same rows as Excel.
     const bytes = await buildXlsx([{ name: "Navigator", columns: HEADERS.map(([h]) => h),
       rows: rows.map((r: Record<string, unknown>) => HEADERS.map(([, k]) => r[k] as string | number | null)) }]);
     await writeAudit(ctx, {
