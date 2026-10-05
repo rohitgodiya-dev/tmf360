@@ -27,7 +27,7 @@ const d: Record<string, string> = {};
 const paths: string[] = [];
 
 type Secrets = { id: string; token: string; code: string };
-type InspectHandler = (req: Request, ctx: { params: Promise<Record<string, string>> }) => Promise<Response>;
+type InspectHandler = (req: Request, ctx: { params: Promise<any> }) => Promise<Response>; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 async function inspect(h: InspectHandler, s: Pick<Secrets, "token" | "code">, opts: { method?: string; body?: unknown; params?: Record<string, string>; query?: string } = {}) {
   const headers = new Headers({ "x-inspection-token": s.token, "x-inspection-code": s.code });

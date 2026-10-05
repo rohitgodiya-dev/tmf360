@@ -15,6 +15,7 @@ import PlanSettings from"./PlanSettings";
 import{DeleteForm,DeletionRequests,isFinal}from"./DocumentActions";
 import TmfHealth from"./TmfHealth";
 import InspectionMode from"./InspectionMode";
+import ReportsExports from"./ReportsExports";
 
 
 
@@ -650,6 +651,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           <p style={{fontSize:"9px",fontWeight:"500",color:P.textTert,padding:"10px 10px 4px",textTransform:"uppercase",letterSpacing:".06em"}}>Intelligence</p>
           {navItem("readiness","TMF Health & Readiness","ti-heart-rate-monitor")}
           {navItem("inspection","Inspection Mode","ti-user-shield")}
+          {navItem("reports","Reports & exports","ti-file-spreadsheet")}
           {navItem("report","Report","ti-file-analytics")}
           {navItem("tracker","Tracker","ti-bell-ringing")}
           <a href="/trinity" style={{display:"flex",alignItems:"center",gap:"8px",padding:"7px 10px",borderRadius:"8px",fontSize:"12px",color:"#374151",textDecoration:"none",fontWeight:"400"}}><i className="ti ti-message-circle" style={{fontSize:"15px"}}/>AI Specialist</a>
@@ -1171,6 +1173,11 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
               canAssign={hasPermission(currentUserRole as Role,"run_quality_checks")||hasPermission(currentUserRole as Role,"edit_study")}
               onOpenDocument={(id)=>setViewerDocId(id)}/>
           ):<div style={{padding:"2rem",color:P.textTert,fontSize:"12px"}}>Select a study to check its TMF health.</div>)}
+
+          {/* REPORTS & EXPORTS (Part 11b) */}
+          {panel==="reports"&&(activeStudy?.id?(
+            <ReportsExports key={activeStudy.id} study={{id:activeStudy.id,study_id:activeStudy.study_id}}/>
+          ):<div style={{padding:"2rem",color:P.textTert,fontSize:"12px"}}>Select a study to run reports.</div>)}
 
           {/* INSPECTION MODE (Part 11a) */}
           {panel==="inspection"&&(activeStudy?.id?(

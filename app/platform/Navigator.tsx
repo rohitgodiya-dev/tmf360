@@ -199,17 +199,17 @@ export default function Navigator({ study, orgId, canDelete, canDownload, canSub
   }
 
 
-  async function exportCsv() {
+  async function exportRows(format: "csv" | "xlsx") {
     setBusy("Exporting…"); setError("");
     try {
       const res = await fetch(`/api/v1/studies/${study.id}/navigator/export`, {
         method: "POST", headers: { "Content-Type": "application/json", ...(await authHeaders()) },
-        body: JSON.stringify({ ...query, ids: selected.size ? [...selected] : undefined }),
+        body: JSON.stringify({ ...query, ids: selected.size ? [...selected] : undefined, format }),
       });
       if (!res.ok) throw new Error((await res.json().catch(() => null))?.error?.message ?? res.statusText);
       const url = URL.createObjectURL(await res.blob());
       const a = document.createElement("a");
-      a.href = url; a.download = `${study.study_id.replace(/[^\w.-]/g, "_")}-navigator.csv`;
+      a.href = url; a.download = `${study.study_id.replace(/[^\w.-]/g, "_")}-navigator.${format}`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) { setError((e as Error).message); }
@@ -377,8 +377,11 @@ export default function Navigator({ study, orgId, canDelete, canDownload, canSub
                 </div>
               )}
             </div>
-            <button onClick={exportCsv} disabled={!!busy || !result?.total} style={{ ...btn(C.bg, C.textSec), marginLeft: "auto", opacity: result?.total ? 1 : 0.5 }}>
+            <button onClick={() => exportRows("csv")} disabled={!!busy || !result?.total} style={{ ...btn(C.bg, C.textSec), marginLeft: "auto", opacity: result?.total ? 1 : 0.5 }}>
               <i className="ti ti-download" /> Export {selected.size ? `${selected.size} selected` : "all"}
+            </button>
+            <button onClick={() => exportRows("xlsx")} disabled={!!busy || !result?.total} style={{ ...btn(C.bg, C.textSec), opacity: result?.total ? 1 : 0.5 }}>
+              <i className="ti ti-file-spreadsheet" /> Excel
             </button>
           </div>
 

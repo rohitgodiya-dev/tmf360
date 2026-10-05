@@ -4,9 +4,13 @@ import { requirePermission, requireUser } from "@/lib/api/auth";
 import { loadStudy } from "@/lib/api/db";
 import { handle, parseBody } from "@/lib/api/http";
 import { exportRows, querySchema } from "@/lib/api/navigator";
+import { buildXlsx, xlsxResponse } from "@/lib/xlsx";
 
 const MAX_ROWS = 5000;
-const exportSchema = querySchema.extend({ ids: z.array(z.string().uuid()).max(MAX_ROWS).optional() });
+const exportSchema = querySchema.extend({
+  ids: z.array(z.string().uuid()).max(MAX_ROWS).optional(),
+  format: z.enum(["csv", "xlsx"]).default("csv"),
+});
 
 const HEADERS: [string, string][] = [
   ["Status", "nav_status"], ["Current Activity", "current_activity"], ["Document Type", "document_type"],
@@ -28,9 +32,19 @@ export const POST = handle(async (req: Request, { params }: { params: Promise<{ 
   const ctx = await requireUser(req);
   requirePermission(ctx, "view_document");
   const study = await loadStudy(ctx, (await params).studyId);
-  const { ids, ...query } = await parseBody(req, exportSchema);
+  const { ids, format, ...query } = await parseBody(req, exportSchema);
 
   const rows = await exportRows(ctx.db, study, query, ids, MAX_ROWS);
+  if (format === "xlsx") {
+    // EXP-02: the same rows as Excel.
+    const bytes = await buildXlsx([{ name: "Navigator", columns: HEADERS.map(([h]) => h),
+      rows: rows.map((r: Record<string, unknown>) => HEADERS.map(([, k]) => r[k] as string | number | null)) }]);
+    await writeAudit(ctx, {
+      action: "Navigator export", studyId: study.study_id, field: "navigator",
+      newValue: `${rows.length} rows${ids?.length ? " (selected)" : ""}, Excel`,
+    });
+    return xlsxResponse(bytes, `${study.study_id}-navigator.xlsx`);
+  }
   const csv = [HEADERS.map(([h]) => h).join(","), ...rows.map((r: Record<string, unknown>) => HEADERS.map(([, k]) => cell(r[k])).join(","))].join("\r\n");
 
   await writeAudit(ctx, {

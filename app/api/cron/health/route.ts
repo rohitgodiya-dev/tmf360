@@ -29,5 +29,20 @@ export async function GET(req: NextRequest) {
       failed.push(s.id);
     }
   }
-  return NextResponse.json({ studies: ok, failed: failed.length });
+  // Expired export packages (EXP-04): remove the stored copies; the job rows and the audit trail of
+  // who requested and downloaded them stay. Watermarked inspection copies older than a day go too.
+  let removed = 0;
+  const { data: expired } = await svc.from("export_jobs").select("id, file_path").eq("status", "done")
+    .not("file_path", "is", null).lt("expires_at", new Date().toISOString()).limit(500);
+  for (const j of expired ?? []) {
+    const { error: rErr } = await svc.storage.from("exports").remove([j.file_path]);
+    if (!rErr) { await svc.from("export_jobs").update({ file_path: null }).eq("id", j.id); removed++; }
+  }
+  const { data: sessions } = await svc.storage.from("exports").list("inspection", { limit: 1000 });
+  for (const folder of sessions ?? []) {
+    const { data: copies } = await svc.storage.from("exports").list(`inspection/${folder.name}`, { limit: 1000 });
+    const old = (copies ?? []).filter((c) => c.created_at && Date.parse(c.created_at) < Date.now() - 86400000).map((c) => `inspection/${folder.name}/${c.name}`);
+    if (old.length) await svc.storage.from("exports").remove(old);
+  }
+  return NextResponse.json({ studies: ok, failed: failed.length, exports_removed: removed });
 }
