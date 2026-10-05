@@ -52,7 +52,9 @@ milestone_types, milestones (Part 2c), taxonomy tables (Part 3),
 navigator_items view (Part 6), qc_reasons, file_plan_steps, workflow_settings, document_tasks,
 qc_decisions, signature_events, reauth_proofs (Part 7), plan_template_items, placeholders (Part 8a),
 deletion_requests, revision_requests (Part 8b), rules, findings, study_health_state, health_thresholds,
-health_snapshots (Part 9).
+health_snapshots (Part 9), inspection_sessions, inspection_session_secrets (service only),
+inspection_requests, inspection_activity (Part 11a), export_jobs (Part 11b; private "exports" bucket),
+retention_policies, legal_holds (Part 11c), risk_settings, risk_factor_weights, oversight_activities (Part 11d).
 expected_documents is legacy and closed to users — use placeholders.
 
 Naming rule: the plan's "Staging Area" is called **Document Intake** in TMF360.
@@ -105,6 +107,21 @@ Part 9 live 2026-10-04: rules engine (rules, findings, evaluate_study) + TMF Hea
 for snapshots). Studies are marked dirty by triggers and re-evaluated when Health opens. Add a rule =
 new branch in evaluate_study + row in rules (bump version). Next: Part 10 (Sponsor–site link).
 
+Part 10 (sponsor–site exchange) is ON HOLD on branch part10-on-hold (DEV-only migration 20261021000001);
+the user plans ISF changes — do not build on site360/isf.
+Part 11 live 2026-10-05 (docs/part11-plan.md D27–D37):
+- 11a Inspection Mode: inspectors have NO account; secret link (#t= fragment) + access code, SHA-256 only;
+  /api/v1/inspect/* checks inspection_auth() every call; scope enforced ONLY in inspection_in_scope()/
+  inspection_documents()/inspection_document() (security definer, service role). Portal /inspect.
+- 11b Reports & exports: lib/xlsx.ts, lib/api/reports.ts (7 Excel reports), ZIP export jobs (lib/api/exporter.ts,
+  inBackground() = next/server after()). access_audit triggers on user_roles/study_members/study_access_grants.
+  audit_trail is readable org-wide by view_audit_trail roles (policy "auditors read organisation trail").
+- 11c close_study/reopen_study (signed), closed-study guard triggers make the study read-only (flag
+  app.study_lifecycle), legal holds block deletes, create_archive_job (signed) → all versions + audit + manifest.
+  No purge ever (Rule 9 wins over RET-06).
+- 11d risk_events(study) → lib/api/risk.ts scores (Σ weight × events × impact) with explanations; oversight
+  activities completed only via complete_oversight() (signed). signature_events has study_id/export_job_id.
+
 Part 7 rules: a document reaches Under Review only via submit_for_qc() and Approved only via
 complete_qc_task() (trigger documents_workflow_guard). QC decisions need a password re-check in the
 API (lib/api/qc.ts reauthenticate → single-use reauth_proofs row) and write append-only
@@ -118,17 +135,17 @@ signature_events + qc_decisions. Never write documents.status/approved_*/rejecte
 ### TMF360 UPDATES (from Montrium teardown + dev plan) → mapped to roadmap parts
 2. ~~Staging Area~~ — built as Document Intake (Part 5). Gaps still open: file-name duplicate warning, Blocked/Warning badges in the queue.
 3. ~~Embedded PDF viewer~~ — done in Part 6c (pdf.js, logged download/print)
-4. Explainable risk scoring — weighted factors (Part 11)
+4. ~~Explainable risk scoring~~ — done (Part 11d)
 5. ~~Placeholder + completeness formula (PLC-06)~~ — done in Part 8a
 6. ~~Two-stage QC (Inbound + Post-Approval)~~ — done in Part 7
 7. Process-zone permissions (None/Read-only/Contribute/Unblinded per zone 01-11)
-8. Inspector group + view (Final documents only) (Part 11)
+8. ~~Inspector group + view~~ — done as Inspection Mode sessions (Part 11a)
 9. ~~File Plan workflow engine~~ — done in Part 7 (QC steps; Collaboration step not built)
-10. ZIP export in Reference Model folder structure (Part 11)
+10. ~~ZIP export in Reference Model folder structure~~ — done (Part 11b)
 11. Signpost records
 12. Typed artifact linking (no 15-link cap)
 13. AI metadata extraction (feeds indexing form) (Part 12)
-14. Retention + legal hold (Part 11)
+14. ~~Retention + legal hold~~ — done (Part 11c)
 
 ### SITE360
 15. Rebuild app/site360/page.tsx to match TMF360 exactly

@@ -14,12 +14,13 @@ export const REPORTS = {
   rejected: { title: "Rejected", description: "QC rejections with their reasons, reviewer, comment and signature." },
   "study-management": { title: "Study Management", description: "Changes to the study's countries, sites, contacts, milestones, parties and expected documents." },
   "feature-management": { title: "Feature Management", description: "Configuration changes: TMF configuration, file plan, QC reasons, health thresholds, plan template, inspection sessions, risk and retention settings." },
+  "risk-score": { title: "Risk Score", description: "Explainable artifact risk with every contributing factor, and roll-ups by zone, section, country, site and owner (current state)." },
 } as const;
 export type ReportKey = keyof typeof REPORTS;
 
 /** Audit-trail reports need view_audit_trail; timeliness and rejections are document views. */
 export const reportPermission = (key: ReportKey) =>
-  (key === "timeliness" || key === "rejected" ? "view_document" : "view_audit_trail") as "view_document" | "view_audit_trail";
+  (key === "risk-score" ? "view_gap_analysis" : key === "timeliness" || key === "rejected" ? "view_document" : "view_audit_trail") as "view_document" | "view_audit_trail" | "view_gap_analysis";
 
 /** Timeliness thresholds (RSK-05 defaults); Part 11d makes them configurable per organisation. */
 export const THRESHOLDS = { indexing_days: 5, processing_days: 30 };
@@ -109,12 +110,35 @@ const USER_ACTIONS = ["User role added", "User role changed", "User role removed
   "Study member deactivated", "Study member removed", "Study access granted", "Study access revoked", "Study access removed", "User invited", "Invitation accepted",
   "Password reset by administrator", "Signature re-authentication failed"];
 const STUDY_TABLES = ["study_countries", "study_sites", "study_parties", "contact_roles", "milestones", "placeholders"];
-const FEATURE_TABLES = ["tmf_config", "workflow_settings", "file_plan_steps", "qc_reasons", "health_thresholds", "plan_template_items", "inspection_sessions", "risk_factor_settings", "retention_policies", "legal_holds"];
+const FEATURE_TABLES = ["risk_settings", "risk_factor_weights", "tmf_config", "workflow_settings", "file_plan_steps", "qc_reasons", "health_thresholds", "plan_template_items", "inspection_sessions", "risk_factor_settings", "retention_policies", "legal_holds"];
 const FEATURE_ACTIONS = ["TMF config disabled", "TMF config enabled", "TMF config name edited", "TMF config reset to DIA standard", "Custom zone added", "Custom artifact added", "Custom sub-artifact added", "TMF artifact locked", "TMF artifact unlocked"];
 const likeAny = (prefixes: string[]) => prefixes.map((t) => `action.like.${t}.*`).join(",");
 
 export async function buildReport(ctx: RequestContext, study: StudyRef, key: ReportKey, range: Range): Promise<Sheet[]> {
   const title = REPORTS[key].title;
+  if (key === "risk-score") {
+    // Imported here: risk.ts uses placement() from this module.
+    const { riskModel } = await import("./risk");
+    const m = await riskModel(ctx, study);
+    const node = (n: { label: string; score: number; artifacts: number; factors: { label: string; count: number; weight: number; points: number }[] }) =>
+      [n.label, n.score, n.artifacts, n.factors.map((c) => `${c.count} × ${c.label} (w ${c.weight})`).join("; ")] as Cell[];
+    const rollCols = ["Node", "Risk score", "Artifacts at risk", "Contributing factors"];
+    return [
+      summary(title, study, range, [["Note", "Current state on the generation date (risk is not historical)"], ["Total risk score", m.total],
+        ...m.explanation.map((e, i) => [`Explanation ${i + 1}`, e] as [string, Cell]),
+        ["Indexing threshold (days)", m.thresholds.indexing_days], ["Processing threshold (days)", m.thresholds.processing_days],
+        ...m.factors.map((f) => [`Weight: ${f.label}`, f.weight] as [string, Cell])]),
+      { name: "Artifacts", columns: ["Artifact", "Name", "Location", "Owner", "Impact", "Risk score", "Explanation"],
+        rows: m.artifacts.map((a) => [a.artifact_num, a.artifact_name, a.location, a.owner, a.impact, a.score, a.explanation]) },
+      { name: "By zone", columns: rollCols, rows: m.rollups.zone.map(node) },
+      { name: "By section", columns: rollCols, rows: m.rollups.section.map(node) },
+      { name: "By country", columns: rollCols, rows: m.rollups.country.map(node) },
+      { name: "By site", columns: rollCols, rows: m.rollups.site.map(node) },
+      { name: "By owner", columns: rollCols, rows: m.rollups.owner.map(node) },
+      { name: "Risk events", columns: ["Artifact", "Location", "Factor", "Detail", "Days"],
+        rows: m.artifacts.flatMap((a) => a.events.map((e) => [a.artifact_num, a.location, m.factors.find((f) => f.factor === e.factor)?.label ?? e.factor, e.detail, e.days] as Cell[])) },
+    ];
+  }
   if (key === "document-activities") {
     const [rows, docs, place] = await Promise.all([
       audit(ctx, range, (q) => q.eq("org_id", study.org_id).eq("study_id", study.study_id).not("document_id", "is", null)),

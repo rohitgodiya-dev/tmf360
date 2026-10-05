@@ -99,7 +99,7 @@ describe("reports (RPT-03/04)", () => {
     const r = await call(catalogue.GET, { token: cra.token, params: { studyId: study.id } });
     expect(r.status).toBe(200);
     const allowed = Object.fromEntries(r.body.data.map((x: { key: string; allowed: boolean }) => [x.key, x.allowed]));
-    expect(allowed).toEqual({ "document-activities": false, "user-management": false, timeliness: true, rejected: true, "study-management": false, "feature-management": false });
+    expect(allowed).toEqual({ "document-activities": false, "user-management": false, timeliness: true, rejected: true, "study-management": false, "feature-management": false, "risk-score": true });
   });
 
   it("every report downloads as Excel for a TMF Lead, and is audited", async () => {
