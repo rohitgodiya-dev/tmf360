@@ -13,7 +13,7 @@ import { serviceClient } from "./service";
  * single-use proof that the database requires before it records the decision.
  * Failed attempts are audited (11.300(d)).
  */
-export type ReauthPurpose = "qc_decision" | "deletion_approval" | "reclassify" | "revision";
+export type ReauthPurpose = "qc_decision" | "deletion_approval" | "reclassify" | "revision" | "study_closeout" | "study_reopen" | "archive_approval" | "oversight_review";
 
 export async function reauthenticate(ctx: RequestContext, password: string, purpose: ReauthPurpose, documentId: string | null): Promise<string> {
   const email = ctx.user.email;

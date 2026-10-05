@@ -159,6 +159,82 @@ export async function runZipExport(ctx: RequestContext, job: ExportJob) {
   }
 }
 
+/**
+ * Runs an archive or transfer package (RET-04/05): every file version of every document (including
+ * archived ones), metadata, metadata history, the study's audit trail, signatures and QC decisions,
+ * a manifest of SHA-256 hashes, and for a transfer the signed transfer record. Never throws.
+ */
+export async function runArchiveExport(ctx: RequestContext, job: ExportJob) {
+  const svc = serviceClient();
+  await svc.from("export_jobs").update({ status: "running", started_at: new Date().toISOString() }).eq("id", job.id);
+  try {
+    const pkg = await buildPackage(ctx, job, { allVersions: true });
+    const root = segment(pkg.study.study_id);
+    const { data: docs } = await ctx.db.from("documents").select("id").eq("org_id", job.org_id).eq("study_id", pkg.study.study_id);
+    const ids = (docs ?? []).map((d) => d.id as string);
+    const chunks = <T,>(xs: T[], n: number) => Array.from({ length: Math.ceil(xs.length / n) }, (_, i) => xs.slice(i * n, i * n + n));
+    const byDocs = async (table: string, cols: string, order: string) => {
+      const out: Record<string, unknown>[] = [];
+      for (const part of chunks(ids, 200)) {
+        const { data, error } = await ctx.db.from(table).select(cols).in("document_id", part).order(order);
+        if (error) throw new Error(`${table} could not be read: ${error.message}`);
+        out.push(...((data ?? []) as unknown as Record<string, unknown>[]));
+      }
+      return out;
+    };
+    const [auditRes, sigDocs, sigStudy, decisions, metaVersions, who] = await Promise.all([
+      ctx.db.from("audit_trail").select("sequence_no, created_at, user_email, action, document_id, document_name, field_changed, old_value, new_value, signature_reason, record_hash, prev_hash")
+        .eq("org_id", job.org_id).eq("study_id", pkg.study.study_id).order("sequence_no").limit(200000),
+      byDocs("signature_events", "id, kind, action, meaning, signer_name, signer_email, document_id, file_hash, signed_at", "signed_at"),
+      ctx.db.from("signature_events").select("id, kind, action, meaning, signer_name, signer_email, signed_at").eq("study_id", job.study_id).order("signed_at"),
+      byDocs("qc_decisions", "document_id, outcome, reason_codes, comment, decided_by, decided_at", "decided_at"),
+      byDocs("document_metadata_versions", "*", "document_id"),
+      people(ctx),
+    ]);
+    if (auditRes.error) throw new Error(`The audit trail could not be read: ${auditRes.error.message}`);
+    const val = (v: unknown): Cell => (v == null ? "" : typeof v === "object" ? JSON.stringify(v) : (v as Cell));
+    const metaCols = metaVersions.length ? Object.keys(metaVersions[0]) : ["document_id"];
+    pkg.zip.file(`${root}/audit-trail.xlsx`, await buildXlsx([{ name: "Audit trail",
+      columns: ["Sequence", "Time (UTC)", "User", "Action", "Document ID", "Document", "Field / record", "Old value", "New value", "Reason", "Record hash", "Previous hash"],
+      rows: (auditRes.data ?? []).map((a) => [a.sequence_no, new Date(a.created_at), a.user_email, a.action, a.document_id, a.document_name, a.field_changed, a.old_value, a.new_value, a.signature_reason, a.record_hash, a.prev_hash]) }]));
+    pkg.zip.file(`${root}/signatures.xlsx`, await buildXlsx([
+      { name: "Document signatures", columns: ["Signed (UTC)", "Signer", "Email", "Meaning", "Kind", "Action", "Document ID", "File SHA-256"],
+        rows: sigDocs.map((s) => [new Date(s.signed_at as string), val(s.signer_name), val(s.signer_email), val(s.meaning), val(s.kind), val(s.action), val(s.document_id), val(s.file_hash)]) },
+      { name: "Study signatures", columns: ["Signed (UTC)", "Signer", "Email", "Meaning", "Kind", "Action"],
+        rows: (sigStudy.data ?? []).map((s) => [new Date(s.signed_at), s.signer_name, s.signer_email, s.meaning, s.kind, s.action]) },
+      { name: "QC decisions", columns: ["Decided (UTC)", "Document ID", "Outcome", "Reasons", "Comment", "Reviewer"],
+        rows: decisions.map((q) => [new Date(q.decided_at as string), val(q.document_id), val(q.outcome), ((q.reason_codes as string[]) ?? []).join("; "), val(q.comment), who.get(q.decided_by as string)?.name ?? "Former member"]) },
+      { name: "Metadata history", columns: metaCols, rows: metaVersions.map((m) => metaCols.map((c) => val(m[c]))) },
+    ]));
+    const sig = (sigStudy.data ?? []).find((s) => s.id === (job.options as { signature_event_id?: string }).signature_event_id);
+    if (job.kind === "transfer") {
+      pkg.zip.file(`${root}/TRANSFER-RECORD.txt`, [
+        `TRANSFER RECORD - study ${pkg.study.study_id}${pkg.study.protocol ? ` (${pkg.study.protocol})` : ""}`,
+        `Recipient: ${job.options.recipient}`, `Reason: ${job.options.reason}`,
+        `Approved by electronic signature: ${sig ? `${sig.signer_name} <${sig.signer_email}>, ${sig.signed_at}, meaning "${sig.meaning}"` : "see signatures.xlsx"}`,
+        `Package job: ${job.id}`, `Files: ${pkg.files}`, "The SHA-256 of every file is in manifest.json; the package hash is recorded in TMF360.",
+      ].join("\r\n"));
+    }
+    const generated = new Date().toISOString();
+    pkg.zip.file(`${root}/manifest.json`, JSON.stringify({
+      package: job.kind, study: pkg.study.study_id, protocol: pkg.study.protocol, job_id: job.id, generated_at: generated, generated_by: ctx.user.email ?? ctx.user.id,
+      recipient: job.options.recipient ?? null, reason: job.options.reason ?? null,
+      approval: sig ? { meaning: sig.meaning, signer: sig.signer_name, email: sig.signer_email, signed_at: sig.signed_at } : null,
+      formats: "Files are kept in their original format (PDF/A conversion is not performed). Spreadsheets are Office Open XML (.xlsx).",
+      structure: "study / zone / section / artifact / <title> - file v<n>; metadata.xlsx, audit-trail.xlsx, signatures.xlsx",
+      audit_entries: auditRes.data?.length ?? 0, signatures: sigDocs.length + (sigStudy.data?.length ?? 0),
+      files: pkg.manifest,
+    }, null, 2));
+    const bytes = await pkg.zip.generateAsync({ type: "uint8array", compression: "DEFLATE", compressionOptions: { level: 1 } });
+    await finish(job, bytes, pkg.files);
+    await notify(ctx, job, true, `${pkg.files} file versions from study ${pkg.study.study_id} with audit trail, signatures and manifest (${Math.round(bytes.length / 1024)} KB).`);
+  } catch (e) {
+    const message = (e as Error).message.slice(0, 500);
+    await svc.from("export_jobs").update({ status: "failed", error: message, finished_at: new Date().toISOString() }).eq("id", job.id);
+    await notify(ctx, job, false, message).catch(() => {});
+  }
+}
+
 /** Requester names for job lists. */
 export async function jobView(ctx: RequestContext, jobs: (ExportJob & Record<string, unknown>)[]) {
   const who = await people(ctx);
