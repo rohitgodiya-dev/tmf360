@@ -10,8 +10,12 @@
 - Local: C:\Users\rohit\Desktop\tmf360
 
 ## Load at session start
-Always read `.claude/skills/trial360-context/SKILL.md` before doing anything.
-Other project skills live in `.claude/skills/` (page-builder, compliance, database, etmf-domain).
+1. Read `.claude/skills/trial360-context/SKILL.md` (project state, tables, roadmap).
+2. Check the open claude-mem work_state lists (current part and its next step) and `git status`.
+Load the other skills in `.claude/skills/` only when the task needs them: page-builder (UI),
+compliance (before committing), database (any SQL), etmf-domain (TMF/ISF domain).
+Path-scoped rules in `.claude/rules/` load automatically for matching files.
+Plans per part: `docs/partN-plan.md`. API conventions: `docs/api-conventions.md`.
 
 ## 10 Rules — Never Break These
 1. Inline styles only — no Tailwind className in page code (Tabler icon classes `ti ti-*` are allowed)
@@ -36,7 +40,11 @@ Other project skills live in `.claude/skills/` (page-builder, compliance, databa
 - Supabase DEV (structure-only copy): `npx supabase db query --linked --project-ref ikjusswwskrkjwxovgza -f file.sql`
 - Local build: `SUPABASE_SERVICE_ROLE_KEY=placeholder npm run build`
 - Tests: `npm test` (unit), `npm run test:integration` (dev Supabase only)
+- E2E (browser): start `next dev -p 3100` with .env.dev, then `node tests/e2e/<name>.mjs`. Don't run e2e and the
+  integration suite at the same time (DEV contention). If nested API routes 404 with HTML, delete `.next/dev` and restart.
 - Pushing `main` deploys production. Checkpoint commits stay local until a part is complete.
+- Guard rails: `.claude/settings.json` (permissions) + `.claude/hooks/pre-tool-check.mjs` (blocks force push,
+  hard reset, recursive deletes of source dirs, supabase db reset/push, destructive SQL on PROD).
 
 ## Agent Architecture (`.claude/agents/`)
 Build Agent → handles code changes + deploy cycle

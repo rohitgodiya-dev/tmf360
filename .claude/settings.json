@@ -1,0 +1,66 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npm test*)",
+      "Bash(npx tsc *)",
+      "Bash(npx vitest *)",
+      "Bash(npx next *)",
+      "Bash(npx supabase db query --linked --project-ref ikjusswwskrkjwxovgza *)",
+      "Bash(node tests/e2e/*)",
+      "Bash(node scripts/*)",
+      "Bash(bash scripts/*)",
+      "Bash(git status*)",
+      "Bash(git log *)",
+      "Bash(git diff *)",
+      "Bash(git show *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git fetch *)",
+      "Bash(git push origin main)",
+      "Bash(grep *)",
+      "Bash(ls *)",
+      "Bash(wc *)",
+      "Bash(pdftotext *)",
+      "PowerShell(npm run *)",
+      "PowerShell(npm test*)",
+      "PowerShell(npx tsc *)",
+      "PowerShell(npx supabase db query --linked --project-ref ikjusswwskrkjwxovgza *)",
+      "PowerShell(node tests/e2e/*)",
+      "PowerShell(node scripts/*)",
+      "PowerShell(git status*)",
+      "PowerShell(git log *)",
+      "PowerShell(git diff *)",
+      "PowerShell(git add *)",
+      "PowerShell(git commit *)",
+      "PowerShell(git fetch *)",
+      "PowerShell(git push origin main)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git reset --hard*)",
+      "Bash(npx supabase db reset*)",
+      "Bash(npx supabase db push*)",
+      "PowerShell(git push --force*)",
+      "PowerShell(git push -f*)",
+      "PowerShell(git reset --hard*)",
+      "PowerShell(npx supabase db reset*)",
+      "PowerShell(npx supabase db push*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-tool-check.mjs\""
+          }
+        ]
+      }
+    ]
+  }
+}

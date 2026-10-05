@@ -48,3 +48,8 @@ supabase/.temp
 
 # browser check screenshots
 test-screenshots/
+
+# Claude Code local files
+CLAUDE.local.md
+.claude/settings.local.json
+.claude/worktrees/
