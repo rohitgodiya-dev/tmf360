@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { studyHealth } from "@/lib/api/health";
 import { serviceClient } from "@/lib/api/service";
+import { backfillTextIndex } from "@/lib/api/textindex";
 
 // Daily: re-run every study's readiness rules and store a health snapshot for the trend view (HLT-06).
 // Fails closed without CRON_SECRET.
@@ -44,5 +45,7 @@ export async function GET(req: NextRequest) {
     const old = (copies ?? []).filter((c) => c.created_at && Date.parse(c.created_at) < Date.now() - 86400000).map((c) => `inspection/${folder.name}/${c.name}`);
     if (old.length) await svc.storage.from("exports").remove(old);
   }
-  return NextResponse.json({ studies: ok, failed: failed.length, exports_removed: removed });
+  // Full-text index backfill (NAV-09): documents filed without an index, or whose file changed.
+  const indexed = await backfillTextIndex(200).catch(() => 0);
+  return NextResponse.json({ studies: ok, failed: failed.length, exports_removed: removed, text_indexed: indexed });
 }

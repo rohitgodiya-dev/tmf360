@@ -65,6 +65,8 @@ export const querySchema = z.object({
   level: z.enum(["Study", "Country", "Site"]).nullish(),
   index: z.enum(["current", "historical"]).default("current"),
   q: z.string().trim().max(200).optional(),
+  /** NAV-09: search the text inside documents instead of titles. */
+  content: z.boolean().default(false),
   rules: z.array(rule).max(20).default([]),
   sort: z.object({ column: columnKey, dir: z.enum(["asc", "desc"]).default("asc") }).optional(),
   page: z.number().int().min(1).max(100000).default(1),
@@ -79,12 +81,13 @@ const like = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
 type Builder = any;
 
 /** Applies every filter except the status tile, for the study given by org + code. */
-function applyFilters(q: Builder, study: { org_id: string; study_id: string }, f: NavigatorQuery): Builder {
+function applyFilters(q: Builder, study: { org_id: string; study_id: string }, f: NavigatorQuery, contentIds?: string[] | null): Builder {
   q = q.eq("org_id", study.org_id).eq("study_code", study.study_id);
   if (f.index === "current") q = q.eq("is_historical", false);
   if (f.level) q = q.eq("tmf_level", f.level);
   for (const c of f.chips) q = q.eq(CHIP_FIELDS[c.field], c.value);
-  if (f.q) q = q.ilike("title", `%${like(f.q)}%`);
+  if (f.q && contentIds) q = q.in("document_id", contentIds.length ? contentIds : ["00000000-0000-0000-0000-000000000000"]);
+  else if (f.q) q = q.ilike("title", `%${like(f.q)}%`);
   for (const r of f.rules) {
     const col = COLUMNS[r.column];
     const v = r.value ?? "";
@@ -110,9 +113,19 @@ function applyOrder(q: Builder, f: NavigatorQuery): Builder {
   return q.order("row_id", { ascending: true });   // stable paging
 }
 
-export async function runNavigatorQuery(db: SupabaseClient, study: { org_id: string; study_id: string }, f: NavigatorQuery) {
+/** NAV-09: documents whose text matches (as the caller, so RLS applies), with a highlighted snippet each. */
+async function contentMatches(db: SupabaseClient, study: { id?: string }, f: NavigatorQuery) {
+  if (!f.content || !f.q || !study.id) return null;
+  const { data, error } = await db.rpc("search_document_text", { p_study: study.id, p_query: f.q, p_limit: 500 });
+  if (error) throw dbError(error);
+  return (data ?? []) as { document_id: string; rank: number; snippet: string }[];
+}
+
+export async function runNavigatorQuery(db: SupabaseClient, study: { id?: string; org_id: string; study_id: string }, f: NavigatorQuery) {
+  const matches = await contentMatches(db, study, f);
+  const contentIds = matches?.map((m) => m.document_id) ?? null;
   // Rows for the requested page.
-  let rows = applyFilters(db.from("navigator_items").select(SELECT_COLUMNS, { count: "exact" }), study, f);
+  let rows = applyFilters(db.from("navigator_items").select(SELECT_COLUMNS, { count: "exact" }), study, f, contentIds);
   if (f.status) rows = rows.eq("nav_status", f.status);
   rows = applyOrder(rows, f);
   const from = (f.page - 1) * f.page_size;
@@ -121,7 +134,7 @@ export async function runNavigatorQuery(db: SupabaseClient, study: { org_id: str
   // Tile counts use the same filters (minus the tile itself), so a tile's count always
   // equals the rows that clicking it returns (NAV-03 acceptance).
   const tileQueries = TILES.map((t) =>
-    applyFilters(db.from("navigator_items").select("row_id", { count: "exact", head: true }), study, f).eq("nav_status", t));
+    applyFilters(db.from("navigator_items").select("row_id", { count: "exact", head: true }), study, f, contentIds).eq("nav_status", t));
 
   const [page, ...tiles] = await Promise.all([rows, ...tileQueries]);
   if (page.error) throw dbError(page.error);
@@ -134,12 +147,14 @@ export async function runNavigatorQuery(db: SupabaseClient, study: { org_id: str
     page_size: f.page_size,
     counts,
     completeness: completeness(counts),
+    snippets: matches ? Object.fromEntries(matches.map((m) => [m.document_id, m.snippet])) : undefined,
   };
 }
 
 /** All matching rows for export (no paging), capped. */
-export async function exportRows(db: SupabaseClient, study: { org_id: string; study_id: string }, f: NavigatorQuery, ids: string[] | undefined, cap: number) {
-  let q = applyFilters(db.from("navigator_items").select(SELECT_COLUMNS), study, f);
+export async function exportRows(db: SupabaseClient, study: { id?: string; org_id: string; study_id: string }, f: NavigatorQuery, ids: string[] | undefined, cap: number) {
+  const matches = await contentMatches(db, study, f);
+  let q = applyFilters(db.from("navigator_items").select(SELECT_COLUMNS), study, f, matches?.map((m) => m.document_id) ?? null);
   if (f.status) q = q.eq("nav_status", f.status);
   if (ids?.length) q = q.in("row_id", ids);
   const { data, error } = await applyOrder(q, f).limit(cap);

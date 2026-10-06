@@ -52,6 +52,16 @@ export async function requirePlatformAdmin(req: Request): Promise<{ user: User; 
   return auth;
 }
 
+/** The session's authenticator assurance level from the (already verified) access token. */
+export function sessionAal(token: string): string | null {
+  try {
+    const payload = JSON.parse(Buffer.from(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8"));
+    return typeof payload.aal === "string" ? payload.aal : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function requireUser(req: Request): Promise<RequestContext> {
   const { user, db } = await authenticate(req);
 
@@ -63,6 +73,18 @@ export async function requireUser(req: Request): Promise<RequestContext> {
     .limit(1)
     .maybeSingle();
   if (!roleRow?.org_id) throw forbidden("No active role in any organisation");
+
+  // Two-factor sign-in (PLT-01, Part 14d): a user with an enrolled factor, or anyone in an organisation
+  // that requires it, must have completed the second factor in this session (assurance level 2).
+  const hasFactor = (user.factors ?? []).some((f) => f.status === "verified");
+  let required = hasFactor;
+  if (!required) {
+    const { data: sec } = await db.from("org_security_settings").select("require_mfa").eq("org_id", roleRow.org_id).maybeSingle();
+    required = !!sec?.require_mfa;
+  }
+  if (required && sessionAal(bearerToken(req)!) !== "aal2") {
+    throw forbidden(hasFactor ? "Enter your two-factor code to continue" : "Your organisation requires two-factor sign-in. Set it up in My profile.");
+  }
 
   return { user, orgId: roleRow.org_id, role: roleRow.role as Role, db };
 }

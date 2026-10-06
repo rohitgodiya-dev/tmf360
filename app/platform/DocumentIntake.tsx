@@ -14,6 +14,7 @@ type Item = {
   artifact_num: string | null; title: string | null; version_label: string | null; effective_date: string | null;
   owner: string | null; notes: string | null; suggestion: Suggestion | null;
   study_country_id: string | null; study_site_id: string | null;
+  source?: string; email_from?: string | null; email_subject?: string | null;
 };
 type Draft = Pick<Item, "artifact_num" | "title" | "version_label" | "effective_date" | "owner" | "notes" | "study_country_id" | "study_site_id">;
 // TMF level choices from the study structure: study level, a country, or a site (its country follows).
@@ -46,6 +47,8 @@ export default function DocumentIntake({ study, orgId, artifacts, canUpload, onF
   const [message, setMessage] = useState<string>("");
   const [dragging, setDragging] = useState(false);
   const [rejecting, setRejecting] = useState<{ id: string; reason: string } | null>(null);
+  // Bulk indexing (IDX-02) and selection actions (STG-09).
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const fileInput = useRef<HTMLInputElement>(null);
   const base = `/studies/${study.id}/intake`;
   // AI capabilities switched on for the organisation (Part 12a); none means fully manual.
@@ -186,6 +189,8 @@ export default function DocumentIntake({ study, orgId, artifacts, canUpload, onF
         </div>
       )}
 
+      {canUpload && <IntakeEmail studyId={study.id} />}
+      {canUpload && <SignpostForm studyId={study.id} artifacts={sortedArtifacts} scopes={scopes} onDone={(m) => { setMessage(m); onFiled(); }} />}
       {busy && <div style={{ fontSize: "12px", color: C.textSec }}>{busy}</div>}
       {message && <div style={{ fontSize: "12px", padding: "8px 10px", borderRadius: "8px", background: C.warnBg, color: C.warn }}>{message}</div>}
 
@@ -193,12 +198,19 @@ export default function DocumentIntake({ study, orgId, artifacts, canUpload, onF
         <div style={{ textAlign: "center", padding: "2.5rem", color: C.textTert, background: C.bg, border: `0.5px solid ${C.border}`, borderRadius: "12px", fontSize: "12px" }}>
           Nothing waiting in intake.
         </div>
-      ) : items.map((item) => {
+      ) : <>
+      {canUpload && items.length > 1 && (
+        <BulkBar base={base} items={items} selected={selected} setSelected={setSelected} artifacts={sortedArtifacts} scopes={scopes}
+          onDone={(m) => { setMessage(m); setSelected(new Set()); load(); onFiled(); }} />
+      )}
+      {items.map((item) => {
         const d = drafts[item.id] ?? ({} as Draft);
         const disabled = !canUpload || !!busy;
         return (
           <div key={item.id} style={{ background: C.bg, border: `0.5px solid ${C.border}`, borderRadius: "12px", padding: "14px 16px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+              {canUpload && items.length > 1 && <input type="checkbox" aria-label={`Select ${item.file_name}`} checked={selected.has(item.id)}
+                onChange={() => setSelected((p) => { const n = new Set(p); if (n.has(item.id)) n.delete(item.id); else n.add(item.id); return n; })} />}
               <i className="ti ti-file-text" style={{ fontSize: "16px", color: C.textTert }} />
               <span style={{ fontSize: "13px", fontWeight: 600, color: C.text }}>{item.file_name}</span>
               {verification(item.verification_status)}
@@ -206,6 +218,9 @@ export default function DocumentIntake({ study, orgId, artifacts, canUpload, onF
               <span style={{ fontSize: "11px", color: C.textTert, marginLeft: "auto" }}>Received {new Date(item.created_at).toLocaleString()}</span>
             </div>
 
+            {item.source === "email" && (
+              <div style={{ marginTop: "6px", fontSize: "11px", color: C.textTert }}><i className="ti ti-mail" /> Emailed by {item.email_from}{item.email_subject ? `: "${item.email_subject}"` : ""}</div>
+            )}
             {item.duplicate_reason && (
               <div style={{ marginTop: "10px", fontSize: "11px", borderRadius: "8px", padding: "8px 10px",
                 background: item.duplicate_status === "blocked" ? C.dangerBg : C.warnBg, color: item.duplicate_status === "blocked" ? C.danger : C.warn }}>
@@ -302,6 +317,181 @@ export default function DocumentIntake({ study, orgId, artifacts, canUpload, onF
           </div>
         );
       })}
+      </>}
+    </div>
+  );
+}
+
+/** SGN-01: a record for a document held elsewhere, filed with a generated placeholder page. */
+function SignpostForm({ studyId, artifacts, scopes, onDone }: { studyId: string; artifacts: Artifact[]; scopes: Scope[]; onDone: (msg: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [f, setF] = useState({ artifact_num: "", title: "", reference: "", scope: "|" });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const ok = !!f.artifact_num && f.title.trim().length >= 2 && f.reference.trim().length >= 3;
+  async function save() {
+    setBusy(true); setError("");
+    const [country, site] = f.scope.split("|");
+    try {
+      await apiFetch(`/studies/${studyId}/signposts`, { method: "POST", body: JSON.stringify({ artifact_num: f.artifact_num, title: f.title.trim(), reference: f.reference.trim(),
+        study_country_id: country || null, study_site_id: site || null }) });
+      setOpen(false); setF({ artifact_num: "", title: "", reference: "", scope: "|" });
+      onDone("Signpost filed. It counts in completeness like any record; its page says where the original is.");
+    } catch (e) { setError((e as Error).message); }
+    setBusy(false);
+  }
+  if (!open) return <div><button onClick={() => setOpen(true)} style={btn(C.bgSec, C.textSec)}><i className="ti ti-signpost" /> Add signpost (original held elsewhere)</button></div>;
+  return (
+    <div style={{ background: C.bg, border: `0.5px solid ${C.border}`, borderRadius: "12px", padding: "14px 16px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "8px" }}>
+      <div style={{ gridColumn: "1 / -1", fontSize: "13px", fontWeight: 600, color: C.text }}>New signpost</div>
+      <label style={{ fontSize: "11px", color: C.textSec }}>TMF artifact
+        <select value={f.artifact_num} onChange={(e) => setF({ ...f, artifact_num: e.target.value })} style={input}><option value="">Choose…</option>{artifacts.map((a) => <option key={a.a} value={a.a}>{a.a} — {a.an}</option>)}</select>
+      </label>
+      <label style={{ fontSize: "11px", color: C.textSec }}>TMF level
+        <select aria-label="Signpost level" value={f.scope} onChange={(e) => setF({ ...f, scope: e.target.value })} style={input}>{scopes.map((s) => <option key={`${s.country ?? ""}|${s.site ?? ""}`} value={`${s.country ?? ""}|${s.site ?? ""}`}>{s.label}</option>)}</select>
+      </label>
+      <label style={{ fontSize: "11px", color: C.textSec }}>Title<input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} style={input} /></label>
+      <label style={{ gridColumn: "1 / -1", fontSize: "11px", color: C.textSec }}>Reference: URL or where the original is held (required)
+        <input value={f.reference} onChange={(e) => setF({ ...f, reference: e.target.value })} placeholder="e.g. https://vault.example.com/doc/123 or Sponsor archive, box 14" style={input} />
+      </label>
+      <div style={{ gridColumn: "1 / -1", fontSize: "11px", color: C.textSec, background: C.bgSec, borderRadius: "8px", padding: "8px 10px" }}>
+        <strong>What happens next:</strong> a page stating where the original is held is generated and filed as a Draft record under this artifact, then submitted to QC like any document. Signpost status can&apos;t be undone.
+      </div>
+      {error && <div role="alert" style={{ gridColumn: "1 / -1", fontSize: "11px", color: C.danger }}>{error}</div>}
+      <div style={{ gridColumn: "1 / -1", display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+        <button onClick={() => setOpen(false)} style={btn(C.bgSec, C.textSec)}>Cancel</button>
+        <button disabled={!ok || busy} onClick={save} style={{ ...btn(C.primary, "#fff"), opacity: ok && !busy ? 1 : 0.5 }}>{busy ? "Filing…" : "File signpost"}</button>
+      </div>
+    </div>
+  );
+}
+
+/** IDX-02 / STG-09: apply common metadata to the selected items, then file or reject them together. */
+function BulkBar({ base, items, selected, setSelected, artifacts, scopes, onDone }: {
+  base: string; items: Item[]; selected: Set<string>; setSelected: (s: Set<string>) => void; artifacts: Artifact[]; scopes: Scope[]; onDone: (msg: string) => void;
+}) {
+  const [mode, setMode] = useState<"" | "set" | "reject">("");
+  const [f, setF] = useState({ artifact_num: "", scope: "", version_label: "", effective_date: "", owner: "" });
+  const [why, setWhy] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [report, setReport] = useState<{ file_name: string | null; reason?: string }[]>([]);
+  const ids = [...selected];
+  async function run(body: Record<string, unknown>, verb: string) {
+    setBusy(true); setReport([]);
+    try {
+      const r = await apiFetch<{ done: number; failed: number; results: { file_name: string | null; ok: boolean; reason?: string }[] }>(`${base}/bulk`, { method: "POST", body: JSON.stringify({ ...body, item_ids: ids }) });
+      setReport(r.results.filter((x) => !x.ok));
+      setMode("");
+      onDone(`${r.done} item(s) ${verb}${r.failed ? `; ${r.failed} not (see the list)` : "."}`);
+    } catch (e) { setReport([{ file_name: null, reason: (e as Error).message }]); }
+    setBusy(false);
+  }
+  function applyCommon() {
+    const set: Record<string, unknown> = {};
+    if (f.artifact_num) set.artifact_num = f.artifact_num;
+    if (f.scope) { const [c, st] = f.scope.split("|"); set.study_country_id = c || null; set.study_site_id = st || null; }
+    if (f.version_label.trim()) set.version_label = f.version_label.trim();
+    if (f.effective_date) set.effective_date = f.effective_date;
+    if (f.owner.trim()) set.owner = f.owner.trim();
+    return run({ action: "set", set }, "updated");
+  }
+  const anyCommon = !!(f.artifact_num || f.scope || f.version_label.trim() || f.effective_date || f.owner.trim());
+  return (
+    <div style={{ background: C.bg, border: `0.5px solid ${C.border}`, borderRadius: "12px", padding: "10px 14px", display: "flex", flexDirection: "column", gap: "8px" }}>
+      <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+        <label style={{ fontSize: "12px", color: C.textSec, display: "flex", gap: "6px", alignItems: "center" }}>
+          <input type="checkbox" aria-label="Select all intake items" checked={selected.size === items.length} onChange={(e) => setSelected(e.target.checked ? new Set(items.map((i) => i.id)) : new Set())} />
+          {selected.size} selected
+        </label>
+        <span style={{ flex: 1 }} />
+        <button disabled={!selected.size || busy} onClick={() => setMode("set")} style={{ ...btn(C.bgSec, C.textSec), opacity: selected.size ? 1 : 0.5 }}>Edit common metadata</button>
+        <button disabled={!selected.size || busy} onClick={() => run({ action: "file" }, "filed")} style={{ ...btn(C.primary, "#fff"), opacity: selected.size ? 1 : 0.5 }}>File selected</button>
+        <button disabled={!selected.size || busy} onClick={() => setMode("reject")} style={{ ...btn(C.dangerBg, C.danger), opacity: selected.size ? 1 : 0.5 }}>Reject selected</button>
+      </div>
+      {mode === "set" && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: "8px" }}>
+          <label style={{ fontSize: "11px", color: C.textSec }}>TMF artifact<select aria-label="Common artifact" value={f.artifact_num} onChange={(e) => setF({ ...f, artifact_num: e.target.value })} style={input}><option value="">(leave as is)</option>{artifacts.map((a) => <option key={a.a} value={a.a}>{a.a} — {a.an}</option>)}</select></label>
+          <label style={{ fontSize: "11px", color: C.textSec }}>TMF level<select aria-label="Common level" value={f.scope} onChange={(e) => setF({ ...f, scope: e.target.value })} style={input}><option value="">(leave as is)</option>{scopes.map((s) => <option key={`${s.country ?? ""}|${s.site ?? ""}`} value={`${s.country ?? ""}|${s.site ?? ""}`}>{s.label}</option>)}</select></label>
+          <label style={{ fontSize: "11px", color: C.textSec }}>Version<input value={f.version_label} onChange={(e) => setF({ ...f, version_label: e.target.value })} style={input} /></label>
+          <label style={{ fontSize: "11px", color: C.textSec }}>Effective date<input type="date" value={f.effective_date} onChange={(e) => setF({ ...f, effective_date: e.target.value })} style={input} /></label>
+          <label style={{ fontSize: "11px", color: C.textSec }}>Owner<input value={f.owner} onChange={(e) => setF({ ...f, owner: e.target.value })} style={input} /></label>
+          <div style={{ gridColumn: "1 / -1", fontSize: "11px", color: C.textSec }}><strong>What happens next:</strong> the filled fields are applied to all {selected.size} selected items; empty fields are left as they are. Titles stay per file. Then complete each item and file.</div>
+          <div style={{ gridColumn: "1 / -1", display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+            <button onClick={() => setMode("")} style={btn(C.bgSec, C.textSec)}>Cancel</button>
+            <button disabled={!anyCommon || busy} onClick={applyCommon} style={{ ...btn(C.primary, "#fff"), opacity: anyCommon ? 1 : 0.5 }}>Apply to {selected.size}</button>
+          </div>
+        </div>
+      )}
+      {mode === "reject" && (
+        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          <input aria-label="Reason for rejecting the selected items" value={why} onChange={(e) => setWhy(e.target.value)} placeholder="Reason (kept in the audit trail)" style={input} />
+          <button onClick={() => setMode("")} style={btn(C.bgSec, C.textSec)}>Cancel</button>
+          <button disabled={why.trim().length < 3 || busy} onClick={() => run({ action: "reject", reason: why.trim() }, "rejected")} style={{ ...btn(C.danger, "#fff"), opacity: why.trim().length < 3 ? 0.5 : 1 }}>Reject {selected.size}</button>
+        </div>
+      )}
+      {report.length > 0 && (
+        <div role="alert" style={{ fontSize: "11px", color: C.warn, background: C.warnBg, borderRadius: "8px", padding: "6px 10px" }}>
+          {report.map((r, i) => <div key={i}>{r.file_name ?? "Request"}: {r.reason}</div>)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+type IntakeEmailView = { configured: boolean; address: { alias: string; enabled: boolean; email: string | null } | null;
+  senders: { id: string; sender: string }[]; log: { sender: string; subject: string | null; received_at: string; status: string; reason: string | null; items_created: number }[] };
+
+/** STG-02/03: the study's intake email address, who may send to it, and what arrived. */
+function IntakeEmail({ studyId }: { studyId: string }) {
+  const [open, setOpen] = useState(false);
+  const [v, setV] = useState<IntakeEmailView | null>(null);
+  const [alias, setAlias] = useState("");
+  const [sender, setSender] = useState("");
+  const [why, setWhy] = useState("");
+  const [error, setError] = useState("");
+  const load = useCallback(() => {
+    apiFetch<IntakeEmailView>(`/studies/${studyId}/intake-email`).then((r) => { setV(r); setAlias(r.address?.alias ?? ""); }).catch((e) => setError((e as Error).message));
+  }, [studyId]);
+  useEffect(() => { if (open) load(); }, [open, load]);
+  async function act(body: Record<string, unknown>) {
+    setError("");
+    try { await apiFetch(`/studies/${studyId}/intake-email`, { method: "POST", body: JSON.stringify({ ...body, reason: why.trim() }) }); setSender(""); load(); }
+    catch (e) { setError((e as Error).message); }
+  }
+  if (!open) return <div><button onClick={() => setOpen(true)} style={btn(C.bgSec, C.textSec)}><i className="ti ti-mail" /> Intake email</button></div>;
+  return (
+    <div style={{ background: C.bg, border: `0.5px solid ${C.border}`, borderRadius: "12px", padding: "14px 16px", display: "flex", flexDirection: "column", gap: "8px" }}>
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <div style={{ fontSize: "13px", fontWeight: 600, color: C.text, flex: 1 }}>Intake email</div>
+        <button onClick={() => setOpen(false)} style={btn(C.bgSec, C.textSec)}>Close</button>
+      </div>
+      {v && !v.configured && <div style={{ fontSize: "11px", color: C.warn, background: C.warnBg, borderRadius: "8px", padding: "6px 10px" }}>Receiving email is not switched on for TMF360 yet (an administrator connects the mail domain). You can prepare the address and allow-list now.</div>}
+      {v?.address?.email && <div style={{ fontSize: "12px", color: C.textSec }}>Send documents to <b>{v.address.email}</b> {v.address.enabled ? "" : "(switched off)"}</div>}
+      <label style={{ fontSize: "11px", color: C.textSec }}>Reason for changes (required)<input value={why} onChange={(e) => setWhy(e.target.value)} style={input} /></label>
+      <div style={{ display: "flex", gap: "6px", alignItems: "flex-end" }}>
+        <label style={{ fontSize: "11px", color: C.textSec, flex: 1 }}>Address name<input aria-label="Intake address name" value={alias} onChange={(e) => setAlias(e.target.value.toLowerCase())} placeholder="e.g. abc-123-tmf" style={input} /></label>
+        <button disabled={why.trim().length < 3 || alias.length < 3} onClick={() => act({ action: "set_address", alias, enabled: true })} style={btn(C.primary, "#fff")}>Save address</button>
+        {v?.address && <button disabled={why.trim().length < 3} onClick={() => act({ action: "set_address", alias: v.address!.alias, enabled: !v.address!.enabled })} style={btn(C.bgSec, C.textSec)}>{v.address.enabled ? "Switch off" : "Switch on"}</button>}
+      </div>
+      <div style={{ fontSize: "11px", fontWeight: 600, color: C.textSec }}>Allowed senders (an address, or a whole domain). Others are refused and get a reply with the submission guidelines.</div>
+      {v?.senders.map((x) => (
+        <div key={x.id} style={{ display: "flex", gap: "6px", alignItems: "center", fontSize: "12px", color: C.textSec }}>
+          <span style={{ flex: 1 }}>{x.sender}</span>
+          <button aria-label={`Remove ${x.sender}`} disabled={why.trim().length < 3} onClick={() => act({ action: "remove_sender", id: x.id })} style={btn(C.bgSec, C.textSec)}>Remove</button>
+        </div>
+      ))}
+      <div style={{ display: "flex", gap: "6px" }}>
+        <input aria-label="Allowed sender" value={sender} onChange={(e) => setSender(e.target.value)} placeholder="name@site.org or site.org" style={input} />
+        <button disabled={why.trim().length < 3 || !sender.trim()} onClick={() => act({ action: "add_sender", sender: sender.trim() })} style={btn(C.bgSec, C.textSec)}>Allow</button>
+      </div>
+      {v && v.log.length > 0 && (
+        <div style={{ fontSize: "11px", color: C.textSec }}>
+          <div style={{ fontWeight: 600, marginTop: "4px" }}>Received</div>
+          {v.log.map((l, i) => <div key={i}>{new Date(l.received_at).toLocaleString()} · {l.sender} · {l.subject ?? "(no subject)"} · {l.status === "accepted" ? `${l.items_created} file(s) added` : "refused"}{l.reason ? ` (${l.reason})` : ""}</div>)}
+        </div>
+      )}
+      <div style={{ fontSize: "11px", color: C.textTert }}>What happens next: attachments from allowed senders arrive here as intake items with the sender, subject and received date, ready to index. Address and allow-list changes are audited.</div>
+      {error && <div role="alert" style={{ fontSize: "11px", color: C.danger }}>{error}</div>}
     </div>
   );
 }

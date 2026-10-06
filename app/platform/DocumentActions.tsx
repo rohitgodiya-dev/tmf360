@@ -4,7 +4,7 @@
 // deletion-request queue. Every write goes through /api/v1; the database enforces the rules.
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
-import { apiFetch } from "../../lib/api/client";
+import { apiFetch, authHeaders } from "../../lib/api/client";
 
 type TreeNode = { id: string; label: string; field: string | null; value: string | null; children: TreeNode[] };
 export type ActionDoc = { id: string; status: string; artifact_num: string; study_country_id?: string | null; study_site_id?: string | null; version?: string | null; custom_file_name?: string | null; owner?: string | null; effective_date?: string | null; expiry_date?: string | null };
@@ -385,6 +385,125 @@ export function CertifyForm({ doc, onDone, onCancel }: { doc: ActionDoc; onDone:
       {error && <div role="alert" style={errBox}>{error}</div>}
       {certifiedNow ? <div style={{ display: "flex", justifyContent: "flex-end" }}><button onClick={onCancel} style={btn(C.bgSec, C.textSec)}>Close</button></div>
         : <Buttons busy={busy} ok={ok} label="Sign & certify" onCancel={onCancel} onGo={go} />}
+    </div>
+  );
+}
+
+type DocLink = { id: string; link_type: string; label: string; direction: string; document_id: string; title: string; status: string; note: string | null };
+type FoundDoc = { document_id: string | null; title: string; artifact_num: string; nav_status: string };
+const LINK_LABEL: Record<string, string> = { amends: "Amends", approves: "Approves", supersedes: "Supersedes", translates: "Translates", relates_to: "Relates to" };
+
+/** LNK-01..03: links of a document in both directions; add several at once (partial success), remove with a reason. */
+export function LinksPanel({ doc, studyId, canEdit, onOpen }: { doc: ActionDoc; studyId: string; canEdit: boolean; onOpen?: (documentId: string) => void }) {
+  const [links, setLinks] = useState<DocLink[] | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [q, setQ] = useState("");
+  const [found, setFound] = useState<FoundDoc[]>([]);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [type, setType] = useState("relates_to");
+  const [removing, setRemoving] = useState<string | null>(null);
+  const [why, setWhy] = useState("");
+  const [msg, setMsg] = useState("");
+  const [error, setError] = useState("");
+  const load = () => apiFetch<{ data: DocLink[] }>(`/documents/${doc.id}/links`).then((r) => setLinks(r.data)).catch((e) => setError((e as Error).message));
+  useEffect(() => { load(); }, [doc.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function find() {
+    try {
+      const r = await apiFetch<{ data: FoundDoc[] }>(`/studies/${studyId}/navigator`, { method: "POST", body: JSON.stringify({ q: q.trim() || undefined, page_size: 50 }) });
+      setFound(r.data.filter((d) => d.document_id && d.document_id !== doc.id));
+    } catch (e) { setError((e as Error).message); }
+  }
+  async function add() {
+    setError(""); setMsg("");
+    try {
+      const res = await fetch(`/api/v1/documents/${doc.id}/links`, { method: "POST", headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+        body: JSON.stringify({ targets: [...picked].map((id) => ({ document_id: id, link_type: type })) }) });
+      const body = await res.json();
+      if (body.error) throw new Error(body.error.message);
+      const failed = (body.results as { document_id: string; ok: boolean; reason?: string }[]).filter((r) => !r.ok);
+      setMsg(`${body.added} link(s) added${failed.length ? `; ${failed.length} not added: ${failed.map((f) => `${found.find((d) => d.document_id === f.document_id)?.title ?? "document"} (${f.reason})`).join("; ")}` : "."}`);
+      setPicked(new Set()); setAdding(false); load();
+    } catch (e) { setError((e as Error).message); }
+  }
+  async function remove(id: string) {
+    try { await apiFetch(`/document-links/${id}/remove`, { method: "POST", body: JSON.stringify({ reason: why.trim() }) }); setRemoving(null); setWhy(""); load(); }
+    catch (e) { setError((e as Error).message); }
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <div style={{ fontSize: "12px", fontWeight: 700, color: C.text, flex: 1 }}>Links ({links?.length ?? "…"})</div>
+        {canEdit && !adding && <button onClick={() => setAdding(true)} style={btn(C.bg, C.textSec)}><i className="ti ti-link" /> Add</button>}
+      </div>
+      {links?.length === 0 && !adding && <div style={{ fontSize: "11px", color: C.textTert }}>No links.</div>}
+      {links?.map((l) => (
+        <div key={l.id} style={{ fontSize: "11px", color: C.textSec, display: "flex", gap: "6px", alignItems: "center" }}>
+          <span style={{ color: C.textTert, minWidth: "90px" }}>{l.label}</span>
+          <button onClick={() => onOpen?.(l.document_id)} style={{ background: "none", border: "none", padding: 0, color: C.text, cursor: onOpen ? "pointer" : "default", textAlign: "left", flex: 1, fontSize: "11px" }}>{l.title} · {l.status}</button>
+          {canEdit && removing !== l.id && <button aria-label={`Remove link to ${l.title}`} onClick={() => { setRemoving(l.id); setWhy(""); }} style={btn(C.bg, C.textTert)}><i className="ti ti-unlink" /></button>}
+          {removing === l.id && <>
+            <input aria-label="Reason for removing" value={why} onChange={(e) => setWhy(e.target.value)} placeholder="Reason" style={{ ...input, width: "140px" }} />
+            <button disabled={why.trim().length < 3} onClick={() => remove(l.id)} style={{ ...btn(C.danger, "#fff"), opacity: why.trim().length < 3 ? 0.5 : 1 }}>Remove</button>
+          </>}
+        </div>
+      ))}
+      {adding && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px", background: C.bgSec, borderRadius: "8px", padding: "8px" }}>
+          <label style={label}>Link type<select value={type} onChange={(e) => setType(e.target.value)} style={input}>{Object.entries(LINK_LABEL).map(([k, v]) => <option key={k} value={k}>This document {v.toLowerCase()} …</option>)}</select></label>
+          <div style={{ display: "flex", gap: "6px" }}>
+            <input aria-label="Find documents to link" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find documents" style={input} />
+            <button onClick={find} style={btn(C.bg, C.textSec)}><i className="ti ti-search" /></button>
+          </div>
+          <div style={{ maxHeight: "160px", overflowY: "auto" }}>
+            {found.map((d) => (
+              <label key={d.document_id!} style={{ fontSize: "11px", color: C.textSec, display: "flex", gap: "6px", alignItems: "center" }}>
+                <input type="checkbox" checked={picked.has(d.document_id!)} onChange={() => setPicked((p) => { const n = new Set(p); if (n.has(d.document_id!)) n.delete(d.document_id!); else n.add(d.document_id!); return n; })} />
+                {d.title} ({d.artifact_num}, {d.nav_status})
+              </label>
+            ))}
+          </div>
+          <div style={note}><b>What happens next:</b> each selected document gets a link, shown on both documents. Links that can&apos;t be added are listed with the reason. Recorded in the audit trail.</div>
+          <Buttons busy={false} ok={picked.size > 0} label={`Add ${picked.size} link(s)`} onCancel={() => setAdding(false)} onGo={add} />
+        </div>
+      )}
+      {msg && <div style={{ ...note, background: C.greenBg }}>{msg}</div>}
+      {error && <div role="alert" style={errBox}>{error}</div>}
+    </div>
+  );
+}
+
+// REG-07 (Part 14g): blind or unblind a document. Only users with Unblinded Contribute on the document's zone
+// can do it (checked by the database); the change and its reason are audited.
+export function BlindingControl({ doc, onDone }: { doc: ActionDoc & { blinded?: boolean }; onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [why, setWhy] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const blinded = !!doc.blinded;
+  async function save() {
+    setBusy(true); setError("");
+    try { await apiFetch(`/documents/${doc.id}/blinding`, { method: "POST", body: JSON.stringify({ blinded: !blinded, reason: why.trim() }) }); setOpen(false); setWhy(""); onDone(); }
+    catch (e) { setError((e as Error).message); }
+    setBusy(false);
+  }
+  return (
+    <div style={{ marginTop: "8px", fontSize: "11px", color: C.textSec }}>
+      {blinded && <div style={{ padding: "6px 8px", borderRadius: "6px", background: "#FEF3C7", color: "#92400E", marginBottom: "6px" }}><i className="ti ti-eye-off" /> Blinded: visible only to users with Unblinded Contribute on this zone.</div>}
+      {!open ? (
+        <button onClick={() => setOpen(true)} style={btn(C.bg, C.textSec)}>{blinded ? "Unblind…" : "Mark blinded…"}</button>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <div>What happens next: {blinded ? "everyone with access to this zone will see the document." : "only users with Unblinded Contribute on this zone will see the document."}</div>
+          <input aria-label="Blinding reason" placeholder="Reason (audited)" value={why} onChange={(e) => setWhy(e.target.value)} style={input} />
+          {error && <div role="alert" style={{ color: "#991B1B" }}>{error}</div>}
+          <div style={{ display: "flex", gap: "6px" }}>
+            <button disabled={busy || why.trim().length < 3} onClick={save} style={btn(C.primary, "#fff")}>{blinded ? "Unblind" : "Mark blinded"}</button>
+            <button onClick={() => { setOpen(false); setError(""); }} style={btn(C.bg, C.textSec)}>Cancel</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

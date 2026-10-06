@@ -54,7 +54,8 @@ qc_decisions, signature_events, reauth_proofs (Part 7), plan_template_items, pla
 deletion_requests, revision_requests (Part 8b), rules, findings, study_health_state, health_thresholds,
 health_snapshots (Part 9), inspection_sessions, inspection_session_secrets (service only),
 inspection_requests, inspection_activity (Part 11a), export_jobs (Part 11b; private "exports" bucket),
-retention_policies, legal_holds (Part 11c), risk_settings, risk_factor_weights, oversight_activities (Part 11d).
+retention_policies, legal_holds (Part 11c), risk_settings, risk_factor_weights, oversight_activities (Part 11d), ai_settings, ai_recommendations (Part 12a),
+import_batches, import_items, import_mappings (Part 12b), certified_copies (Part 13b).
 expected_documents is legacy and closed to users — use placeholders.
 
 Naming rule: the plan's "Staging Area" is called **Document Intake** in TMF360.
@@ -121,6 +122,15 @@ Part 11 live 2026-10-05 (docs/part11-plan.md D27–D37):
   No purge ever (Rule 9 wins over RET-06).
 - 11d risk_events(study) → lib/api/risk.ts scores (Σ weight × events × impact) with explanations; oversight
   activities completed only via complete_oversight() (signed). signature_events has study_id/export_job_id.
+
+Part 12 live 2026-10-05 (docs/part12-plan.md D38–D45): AI only via server (lib/api/ai.ts, model claude-opus-5-5 or
+TMF_AI_MODEL; setModelRunner stubs it in tests), per-org switches in ai_settings, every output an immutable
+ai_recommendations row settled at filing. Migration via import batches (staging <org>/import/<batch>/, server re-hash,
+dry run, exceptions, reconcile, signed accept_import with documents.provenance). next.config serverExternalPackages pdfjs-dist.
+Part 13 live 2026-10-05 (docs/part13-plan.md): docs/validation/* (validation plan, protocol, pilot, SOP outlines),
+scripts/traceability.mjs, scripts/iq-check.sql (run on PROD each release), scripts/oq-run.mjs, PQ reference study test,
+authorization-boundaries persona test, certified copies (certify_document, signed). Remaining = owner actions
+(signatures, SOPs, training, restore drill, pen test, pilot partner) + "Not built" items in coverage-notes.csv.
 
 Part 7 rules: a document reaches Under Review only via submit_for_qc() and Approved only via
 complete_qc_task() (trigger documents_workflow_guard). QC decisions need a password re-check in the

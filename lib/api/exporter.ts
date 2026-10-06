@@ -17,8 +17,8 @@ export const MAX_BYTES = 750 * 1024 * 1024;
 export const EXPORT_DAYS = 7;
 
 export type ExportJob = {
-  id: string; org_id: string; study_id: string; kind: "zip" | "archive" | "transfer"; status: string;
-  options: { scope?: "final" | "current"; label?: string; recipient?: string; reason?: string }; requested_by: string;
+  id: string; org_id: string; study_id: string; kind: "zip" | "archive" | "transfer" | "ems"; status: string;
+  options: { scope?: "final" | "current"; label?: string; recipient?: string; reason?: string; specification_id?: string; event_id?: string; include_superseded?: boolean }; requested_by: string;
 };
 
 type Doc = { id: string; artifact_num: string | null; artifact_name: string | null; custom_file_name: string | null; status: string | null;
@@ -117,7 +117,7 @@ export async function buildPackage(ctx: RequestContext, job: ExportJob, opts: { 
   return { zip, files: manifest.length, bytes, manifest, study };
 }
 
-async function finish(job: ExportJob, zipBytes: Uint8Array, files: number) {
+export async function finishExport(job: ExportJob, zipBytes: Uint8Array, files: number) {
   const svc = serviceClient();
   const path = `${job.org_id}/${job.id}.zip`;
   const up = await svc.storage.from("exports").upload(path, zipBytes, { contentType: "application/zip", upsert: false });
@@ -129,9 +129,9 @@ async function finish(job: ExportJob, zipBytes: Uint8Array, files: number) {
   if (error) throw new Error(`Could not mark the export done: ${error.message}`);
 }
 
-async function notify(ctx: RequestContext, job: ExportJob, ok: boolean, detail: string) {
+export async function notifyExport(ctx: RequestContext, job: ExportJob, ok: boolean, detail: string) {
   if (!ctx.user.email) return;
-  const what = job.kind === "zip" ? "TMF export" : job.kind === "archive" ? "archive package" : "transfer package";
+  const what = job.kind === "zip" ? "TMF export" : job.kind === "archive" ? "archive package" : job.kind === "ems" ? "TMF exchange package" : "transfer package";
   await sendEmail(ctx.user.email, ok ? `Your ${what} is ready` : `Your ${what} failed`, emailLayout(ok ? `Your ${what} is ready` : `Your ${what} failed`,
     `<p style="color:#374151;font-size:14px">${escapeHtml(detail)}</p><p style="color:#374151;font-size:14px">Open TMF360 &rarr; Reports &amp; exports to download it. The download link works for ${EXPORT_DAYS} days and every download is recorded.</p>`));
 }
@@ -150,12 +150,12 @@ export async function runZipExport(ctx: RequestContext, job: ExportJob) {
       "metadata.xlsx lists every file with its metadata and SHA-256; a mismatch with the stored hash is flagged.",
     ].join("\r\n"));
     const bytes = await pkg.zip.generateAsync({ type: "uint8array", compression: "DEFLATE", compressionOptions: { level: 1 } });
-    await finish(job, bytes, pkg.files);
-    await notify(ctx, job, true, `${pkg.files} files from study ${pkg.study.study_id} (${Math.round(bytes.length / 1024)} KB).`);
+    await finishExport(job, bytes, pkg.files);
+    await notifyExport(ctx, job, true, `${pkg.files} files from study ${pkg.study.study_id} (${Math.round(bytes.length / 1024)} KB).`);
   } catch (e) {
     const message = (e as Error).message.slice(0, 500);
     await svc.from("export_jobs").update({ status: "failed", error: message, finished_at: new Date().toISOString() }).eq("id", job.id);
-    await notify(ctx, job, false, message).catch(() => {});
+    await notifyExport(ctx, job, false, message).catch(() => {});
   }
 }
 
@@ -226,12 +226,12 @@ export async function runArchiveExport(ctx: RequestContext, job: ExportJob) {
       files: pkg.manifest,
     }, null, 2));
     const bytes = await pkg.zip.generateAsync({ type: "uint8array", compression: "DEFLATE", compressionOptions: { level: 1 } });
-    await finish(job, bytes, pkg.files);
-    await notify(ctx, job, true, `${pkg.files} file versions from study ${pkg.study.study_id} with audit trail, signatures and manifest (${Math.round(bytes.length / 1024)} KB).`);
+    await finishExport(job, bytes, pkg.files);
+    await notifyExport(ctx, job, true, `${pkg.files} file versions from study ${pkg.study.study_id} with audit trail, signatures and manifest (${Math.round(bytes.length / 1024)} KB).`);
   } catch (e) {
     const message = (e as Error).message.slice(0, 500);
     await svc.from("export_jobs").update({ status: "failed", error: message, finished_at: new Date().toISOString() }).eq("id", job.id);
-    await notify(ctx, job, false, message).catch(() => {});
+    await notifyExport(ctx, job, false, message).catch(() => {});
   }
 }
 

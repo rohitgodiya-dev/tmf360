@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { apiFetch } from "../../lib/api/client";
 
-export type Meta = { id: string; status: string; artifact_num: string; artifact_name: string; custom_file_name: string | null; file_name: string | null; file_type: string | null; version: string | null; has_file: boolean };
+export type Meta = { id: string; status: string; artifact_num: string; artifact_name: string; custom_file_name: string | null; file_name: string | null; file_type: string | null; version: string | null; has_file: boolean; signpost?: boolean; signpost_reference?: string | null; certified_copy?: boolean; blinded?: boolean };
 type Kind = "pdf" | "image" | "other";
 
 /** Where the viewer gets its metadata and file links. Defaults to the signed-in user's /documents API;
@@ -220,6 +220,21 @@ export default function DocumentViewer({ documentId, canDownload, onClose, inlin
           {summaryOn && meta?.has_file && kind === "pdf" && <button disabled={!!busy} onClick={() => (summary ? setSummary(null) : summarise())} style={tool}><i className="ti ti-sparkles" /> {summary ? "Hide summary" : "AI summary"}</button>}
           {!inline && <button aria-label="Close viewer" onClick={onClose} style={{ ...tool, background: C.dark, color: "#fff", border: "none" }}><i className="ti ti-x" /> Close</button>}
         </div>
+        {meta?.signpost && (
+          <div style={{ fontSize: "12px", padding: "8px 14px", background: "#EFF6FF", color: "#1E3A8A", borderBottom: `0.5px solid ${C.border}` }}>
+            <i className="ti ti-signpost" /> <b>Signpost:</b> the original is held elsewhere: {meta.signpost_reference}
+          </div>
+        )}
+        {meta?.blinded && (
+          <div style={{ fontSize: "12px", padding: "6px 14px", background: "#FEF3C7", color: "#92400E", borderBottom: `0.5px solid ${C.border}` }}>
+            <i className="ti ti-eye-off" /> Blinded document: visible only to users with Unblinded Contribute on this zone
+          </div>
+        )}
+        {meta?.certified_copy && (
+          <div style={{ fontSize: "12px", padding: "6px 14px", background: "#ECFDF5", color: "#065F46", borderBottom: `0.5px solid ${C.border}` }}>
+            <i className="ti ti-certificate" /> Certified copy (see version history for the certification)
+          </div>
+        )}
         {summary && (
           <div style={{ fontSize: "12px", padding: "8px 14px", background: "#F5F3FF", color: C.text, borderBottom: `0.5px solid ${C.border}` }}>
             <div>{summary.summary}</div>

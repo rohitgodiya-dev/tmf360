@@ -17,7 +17,15 @@ export const GET = handle(async (req: Request) => {
   let rows = (data ?? []) as Row[];
   if (q) {
     const needle = q.toLowerCase();
-    rows = rows.filter((r) => [r.title, r.artifact_name, r.artifact_num, r.site_number, r.site_name, r.country_code, r.file_name]
+    // NAV-09 in Inspection Mode: text inside the in-scope documents also matches.
+    const scoped = rows.map((r) => r.id);
+    const inside = new Set<string>();
+    for (let i = 0; i < scoped.length; i += 300) {
+      const { data: hits } = await serviceClient().from("document_text").select("document_id")
+        .in("document_id", scoped.slice(i, i + 300)).textSearch("tsv", q, { type: "websearch", config: "simple" });
+      for (const h of hits ?? []) inside.add(h.document_id);
+    }
+    rows = rows.filter((r) => inside.has(r.id) || [r.title, r.artifact_name, r.artifact_num, r.site_number, r.site_name, r.country_code, r.file_name]
       .some((v) => (v ?? "").toLowerCase().includes(needle)));
     await logActivity(s, "search", null, { query: q, results: rows.length });
   }

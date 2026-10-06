@@ -5,6 +5,8 @@ import { dbError, idParam } from "@/lib/api/db";
 import { hashStoredFile } from "@/lib/api/files";
 import { handle, invalidRequest, notFound, parseBody } from "@/lib/api/http";
 import { serviceClient } from "@/lib/api/service";
+import { inBackground } from "@/lib/api/background";
+import { indexDocuments } from "@/lib/api/textindex";
 
 const schema = z.object({
   file_path: z.string().min(1).max(500),
@@ -57,5 +59,6 @@ export const POST = handle(async (req: Request, { params }: { params: Promise<{ 
     action: "New file version added", studyId: doc.study_id, documentId: id, documentName: (doc.custom_file_name || "").trim() || doc.artifact_name,
     field: "file", oldValue: doc.file_name, newValue: body.file_name,
   });
+  await inBackground(() => indexDocuments([id]));   // full-text index of the new file (NAV-09)
   return Response.json({ id, version_no: version?.version_no ?? null, verification_status: "verified" });
 });

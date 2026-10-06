@@ -1,6 +1,8 @@
 import { requirePermission, requireUser } from "@/lib/api/auth";
 import { dbError, idParam, loadStudy } from "@/lib/api/db";
 import { handle, notFound } from "@/lib/api/http";
+import { inBackground } from "@/lib/api/background";
+import { indexDocuments } from "@/lib/api/textindex";
 
 type Params = { params: Promise<{ studyId: string; itemId: string }> };
 
@@ -22,5 +24,6 @@ export const POST = handle(async (req: Request, { params }: Params) => {
   // in the critical path, so a failure here does not undo or fail the filing.
   const { error: settleErr } = await ctx.db.rpc("settle_ai_recommendations", { p_intake: id });
   if (settleErr) console.error("Could not settle AI recommendations:", settleErr.message);
+  await inBackground(() => indexDocuments([documentId as string]));   // full-text index (NAV-09)
   return Response.json({ document_id: documentId }, { status: 201 });
 });

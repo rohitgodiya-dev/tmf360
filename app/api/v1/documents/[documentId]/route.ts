@@ -4,7 +4,7 @@ import { handle, notFound } from "@/lib/api/http";
 
 const FIELDS =
   "id, study_id, artifact_num, artifact_name, zone, version, status, owner, effective_date, expiry_date, " +
-  "file_name, file_type, file_size_bytes, file_hash, custom_file_name, comments, created_at, updated_at, " +
+  "file_name, file_type, file_size_bytes, file_hash, custom_file_name, comments, created_at, updated_at, signpost, signpost_reference, certified_copy, blinded, " +
   "approved_by, approved_at, submission_reason, rejection_reason, rejected_by, rejected_at, " +
   "archived_by, archived_at, archive_reason, study_country_id, study_site_id, taxonomy_artifact_id, file_path";
 

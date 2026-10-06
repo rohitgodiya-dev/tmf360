@@ -16,7 +16,7 @@ type Job = { id: string; kind: string; status: string; options: { label?: string
 
 const fmt = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 const isoDay = (offsetDays: number) => new Date(Date.now() + offsetDays * 86400000).toISOString().slice(0, 10);
-const KIND: Record<string, string> = { zip: "ZIP export", archive: "Archive package", transfer: "Transfer package" };
+const KIND: Record<string, string> = { zip: "ZIP export", archive: "Archive package", transfer: "Transfer package", ems: "TMF exchange package" };
 const STATUS: Record<string, [string, string, string]> = {
   queued: [C.warn, C.warnBg, "Queued"], running: [C.warn, C.warnBg, "Building…"], done: [C.ok, C.okBg, "Ready"], failed: [C.danger, C.dangerBg, "Failed"],
 };
@@ -39,6 +39,10 @@ export default function ReportsExports({ study }: { study: { id: string; study_i
   const [notice, setNotice] = useState("");
   const [jobs, setJobs] = useState<Job[] | null>(null);
   const [scope, setScope] = useState<"final" | "current">("final");
+  const [format, setFormat] = useState<"zip" | "ems">("zip");
+  const [spec, setSpec] = useState("");
+  const [eventId, setEventId] = useState("");
+  const [superseded, setSuperseded] = useState(false);
 
   useEffect(() => {
     apiFetch<{ data: Report[] }>(`/studies/${study.id}/reports`).then((r) => setReports(r.data)).catch((e) => setError((e as Error).message));
@@ -68,7 +72,9 @@ export default function ReportsExports({ study }: { study: { id: string; study_i
   async function startExport() {
     setBusy("export"); setError(""); setNotice("");
     try {
-      await apiFetch(`/studies/${study.id}/exports`, { method: "POST", body: JSON.stringify({ scope }) });
+      await apiFetch(`/studies/${study.id}/exports`, { method: "POST", body: JSON.stringify(format === "ems"
+        ? { format, scope, specification_id: spec.trim(), event_id: eventId.trim() || undefined, include_superseded: superseded }
+        : { format, scope }) });
       setNotice("Export started. It is built in the background; you will also get an email when it is ready.");
       loadJobs();
     } catch (e) { setError((e as Error).message); }
@@ -119,14 +125,27 @@ export default function ReportsExports({ study }: { study: { id: string; study_i
       </div>
 
       <div style={card}>
-        <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "6px" }}>Export documents (ZIP)</div>
-        <div style={{ fontSize: "12px", color: C.textSec, marginBottom: "10px" }}>
-          Folders follow the study&apos;s taxonomy (zone / section / artifact). A metadata spreadsheet lists every file with its SHA-256.
+        <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "6px" }}>Export documents</div>
+        <div style={{ display: "flex", gap: "14px", flexWrap: "wrap", fontSize: "12px", color: C.textSec, marginBottom: "8px" }}>
+          <label style={{ display: "flex", gap: "4px", alignItems: "center" }}><input type="radio" name="format" checked={format === "zip"} onChange={() => setFormat("zip")} /> ZIP with metadata spreadsheet</label>
+          <label style={{ display: "flex", gap: "4px", alignItems: "center" }}><input type="radio" name="format" checked={format === "ems"} onChange={() => setFormat("ems")} /> TMF exchange package (TMF RM Exchange Mechanism Standard)</label>
         </div>
+        <div style={{ fontSize: "12px", color: C.textSec, marginBottom: "10px" }}>
+          {format === "zip"
+            ? "Folders follow the study's taxonomy (zone / section / artifact). A metadata spreadsheet lists every file with its SHA-256."
+            : "exchange.xml (validated against the published schema) plus the files in zone / section / artifact folders, with audit records, signatures and checksums, for loading into another eTMF. Records without a TMF RM Unique ID are listed as skipped. TMF Leads and administrators only."}
+        </div>
+        {format === "ems" && (
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", fontSize: "12px", color: C.textSec, marginBottom: "8px" }}>
+            <input aria-label="Exchange agreement ID" placeholder="Exchange agreement ID (required)" value={spec} onChange={(e) => setSpec(e.target.value)} style={{ fontSize: "12px", padding: "6px 8px", border: `0.5px solid ${C.border}`, borderRadius: "8px", minWidth: "220px" }} />
+            <input aria-label="Event ID" placeholder="Event (optional, e.g. CLOSEOUT)" value={eventId} onChange={(e) => setEventId(e.target.value)} style={{ fontSize: "12px", padding: "6px 8px", border: `0.5px solid ${C.border}`, borderRadius: "8px" }} />
+            <label style={{ display: "flex", gap: "4px", alignItems: "center" }}><input type="checkbox" checked={superseded} onChange={(e) => setSuperseded(e.target.checked)} /> Include superseded file versions</label>
+          </div>
+        )}
         <div style={{ display: "flex", gap: "14px", flexWrap: "wrap", alignItems: "center", fontSize: "12px", color: C.textSec }}>
           <label style={{ display: "flex", gap: "4px", alignItems: "center" }}><input type="radio" name="scope" checked={scope === "final"} onChange={() => setScope("final")} /> Final documents</label>
           <label style={{ display: "flex", gap: "4px", alignItems: "center" }}><input type="radio" name="scope" checked={scope === "current"} onChange={() => setScope("current")} /> All current documents (any status)</label>
-          <button onClick={startExport} disabled={!!busy} style={{ ...primary, opacity: busy ? 0.6 : 1 }}><i className="ti ti-file-zip" /> {busy === "export" ? "Starting…" : "Start export"}</button>
+          <button onClick={startExport} disabled={!!busy || (format === "ems" && !spec.trim())} style={{ ...primary, opacity: busy || (format === "ems" && !spec.trim()) ? 0.6 : 1 }}><i className="ti ti-file-zip" /> {busy === "export" ? "Starting…" : "Start export"}</button>
         </div>
         <div style={{ fontSize: "11px", color: C.textTert, marginTop: "6px" }}>What happens next: the package is built in the background (only documents you can see). The download link works for 7 days; each download is recorded.</div>
 

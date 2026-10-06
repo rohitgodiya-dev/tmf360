@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--Exchange File Template-->
+<BATCH
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="https://tmfrefmodel.com/ems"
+        xsi:schemaLocation="https://tmfrefmodel.com/ems TmfReferenceModelExchange.xsd"
+
+        STUDYSYSTEMID="ATEM0025"
+        STUDYID="ATEM-0025"
+        EVENTID="SAE-001"
+        TRANSFERSOURCEID="CRO101"
+        TRANSFERID="20160413140025"
+        SPECIFICATIONID="ABC-0235"
+        TMFRMVERSION="3.0">
+
+    <OBJECT>
+        <OBJECTID>PCO-AKT-101-MED-001</OBJECTID>
+        <OBJECTLEVEL>Site</OBJECTLEVEL>
+        <COUNTRYID>USA</COUNTRYID>
+        <SITESYSTEMID>US204</SITESYSTEMID>
+        <SITEID>US-204</SITEID>
+        <UNIQUEID>091</UNIQUEID>
+        <ARTIFACTNUMBER>05.02.01</ARTIFACTNUMBER>
+        <PERSONNAME>John Smith</PERSONNAME>
+        <ORGANIZATIONNAME>St. Mary's Hospital</ORGANIZATIONNAME>
+        <OBJECTLANGUAGE>en</OBJECTLANGUAGE>
+        <TRANSLATION>No</TRANSLATION>
+        <OBJECTVERSION>1.0</OBJECTVERSION>
+        <OBJECTVERSIONSTATE>Current</OBJECTVERSIONSTATE>
+        <OBJECTTITLE>Acceptance of Investigator Brochure Annex for Site US-204</OBJECTTITLE>
+        <SUBARTIFACT>Signed IB Annex</SUBARTIFACT>
+        <OBJECTCOPY>Yes</OBJECTCOPY>
+        <OBJECTEXPIRYDATE>20-JAN-2019</OBJECTEXPIRYDATE>
+        <RESTRICTED>Yes</RESTRICTED>
+        <RENTENTIONDATE>20-JAN-2034</RENTENTIONDATE>
+        <ARTIFACTDATE>23-JAN-2018</ARTIFACTDATE>
+        <DATEDESCRIPTION>Approval</DATEDESCRIPTION>
+
+        <FILE>
+            <INTEGRITY>SHA256-81788ba0d7d02d81c063dbca621ba11b</INTEGRITY>
+            <FILENAME>PCO-AKT-101-MED-001.pdf</FILENAME>
+            <CONTENTURL>05/05.02/05.02.01.Medical License/PCO-AKT-101-MED-001.pdf</CONTENTURL>
+            <FILEDESCRIPTION>Record</FILEDESCRIPTION>
+
+            <SIGNATURE>
+                <SIGNATUREMETHODOLOGY>Electronic</SIGNATUREMETHODOLOGY>
+                <USEROID>jsmith</USEROID>
+                <SIGNATURENAME>John Smith</SIGNATURENAME>
+                <SIGNATUREDATETIME>2001-01-20T08:12:25+02:00</SIGNATUREDATETIME>
+                <SIGNATUREREASON>Approval</SIGNATUREREASON>
+            </SIGNATURE>
+
+            <AUDITRECORD>
+                <AUDITID>76533283</AUDITID>
+                <DATETIMESTAMP>2016-04-13T14:00:25+00:00</DATETIMESTAMP>
+                <USERREF>jsmith</USERREF>
+                <AUDITENTRYTYPE>New</AUDITENTRYTYPE>
+                <AUDITEVENT>None</AUDITEVENT>
+            </AUDITRECORD>
+        </FILE>
+
+        <METADATA NAME="STUDYTYPE">Blinded</METADATA>
+        <METADATA NAME="PRODUCTID">AFC3453</METADATA>
+    </OBJECT>
+</BATCH>

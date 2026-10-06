@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { apiFetch, authHeaders } from "../../lib/api/client";
 import { History } from "./QcTasks";
 import { AddExpected, ExpectedArtifacts, PlaceholderPanel, pct } from "./Placeholders";
-import { CertifyForm, DeleteForm, NewFileForm, ReclassifyForm, RevisionForm, VersionHistory, isFinal, type ActionDoc } from "./DocumentActions";
+import { BlindingControl, CertifyForm, LinksPanel, DeleteForm, NewFileForm, ReclassifyForm, RevisionForm, VersionHistory, isFinal, type ActionDoc } from "./DocumentActions";
 
 type TreeNode = { id: string; label: string; field: string | null; value: string | null; children: TreeNode[] };
 type Tree = { my_trial: TreeNode; taxonomy: { label: string; nodes: TreeNode[] } };
@@ -18,7 +18,7 @@ type Row = {
   country_code: string | null; site_number: string | null; site_name: string | null; owner: string | null;
   last_modified: string | null; tmf_level: string; file_type: string | null; revision: string | null; has_file: boolean;
 };
-type Result = { data: Row[]; total: number; page: number; page_size: number; counts: Record<string, number>; completeness: number | null };
+type Result = { data: Row[]; total: number; page: number; page_size: number; counts: Record<string, number>; completeness: number | null; snippets?: Record<string, string> };
 type DocDetail = Record<string, unknown> & {
   id: string; status: string; artifact_num: string; artifact_name: string; has_file: boolean; tmf_level: string;
   file_versions: { version_no: number; file_name: string; file_hash: string; verification_status: string; created_at: string }[];
@@ -92,6 +92,7 @@ export default function Navigator({ study, orgId, canDelete, canDownload, canSub
   const [historical, setHistorical] = useState(false);
   const [search, setSearch] = useState("");
   const [q, setQ] = useState("");
+  const [inside, setInside] = useState(false);   // NAV-09: search the text inside documents
   const [rules, setRules] = useState<Rule[]>([]);
   const [draftRules, setDraftRules] = useState<Rule[] | null>(null);
   const [sort, setSort] = useState<{ column: string; dir: "asc" | "desc" } | null>(null);
@@ -119,9 +120,9 @@ export default function Navigator({ study, orgId, canDelete, canDownload, canSub
   const query = useMemo(() => ({
     chips: chips.map(({ field, value }) => ({ field, value })),
     status, level: level || null, index: historical ? "historical" : "current",
-    q: q || undefined, rules: rules.map((r) => ({ column: r.column, op: r.op, value: r.value || undefined })),
+    q: q || undefined, content: inside && !!q, rules: rules.map((r) => ({ column: r.column, op: r.op, value: r.value || undefined })),
     sort: sort ?? undefined,
-  }), [chips, status, level, historical, q, rules, sort]);
+  }), [chips, status, level, historical, q, inside, rules, sort]);
 
   // Paging and selection belong to one set of filters: changing a filter starts again at
   // page 1 with nothing selected.
@@ -258,6 +259,12 @@ export default function Navigator({ study, orgId, canDelete, canDownload, canSub
       <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", color: r.kind === "document" ? C.text : C.textTert, fontStyle: r.kind === "document" ? "normal" : "italic" }}>
         {r.kind === "document" && <i className={`ti ${r.has_file ? "ti-file-text" : "ti-file-off"}`} style={{ fontSize: "13px", color: C.textTert }} />}
         {r.title ?? "—"}
+        {r.document_id && result?.snippets?.[r.document_id] && (
+          <span style={{ display: "block", fontSize: "10px", color: C.textTert, fontStyle: "normal", maxWidth: "420px", whiteSpace: "normal" }}>
+            {result.snippets[r.document_id].split(/(\[\[.*?\]\])/).map((part, i) => part.startsWith("[[")
+              ? <mark key={i} style={{ background: "#FEF3C7", color: C.text }}>{part.slice(2, -2)}</mark> : <span key={i}>{part}</span>)}
+          </span>
+        )}
       </span>
     );
     const v = r[key as keyof Row];
@@ -346,7 +353,10 @@ export default function Navigator({ study, orgId, canDelete, canDownload, canSub
           ) : (<>
           {/* Toolbar (NAV-04/06/07/08) */}
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search titles…" aria-label="Search titles" style={{ ...field, width: "200px" }} />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={inside ? "Search inside documents…" : "Search titles…"} aria-label="Search titles" style={{ ...field, width: "200px" }} />
+            <label style={{ fontSize: "11px", color: C.textSec, display: "flex", alignItems: "center", gap: "4px" }}>
+              <input type="checkbox" checked={inside} onChange={(e) => setInside(e.target.checked)} aria-label="Search inside documents" /> Inside documents
+            </label>
             <select value={level} onChange={(e) => setLevel(e.target.value)} aria-label="TMF level" style={field}>
               <option value="">All levels</option>
               <option>Study</option><option>Country</option><option>Site</option>
@@ -539,6 +549,8 @@ export default function Navigator({ study, orgId, canDelete, canDownload, canSub
                 <div>
                   <div style={{ fontSize: "11px", fontWeight: 600, color: C.textSec, marginBottom: "4px" }}>File history</div>
                   <VersionHistory key={`${detail.doc.id}-${reloads}`} documentId={detail.doc.id} canDownload={canDownload} />
+                  <LinksPanel key={`links-${detail.doc.id}-${reloads}`} doc={detail.doc as ActionDoc} studyId={study.id} canEdit={canSubmit} />
+                  {canSubmit && <BlindingControl key={`blind-${detail.doc.id}-${reloads}`} doc={detail.doc as ActionDoc & { blinded?: boolean }} onDone={() => setReloads((n) => n + 1)} />}
                 </div>
                 <div>
                   <div style={{ fontSize: "11px", fontWeight: 600, color: C.textSec, marginBottom: "6px" }}>QC history</div>

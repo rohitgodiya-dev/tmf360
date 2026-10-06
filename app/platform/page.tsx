@@ -12,6 +12,8 @@ import DocumentViewer from"./DocumentViewer";
 import QcTasks from"./QcTasks";
 import QcSettings from"./QcSettings";
 import PlanSettings from"./PlanSettings";
+import TaxonomyMigration from"./TaxonomyMigration";
+import ZonePermissions from"./ZonePermissions";
 import{DeleteForm,DeletionRequests,isFinal}from"./DocumentActions";
 import TmfHealth from"./TmfHealth";
 import InspectionMode from"./InspectionMode";
@@ -20,6 +22,7 @@ import ArchiveRetention from"./ArchiveRetention";
 import RiskOversight from"./RiskOversight";
 import AiSettings from"./AiSettings";
 import MigrationImport from"./MigrationImport";
+import { MfaGate, MfaSettings, needsSecondFactor, signInWithSso } from"./Mfa";
 
 
 
@@ -167,6 +170,8 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
   };
 
   async function checkOrgAndEnter(uid:string){
+    // Two-factor sign-in (Part 14d): an account with an authenticator must enter its code first.
+    if(await needsSecondFactor()){setPanel("mfa");return;}
     const{data}=await supabase.from("user_roles").select("org_id").eq("user_id",uid).single();
     if(!data||!data.org_id){window.location.href="/setup";return;}
     // TMF360 and Site360 share the same Supabase auth.users table, so a
@@ -589,6 +594,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
     </button>
   );
 
+  if(panel==="mfa"&&user)return(<MfaGate onPass={()=>{supabase.auth.refreshSession().then(()=>checkOrgAndEnter(user.id));}} onSignOut={handleSignOut}/>);
   if(panel==="auth")return(
     <div style={{minHeight:"100vh",background:`linear-gradient(135deg,${P.primaryLight} 0%,#fff 100%)`,display:"flex",alignItems:"center",justifyContent:"center"}}>
       <div style={{background:P.bg,border:`0.5px solid ${P.border}`,borderRadius:"16px",padding:"2rem",width:"360px",boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
@@ -613,6 +619,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
         <button onClick={handleAuth} style={{width:"100%",padding:"9px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",fontSize:"12px",fontWeight:"500",cursor:"pointer"}}>
           {authMode==="login"?"Log in":"Create account"}
         </button>
+        {authMode==="login"&&<button onClick={async()=>{setAuthError("");const e=await signInWithSso(email);if(e)setAuthError(e);}} style={{width:"100%",padding:"8px",marginTop:"8px",background:"transparent",color:P.textSec,border:`0.5px solid ${P.border}`,borderRadius:"8px",fontSize:"12px",cursor:"pointer"}}>Sign in with SSO</button>}
         <p style={{fontSize:"10px",color:P.textTert,textAlign:"center",marginTop:"1rem"}}>21 CFR Part 11</p>
       </div>
     </div>
@@ -1745,6 +1752,8 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
               <TmfConfigPanel user={user} P={P} supabase={supabase} activeStudy={activeStudy} orgId={orgId} currentUserRole={currentUserRole} logAudit={logAudit}/>
               <PlanSettings/>
               <QcSettings/>
+              {activeStudy?.id&&<TaxonomyMigration key={activeStudy.id} study={{id:activeStudy.id,study_id:activeStudy.study_id}}/>}
+              {activeStudy?.id&&<ZonePermissions key={`zp-${activeStudy.id}`} study={{id:activeStudy.id,study_id:activeStudy.study_id}} zones={activeZONES.map(z=>({num:String(z.z).padStart(2,"0"),name:z.zn}))}/>}
             </div>
           )}
 
@@ -1765,7 +1774,10 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
 
           {/* MY PROFILE */}
           {panel==="profile"&&(
+            <>
             <ProfilePanel user={user} P={P} supabase={supabase}/>
+            <MfaSettings isAdmin={hasPermission(currentUserRole as Role,"manage_roles")}/>
+            </>
           )}
 
         </main>

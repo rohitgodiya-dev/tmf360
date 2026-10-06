@@ -5,6 +5,8 @@ import { handle, parseBody } from "@/lib/api/http";
 import { loadBatch } from "@/lib/api/imports";
 import { password, reauthenticate } from "@/lib/api/qc";
 import { serviceClient } from "@/lib/api/service";
+import { inBackground } from "@/lib/api/background";
+import { indexDocuments } from "@/lib/api/textindex";
 
 export const maxDuration = 300;
 const schema = z.object({ password }).strict();
@@ -27,5 +29,6 @@ export const POST = handle(async (req: Request, { params }: { params: Promise<{ 
     await svc.from("document_file_versions").update({ verification_status: "verified", verified_hash: it.server_hash, verified_at: new Date().toISOString() })
       .eq("document_id", it.document_id).eq("version_no", 1);
   }
+  await inBackground(() => indexDocuments((items ?? []).map((i) => i.document_id as string)));   // full-text index (NAV-09)
   return Response.json({ filed });
 });

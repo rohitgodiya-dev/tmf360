@@ -160,6 +160,7 @@ function BatchView({ id, study, artifacts, onBack }: { id: string; study: { id: 
   const [cancelReason, setCancelReason] = useState("");
   const filesRef = useRef<HTMLInputElement>(null);
   const manifestRef = useRef<HTMLInputElement>(null);
+  const emsRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(() => {
     apiFetch<{ batch: Batch; items: Item[]; staging_prefix: string; signature: typeof signature }>(`/imports/${id}`)
@@ -203,6 +204,21 @@ function BatchView({ id, study, artifacts, onBack }: { id: string; study: { id: 
     if (filesRef.current) filesRef.current.value = "";
     if (manifestRef.current) manifestRef.current.value = "";
     return `${payload.length} item(s) registered in the batch.`;
+  });
+
+  // MIG-09: a TMF exchange package (EMS ZIP with exchange.xml) from another eTMF.
+  const loadExchange = () => step("Uploading the exchange package…", async () => {
+    const file = emsRef.current?.files?.[0];
+    if (!file) throw new Error("Choose the exchange package (.zip)");
+    const path = `${prefix}package-${await sha256Hex(file)}.zip`;
+    const { error } = await supabase.storage.from("Documents").upload(path, file, { contentType: "application/zip" });
+    if (error && !/exists|duplicate|409/i.test(`${error.message} ${(error as { statusCode?: unknown }).statusCode ?? ""}`)) throw new Error(error.message);
+    setBusy("Checking exchange.xml and every file's checksum…");
+    const r = await apiFetch<{ transfer_id: string; transfer_source_id: string; tmfrm_version: string; added: number; skipped: { object_id: string; reason: string }[] }>(
+      `/imports/${id}/ems`, { method: "POST", body: JSON.stringify({ file_path: path }) });
+    if (emsRef.current) emsRef.current.value = "";
+    return `Transfer ${r.transfer_id} from ${r.transfer_source_id} (TMF RM ${r.tmfrm_version}): ${r.added} item(s) registered` +
+      (r.skipped.length ? `; ${r.skipped.length} not loaded: ${r.skipped.slice(0, 3).map((s) => s.reason).join("; ")}${r.skipped.length > 3 ? " …" : ""}` : ".");
   });
 
   const dryRun = () => step("Verifying files on the server…", async () => {
@@ -261,6 +277,11 @@ function BatchView({ id, study, artifacts, onBack }: { id: string; study: { id: 
             <label style={label}>Manifest<input aria-label="Manifest" ref={manifestRef} type="file" accept=".csv,.xlsx" style={{ fontSize: "12px" }} /></label>
             <button disabled={!!busy} onClick={stage} style={primary}><i className="ti ti-upload" /> Stage</button>
           </div>
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "flex-end", marginTop: "10px", paddingTop: "10px", borderTop: `0.5px solid ${C.border}` }}>
+            <label style={label}>Or a TMF exchange package (TMF RM Exchange Mechanism Standard)<input aria-label="Exchange package" ref={emsRef} type="file" accept=".zip" style={{ fontSize: "12px" }} /></label>
+            <button disabled={!!busy} onClick={loadExchange} style={btn}><i className="ti ti-package-import" /> Load package</button>
+          </div>
+          <div style={{ fontSize: "11px", color: C.textTert, marginTop: "4px" }}>What happens next: exchange.xml is validated, each file is checked against its checksum and staged here; Current records become items. Superseded or failing records are listed and not loaded.</div>
         </div>
       )}
 
