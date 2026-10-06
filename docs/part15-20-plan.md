@@ -1,7 +1,7 @@
 # Parts 15–20 — Enterprise readiness (Enterprise Development Plan v1.0)
 
 Review of the plan against the built system: `docs/enterprise-plan-review.md`. This document records the
-requirements (ENT-xx, added to `docs/validation/requirements.csv`), the design decisions (D46–D58) and where each
+requirements (ENT-xx, added to `docs/validation/requirements.csv`), the design decisions (D53–D65) and where each
 part is implemented and tested.
 
 ## Requirements
@@ -24,19 +24,19 @@ part is implemented and tested.
 
 ## Decisions
 
-- **D46** Sites stay `parties` (`party_type = 'site'`); the plan's changes to Site360 `sites` would break agent isolation (Rule 2).
-- **D47** Regulatory, activation and first-patient-in dates are milestones, not columns. Part 15 adds `COUNTRY_FIRST_PATIENT_IN` and `SITE_FIRST_PATIENT_IN`.
-- **D48** Rollups are `security_invoker` views (`study_country_summary`, `structure_completeness`) so RLS decides what is counted.
-- **D49** The portfolio reuses `health_snapshots` (no `portfolio_snapshots` table). Health is shown as counts of red/amber indicators, never one merged score (HLT-02). Risk follows completeness thresholds.
-- **D50** CRO access lives on `study_members` (CRO party, end date), not a second access table. Scopes map to roles that never see all studies: Monitor → CRA, Data Manager → Clinical Trial Associate, Project Manager → Clinical Trial Manager, Regulatory → Regulatory. The plan's "Full Access" is not offered: the only roles with all-study access would see every study, not one.
-- **D51** Security fix: `study_members` was readable by every signed-in user and writable by any user in sponsor organisations. Now read within the organisation, written with `invite_users`, never deleted in sponsor organisations. Site organisations keep their site-manager rule.
-- **D52** In sponsor organisations, `studies` SELECT is limited to studies the user can access (or created). Study record edits need `edit_study`.
-- **D53** Closing requires Close-out. `close_study`/`reopen_study` (Part 11c) remain: reopen returns to Close-out with a signature and is refused once Archived. Archive is signed (`study_archive`).
-- **D54** Close-out warnings (completeness below 90%, open QC tasks, high-priority findings, active sites) must be acknowledged and are stored with the step.
-- **D55** Inspectors keep the Part 11a model (no account, secret link and code). Part 18 adds only the team-wide "inspection in progress" banner.
-- **D56** The amendment cascade triggers on 02.01.02 and 02.01.04 (the plan's 01.02.01 is Trial Team Details). Registration is a deliberate step after QC approval, offered in the tracker for every unregistered Final protocol document.
-- **D57** Site acknowledgement by a study manager or a current contact at that site (person email = user email).
-- **D58** CSV import validates in the API (dry run) and commits through `security invoker` functions in one transaction, so RLS and the structure audit triggers apply.
+- **D53** Sites stay `parties` (`party_type = 'site'`); the plan's changes to Site360 `sites` would break agent isolation (Rule 2).
+- **D54** Regulatory, activation and first-patient-in dates are milestones, not columns. Part 15 adds `COUNTRY_FIRST_PATIENT_IN` and `SITE_FIRST_PATIENT_IN`.
+- **D55** Rollups are `security_invoker` views (`study_country_summary`, `structure_completeness`) so RLS decides what is counted.
+- **D56** The portfolio reuses `health_snapshots` (no `portfolio_snapshots` table). Health is shown as counts of red/amber indicators, never one merged score (HLT-02). Risk follows completeness thresholds.
+- **D57** CRO access lives on `study_members` (CRO party, end date), not a second access table. Scopes map to roles that never see all studies: Monitor → CRA, Data Manager → Clinical Trial Associate, Project Manager → Clinical Trial Manager, Regulatory → Regulatory. The plan's "Full Access" is not offered: the only roles with all-study access would see every study, not one.
+- **D58** Security fix: `study_members` was readable by every signed-in user and writable by any user in sponsor organisations. Now read within the organisation, written with `invite_users`, never deleted in sponsor organisations. Site organisations keep their site-manager rule.
+- **D59** In sponsor organisations, `studies` SELECT is limited to studies the user can access (or created). Study record edits need `edit_study`.
+- **D60** Closing requires Close-out. `close_study`/`reopen_study` (Part 11c) remain: reopen returns to Close-out with a signature and is refused once Archived. Archive is signed (`study_archive`).
+- **D61** Close-out warnings (completeness below 90%, open QC tasks, high-priority findings, active sites) must be acknowledged and are stored with the step.
+- **D62** Inspectors keep the Part 11a model (no account, secret link and code). Part 18 adds only the team-wide "inspection in progress" banner.
+- **D63** The amendment cascade triggers on 02.01.02 and 02.01.04 (the plan's 01.02.01 is Trial Team Details). Registration is a deliberate step after QC approval, offered in the tracker for every unregistered Final protocol document.
+- **D64** Site acknowledgement by a study manager or a current contact at that site (person email = user email).
+- **D65** CSV import validates in the API (dry run) and commits through `security invoker` functions in one transaction, so RLS and the structure audit triggers apply.
 
 ## Implementation and verification
 

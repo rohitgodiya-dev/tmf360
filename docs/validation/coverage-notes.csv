@@ -10,16 +10,16 @@ DI-08,Built,Tamper-evident audit: append-only and hash-chained audit_trail (Pill
 DI-09,Built,Contemporaneous capture: server-stamped receipt / filing / approval times (Pillar 6),tests/integration/server-timestamps.test.ts
 DI-10,Built,AI suggestions stored separately as ai_recommendations with provenance; only confirmed values become metadata (Part 12a),tests/integration/ai-recommendations.test.ts
 STG-01,Built,Drag-and-drop and file-picker upload into Document Intake (the plan's Staging Area; Part 5),tests/e2e/intake.mjs tests/integration/document-intake.test.ts
-STG-02,Not built,Per-study intake email address,
-STG-03,Not built,Sender allow-list for intake email,
+STG-02,Built,Per-study intake email address via signed inbound webhook (Part 14e; routing the mail domain is an owner action),
+STG-03,Built,Sender allow-list for intake email; unknown senders refused and logged (Part 14e),
 STG-04,Built,Each received file reported Uploaded / Warning (possible duplicate) / Blocked (Part 5b duplicate_status),tests/integration/document-intake.test.ts
 STG-05,Built,Duplicate detection by file name and hash (Part 5b) and by text similarity (Part 12a AI-04),tests/integration/document-intake.test.ts tests/integration/ai-recommendations.test.ts
 STG-06,Not built,Add from template (no Document Template Center),
-STG-07,Not built,Signposts (see SGN-01/02),
+STG-07,Built,Signposts filed with a generated page (Part 14b; see SGN-01/02),
 STG-08,Partial,Intake list shows file / received / artifact / owner / country-site; not every listed column,tests/e2e/intake.mjs
-STG-09,Not built,Bulk Edit Properties / bulk delete / export from intake,
+STG-09,Partial,Bulk edit of common metadata plus bulk file and bulk reject with one reason (Part 14c); bulk delete and export from intake not built,
 IDX-01,Partial,Indexing form per intake item; preview is in the viewer rather than side by side,tests/e2e/intake.mjs
-IDX-02,Not built,Bulk indexing dialog,
+IDX-02,Built,Bulk indexing: common metadata applied to selected intake items (Part 14c),
 IDX-03,Built,Choosing the artifact fixes its taxonomy position and TMF level (Part 3 / Part 5),tests/integration/document-intake.test.ts tests/integration/taxonomy.test.ts
 IDX-04,Partial,Title / version / effective date / owner / country-site; author / receipt date / certified-copy flag / long comments not on the intake form,tests/integration/document-intake.test.ts
 IDX-05,Not built,Auto-generated sponsor-study-site-artifact-sequence document ID,
@@ -28,17 +28,17 @@ IDX-07,Partial,Save and File to TMF; no Define Timeline step,tests/e2e/intake.mj
 IDX-08,Not built,Unsaved-changes guard,
 IDX-09,Built,AI-suggested type and metadata shown as suggestions the person applies (Part 12a),tests/integration/ai-recommendations.test.ts tests/e2e/ai.mjs
 NAV-07,Built,Filters: TMF level and current/historical index (Part 6),tests/integration/navigator.test.ts
-NAV-09,Partial,Title search; full-text search of document content not built,tests/integration/navigator.test.ts
+NAV-09,Built,Title search and full-text search inside documents (Part 14a); scanned PDFs without a text layer are not OCRed,tests/integration/navigator.test.ts
 VWR-01,Built,pdf.js viewer with thumbnails page navigation zoom rotate (Part 6c); Office formats download only,tests/e2e/navigator.mjs
 VWR-03,Not built,Reviewer annotations,
 VWR-04,Built,AI summary in the viewer when switched on (Part 12a),tests/integration/ai-recommendations.test.ts
-VWR-05,Partial,Loading states built; signpost placeholder not (no signposts),tests/e2e/navigator.mjs
-SGN-01,Not built,Signposts,
-SGN-02,Not built,Signposts,
-LNK-01,Not built,Document links,
-LNK-02,Not built,Typed links,
-LNK-03,Not built,Link batch reporting,
-PLT-01,Not built,SSO (SAML/OIDC) and MFA: Supabase local accounts only,
+VWR-05,Built,Loading states and signpost pages (Part 14b),tests/e2e/navigator.mjs
+SGN-01,Built,Signposts filed with a generated page and fulfilling the expected document (Part 14b),
+SGN-02,Built,Signpost status and reference irreversible (Part 14b),
+LNK-01,Built,Document links added in batches (Part 14b),
+LNK-02,Built,Typed links shown in both directions; removal needs a reason (Part 14b),
+LNK-03,Built,Link batch results reported per target (Part 14b),
+PLT-01,Partial,Two-factor sign-in (TOTP) with an organisation-level requirement (Part 14d); SSO sign-in by email domain needs the identity provider registered in Supabase (owner action),
 PLT-02,Built,Platform home with modules; TMF360 is the eTMF module,tests/e2e/smoke.mjs
 PLT-03,Built,Header with study selector and settings on every TMF360 screen,tests/e2e/smoke.mjs
 PLT-04,Partial,Async jobs (exports / archive packages) show status in the panel and email on completion; no global activity feed,tests/integration/reports-exports.test.ts
@@ -50,15 +50,15 @@ USR-01,Built,Roles and permissions (lib/permissions.ts kept in sync with role_pe
 USR-02,Built,User management: invite by email / edit / deactivate (Part 1c invitations),tests/integration/account-security.test.ts
 USR-03,Partial,Application-level admin roles exist; no separate Super User read-only-across-studies group,tests/integration/security-baseline.test.ts
 USR-04,Partial,QC routing by role (Part 7) and Inspector only through Inspection Mode sessions (Part 11a); no Trial Administrator group as such,tests/integration/qc-workflow.test.ts tests/integration/inspection.test.ts
-USR-05,Not built,Content permission per taxonomy node (None / Read-only / Contribute / Unblinded) - process-zone permissions are pending,
-USR-06,Not built,Blinded documents and unblinded access,
+USR-05,Built,Content permission per zone: None / Read-only / Contribute / Unblinded Contribute (Part 14g),
+USR-06,Built,Blinded documents hidden without Unblinded Contribute; granting it needs a second approver (Part 14g),
 USR-08,Partial,Study-level access restriction (study members / access grants); site-level restriction not built,tests/integration/authorization-boundaries.test.ts
 QC-06,Built,AI pre-QC flags shown on the intake item before filing; flags recorded as recommendations (Part 12a),tests/integration/ai-recommendations.test.ts
 RM-01,Partial,Stable internal record-type IDs (taxonomy_artifact_id) exist; much application data still keys on artifact number,tests/integration/taxonomy.test.ts
 RM-02,Built,Taxonomy model: versions / zones / sections / artifacts / sub-artifacts (Part 3),tests/integration/taxonomy.test.ts
 RM-03,Built,TMF Reference Model v3.3.1 loaded as the first taxonomy package (Part 3),tests/integration/taxonomy.test.ts
-RM-04,Partial,Each document links to its taxonomy version through taxonomy_artifact_id; per-study version pinning not enforced,tests/integration/taxonomy.test.ts
-RM-05,Not built,Taxonomy version mappings and guided study migration,
+RM-04,Built,Each study is pinned to a taxonomy version; documents link through taxonomy_artifact_id (Part 14f),tests/integration/taxonomy.test.ts
+RM-05,Built,Taxonomy version mappings and guided signed study migration (Part 14f),
 RM-06,Not built,Per-record-type required and type-specific fields,
 RM-07,Partial,Organisation-specific types: custom artifacts in TMF configuration and import mappings (Part 12b),tests/integration/migration-import.test.ts
 RM-08,Built,Risk impact per record type from the Core / Recommended classification used by health (Part 9) and risk (Part 11d),tests/integration/risk-oversight.test.ts tests/integration/health.test.ts
@@ -66,7 +66,7 @@ REG-03,Built,Unique user identification and authority checks (RLS + permissions;
 REG-04,Built,Records retained and protected for the retention period; legal hold (Part 11c),tests/integration/retention-archive.test.ts
 REG-05,Built,TMF available to inspectors through time-boxed read-only Inspection Mode (Part 11a),tests/integration/inspection.test.ts tests/e2e/inspection.mjs
 REG-06,See CCP,Certified copies (Part 13b certified copies),
-REG-07,Not built,Blinded / confidential restriction and unblinding (see USR-06),
+REG-07,Built,Blinded / confidential restriction and audited unblinding (Part 14g),
 REG-08,Process,Validation and change control: this validation pack (validation plan / IQ / OQ / PQ / traceability) and change-control procedure,docs/validation/validation-plan.md
 REG-09,Partial,Access control and minimisation by RLS; regional hosting and GDPR processes are organisational,docs/validation/validation-plan.md
 REG-10,Built,Server time stamps (UTC with time zone) from the database clock (Pillar 6),tests/integration/server-timestamps.test.ts
@@ -80,7 +80,7 @@ CCP-04,See 13b,Who may certify is controlled per study (Part 13b),
 CCP-05,See 13b,Certification method and verification recorded (Part 13b),
 CCP-06,See 13b,Certification signature bound to the file hash (Part 13b),
 CCP-07,Review,Text for this ID needs confirming against the Baseline PDF during validation,
-MIG-09,Not built,Standards-based exchange (TMF RM Exchange Mechanism) - D45,
+MIG-09,Built,TMF Reference Model Exchange Mechanism export and import (Part 14h),
 MIG-10,Partial,Documented API for system ingestion: /api/v1 intake endpoints (bearer token / server re-hash); no separate public API product - D45,tests/integration/document-intake.test.ts
 RPT-01,Built,Immutable audit trail; user-management and access changes audited by triggers (Part 11b). Note: Part 11b migration comments cite RPT-02 for this,tests/integration/reports-exports.test.ts tests/integration/security-baseline.test.ts
 EXP-01,Built,Navigator grid export to Excel (Part 11b). Note: Part 11b migration comments cite EXP-02 for this,tests/integration/reports-exports.test.ts
