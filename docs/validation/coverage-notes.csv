@@ -25,12 +25,12 @@ IDX-04,Partial,Title / version / effective date / owner / country-site; author /
 IDX-05,Not built,Auto-generated sponsor-study-site-artifact-sequence document ID,
 IDX-06,Not built,Suggested title patterns,
 IDX-07,Partial,Save and File to TMF; no Define Timeline step,tests/e2e/intake.mjs
-IDX-08,Not built,Unsaved-changes guard,
+IDX-08,Built,Unsaved-changes guard on indexing / field rules / viewer notes: browser warning and confirm before leaving (Part 22),
 IDX-09,Built,AI-suggested type and metadata shown as suggestions the person applies (Part 12a),tests/integration/ai-recommendations.test.ts tests/e2e/ai.mjs
 NAV-07,Built,Filters: TMF level and current/historical index (Part 6),tests/integration/navigator.test.ts
 NAV-09,Built,Title search and full-text search inside documents (Part 14a); scanned PDFs without a text layer are not OCRed,tests/integration/navigator.test.ts
 VWR-01,Built,pdf.js viewer with thumbnails page navigation zoom rotate (Part 6c); Office formats download only,tests/e2e/navigator.mjs
-VWR-03,Not built,Reviewer annotations,
+VWR-03,Built,Reviewer notes pinned to a page position of the file version; resolved not deleted; audited (Part 22),
 VWR-04,Built,AI summary in the viewer when switched on (Part 12a),tests/integration/ai-recommendations.test.ts
 VWR-05,Built,Loading states and signpost pages (Part 14b),tests/e2e/navigator.mjs
 SGN-01,Built,Signposts filed with a generated page and fulfilling the expected document (Part 14b),
@@ -59,7 +59,7 @@ RM-02,Built,Taxonomy model: versions / zones / sections / artifacts / sub-artifa
 RM-03,Built,TMF Reference Model v3.3.1 loaded as the first taxonomy package (Part 3),tests/integration/taxonomy.test.ts
 RM-04,Built,Each study is pinned to a taxonomy version; documents link through taxonomy_artifact_id (Part 14f),tests/integration/taxonomy.test.ts
 RM-05,Built,Taxonomy version mappings and guided signed study migration (Part 14f),
-RM-06,Not built,Per-record-type required and type-specific fields,
+RM-06,Built,Required standard fields and type-specific extra fields per artifact; enforced at filing and Submit for QC (Part 22),
 RM-07,Partial,Organisation-specific types: custom artifacts in TMF configuration and import mappings (Part 12b),tests/integration/migration-import.test.ts
 RM-08,Built,Risk impact per record type from the Core / Recommended classification used by health (Part 9) and risk (Part 11d),tests/integration/risk-oversight.test.ts tests/integration/health.test.ts
 REG-03,Built,Unique user identification and authority checks (RLS + permissions; no shared accounts),tests/integration/security-baseline.test.ts tests/integration/authorization-boundaries.test.ts

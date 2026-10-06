@@ -5,10 +5,10 @@ Generated 2026-10-06 by `node scripts/traceability.mjs` from the requirement IDs
 
 | Status | Count |
 |---|---|
-| Verified by test | 146 |
+| Verified by test | 149 |
 | Implemented (no test cites it) | 52 |
 | Designed only | 7 |
-| Not traced | 9 |
+| Not traced | 6 |
 
 "Not traced" means no file cites the ID. Either the requirement is out of the built scope (see the part plans) or the
 code that covers it does not name it yet. Each one needs a decision in the validation summary.
@@ -70,7 +70,7 @@ code that covers it does not name it yet. Each one needs a decision in the valid
 | IDX-05 | Not traced | **Not built**: Auto-generated sponsor-study-site-artifact-sequence document ID |  |  |  |
 | IDX-06 | Not traced | **Not built**: Suggested title patterns |  |  |  |
 | IDX-07 | Verified by test | **Partial**: Save and File to TMF; no Define Timeline step |  |  | tests/e2e/intake.mjs |
-| IDX-08 | Not traced | **Not built**: Unsaved-changes guard |  |  |  |
+| IDX-08 | Verified by test | **Built**: Unsaved-changes guard on indexing / field rules / viewer notes: browser warning and confirm before leaving (Part 22) |  | app/platform/DocumentIntake.tsx<br>app/platform/page.tsx<br>lib/unsaved.ts | tests/e2e/fields-annotations.mjs |
 | IDX-09 | Verified by test | **Built**: AI-suggested type and metadata shown as suggestions the person applies (Part 12a) |  |  | tests/e2e/ai.mjs<br>tests/integration/ai-recommendations.test.ts |
 | INS-01 | Verified by test |  | docs/part11-plan.md | api/inspect/session/route.ts<br>api/studies/[studyId]/inspections/route.ts<br>app/inspect/InspectApp.tsx<br>app/platform/InspectionMode.tsx<br>+1 more | tests/integration/inspection.test.ts |
 | INS-02 | Verified by test |  | docs/part11-plan.md | api/inspect/documents/[documentId]/versions/route.ts<br>api/inspect/documents/route.ts<br>app/inspect/InspectApp.tsx<br>mig/20261022000001_part11a_inspection.sql | tests/integration/inspection.test.ts |
@@ -160,7 +160,7 @@ code that covers it does not name it yet. Each one needs a decision in the valid
 | RM-03 | Verified by test | **Built**: TMF Reference Model v3.3.1 loaded as the first taxonomy package (Part 3) |  |  | tests/integration/taxonomy.test.ts |
 | RM-04 | Verified by test | **Built**: Each study is pinned to a taxonomy version; documents link through taxonomy_artifact_id (Part 14f) | docs/part14-plan.md | api/studies/[studyId]/taxonomy/route.ts<br>app/platform/TaxonomyMigration.tsx<br>mig/20261103000001_part14f_taxonomy_migration.sql | tests/integration/taxonomy-migration.test.ts<br>tests/integration/taxonomy.test.ts |
 | RM-05 | Verified by test | **Built**: Taxonomy version mappings and guided signed study migration (Part 14f) | docs/part14-plan.md | api/taxonomy-migrations/[migrationId]/execute/route.ts<br>mig/20261103000001_part14f_taxonomy_migration.sql | tests/integration/taxonomy-migration.test.ts |
-| RM-06 | Not traced | **Not built**: Per-record-type required and type-specific fields |  |  |  |
+| RM-06 | Verified by test | **Built**: Required standard fields and type-specific extra fields per artifact; enforced at filing and Submit for QC (Part 22) |  | api/field-rules/route.ts<br>api/studies/[studyId]/intake/[itemId]/route.ts<br>app/platform/DocumentIntake.tsx<br>app/platform/DocumentSidePanel.tsx<br>+3 more | tests/e2e/fields-annotations.mjs<br>tests/integration/fields-annotations.test.ts |
 | RM-07 | Verified by test | **Partial**: Organisation-specific types: custom artifacts in TMF configuration and import mappings (Part 12b) |  |  | tests/integration/migration-import.test.ts |
 | RM-08 | Verified by test | **Built**: Risk impact per record type from the Core / Recommended classification used by health (Part 9) and risk (Part 11d) |  |  | tests/integration/health.test.ts<br>tests/integration/risk-oversight.test.ts |
 | RPT-01 | Verified by test | **Built**: Immutable audit trail; user-management and access changes audited by triggers (Part 11b). Note: Part 11b migration comments cite RPT-02 for this | docs/part11-plan.md |  | tests/integration/reports-exports.test.ts<br>tests/integration/security-baseline.test.ts |
@@ -206,7 +206,7 @@ code that covers it does not name it yet. Each one needs a decision in the valid
 | USR-08 | Verified by test | **Partial**: Study-level access restriction (study members / access grants); site-level restriction not built |  |  | tests/integration/authorization-boundaries.test.ts |
 | VWR-01 | Verified by test | **Built**: pdf.js viewer with thumbnails page navigation zoom rotate (Part 6c); Office formats download only |  |  | tests/e2e/navigator.mjs |
 | VWR-02 | Implemented (no test cites it) |  |  | api/documents/[documentId]/access/route.ts<br>app/platform/DocumentViewer.tsx |  |
-| VWR-03 | Not traced | **Not built**: Reviewer annotations |  |  |  |
+| VWR-03 | Verified by test | **Built**: Reviewer notes pinned to a page position of the file version; resolved not deleted; audited (Part 22) |  | api/annotations/[annotationId]/resolve/route.ts<br>api/documents/[documentId]/annotations/route.ts<br>app/platform/DocumentSidePanel.tsx<br>mig/20261112000001_part22_fields_annotations.sql | tests/e2e/fields-annotations.mjs<br>tests/integration/fields-annotations.test.ts |
 | VWR-04 | Verified by test | **Built**: AI summary in the viewer when switched on (Part 12a) |  |  | tests/integration/ai-recommendations.test.ts |
 | VWR-05 | Verified by test | **Built**: Loading states and signpost pages (Part 14b) | docs/part14-plan.md |  | tests/e2e/navigator.mjs |
 | WFL-01 | Implemented (no test cites it) |  | docs/part7-plan.md | api/qc-config/route.ts<br>app/platform/QcSettings.tsx<br>mig/20261017000001_part7_qc_workflow.sql |  |
@@ -230,4 +230,4 @@ code that covers it does not name it yet. Each one needs a decision in the valid
 | ENT-12 | Verified by test |  | docs/part15-20-plan.md | mig/20261111000001_part20_bulk_import.sql | tests/e2e/bulk-import.mjs<br>tests/integration/bulk-import.test.ts |
 | ENT-13 | Verified by test |  | docs/part15-20-plan.md | mig/20261111000001_part20_bulk_import.sql | tests/integration/bulk-import.test.ts |
 
-Coverage summary of reviewed notes: See 13b 4 · Review 2 · Built 52 · Not built 8 · Built (no purge) 1 · Partial 16 · See CCP 1 · Process 2.
+Coverage summary of reviewed notes: See 13b 4 · Review 2 · Built 55 · Not built 5 · Built (no purge) 1 · Partial 16 · See CCP 1 · Process 2.

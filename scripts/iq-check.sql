@@ -11,7 +11,9 @@ with expected_tables(name) as (values
   ('risk_settings'), ('risk_factor_weights'), ('oversight_activities'), ('ai_settings'), ('ai_recommendations'),
   ('import_batches'), ('import_items'), ('import_mappings'), ('certified_copies'),
   -- Parts 15–20 (ENT)
-  ('countries'), ('study_lifecycle_events'), ('protocol_amendments'), ('amendment_site_acknowledgements')
+  ('countries'), ('study_lifecycle_events'), ('protocol_amendments'), ('amendment_site_acknowledgements'),
+  -- Part 22
+  ('artifact_field_rules'), ('document_annotations')
 ),
 expected_functions(name) as (values
   ('compute_audit_hash'), ('verify_audit_chain'), ('can_access_study_id'), ('has_org_permission'), ('file_intake_item'),
@@ -21,7 +23,8 @@ expected_functions(name) as (values
   ('risk_events'), ('complete_oversight'), ('ai_feature_enabled'), ('settle_ai_recommendations'), ('run_import_dry_run'),
   ('reconcile_import'), ('accept_import'), ('certify_document'),
   ('transition_study'), ('study_banner_state'), ('register_amendment'), ('acknowledge_amendment'), ('record_reconsent'),
-  ('can_act_for_site'), ('import_studies'), ('import_sites')
+  ('can_act_for_site'), ('import_studies'), ('import_sites'),
+  ('metadata_gaps'), ('add_annotation'), ('resolve_annotation')
 ),
 expected_triggers(name, tbl) as (values
   ('audit_trail_hash_chain', 'audit_trail'), ('documents_workflow_guard', 'documents'), ('documents_x_post_filing_guard', 'documents'),
@@ -29,7 +32,8 @@ expected_triggers(name, tbl) as (values
   ('zz_access_audit', 'user_roles'), ('inspection_activity_append_only', 'inspection_activity'), ('ai_recommendations_guard', 'ai_recommendations'),
   ('import_items_zz_guard', 'import_items'), ('import_batches_zz_guard', 'import_batches'), ('certified_copies_append_only', 'certified_copies'),
   ('studies_lifecycle_guard', 'studies'), ('studies_lifecycle_insert', 'studies'), ('study_members_guard', 'study_members'),
-  ('aa_closed_study_guard', 'protocol_amendments'), ('aa_closed_study_guard', 'amendment_site_acknowledgements')
+  ('aa_closed_study_guard', 'protocol_amendments'), ('aa_closed_study_guard', 'amendment_site_acknowledgements'),
+  ('documents_required_fields_guard', 'documents'), ('aa_closed_study_guard', 'document_annotations')
 )
 select 'table ' || e.name as item, case when c.oid is not null then 'PASS' else 'FAIL: missing' end as result
 from expected_tables e left join pg_class c on c.relname = e.name and c.relnamespace = 'public'::regnamespace and c.relkind = 'r'

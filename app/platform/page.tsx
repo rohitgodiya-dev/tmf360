@@ -14,6 +14,7 @@ import QcSettings from"./QcSettings";
 import PlanSettings from"./PlanSettings";
 import TaxonomyMigration from"./TaxonomyMigration";
 import ZonePermissions from"./ZonePermissions";
+import FieldRules from"./FieldRules";
 import{DeleteForm,DeletionRequests,isFinal}from"./DocumentActions";
 import TmfHealth from"./TmfHealth";
 import CountriesSites from"./CountriesSites";
@@ -22,6 +23,7 @@ import CroAccess from"./CroAccess";
 import StudyLifecycle from"./StudyLifecycle";
 import StudyBanner from"./StudyBanner";
 import AmendmentTracker from"./AmendmentTracker";
+import { discardUnsavedChanges, hasUnsavedChanges } from"../../lib/unsaved";
 import BulkImport from"./BulkImport";
 import InspectionMode from"./InspectionMode";
 import ReportsExports from"./ReportsExports";
@@ -76,7 +78,10 @@ function EyeIcon({open}:{open:boolean}){
 export default function Platform(){
   const[panel,setPanelRaw]=useState("auth");
   const[bannerKey,setBannerKey]=useState(0);
-  function setPanel(p:string){setPanelRaw(p);if(p!=="auth"){try{localStorage.setItem("tmf_panel",p);}catch{}if(user)loadUserRole(user.id);}}
+  // Unsaved-changes guard (Part 22, IDX-08): ask before leaving a panel with unsaved edits.
+  const[pendingPanel,setPendingPanel]=useState<string|null>(null);
+  function setPanel(p:string){if(p!=="auth"&&p!==panel&&hasUnsavedChanges()){setPendingPanel(p);return;}applyPanel(p);}
+  function applyPanel(p:string){setPanelRaw(p);if(p!=="auth"){try{localStorage.setItem("tmf_panel",p);}catch{}if(user)loadUserRole(user.id);}}
   const[user,setUser]=useState<any>(null);
   const[currentUserRole,setCurrentUserRole]=useState<string>("");
   const[canUploadDownload,setCanUploadDownload]=useState<boolean>(true);
@@ -700,6 +705,18 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
         </aside>
 
         <main style={{flex:1,overflowY:"auto",padding:"1.25rem"}}>
+          {pendingPanel&&(
+            <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:1100,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
+              <div role="dialog" aria-label="Unsaved changes" style={{background:"#fff",borderRadius:"14px",padding:"22px",width:"100%",maxWidth:"420px"}}>
+                <div style={{fontSize:"15px",fontWeight:600,color:"#111827",marginBottom:"8px"}}>Unsaved changes</div>
+                <div style={{fontSize:"12px",color:"#374151",marginBottom:"16px"}}>You have changes on this page that are not saved. If you leave now they are lost.</div>
+                <div style={{display:"flex",gap:"8px"}}>
+                  <button onClick={()=>setPendingPanel(null)} style={{flex:1,padding:"9px",border:"0.5px solid #E5EDF6",borderRadius:"8px",background:"#fff",cursor:"pointer",fontSize:"13px"}}>Keep editing</button>
+                  <button onClick={()=>{const p=pendingPanel;setPendingPanel(null);discardUnsavedChanges();applyPanel(p);}} style={{flex:1,padding:"9px",border:"none",borderRadius:"8px",background:"#991B1B",color:"#fff",cursor:"pointer",fontSize:"13px",fontWeight:600}}>Discard and leave</button>
+                </div>
+              </div>
+            </div>
+          )}
           {activeStudy?.id&&panel!=="auth"&&<div style={{margin:"-1.25rem -1.25rem 1rem"}}><StudyBanner key={activeStudy.id} studyId={activeStudy.id} refreshKey={bannerKey}/></div>}
 
           {/* DASHBOARD */}
@@ -1802,6 +1819,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
               <TmfConfigPanel user={user} P={P} supabase={supabase} activeStudy={activeStudy} orgId={orgId} currentUserRole={currentUserRole} logAudit={logAudit}/>
               <PlanSettings/>
               <QcSettings/>
+              <FieldRules artifacts={activeTMF.map(a=>({a:a.a,an:a.an,z:a.z}))} canEdit={hasPermission(currentUserRole as Role,"invite_users")}/>
               {activeStudy?.id&&<TaxonomyMigration key={activeStudy.id} study={{id:activeStudy.id,study_id:activeStudy.study_id}}/>}
               {activeStudy?.id&&<ZonePermissions key={`zp-${activeStudy.id}`} study={{id:activeStudy.id,study_id:activeStudy.study_id}} zones={activeZONES.map(z=>({num:String(z.z).padStart(2,"0"),name:z.zn}))}/>}
             </div>

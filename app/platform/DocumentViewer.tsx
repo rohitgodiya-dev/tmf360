@@ -5,6 +5,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { apiFetch } from "../../lib/api/client";
+import { useUnsavedChanges } from "../../lib/unsaved";
+import DocumentSidePanel, { type Annotation } from "./DocumentSidePanel";
 
 export type Meta = { id: string; status: string; artifact_num: string; artifact_name: string; custom_file_name: string | null; file_name: string | null; file_type: string | null; version: string | null; has_file: boolean; signpost?: boolean; signpost_reference?: string | null; certified_copy?: boolean; blinded?: boolean };
 type Kind = "pdf" | "image" | "other";
@@ -85,6 +87,34 @@ export default function DocumentViewer({ documentId, canDownload, onClose, inlin
     apiFetch<{ features: { feature: string; enabled: boolean }[] }>("/ai-settings")
       .then((r) => setSummaryOn(r.features.some((f) => f.feature === "summary" && f.enabled))).catch(() => { /* off */ });
   }, [source]);
+  // Reviewer notes and type-specific fields (Part 22): only in the team viewer, never in Inspection Mode.
+  const [side, setSide] = useState<"notes" | "fields" | null>(null);
+  const [notes, setNotes] = useState<Annotation[]>([]);
+  const [addMode, setAddMode] = useState(false);
+  const [pin, setPin] = useState<{ page: number; x: number; y: number } | null>(null);
+  const [sideDirty, setSideDirty] = useState(false);
+  const [confirmClose, setConfirmClose] = useState(false);
+  useUnsavedChanges(`viewer-${documentId}`, sideDirty || !!pin);
+  const requestClose = () => { if (sideDirty || pin) setConfirmClose(true); else onClose(); };
+  const placePin = (e: React.MouseEvent<HTMLDivElement>, n: number) => {
+    if (!addMode) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    setPin({ page: n, x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)) });
+    setAddMode(false);
+  };
+  const openNotes = notes.filter((a) => a.status === "open");
+  const pins = (n: number) => rotation !== 0 ? null : (
+    <>
+      {openNotes.filter((a) => a.page === n).map((a) => (
+        <span key={a.id} title={a.body} aria-label={`Note ${openNotes.indexOf(a) + 1}: ${a.body}`} style={{ position: "absolute", left: `${a.x * 100}%`, top: `${a.y * 100}%`, transform: "translate(-50%, -100%)",
+          background: C.primary, color: "#fff", borderRadius: "10px 10px 10px 0", fontSize: "10px", fontWeight: 700, padding: "2px 6px", boxShadow: "0 1px 3px rgba(0,0,0,.3)" }}>
+          {openNotes.indexOf(a) + 1}
+        </span>
+      ))}
+      {pin && pin.page === n && <span aria-label="New note position" style={{ position: "absolute", left: `${pin.x * 100}%`, top: `${pin.y * 100}%`, transform: "translate(-50%, -100%)",
+        background: "#1D4ED8", color: "#fff", borderRadius: "10px 10px 10px 0", fontSize: "10px", fontWeight: 700, padding: "2px 6px" }}>new</span>}
+    </>
+  );
   async function summarise() {
     setBusy("Summarising…"); setError("");
     try {
@@ -138,7 +168,7 @@ export default function DocumentViewer({ documentId, canDownload, onClose, inlin
   // Keyboard: Esc closes, arrows change page.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !inline) onClose();
+      if (e.key === "Escape" && !inline) requestClose();
       const tag = (e.target as HTMLElement)?.tagName;
       if (!pdf || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
       if (e.key === "ArrowRight" || e.key === "PageDown") setPage((p) => Math.min(pdf.numPages, p + 1));
@@ -146,7 +176,8 @@ export default function DocumentViewer({ documentId, canDownload, onClose, inlin
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [pdf, onClose, inline]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pdf, onClose, inline, sideDirty, pin]);
 
   async function download() {
     setBusy("Preparing download…"); setError("");
@@ -218,7 +249,9 @@ export default function DocumentViewer({ documentId, canDownload, onClose, inlin
           {meta?.has_file && canDownload && <button disabled={!!busy} onClick={download} style={tool}><i className="ti ti-download" /> Download</button>}
           {meta?.has_file && canDownload && viewable && <button disabled={!!busy || !bytes} onClick={print} style={tool}><i className="ti ti-printer" /> Print</button>}
           {summaryOn && meta?.has_file && kind === "pdf" && <button disabled={!!busy} onClick={() => (summary ? setSummary(null) : summarise())} style={tool}><i className="ti ti-sparkles" /> {summary ? "Hide summary" : "AI summary"}</button>}
-          {!inline && <button aria-label="Close viewer" onClick={onClose} style={{ ...tool, background: C.dark, color: "#fff", border: "none" }}><i className="ti ti-x" /> Close</button>}
+          {!source && meta && <button onClick={() => setSide(side === "notes" ? null : "notes")} style={{ ...tool, ...(side === "notes" ? { background: "#FFF7ED", color: C.primary } : {}) }}><i className="ti ti-message-2" /> Notes{openNotes.length ? ` (${openNotes.length})` : ""}</button>}
+          {!source && meta && <button onClick={() => setSide(side === "fields" ? null : "fields")} style={{ ...tool, ...(side === "fields" ? { background: "#FFF7ED", color: C.primary } : {}) }}><i className="ti ti-forms" /> Fields</button>}
+          {!inline && <button aria-label="Close viewer" onClick={requestClose} style={{ ...tool, background: C.dark, color: "#fff", border: "none" }}><i className="ti ti-x" /> Close</button>}
         </div>
         {meta?.signpost && (
           <div style={{ fontSize: "12px", padding: "8px 14px", background: "#EFF6FF", color: "#1E3A8A", borderBottom: `0.5px solid ${C.border}` }}>
@@ -242,6 +275,14 @@ export default function DocumentViewer({ documentId, canDownload, onClose, inlin
             <div style={{ fontSize: "10px", color: C.textTert, marginTop: "4px" }}>AI-generated summary ({summary.model}); check it against the document.</div>
           </div>
         )}
+        {confirmClose && (
+          <div role="alert" style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", padding: "8px 14px", background: "#FEF2F2", color: C.danger, borderBottom: `0.5px solid ${C.border}` }}>
+            <span style={{ flex: 1 }}>You have an unsaved note or field change. Close anyway?</span>
+            <button onClick={() => setConfirmClose(false)} style={tool}>Keep editing</button>
+            <button onClick={() => { setConfirmClose(false); setPin(null); setSideDirty(false); onClose(); }} style={{ ...tool, background: C.danger, color: "#fff", border: "none" }}>Discard and close</button>
+          </div>
+        )}
+        {addMode && <div style={{ fontSize: "12px", padding: "6px 14px", background: "#EFF6FF", color: "#1E3A8A" }}><i className="ti ti-pin" /> Click on the page where the note belongs{rotation !== 0 ? " (reset the rotation first)" : ""}.</div>}
         {(error || busy) && <div style={{ fontSize: "12px", padding: "6px 14px", background: error ? "#FEF2F2" : C.bg, color: error ? C.danger : C.textSec }}>{error || busy}</div>}
 
         <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
@@ -264,12 +305,25 @@ export default function DocumentViewer({ documentId, canDownload, onClose, inlin
                 text={canDownload ? "Download the file to open it in its own application. The download is recorded in the audit trail." : "Your role can't download files. Ask a TMF Lead for a copy."} />
             )}
             {meta?.has_file && viewable && !pdf && !imageUrl && !error && <Placeholder icon="ti-loader-2" title="Loading file…" />}
-            {pdf && <PdfPage pdf={pdf} n={page} scale={zoom * 1.3} rotation={rotation} />}
+            {pdf && (
+              <div data-testid="page-surface" onClick={(e) => rotation === 0 && placePin(e, page)} style={{ position: "relative", display: "inline-block", cursor: addMode && rotation === 0 ? "crosshair" : "default" }}>
+                <PdfPage pdf={pdf} n={page} scale={zoom * 1.3} rotation={rotation} />
+                <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>{pins(page)}</div>
+              </div>
+            )}
             {imageUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={imageUrl} alt={name} style={{ maxWidth: zoom === 1 ? "100%" : "none", width: zoom === 1 ? undefined : `${zoom * 100}%`, transform: `rotate(${rotation}deg)`, transition: "transform .15s", background: "#fff", boxShadow: "0 1px 6px rgba(0,0,0,.25)" }} />
+              <div data-testid="page-surface" onClick={(e) => rotation === 0 && placePin(e, 1)} style={{ position: "relative", display: "inline-block", maxWidth: zoom === 1 ? "100%" : "none", width: zoom === 1 ? undefined : `${zoom * 100}%`, cursor: addMode && rotation === 0 ? "crosshair" : "default" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={imageUrl} alt={name} style={{ display: "block", width: "100%", transform: `rotate(${rotation}deg)`, transition: "transform .15s", background: "#fff", boxShadow: "0 1px 6px rgba(0,0,0,.25)" }} />
+                <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>{pins(1)}</div>
+              </div>
             )}
           </div>
+          {!source && side && meta && (
+            <DocumentSidePanel documentId={documentId} tab={side} onTab={setSide} page={pdf ? page : 1} canPin={!!(pdf || imageUrl)}
+              notes={notes} onNotes={setNotes} addMode={addMode} onAddMode={setAddMode} pin={pin} onPin={setPin}
+              onDirty={setSideDirty} onGoTo={(n) => setPage(n)} />
+          )}
         </div>
       </div>
     </div>

@@ -147,6 +147,10 @@ review in docs/enterprise-plan-review.md, owner actions in docs/enterprise/readi
 - 19 protocol_amendments + amendment_site_acknowledgements (register_amendment on Final 02.01.02 Protocol / 02.01.04 Amendment;
   acknowledge_amendment, record_reconsent; can_act_for_site = editor or current site contact by email).
 - 20 bulk CSV import (lib/csv.ts, lib/api/bulkimport.ts, import_studies/import_sites security invoker); unique studies(org_id, study_id).
+Parts 14–21 live on PROD 2026-10-06. Part 22 (docs/part22-plan.md, D66–D70): artifact_field_rules + custom_metadata on
+intake_items/documents, metadata_gaps() enforced in file_intake_item and documents_required_fields_guard (Under Review);
+lib/unsaved.ts guard (page.tsx asks before panel switch); document_annotations via add_annotation/resolve_annotation,
+viewer side panel (DocumentSidePanel.tsx, Notes + Fields; team viewer only).
 
 Part 7 rules: a document reaches Under Review only via submit_for_qc() and Approved only via
 complete_qc_task() (trigger documents_workflow_guard). QC decisions need a password re-check in the

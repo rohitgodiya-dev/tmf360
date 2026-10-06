@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { apiFetch } from "../../lib/api/client";
 import AiAssist, { type AiFeature } from "./AiAssist";
+import { onDiscard, useUnsavedChanges } from "../../lib/unsaved";
 
 type Artifact = { z: string; zn: string; a: string; an: string; cl: string };
 type Suggestion = { artifact_num?: string; artifact_name?: string; confidence?: number; reasoning?: string; issues?: string[] };
@@ -14,9 +15,30 @@ type Item = {
   artifact_num: string | null; title: string | null; version_label: string | null; effective_date: string | null;
   owner: string | null; notes: string | null; suggestion: Suggestion | null;
   study_country_id: string | null; study_site_id: string | null;
+  custom_metadata?: Record<string, string>;
   source?: string; email_from?: string | null; email_subject?: string | null;
 };
-type Draft = Pick<Item, "artifact_num" | "title" | "version_label" | "effective_date" | "owner" | "notes" | "study_country_id" | "study_site_id">;
+type Draft = Pick<Item, "artifact_num" | "title" | "version_label" | "effective_date" | "owner" | "notes" | "study_country_id" | "study_site_id"> & { custom_metadata: Record<string, string> };
+// Required and type-specific fields per artifact (Part 22, RM-06).
+type CustomField = { key: string; label: string; type: "text" | "date" | "number" | "select"; options?: string[]; required?: boolean };
+type FieldRule = { artifact_num: string; required_fields: string[]; custom_fields: CustomField[] };
+const toDraft = (i: Item): Draft => ({
+  artifact_num: i.artifact_num, title: i.title, version_label: i.version_label, effective_date: i.effective_date, owner: i.owner, notes: i.notes,
+  study_country_id: i.study_country_id, study_site_id: i.study_site_id, custom_metadata: i.custom_metadata ?? {},
+});
+const same = (a: Draft, b: Draft) => JSON.stringify(a) === JSON.stringify(b);
+/** Labels of required fields that are still empty in a draft. */
+function missingFields(rule: FieldRule | undefined, d: Draft): string[] {
+  if (!rule) return [];
+  const std: Record<string, [string, unknown]> = {
+    title: ["Title", d.title], version: ["Version", d.version_label], effective_date: ["Effective date", d.effective_date],
+    owner: ["Owner", d.owner], country: ["Country", d.study_country_id], site: ["Site", d.study_site_id], expiry_date: ["Expiry date", null],
+  };
+  return [
+    ...rule.required_fields.filter((f) => f !== "expiry_date" && !String(std[f]?.[1] ?? "").trim()).map((f) => std[f]?.[0] ?? f),
+    ...rule.custom_fields.filter((f) => f.required && !(d.custom_metadata[f.key] ?? "").trim()).map((f) => f.label),
+  ];
+}
 // TMF level choices from the study structure: study level, a country, or a site (its country follows).
 type Scope = { label: string; country: string | null; site: string | null };
 type TreeNode = { id: string; label: string; field: string | null; value: string | null; children: TreeNode[] };
@@ -42,6 +64,7 @@ export default function DocumentIntake({ study, orgId, artifacts, canUpload, onF
   canUpload: boolean; onFiled: () => void;
 }) {
   const [items, setItems] = useState<Item[]>([]);
+  const itemsRef = useRef<Item[]>([]);
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [busy, setBusy] = useState<string>("");
   const [message, setMessage] = useState<string>("");
@@ -63,15 +86,22 @@ export default function DocumentIntake({ study, orgId, artifacts, canUpload, onF
   const load = useCallback(async () => {
     try {
       const r = await apiFetch<{ data: Item[] }>(base);
+      // Keep edits in progress unless the item changed on the server (a reload must not wipe what the user typed).
+      const before = new Map(itemsRef.current.map((i) => [i.id, i.row_version]));
+      itemsRef.current = r.data;
       setItems(r.data);
-      setDrafts(Object.fromEntries(r.data.map((i) => [i.id, {
-        artifact_num: i.artifact_num, title: i.title, version_label: i.version_label,
-        effective_date: i.effective_date, owner: i.owner, notes: i.notes,
-        study_country_id: i.study_country_id, study_site_id: i.study_site_id,
-      }])));
+      setDrafts((prev) => Object.fromEntries(r.data.map((i) => [i.id, prev[i.id] && before.get(i.id) === i.row_version ? prev[i.id] : toDraft(i)])));
     } catch (e) { setMessage((e as Error).message); }
   }, [base]);
   useEffect(() => { load(); }, [load]);
+  const [rules, setRules] = useState<Record<string, FieldRule>>({});
+  useEffect(() => {
+    apiFetch<{ data: FieldRule[] }>("/field-rules").then((r) => setRules(Object.fromEntries(r.data.map((x) => [x.artifact_num, x])))).catch(() => setRules({}));
+  }, []);
+  // IDX-08: warn before leaving with unsaved indexing edits; a discard puts the saved values back.
+  const isDirty = items.some((i) => drafts[i.id] && !same(drafts[i.id], toDraft(i)));
+  useUnsavedChanges("document-intake", isDirty);
+  useEffect(() => onDiscard(() => setDrafts(Object.fromEntries(items.map((i) => [i.id, toDraft(i)])))), [items]);
 
   const [scopes, setScopes] = useState<Scope[]>([{ label: "Study level", country: null, site: null }]);
   useEffect(() => {
@@ -120,6 +150,12 @@ export default function DocumentIntake({ study, orgId, artifacts, canUpload, onF
   }
 
   const setDraft = (id: string, patch: Partial<Draft>) => setDrafts((d) => ({ ...d, [id]: { ...d[id], ...patch } }));
+  const setCustom = (id: string, key: string, value: string) =>
+    setDrafts((d) => ({ ...d, [id]: { ...d[id], custom_metadata: { ...(d[id]?.custom_metadata ?? {}), [key]: value } } }));
+  const req = (item: Item, field: string) => {
+    const a = drafts[item.id]?.artifact_num;
+    return a && rules[a]?.required_fields.includes(field) ? <span style={{ color: C.danger }}> *</span> : null;
+  };
 
   async function save(item: Item) {
     const d = drafts[item.id];
@@ -129,8 +165,10 @@ export default function DocumentIntake({ study, orgId, artifacts, canUpload, onF
         row_version: item.row_version, artifact_num: d.artifact_num || null, title: d.title || null,
         version_label: d.version_label || null, effective_date: d.effective_date || null, owner: d.owner || null, notes: d.notes || null,
         study_country_id: d.study_country_id || null, study_site_id: d.study_site_id || null,
+        custom_metadata: d.custom_metadata ?? {},
       }),
     });
+    itemsRef.current = itemsRef.current.map((i) => (i.id === item.id ? updated : i));
     setItems((list) => list.map((i) => (i.id === item.id ? updated : i)));
     return updated;
   }
@@ -255,23 +293,37 @@ export default function DocumentIntake({ study, orgId, artifacts, canUpload, onF
                   </select>
                 </label>
               )}
-              <label style={{ fontSize: "11px", color: C.textSec }}>Title
+              <label style={{ fontSize: "11px", color: C.textSec }}>Title{req(item, "title")}
                 <input disabled={disabled} value={d.title ?? ""} placeholder={item.file_name} onChange={(e) => setDraft(item.id, { title: e.target.value })} style={input} />
               </label>
-              <label style={{ fontSize: "11px", color: C.textSec }}>Version
+              <label style={{ fontSize: "11px", color: C.textSec }}>Version{req(item, "version")}
                 <input disabled={disabled} value={d.version_label ?? ""} onChange={(e) => setDraft(item.id, { version_label: e.target.value })} style={input} />
               </label>
-              <label style={{ fontSize: "11px", color: C.textSec }}>Effective date
+              <label style={{ fontSize: "11px", color: C.textSec }}>Effective date{req(item, "effective_date")}
                 <input disabled={disabled} type="date" value={d.effective_date ?? ""} onChange={(e) => setDraft(item.id, { effective_date: e.target.value || null })} style={input} />
               </label>
-              <label style={{ fontSize: "11px", color: C.textSec }}>Owner
+              <label style={{ fontSize: "11px", color: C.textSec }}>Owner{req(item, "owner")}
                 <input disabled={disabled} value={d.owner ?? ""} onChange={(e) => setDraft(item.id, { owner: e.target.value })} style={input} />
               </label>
+              {(d.artifact_num ? rules[d.artifact_num]?.custom_fields ?? [] : []).map((f) => (
+                <label key={f.key} style={{ fontSize: "11px", color: C.textSec }}>{f.label}{f.required && <span style={{ color: C.danger }}> *</span>}
+                  {f.type === "select" ? (
+                    <select disabled={disabled} aria-label={f.label} value={d.custom_metadata?.[f.key] ?? ""} onChange={(e) => setCustom(item.id, f.key, e.target.value)} style={input}>
+                      <option value="">Choose…</option>
+                      {(f.options ?? []).map((o) => <option key={o}>{o}</option>)}
+                    </select>
+                  ) : (
+                    <input disabled={disabled} aria-label={f.label} type={f.type === "date" ? "date" : "text"} inputMode={f.type === "number" ? "decimal" : undefined}
+                      value={d.custom_metadata?.[f.key] ?? ""} onChange={(e) => setCustom(item.id, f.key, e.target.value)} style={input} />
+                  )}
+                </label>
+              ))}
             </div>
 
             {canUpload && (() => {
               const blocked = item.duplicate_status === "blocked";
-              const canFile = item.verification_status === "verified" && !!d.artifact_num && !blocked;
+              const missing = missingFields(d.artifact_num ? rules[d.artifact_num] : undefined, d);
+              const canFile = item.verification_status === "verified" && !!d.artifact_num && !blocked && missing.length === 0;
               const art = artifacts.find((a) => a.a === d.artifact_num);
               const isRejecting = rejecting?.id === item.id;
               return (
@@ -281,6 +333,11 @@ export default function DocumentIntake({ study, orgId, artifacts, canUpload, onF
                       <strong>What happens next:</strong> filing creates a Draft document in Zone {art.z} under {art.a} — {art.an}
                       {" "}(TMF level: {(scopes.find((x) => scopeKey(x.country, x.site) === scopeKey(d.study_country_id, d.study_site_id))?.label ?? "Study level")}), with this file and metadata.
                       This intake item then closes and can no longer be edited here.
+                    </div>
+                  )}
+                  {!!d.artifact_num && missing.length > 0 && !isRejecting && (
+                    <div style={{ marginTop: "12px", fontSize: "11px", color: C.danger, background: C.dangerBg, borderRadius: "8px", padding: "8px 10px" }}>
+                      Required for {d.artifact_num} before filing: {missing.join(", ")}.
                     </div>
                   )}
                   {isRejecting && (
