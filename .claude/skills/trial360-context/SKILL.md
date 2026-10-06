@@ -132,6 +132,22 @@ scripts/traceability.mjs, scripts/iq-check.sql (run on PROD each release), scrip
 authorization-boundaries persona test, certified copies (certify_document, signed). Remaining = owner actions
 (signatures, SOPs, training, restore drill, pen test, pilot partner) + "Not built" items in coverage-notes.csv.
 
+Parts 15–20 (Enterprise Development Plan v1.0; built on DEV 2026-10-06, not yet on PROD — docs/part15-20-plan.md,
+review in docs/enterprise-plan-review.md, owner actions in docs/enterprise/readiness-checklist.md; requirements ENT-01..13):
+- 15 countries (ISO reference: name, region, regulator; FK from study_countries/parties), parties.city/address/institution_type,
+  study_sites target/actual_enrollment, FPI milestones, views study_country_summary + structure_completeness (security invoker),
+  lib/api/hierarchy.ts, Countries & sites panel. Sites are parties — never touch Site360 `sites`.
+- 16 Portfolio (permission view_portfolio; lib/api/portfolio.ts; reuses health_snapshots; Excel export).
+- 17 CRO access on study_members (party_id = CRO, expires_at; can_access_study ignores expired). study_members locked down
+  (read in org, write invite_users, no delete in sponsor orgs; ISF keys memberships by studies.id — guard accepts both).
+  studies SELECT in sponsor orgs = accessible studies only.
+- 18 studies.lifecycle_status Planning→Startup→Active→Closeout→Closed→Archived via transition_study() (signed Closed/Archived,
+  close only from Closeout, Archived final, reopen → Closeout); study_lifecycle_events; study_banner_state(); studies UPDATE needs edit_study;
+  studies.status mirrors lifecycle and cannot be written directly.
+- 19 protocol_amendments + amendment_site_acknowledgements (register_amendment on Final 02.01.02 Protocol / 02.01.04 Amendment;
+  acknowledge_amendment, record_reconsent; can_act_for_site = editor or current site contact by email).
+- 20 bulk CSV import (lib/csv.ts, lib/api/bulkimport.ts, import_studies/import_sites security invoker); unique studies(org_id, study_id).
+
 Part 7 rules: a document reaches Under Review only via submit_for_qc() and Approved only via
 complete_qc_task() (trigger documents_workflow_guard). QC decisions need a password re-check in the
 API (lib/api/qc.ts reauthenticate → single-use reauth_proofs row) and write append-only

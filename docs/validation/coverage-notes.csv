@@ -84,3 +84,4 @@ MIG-09,Not built,Standards-based exchange (TMF RM Exchange Mechanism) - D45,
 MIG-10,Partial,Documented API for system ingestion: /api/v1 intake endpoints (bearer token / server re-hash); no separate public API product - D45,tests/integration/document-intake.test.ts
 RPT-01,Built,Immutable audit trail; user-management and access changes audited by triggers (Part 11b). Note: Part 11b migration comments cite RPT-02 for this,tests/integration/reports-exports.test.ts tests/integration/security-baseline.test.ts
 EXP-01,Built,Navigator grid export to Excel (Part 11b). Note: Part 11b migration comments cite EXP-02 for this,tests/integration/reports-exports.test.ts
+ENT-04,Built,Indexes created by the Part 15 migration; the IQ check confirms them on each environment,scripts/iq-check.sql

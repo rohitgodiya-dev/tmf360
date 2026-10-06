@@ -16,6 +16,13 @@ import TaxonomyMigration from"./TaxonomyMigration";
 import ZonePermissions from"./ZonePermissions";
 import{DeleteForm,DeletionRequests,isFinal}from"./DocumentActions";
 import TmfHealth from"./TmfHealth";
+import CountriesSites from"./CountriesSites";
+import Portfolio from"./Portfolio";
+import CroAccess from"./CroAccess";
+import StudyLifecycle from"./StudyLifecycle";
+import StudyBanner from"./StudyBanner";
+import AmendmentTracker from"./AmendmentTracker";
+import BulkImport from"./BulkImport";
 import InspectionMode from"./InspectionMode";
 import ReportsExports from"./ReportsExports";
 import ArchiveRetention from"./ArchiveRetention";
@@ -68,6 +75,7 @@ function EyeIcon({open}:{open:boolean}){
 }
 export default function Platform(){
   const[panel,setPanelRaw]=useState("auth");
+  const[bannerKey,setBannerKey]=useState(0);
   function setPanel(p:string){setPanelRaw(p);if(p!=="auth"){try{localStorage.setItem("tmf_panel",p);}catch{}if(user)loadUserRole(user.id);}}
   const[user,setUser]=useState<any>(null);
   const[currentUserRole,setCurrentUserRole]=useState<string>("");
@@ -649,8 +657,11 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
         {/* Sidebar */}
         <aside style={{width:"192px",borderRight:`0.5px solid ${P.border}`,background:P.bg,overflowY:"auto",flexShrink:0,padding:"8px"}}>
           <p style={{fontSize:"9px",fontWeight:"500",color:P.textTert,padding:"8px 10px 4px",textTransform:"uppercase",letterSpacing:".06em"}}>Overview</p>
+          {hasPermission(currentUserRole as Role,"view_portfolio")&&navItem("portfolio","Portfolio","ti-briefcase")}
           {navItem("dashboard","Dashboard","ti-layout-dashboard")}
           {navItem("studies","Studies","ti-flask")}
+          {navItem("countries","Countries & sites","ti-world")}
+          {navItem("lifecycle","Study lifecycle","ti-timeline")}
           {activeStudy?.id&&<a href={`/platform/studies/${activeStudy.id}/structure`} style={{display:"flex",alignItems:"center",gap:"8px",padding:"7px 10px",borderRadius:"8px",fontSize:"12px",color:"#374151",textDecoration:"none",fontWeight:"400"}}><i className="ti ti-sitemap" style={{fontSize:"15px"}}/>Study structure</a>}
           <p style={{fontSize:"9px",fontWeight:"500",color:P.textTert,padding:"10px 10px 4px",textTransform:"uppercase",letterSpacing:".06em"}}>TMF</p>
           {navItem("navigator","TMF Navigator","ti-binary-tree")}
@@ -663,6 +674,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           <p style={{fontSize:"9px",fontWeight:"500",color:P.textTert,padding:"10px 10px 4px",textTransform:"uppercase",letterSpacing:".06em"}}>Intelligence</p>
           {navItem("readiness","TMF Health & Readiness","ti-heart-rate-monitor")}
           {navItem("risk","Risk & oversight","ti-alert-triangle")}
+          {navItem("amendments","Amendment tracker","ti-file-diff")}
           {navItem("inspection","Inspection Mode","ti-user-shield")}
           {navItem("reports","Reports & exports","ti-file-spreadsheet")}
           {navItem("archive","Archive & retention","ti-building-warehouse")}
@@ -676,16 +688,19 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
           {navItem("recyclebin","Recycle Bin","ti-trash")}
           <p style={{fontSize:"9px",fontWeight:"500",color:P.textTert,padding:"10px 10px 4px",textTransform:"uppercase",letterSpacing:".06em"}}>Team</p>
           {navItem("users","User management","ti-users")}
+          {hasPermission(currentUserRole as Role,"invite_users")&&navItem("croaccess","CRO access","ti-building-community")}
           {navItem("profile","My profile","ti-user-circle")}
           {navItem("messages","Messages","ti-message-2")}
           {navItem("queries","Queries","ti-help-circle")}
           <p style={{fontSize:"9px",fontWeight:"500",color:P.textTert,padding:"10px 10px 4px",textTransform:"uppercase",letterSpacing:".06em"}}>Settings</p>
           {navItem("tmfconfig","TMF Configuration","ti-adjustments")}
+          {(hasPermission(currentUserRole as Role,"invite_users")||(hasPermission(currentUserRole as Role,"edit_study")&&hasPermission(currentUserRole as Role,"manage_directory")))&&navItem("bulkimport","Bulk import","ti-table-import")}
           {navItem("ai","AI assistance","ti-sparkles")}
           {navItem("ticket","Ticket","ti-ticket")}
         </aside>
 
         <main style={{flex:1,overflowY:"auto",padding:"1.25rem"}}>
+          {activeStudy?.id&&panel!=="auth"&&<div style={{margin:"-1.25rem -1.25rem 1rem"}}><StudyBanner key={activeStudy.id} studyId={activeStudy.id} refreshKey={bannerKey}/></div>}
 
           {/* DASHBOARD */}
           {panel==="dashboard"&&(
@@ -1188,6 +1203,41 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
               canAssign={hasPermission(currentUserRole as Role,"run_quality_checks")||hasPermission(currentUserRole as Role,"edit_study")}
               onOpenDocument={(id)=>setViewerDocId(id)}/>
           ):<div style={{padding:"2rem",color:P.textTert,fontSize:"12px"}}>Select a study to check its TMF health.</div>)}
+
+          {/* BULK IMPORT (Part 20) */}
+          {panel==="bulkimport"&&(
+            <BulkImport canStudies={hasPermission(currentUserRole as Role,"create_study")&&hasPermission(currentUserRole as Role,"invite_users")}
+              canSites={hasPermission(currentUserRole as Role,"edit_study")&&hasPermission(currentUserRole as Role,"manage_directory")}
+              onImported={()=>{if(orgId)loadStudiesWithOrg(orgId,activeStudy?.study_id);}}/>
+          )}
+
+          {/* AMENDMENT TRACKER (Part 19) */}
+          {panel==="amendments"&&(activeStudy?.id?(
+            <AmendmentTracker key={activeStudy.id} study={{id:activeStudy.id,study_id:activeStudy.study_id}} onOpenDocument={(id)=>setViewerDocId(id)}/>
+          ):<div style={{padding:"2rem",color:P.textTert,fontSize:"12px"}}>Select a study to track its protocol amendments.</div>)}
+
+          {/* STUDY LIFECYCLE (Part 18) */}
+          {panel==="lifecycle"&&(activeStudy?.id?(
+            <StudyLifecycle key={activeStudy.id} study={{id:activeStudy.id,study_id:activeStudy.study_id}} canManage={hasPermission(currentUserRole as Role,"invite_users")}
+              onChanged={()=>{setBannerKey(k=>k+1);if(orgId)loadStudiesWithOrg(orgId,activeStudy.study_id);}}/>
+          ):<div style={{padding:"2rem",color:P.textTert,fontSize:"12px"}}>Select a study to see its lifecycle.</div>)}
+
+          {/* CRO ACCESS (Part 17) */}
+          {panel==="croaccess"&&(hasPermission(currentUserRole as Role,"invite_users")&&activeStudy?.id?(
+            <CroAccess key={activeStudy.id} study={{id:activeStudy.id,study_id:activeStudy.study_id}}/>
+          ):<div style={{padding:"2rem",color:P.textTert,fontSize:"12px"}}>{activeStudy?.id?"CRO access is managed by administrators and TMF leads.":"Select a study to manage CRO access."}</div>)}
+
+          {/* PORTFOLIO (Part 16) */}
+          {panel==="portfolio"&&(hasPermission(currentUserRole as Role,"view_portfolio")?(
+            <Portfolio onOpenStudy={(code)=>{const s=studies.find((x:any)=>x.study_id===code);if(s){setActiveStudy(s);localStorage.setItem("tmf_active_study",s.study_id);if(orgId)loadDocsWithOrg(s.study_id,orgId);setPanel("dashboard");}}}/>
+          ):<div style={{padding:"2rem",color:P.textTert,fontSize:"12px"}}>The portfolio is available to administrators, sponsor admins and TMF leads.</div>)}
+
+          {/* COUNTRIES & SITES (Part 15) */}
+          {panel==="countries"&&(activeStudy?.id?(
+            <CountriesSites key={activeStudy.id} study={{id:activeStudy.id,study_id:activeStudy.study_id}}
+              canEdit={hasPermission(currentUserRole as Role,"edit_study")}
+              canManageDirectory={hasPermission(currentUserRole as Role,"manage_directory")}/>
+          ):<div style={{padding:"2rem",color:P.textTert,fontSize:"12px"}}>Select a study to see its countries and sites.</div>)}
 
           {/* MIGRATION & IMPORT (Part 12b) */}
           {panel==="migration"&&(activeStudy?.id?(
@@ -1792,7 +1842,7 @@ const[approveDocId,setApproveDocId]=useState<string|null>(null);
               <div key={f.l} style={{marginBottom:"10px"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>{f.l}</label><input value={f.v} onChange={e=>f.s(e.target.value)} placeholder={f.p} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}/></div>
             ))}
             <div style={{marginBottom:"10px"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Phase</label><select value={fPhase} onChange={e=>setFPhase(e.target.value)} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}>{["Phase I","Phase II","Phase III","Phase IV","Observational","Feasibility"].map(p=><option key={p}>{p}</option>)}</select></div>
-            <div style={{marginBottom:"1rem"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Status</label><select value={fStatus} onChange={e=>setFStatus(e.target.value)} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}>{["Startup","Active","Closed","On Hold"].map(s=><option key={s}>{s}</option>)}</select></div>
+            <div style={{marginBottom:"1rem"}}><label style={{fontSize:"11px",color:P.textSec,display:"block",marginBottom:"3px"}}>Status</label><select value={fStatus} onChange={e=>setFStatus(e.target.value)} style={{width:"100%",fontSize:"12px",border:`0.5px solid ${P.border}`,borderRadius:"8px",padding:"7px 10px"}}>{["Planning","Startup","Active"].map(s=><option key={s}>{s}</option>)}</select></div>
             <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
               <button onClick={()=>setShowStudyModal(false)} style={{fontSize:"11px",padding:"6px 14px",border:`0.5px solid ${P.border}`,borderRadius:"8px",background:"transparent",cursor:"pointer"}}>Cancel</button>
               <button onClick={createStudy} style={{fontSize:"11px",padding:"6px 14px",background:P.primary,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}>Create study</button>

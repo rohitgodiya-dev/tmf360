@@ -2,6 +2,7 @@ import { z } from "zod";
 import { requirePermission, requireUser } from "@/lib/api/auth";
 import { countryCode, dbError, insertRow } from "@/lib/api/db";
 import { handle, parseBody } from "@/lib/api/http";
+import { INSTITUTION_TYPES } from "@/lib/api/structure";
 
 const PARTY_TYPES = ["sponsor", "cro", "site", "vendor", "regulator", "other"] as const;
 
@@ -22,6 +23,9 @@ const createSchema = z.object({
   parent_party_id: z.string().uuid().nullish(),
   country_code: countryCode.nullish(),
   is_internal: z.boolean().optional(),
+  city: z.string().trim().max(200).nullish(),
+  address: z.string().trim().max(1000).nullish(),
+  institution_type: z.enum(INSTITUTION_TYPES).nullish(),
 });
 
 export const POST = handle(async (req: Request) => {

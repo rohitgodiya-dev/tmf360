@@ -47,6 +47,17 @@ export const POST = handle(async (req: Request) => {
     throw roleErr;
   }
 
+  // A study invitation (Part 17, e.g. CRO staff) also grants access to that one study, until its end date.
+  if (invitation.study_code) {
+    const { error: memberErr } = await svc.from("study_members").insert([{
+      org_id: invitation.org_id, study_id: invitation.study_code, user_id: created.user.id, email: invitation.email,
+      full_name: invitation.full_name || invitation.email, role: invitation.role, added_by: "invitation",
+      party_id: invitation.party_id, expires_at: invitation.access_expires_at, is_active: true,
+    }]);
+    // The account exists; a failed membership only means an administrator has to add the study by hand.
+    if (memberErr) console.error("Study membership from invitation failed:", memberErr.message);
+  }
+
   await svc.from("user_invitations").update({ accepted_user_id: created.user.id }).eq("id", invitation.id);
   await svc.from("audit_trail").insert([{
     user_id: created.user.id, user_email: invitation.email, org_id: invitation.org_id,

@@ -49,6 +49,9 @@ export const PERMISSIONS = {
   run_quality_checks:  ['System Administrator','Sponsor Admin','TMF Lead','Quality Assurance'],
   view_gap_analysis:   ['System Administrator','Sponsor Admin','TMF Lead','Clinical Trial Manager','CRA','Regulatory','Quality Assurance','Auditor','Inspector'],
   export_inspection:   ['System Administrator','Sponsor Admin','TMF Lead','Regulatory','Auditor','Inspector'],
+
+  // Cross-study portfolio (Part 16)
+  view_portfolio:      ['System Administrator','Sponsor Admin','TMF Lead'],
 } as const;
 
 export type Permission = keyof typeof PERMISSIONS;

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { requirePermission, requireUser } from "@/lib/api/auth";
 import { countryCode, idParam, reason, rowVersion, updateVersioned } from "@/lib/api/db";
 import { handle, parseBody } from "@/lib/api/http";
+import { INSTITUTION_TYPES } from "@/lib/api/structure";
 
 const patchSchema = z.object({
   row_version: rowVersion,
@@ -9,6 +10,9 @@ const patchSchema = z.object({
   country_code: countryCode.nullish(),
   parent_party_id: z.string().uuid().nullish(),
   status: z.enum(["active", "inactive"]).optional(),
+  city: z.string().trim().max(200).nullish(),
+  address: z.string().trim().max(1000).nullish(),
+  institution_type: z.enum(INSTITUTION_TYPES).nullish(),
   change_reason: reason.optional(),
 });
 

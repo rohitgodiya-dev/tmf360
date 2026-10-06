@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import * as overview from "@/app/api/v1/studies/[studyId]/archive/route";
 import * as close from "@/app/api/v1/studies/[studyId]/close/route";
 import * as reopen from "@/app/api/v1/studies/[studyId]/reopen/route";
+import * as lifecycle from "@/app/api/v1/studies/[studyId]/lifecycle/route";
 import * as retention from "@/app/api/v1/studies/[studyId]/retention/route";
 import * as orgDefault from "@/app/api/v1/retention-default/route";
 import * as holds from "@/app/api/v1/legal-holds/route";
@@ -126,6 +127,16 @@ describe("close-out (RET-03) and archive / transfer packages (RET-04/05)", () =>
     expect((await call(packages.POST, { token: lead.token, method: "POST", params: { studyId: study.id }, body: { kind: "transfer", reason: "Acquisition", password: lead.password } })).status).toBe(400);
   });
 
+  it("closing needs the study in close-out first (Part 18)", async () => {
+    const early = await call(close.POST, { token: lead.token, method: "POST", params: { studyId: study.id }, body: { reason: "Done", password: lead.password } });
+    expect(early.status).toBe(400);
+    expect(early.body.error.message).toMatch(/Close-out/);
+    for (const to of ["Active", "Closeout"]) {
+      const r = await call(lifecycle.POST, { token: lead.token, method: "POST", params: { studyId: study.id }, body: { to, reason: "Moving to close-out", acknowledge_warnings: true } });
+      expect(r.status).toBe(200);
+    }
+  });
+
   it("closing needs the right password and permission", async () => {
     expect((await call(close.POST, { token: cra.token, method: "POST", params: { studyId: study.id }, body: { reason: "Done", password: cra.password } })).status).toBe(403);
     const bad = await call(close.POST, { token: lead.token, method: "POST", params: { studyId: study.id }, body: { reason: "Done", password: "wrong" } });
@@ -156,7 +167,7 @@ describe("close-out (RET-03) and archive / transfer packages (RET-04/05)", () =>
     const { error: st } = await lead.db.from("studies").update({ protocol: "changed" }).eq("id", study.id);
     expect(st?.message).toMatch(/closed and read-only/);
     const { error: forged } = await lead.db.from("studies").update({ closed_at: null }).eq("id", study.id);
-    expect(forged?.message).toMatch(/electronic signature/);
+    expect(forged?.message).toMatch(/Study lifecycle/);
     // Recording the marketing authorisation date still works: it starts retention.
     const ma = await call(retention.PUT, { token: lead.token, method: "PUT", params: { studyId: study.id }, body: { marketing_authorisation_date: "2026-06-30", reason: "EMA approval" } });
     expect(ma.status).toBe(200);

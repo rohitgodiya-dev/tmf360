@@ -10,6 +10,7 @@ const createSchema = z.object({
   site_party_id: z.string().uuid(),
   display_name: z.string().trim().min(1).max(300),
   status: z.enum(SITE_STATUSES).optional(),
+  target_enrollment: z.number().int().min(0).max(1000000).nullish(),
 });
 
 export const POST = handle(async (req: Request, { params }: { params: Promise<{ studyId: string }> }) => {

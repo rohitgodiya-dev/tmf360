@@ -116,6 +116,8 @@ export class Fixtures {
     for (const f of this.files) await a.storage.from(f.bucket).remove([f.path]);
     // Study structure and directory rows (children first).
     if (this.orgIds.length) {
+      // Memberships can reference CRO parties (Part 17), so they go before the directory.
+      await a.from("study_members").delete().in("org_id", this.orgIds);
       // QC tasks whose decisions were signed stay behind (signatures are append-only), and so
       // then do their documents and organisation; everything else is removed.
       for (const t of ["document_tasks", "qc_reasons", "file_plan_steps", "workflow_settings",

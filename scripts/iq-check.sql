@@ -9,7 +9,9 @@ with expected_tables(name) as (values
   ('revision_requests'), ('rules'), ('findings'), ('health_snapshots'), ('inspection_sessions'), ('inspection_session_secrets'),
   ('inspection_requests'), ('inspection_activity'), ('export_jobs'), ('retention_policies'), ('legal_holds'),
   ('risk_settings'), ('risk_factor_weights'), ('oversight_activities'), ('ai_settings'), ('ai_recommendations'),
-  ('import_batches'), ('import_items'), ('import_mappings'), ('certified_copies')
+  ('import_batches'), ('import_items'), ('import_mappings'), ('certified_copies'),
+  -- Parts 15–20 (ENT)
+  ('countries'), ('study_lifecycle_events'), ('protocol_amendments'), ('amendment_site_acknowledgements')
 ),
 expected_functions(name) as (values
   ('compute_audit_hash'), ('verify_audit_chain'), ('can_access_study_id'), ('has_org_permission'), ('file_intake_item'),
@@ -17,14 +19,17 @@ expected_functions(name) as (values
   ('request_revision'), ('evaluate_study'), ('inspection_auth'), ('inspection_in_scope'), ('inspection_documents'),
   ('create_export_job'), ('close_study'), ('reopen_study'), ('place_legal_hold'), ('release_legal_hold'), ('create_archive_job'),
   ('risk_events'), ('complete_oversight'), ('ai_feature_enabled'), ('settle_ai_recommendations'), ('run_import_dry_run'),
-  ('reconcile_import'), ('accept_import'), ('certify_document')
+  ('reconcile_import'), ('accept_import'), ('certify_document'),
+  ('transition_study'), ('study_banner_state'), ('register_amendment'), ('acknowledge_amendment'), ('record_reconsent'),
+  ('can_act_for_site'), ('import_studies'), ('import_sites')
 ),
 expected_triggers(name, tbl) as (values
   ('audit_trail_hash_chain', 'audit_trail'), ('documents_workflow_guard', 'documents'), ('documents_x_post_filing_guard', 'documents'),
   ('documents_legal_hold_guard', 'documents'), ('aa_closed_study_guard', 'documents'), ('documents_certified_guard', 'documents'),
   ('zz_access_audit', 'user_roles'), ('inspection_activity_append_only', 'inspection_activity'), ('ai_recommendations_guard', 'ai_recommendations'),
   ('import_items_zz_guard', 'import_items'), ('import_batches_zz_guard', 'import_batches'), ('certified_copies_append_only', 'certified_copies'),
-  ('studies_lifecycle_guard', 'studies')
+  ('studies_lifecycle_guard', 'studies'), ('studies_lifecycle_insert', 'studies'), ('study_members_guard', 'study_members'),
+  ('aa_closed_study_guard', 'protocol_amendments'), ('aa_closed_study_guard', 'amendment_site_acknowledgements')
 )
 select 'table ' || e.name as item, case when c.oid is not null then 'PASS' else 'FAIL: missing' end as result
 from expected_tables e left join pg_class c on c.relname = e.name and c.relnamespace = 'public'::regnamespace and c.relkind = 'r'
@@ -40,6 +45,11 @@ from expected_triggers e
 union all
 select 'storage bucket ' || b, case when exists (select 1 from storage.buckets where id = b and not public) then 'PASS' else 'FAIL: missing or public' end
 from (values ('Documents'), ('exports')) v(b)
+union all
+select 'index ' || i, case when exists (select 1 from pg_indexes where schemaname = 'public' and indexname = i) then 'PASS' else 'FAIL: missing' end
+from (values ('studies_org_code'), ('documents_study_status'), ('audit_trail_document'), ('study_members_user')) v(i)
+union all
+select 'study_members not readable across organisations', case when not exists (select 1 from pg_policies where tablename = 'study_members' and cmd = 'SELECT' and qual = 'true') then 'PASS' else 'FAIL: open policy' end
 union all
 select 'secrets table has no user policies', case when not exists (select 1 from pg_policies where tablename in ('inspection_session_secrets', 'reauth_proofs')) then 'PASS' else 'FAIL: policy present' end
 union all

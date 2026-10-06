@@ -1,14 +1,14 @@
 # Traceability matrix
 
-Generated 2026-10-05 by `node scripts/traceability.mjs` from the requirement IDs of the eTMF Development Plan v0.2 Baseline
-(`docs/validation/requirements.csv`, 201 IDs). A requirement is traced where design documents, code and tests cite its ID.
+Generated 2026-10-06 by `node scripts/traceability.mjs` from the requirement IDs of the eTMF Development Plan v0.2 Baseline
+(`docs/validation/requirements.csv`, 214 IDs). A requirement is traced where design documents, code and tests cite its ID.
 
 | Status | Count |
 |---|---|
-| Verified by test | 119 |
-| Implemented (no test cites it) | 51 |
+| Verified by test | 146 |
+| Implemented (no test cites it) | 52 |
 | Designed only | 7 |
-| Not traced | 24 |
+| Not traced | 9 |
 
 "Not traced" means no file cites the ID. Either the requirement is out of the built scope (see the part plans) or the
 code that covers it does not name it yet. Each one needs a decision in the validation summary.
@@ -56,15 +56,15 @@ code that covers it does not name it yet. Each one needs a decision in the valid
 | EXP-03 | Implemented (no test cites it) |  | docs/part11-plan.md | lib/api/exporter.ts<br>mig/20261023000001_part11b_reports_exports.sql |  |
 | EXP-04 | Implemented (no test cites it) |  | docs/part11-plan.md | app/api/cron/health/route.ts<br>api/exports/[jobId]/download/route.ts<br>api/studies/[studyId]/exports/route.ts<br>lib/api/background.ts<br>+3 more |  |
 | HLT-01 | Implemented (no test cites it) |  | docs/part9-plan.md | api/studies/[studyId]/health/route.ts<br>lib/api/health.ts<br>mig/20261020000001_part9_health_rules.sql |  |
-| HLT-02 | Implemented (no test cites it) |  | docs/part9-plan.md | api/studies/[studyId]/health/route.ts<br>app/platform/TmfHealth.tsx<br>lib/api/health.ts<br>mig/20261020000001_part9_health_rules.sql |  |
+| HLT-02 | Implemented (no test cites it) |  | docs/part15-20-plan.md<br>docs/part9-plan.md | api/studies/[studyId]/health/route.ts<br>app/platform/TmfHealth.tsx<br>lib/api/health.ts<br>lib/api/portfolio.ts<br>+1 more |  |
 | HLT-03 | Implemented (no test cites it) |  | docs/part9-plan.md | api/studies/[studyId]/health/route.ts<br>lib/api/health.ts<br>mig/20261020000001_part9_health_rules.sql |  |
 | HLT-04 | Verified by test |  | docs/part9-plan.md | api/health-thresholds/route.ts<br>api/studies/[studyId]/health/route.ts<br>app/platform/TmfHealth.tsx<br>lib/api/health.ts<br>+1 more | tests/integration/reference-study.test.ts |
 | HLT-05 | Implemented (no test cites it) |  | docs/part9-plan.md | api/studies/[studyId]/findings/route.ts<br>api/studies/[studyId]/health/assessment/route.ts<br>api/studies/[studyId]/health/route.ts<br>app/platform/TmfHealth.tsx<br>+2 more |  |
-| HLT-06 | Implemented (no test cites it) |  | docs/part9-plan.md | app/api/cron/health/route.ts<br>api/studies/[studyId]/health/route.ts<br>app/platform/TmfHealth.tsx<br>lib/api/health.ts<br>+1 more |  |
+| HLT-06 | Implemented (no test cites it) |  | docs/part9-plan.md | app/api/cron/health/route.ts<br>api/studies/[studyId]/health/route.ts<br>app/platform/TmfHealth.tsx<br>lib/api/health.ts<br>+2 more |  |
 | HLT-07 | Implemented (no test cites it) |  | docs/part9-plan.md | mig/20261020000001_part9_health_rules.sql |  |
 | HLT-08 | Implemented (no test cites it) |  | docs/part9-plan.md | mig/20261020000001_part9_health_rules.sql |  |
 | IDX-01 | Verified by test | **Partial**: Indexing form per intake item; preview is in the viewer rather than side by side |  |  | tests/e2e/intake.mjs |
-| IDX-02 | Not traced | **Not built**: Bulk indexing dialog |  |  |  |
+| IDX-02 | Verified by test | **Not built**: Bulk indexing dialog | docs/part14-plan.md | api/studies/[studyId]/intake/bulk/route.ts<br>app/platform/DocumentIntake.tsx | tests/integration/bulk-indexing.test.ts |
 | IDX-03 | Verified by test | **Built**: Choosing the artifact fixes its taxonomy position and TMF level (Part 3 / Part 5) |  |  | tests/integration/document-intake.test.ts<br>tests/integration/taxonomy.test.ts |
 | IDX-04 | Verified by test | **Partial**: Title / version / effective date / owner / country-site; author / receipt date / certified-copy flag / long comments not on the intake form |  |  | tests/integration/document-intake.test.ts |
 | IDX-05 | Not traced | **Not built**: Auto-generated sponsor-study-site-artifact-sequence document ID |  |  |  |
@@ -81,9 +81,9 @@ code that covers it does not name it yet. Each one needs a decision in the valid
 | INS-07 | Verified by test |  | docs/part11-plan.md | api/inspect/requests/route.ts<br>api/inspection-requests/[requestId]/respond/route.ts<br>api/inspections/[sessionId]/route.ts<br>app/inspect/InspectApp.tsx<br>+2 more | tests/integration/inspection.test.ts |
 | INS-08 | Verified by test |  | docs/part11-plan.md | api/inspect/activity/route.ts<br>api/inspect/documents/[documentId]/route.ts<br>api/inspect/documents/route.ts<br>api/inspections/[sessionId]/log/route.ts<br>+4 more | tests/integration/inspection.test.ts |
 | INS-09 | Verified by test |  | docs/part11-plan.md | api/inspections/[sessionId]/route.ts<br>app/inspect/InspectApp.tsx<br>app/platform/InspectionMode.tsx<br>mig/20261022000001_part11a_inspection.sql | tests/integration/inspection.test.ts |
-| LNK-01 | Not traced | **Not built**: Document links |  |  |  |
-| LNK-02 | Not traced | **Not built**: Typed links |  |  |  |
-| LNK-03 | Not traced | **Not built**: Link batch reporting |  |  |  |
+| LNK-01 | Verified by test | **Not built**: Document links | docs/part14-plan.md | api/document-links/[linkId]/remove/route.ts<br>api/documents/[documentId]/links/route.ts<br>app/platform/DocumentActions.tsx<br>mig/20261030000001_part14b_links_signposts.sql | tests/integration/links-signposts.test.ts |
+| LNK-02 | Verified by test | **Not built**: Typed links | docs/part14-plan.md | app/platform/DocumentActions.tsx<br>lib/api/links.ts<br>mig/20261030000001_part14b_links_signposts.sql | tests/integration/links-signposts.test.ts |
+| LNK-03 | Verified by test | **Not built**: Link batch reporting | docs/part14-plan.md | app/platform/DocumentActions.tsx<br>mig/20261030000001_part14b_links_signposts.sql | tests/integration/links-signposts.test.ts |
 | MIG-01 | Verified by test |  | docs/part12-plan.md | api/imports/[batchId]/items/route.ts<br>api/studies/[studyId]/imports/route.ts<br>mig/20261027000001_part12b_migration_import.sql | tests/integration/migration-import.test.ts |
 | MIG-02 | Verified by test |  | docs/part12-plan.md | api/import-mappings/route.ts<br>mig/20261027000001_part12b_migration_import.sql | tests/integration/migration-import.test.ts |
 | MIG-03 | Verified by test |  | docs/part12-plan.md | api/imports/[batchId]/dry-run/route.ts<br>mig/20261027000001_part12b_migration_import.sql | tests/integration/migration-import.test.ts |
@@ -92,7 +92,7 @@ code that covers it does not name it yet. Each one needs a decision in the valid
 | MIG-06 | Verified by test |  | docs/part12-plan.md | api/imports/[batchId]/accept/route.ts<br>mig/20261027000001_part12b_migration_import.sql | tests/integration/migration-import.test.ts |
 | MIG-07 | Verified by test |  | docs/part12-plan.md | mig/20261027000001_part12b_migration_import.sql | tests/integration/migration-import.test.ts |
 | MIG-08 | Verified by test |  | docs/part12-plan.md | mig/20261027000001_part12b_migration_import.sql | tests/integration/migration-import.test.ts |
-| MIG-09 | Designed only | **Not built**: Standards-based exchange (TMF RM Exchange Mechanism) - D45 | docs/part12-plan.md |  |  |
+| MIG-09 | Verified by test | **Not built**: Standards-based exchange (TMF RM Exchange Mechanism) - D45 | docs/part12-plan.md<br>docs/part14-plan.md | api/imports/[batchId]/ems/route.ts<br>api/studies/[studyId]/exports/route.ts<br>app/platform/MigrationImport.tsx<br>lib/api/ems.ts<br>+1 more | tests/integration/tmf-exchange.test.ts |
 | MIG-10 | Verified by test | **Partial**: Documented API for system ingestion: /api/v1 intake endpoints (bearer token / server re-hash); no separate public API product - D45 | docs/part12-plan.md |  | tests/integration/document-intake.test.ts |
 | NAV-01 | Implemented (no test cites it) |  |  | api/studies/[studyId]/navigator/tree/route.ts<br>app/platform/Navigator.tsx<br>lib/api/navigator.ts<br>mig/20261015000001_part6_navigator.sql |  |
 | NAV-02 | Implemented (no test cites it) |  |  | app/platform/Navigator.tsx |  |
@@ -102,7 +102,7 @@ code that covers it does not name it yet. Each one needs a decision in the valid
 | NAV-06 | Implemented (no test cites it) |  |  | app/platform/Navigator.tsx |  |
 | NAV-07 | Verified by test | **Built**: Filters: TMF level and current/historical index (Part 6) |  |  | tests/integration/navigator.test.ts |
 | NAV-08 | Implemented (no test cites it) |  |  | api/documents/[documentId]/route.ts<br>api/studies/[studyId]/navigator/export/route.ts<br>app/platform/Navigator.tsx |  |
-| NAV-09 | Verified by test | **Partial**: Title search; full-text search of document content not built |  |  | tests/integration/navigator.test.ts |
+| NAV-09 | Verified by test | **Partial**: Title search; full-text search of document content not built | docs/part14-plan.md | app/api/cron/health/route.ts<br>api/documents/[documentId]/file/route.ts<br>api/imports/[batchId]/accept/route.ts<br>api/inspect/documents/route.ts<br>+5 more | tests/integration/full-text-search.test.ts<br>tests/integration/navigator.test.ts |
 | OPS-01 | Verified by test |  |  | api/documents/[documentId]/delete/route.ts<br>app/platform/DocumentActions.tsx<br>mig/20261019000001_part8b_post_filing.sql | tests/integration/post-filing.test.ts |
 | OPS-02 | Verified by test |  |  | api/deletion-requests/[requestId]/decide/route.ts<br>api/documents/[documentId]/deletion-request/route.ts<br>api/studies/[studyId]/deletion-requests/route.ts<br>app/platform/DocumentActions.tsx<br>+1 more | tests/integration/post-filing.test.ts |
 | OPS-03 | Verified by test |  |  | api/documents/[documentId]/restore/route.ts<br>mig/20261019000001_part8b_post_filing.sql | tests/integration/post-filing.test.ts |
@@ -118,9 +118,9 @@ code that covers it does not name it yet. Each one needs a decision in the valid
 | PLC-03 | Implemented (no test cites it) |  |  | mig/20261018000001_part8a_placeholders.sql |  |
 | PLC-04 | Implemented (no test cites it) |  |  | mig/20261018000001_part8a_placeholders.sql |  |
 | PLC-05 | Implemented (no test cites it) |  |  | api/placeholders/[placeholderId]/link/route.ts<br>api/placeholders/[placeholderId]/route.ts<br>app/platform/Placeholders.tsx<br>mig/20261018000001_part8a_placeholders.sql |  |
-| PLC-06 | Verified by test |  |  | app/platform/Navigator.tsx<br>app/platform/Placeholders.tsx<br>lib/api/navigator.ts<br>mig/20261018000001_part8a_placeholders.sql | tests/integration/reference-study.test.ts |
+| PLC-06 | Verified by test |  |  | app/platform/CountriesSites.tsx<br>app/platform/Navigator.tsx<br>app/platform/Placeholders.tsx<br>lib/api/hierarchy.ts<br>+3 more | tests/integration/reference-study.test.ts |
 | PLC-07 | Implemented (no test cites it) |  |  | api/studies/[studyId]/expected-artifacts/route.ts<br>app/platform/Placeholders.tsx<br>mig/20261018000001_part8a_placeholders.sql |  |
-| PLT-01 | Not traced | **Not built**: SSO (SAML/OIDC) and MFA: Supabase local accounts only |  |  |  |
+| PLT-01 | Verified by test | **Not built**: SSO (SAML/OIDC) and MFA: Supabase local accounts only | docs/part14-plan.md | api/security-settings/route.ts<br>app/platform/Mfa.tsx<br>lib/api/auth.ts<br>mig/20261101000001_part14d_mfa_sso.sql | tests/integration/mfa.test.ts |
 | PLT-02 | Verified by test | **Built**: Platform home with modules; TMF360 is the eTMF module |  |  | tests/e2e/smoke.mjs |
 | PLT-03 | Verified by test | **Built**: Header with study selector and settings on every TMF360 screen |  |  | tests/e2e/smoke.mjs |
 | PLT-04 | Verified by test | **Partial**: Async jobs (exports / archive packages) show status in the panel and email on completion; no global activity feed |  |  | tests/integration/reports-exports.test.ts |
@@ -138,14 +138,14 @@ code that covers it does not name it yet. Each one needs a decision in the valid
 | REG-04 | Verified by test | **Built**: Records retained and protected for the retention period; legal hold (Part 11c) |  |  | tests/integration/retention-archive.test.ts |
 | REG-05 | Verified by test | **Built**: TMF available to inspectors through time-boxed read-only Inspection Mode (Part 11a) |  |  | tests/e2e/inspection.mjs<br>tests/integration/inspection.test.ts |
 | REG-06 | Verified by test | **See CCP**: Certified copies (Part 13b certified copies) |  | api/documents/[documentId]/certify/route.ts<br>app/platform/DocumentActions.tsx<br>mig/20261028000001_part13b_certified_copies.sql | tests/integration/certified-copies.test.ts |
-| REG-07 | Not traced | **Not built**: Blinded / confidential restriction and unblinding (see USR-06) |  |  |  |
-| REG-08 | Designed only | **Process**: Validation and change control: this validation pack (validation plan / IQ / OQ / PQ / traceability) and change-control procedure | docs/validation/validation-plan.md |  |  |
+| REG-07 | Verified by test | **Not built**: Blinded / confidential restriction and unblinding (see USR-06) | docs/part14-plan.md | api/documents/[documentId]/blinding/route.ts<br>app/platform/DocumentActions.tsx<br>mig/20261104000001_part14g_zone_permissions.sql | tests/integration/zone-permissions.test.ts |
+| REG-08 | Designed only | **Process**: Validation and change control: this validation pack (validation plan / IQ / OQ / PQ / traceability) and change-control procedure | docs/part13-plan.md<br>docs/validation/validation-plan.md |  |  |
 | REG-09 | Designed only | **Partial**: Access control and minimisation by RLS; regional hosting and GDPR processes are organisational | docs/validation/validation-plan.md |  |  |
 | REG-10 | Verified by test | **Built**: Server time stamps (UTC with time zone) from the database clock (Pillar 6) |  |  | tests/integration/server-timestamps.test.ts |
-| REG-11 | Designed only | **Process**: Backup and restore: Supabase managed backups; restore test is a pilot activity in the validation plan | docs/validation/validation-plan.md |  |  |
+| REG-11 | Designed only | **Process**: Backup and restore: Supabase managed backups; restore test is a pilot activity in the validation plan | docs/part13-plan.md<br>docs/validation/validation-plan.md |  |  |
 | REG-12 | Verified by test | **Built**: Migrated records keep content / meaning / metadata with reconciliation evidence (Part 12b) |  |  | tests/integration/migration-import.test.ts |
 | REG-13 | Verified by test | **Built**: AI outputs traceable / reviewed by a person / under change control (model and prompt version recorded) (Part 12a) |  |  | tests/integration/ai-recommendations.test.ts |
-| REG-14 | Verified by test | **Built**: Access restrictions hold across channels (authorization-boundary persona tests) |  |  | tests/integration/authorization-boundaries.test.ts |
+| REG-14 | Verified by test | **Built**: Access restrictions hold across channels (authorization-boundary persona tests) | docs/part13-plan.md |  | tests/integration/authorization-boundaries.test.ts |
 | REG-15 | Designed only |  | docs/part7-plan.md |  |  |
 | REG-16 | Not traced | **Review**: Text for this ID needs confirming against the Baseline PDF during validation |  |  |  |
 | REG-17 | Designed only |  | docs/part7-plan.md |  |  |
@@ -158,8 +158,8 @@ code that covers it does not name it yet. Each one needs a decision in the valid
 | RM-01 | Verified by test | **Partial**: Stable internal record-type IDs (taxonomy_artifact_id) exist; much application data still keys on artifact number |  |  | tests/integration/taxonomy.test.ts |
 | RM-02 | Verified by test | **Built**: Taxonomy model: versions / zones / sections / artifacts / sub-artifacts (Part 3) |  |  | tests/integration/taxonomy.test.ts |
 | RM-03 | Verified by test | **Built**: TMF Reference Model v3.3.1 loaded as the first taxonomy package (Part 3) |  |  | tests/integration/taxonomy.test.ts |
-| RM-04 | Verified by test | **Partial**: Each document links to its taxonomy version through taxonomy_artifact_id; per-study version pinning not enforced |  |  | tests/integration/taxonomy.test.ts |
-| RM-05 | Not traced | **Not built**: Taxonomy version mappings and guided study migration |  |  |  |
+| RM-04 | Verified by test | **Partial**: Each document links to its taxonomy version through taxonomy_artifact_id; per-study version pinning not enforced | docs/part14-plan.md | api/studies/[studyId]/taxonomy/route.ts<br>app/platform/TaxonomyMigration.tsx<br>mig/20261103000001_part14f_taxonomy_migration.sql | tests/integration/taxonomy-migration.test.ts<br>tests/integration/taxonomy.test.ts |
+| RM-05 | Verified by test | **Not built**: Taxonomy version mappings and guided study migration | docs/part14-plan.md | api/taxonomy-migrations/[migrationId]/execute/route.ts<br>mig/20261103000001_part14f_taxonomy_migration.sql | tests/integration/taxonomy-migration.test.ts |
 | RM-06 | Not traced | **Not built**: Per-record-type required and type-specific fields |  |  |  |
 | RM-07 | Verified by test | **Partial**: Organisation-specific types: custom artifacts in TMF configuration and import mappings (Part 12b) |  |  | tests/integration/migration-import.test.ts |
 | RM-08 | Verified by test | **Built**: Risk impact per record type from the Core / Recommended classification used by health (Part 9) and risk (Part 11d) |  |  | tests/integration/health.test.ts<br>tests/integration/risk-oversight.test.ts |
@@ -173,22 +173,22 @@ code that covers it does not name it yet. Each one needs a decision in the valid
 | RSK-03 | Verified by test |  | docs/part11-plan.md | lib/api/risk.ts<br>mig/20261025000001_part11d_risk_oversight.sql | tests/integration/risk-oversight.test.ts |
 | RSK-04 | Verified by test |  | docs/part11-plan.md | lib/api/risk.ts<br>mig/20261025000001_part11d_risk_oversight.sql | tests/integration/risk-oversight.test.ts |
 | RSK-05 | Verified by test |  | docs/part11-plan.md | lib/api/reports.ts<br>lib/api/risk.ts<br>mig/20261025000001_part11d_risk_oversight.sql | tests/integration/risk-oversight.test.ts |
-| SGN-01 | Not traced | **Not built**: Signposts |  |  |  |
-| SGN-02 | Not traced | **Not built**: Signposts |  |  |  |
+| SGN-01 | Verified by test | **Not built**: Signposts | docs/part14-plan.md | api/studies/[studyId]/signposts/route.ts<br>app/platform/DocumentIntake.tsx<br>mig/20261030000001_part14b_links_signposts.sql | tests/integration/links-signposts.test.ts |
+| SGN-02 | Verified by test | **Not built**: Signposts | docs/part14-plan.md | mig/20261030000001_part14b_links_signposts.sql | tests/integration/links-signposts.test.ts |
 | SIG-01 | Implemented (no test cites it) |  | docs/part7-plan.md | mig/20261017000001_part7_qc_workflow.sql |  |
 | SIG-02 | Implemented (no test cites it) |  | docs/part7-plan.md | api/inspect/documents/[documentId]/versions/route.ts<br>api/tasks/[taskId]/complete/route.ts<br>app/platform/QcTasks.tsx<br>lib/api/qc.ts<br>+1 more |  |
 | SIG-03 | Implemented (no test cites it) |  | docs/part7-plan.md | mig/20261017000001_part7_qc_workflow.sql |  |
 | SIG-04 | Implemented (no test cites it) |  | docs/part7-plan.md | mig/20261004000001_part2b_study_structure.sql<br>mig/20261017000001_part7_qc_workflow.sql |  |
 | SIG-05 | Implemented (no test cites it) |  | docs/part7-plan.md | mig/20261017000001_part7_qc_workflow.sql |  |
 | STG-01 | Verified by test | **Built**: Drag-and-drop and file-picker upload into Document Intake (the plan's Staging Area; Part 5) |  |  | tests/e2e/intake.mjs<br>tests/integration/document-intake.test.ts |
-| STG-02 | Not traced | **Not built**: Per-study intake email address |  |  |  |
-| STG-03 | Not traced | **Not built**: Sender allow-list for intake email |  |  |  |
+| STG-02 | Verified by test | **Not built**: Per-study intake email address | docs/part14-plan.md | app/api/inbound/email/route.ts<br>api/studies/[studyId]/intake-email/route.ts<br>app/platform/DocumentIntake.tsx<br>lib/api/inbound.ts<br>+1 more | tests/integration/intake-email.test.ts |
+| STG-03 | Verified by test | **Not built**: Sender allow-list for intake email | docs/part14-plan.md | mig/20261102000001_part14e_intake_email.sql | tests/integration/intake-email.test.ts |
 | STG-04 | Verified by test | **Built**: Each received file reported Uploaded / Warning (possible duplicate) / Blocked (Part 5b duplicate_status) |  |  | tests/integration/document-intake.test.ts |
 | STG-05 | Verified by test | **Built**: Duplicate detection by file name and hash (Part 5b) and by text similarity (Part 12a AI-04) |  |  | tests/integration/ai-recommendations.test.ts<br>tests/integration/document-intake.test.ts |
 | STG-06 | Not traced | **Not built**: Add from template (no Document Template Center) |  |  |  |
-| STG-07 | Not traced | **Not built**: Signposts (see SGN-01/02) |  |  |  |
+| STG-07 | Designed only | **Not built**: Signposts (see SGN-01/02) | docs/part14-plan.md |  |  |
 | STG-08 | Verified by test | **Partial**: Intake list shows file / received / artifact / owner / country-site; not every listed column |  |  | tests/e2e/intake.mjs |
-| STG-09 | Not traced | **Not built**: Bulk Edit Properties / bulk delete / export from intake |  |  |  |
+| STG-09 | Verified by test | **Not built**: Bulk Edit Properties / bulk delete / export from intake | docs/part14-plan.md | api/studies/[studyId]/intake/bulk/route.ts<br>app/platform/DocumentIntake.tsx | tests/integration/bulk-indexing.test.ts |
 | STU-01 | Verified by test | **Built**: Create studies (existing study form; Part 2 structure) |  |  | tests/integration/study-structure.test.ts |
 | STU-02 | Implemented (no test cites it) |  |  | api/studies/[studyId]/sites/[siteId]/route.ts<br>mig/20261004000001_part2b_study_structure.sql |  |
 | STU-03 | Implemented (no test cites it) |  |  | api/studies/[studyId]/countries/[countryId]/route.ts<br>lib/api/structure.ts<br>mig/20261004000001_part2b_study_structure.sql |  |
@@ -200,15 +200,15 @@ code that covers it does not name it yet. Each one needs a decision in the valid
 | USR-02 | Verified by test | **Built**: User management: invite by email / edit / deactivate (Part 1c invitations) |  |  | tests/integration/account-security.test.ts |
 | USR-03 | Verified by test | **Partial**: Application-level admin roles exist; no separate Super User read-only-across-studies group |  |  | tests/integration/security-baseline.test.ts |
 | USR-04 | Verified by test | **Partial**: QC routing by role (Part 7) and Inspector only through Inspection Mode sessions (Part 11a); no Trial Administrator group as such |  |  | tests/integration/inspection.test.ts<br>tests/integration/qc-workflow.test.ts |
-| USR-05 | Not traced | **Not built**: Content permission per taxonomy node (None / Read-only / Contribute / Unblinded) - process-zone permissions are pending |  |  |  |
-| USR-06 | Not traced | **Not built**: Blinded documents and unblinded access |  |  |  |
+| USR-05 | Verified by test | **Not built**: Content permission per taxonomy node (None / Read-only / Contribute / Unblinded) - process-zone permissions are pending | docs/part14-plan.md | api/studies/[studyId]/zone-permissions/route.ts<br>app/platform/ZonePermissions.tsx<br>mig/20261104000001_part14g_zone_permissions.sql | tests/integration/zone-permissions.test.ts |
+| USR-06 | Verified by test | **Not built**: Blinded documents and unblinded access | docs/part14-plan.md | api/zone-permissions/[grantId]/decide/route.ts<br>mig/20261104000001_part14g_zone_permissions.sql | tests/integration/zone-permissions.test.ts |
 | USR-07 | Implemented (no test cites it) |  |  | mig/20261004000001_part2b_study_structure.sql |  |
 | USR-08 | Verified by test | **Partial**: Study-level access restriction (study members / access grants); site-level restriction not built |  |  | tests/integration/authorization-boundaries.test.ts |
 | VWR-01 | Verified by test | **Built**: pdf.js viewer with thumbnails page navigation zoom rotate (Part 6c); Office formats download only |  |  | tests/e2e/navigator.mjs |
 | VWR-02 | Implemented (no test cites it) |  |  | api/documents/[documentId]/access/route.ts<br>app/platform/DocumentViewer.tsx |  |
 | VWR-03 | Not traced | **Not built**: Reviewer annotations |  |  |  |
 | VWR-04 | Verified by test | **Built**: AI summary in the viewer when switched on (Part 12a) |  |  | tests/integration/ai-recommendations.test.ts |
-| VWR-05 | Verified by test | **Partial**: Loading states built; signpost placeholder not (no signposts) |  |  | tests/e2e/navigator.mjs |
+| VWR-05 | Verified by test | **Partial**: Loading states built; signpost placeholder not (no signposts) | docs/part14-plan.md |  | tests/e2e/navigator.mjs |
 | WFL-01 | Implemented (no test cites it) |  | docs/part7-plan.md | api/qc-config/route.ts<br>app/platform/QcSettings.tsx<br>mig/20261017000001_part7_qc_workflow.sql |  |
 | WFL-02 | Implemented (no test cites it) |  | docs/part7-plan.md | mig/20261017000001_part7_qc_workflow.sql |  |
 | WFL-03 | Implemented (no test cites it) |  | docs/part7-plan.md | api/documents/[documentId]/submit/route.ts<br>api/documents/[documentId]/timeline/route.ts<br>lib/api/qc.ts<br>mig/20261017000001_part7_qc_workflow.sql |  |
@@ -216,5 +216,18 @@ code that covers it does not name it yet. Each one needs a decision in the valid
 | WFL-05 | Implemented (no test cites it) |  | docs/part7-plan.md | api/studies/[studyId]/tasks/route.ts<br>api/tasks/[taskId]/reassign/route.ts<br>app/platform/QcTasks.tsx<br>mig/20261017000001_part7_qc_workflow.sql |  |
 | WFL-06 | Implemented (no test cites it) |  | docs/part7-plan.md | mig/20261017000001_part7_qc_workflow.sql |  |
 | WFL-07 | Implemented (no test cites it) |  | docs/part7-plan.md | mig/20261017000001_part7_qc_workflow.sql |  |
+| ENT-01 | Verified by test |  | docs/part15-20-plan.md | mig/20261106000001_part15_hierarchy_scale.sql | tests/integration/hierarchy.test.ts |
+| ENT-02 | Verified by test |  | docs/part15-20-plan.md | mig/20261106000001_part15_hierarchy_scale.sql | tests/e2e/hierarchy.mjs<br>tests/integration/hierarchy.test.ts |
+| ENT-03 | Verified by test |  | docs/part15-20-plan.md | mig/20261106000001_part15_hierarchy_scale.sql | tests/e2e/hierarchy.mjs<br>tests/integration/hierarchy.test.ts |
+| ENT-04 | Implemented (no test cites it) | **Built**: Indexes created by the Part 15 migration; the IQ check confirms them on each environment | docs/part15-20-plan.md<br>scripts/iq-check.sql | mig/20261106000001_part15_hierarchy_scale.sql |  |
+| ENT-05 | Verified by test |  | docs/part15-20-plan.md | mig/20261107000001_part16_portfolio.sql | tests/e2e/portfolio.mjs<br>tests/integration/portfolio.test.ts |
+| ENT-06 | Verified by test |  | docs/part15-20-plan.md | mig/20261108000001_part17_cro_access.sql | tests/e2e/cro-access.mjs<br>tests/integration/cro-access.test.ts |
+| ENT-07 | Verified by test |  | docs/part15-20-plan.md | mig/20261108000001_part17_cro_access.sql | tests/integration/cro-access.test.ts |
+| ENT-08 | Verified by test |  | docs/part15-20-plan.md | mig/20261108000001_part17_cro_access.sql | tests/e2e/cro-access.mjs<br>tests/integration/cro-access.test.ts |
+| ENT-09 | Verified by test |  | docs/part15-20-plan.md | mig/20261109000001_part18_study_lifecycle.sql | tests/e2e/lifecycle.mjs<br>tests/integration/lifecycle.test.ts |
+| ENT-10 | Verified by test |  | docs/part15-20-plan.md | mig/20261109000001_part18_study_lifecycle.sql | tests/e2e/lifecycle.mjs<br>tests/integration/lifecycle.test.ts |
+| ENT-11 | Verified by test |  | docs/part15-20-plan.md | mig/20261110000001_part19_protocol_amendments.sql | tests/e2e/amendments.mjs<br>tests/integration/amendments.test.ts |
+| ENT-12 | Verified by test |  | docs/part15-20-plan.md | mig/20261111000001_part20_bulk_import.sql | tests/e2e/bulk-import.mjs<br>tests/integration/bulk-import.test.ts |
+| ENT-13 | Verified by test |  | docs/part15-20-plan.md | mig/20261111000001_part20_bulk_import.sql | tests/integration/bulk-import.test.ts |
 
-Coverage summary of reviewed notes: See 13b 4 · Review 2 · Built 34 · Not built 24 · Built (no purge) 1 · Partial 17 · See CCP 1 · Process 2.
+Coverage summary of reviewed notes: See 13b 4 · Review 2 · Built 35 · Not built 24 · Built (no purge) 1 · Partial 17 · See CCP 1 · Process 2.

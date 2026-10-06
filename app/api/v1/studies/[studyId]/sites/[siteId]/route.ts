@@ -11,6 +11,8 @@ const patchSchema = z
     row_version: rowVersion,
     status: z.enum(SITE_STATUSES).optional(),
     display_name: z.string().trim().min(1).max(300).optional(),
+    target_enrollment: z.number().int().min(0).max(1000000).nullish(),
+    actual_enrollment: z.number().int().min(0).max(1000000).optional(),
     change_reason: reason.optional(),
   })
   .refine((b) => !b.status || b.change_reason, {
